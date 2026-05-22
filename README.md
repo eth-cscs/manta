@@ -32,6 +32,8 @@ cp server.toml.example ~/.config/manta/server.toml   # edit
 | [CLI.md](CLI.md) | per-flag reference for every `manta` subcommand |
 | [API.md](API.md) | REST + WebSocket endpoints, schemas, status codes |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | crate layout, module boundaries, security model |
+| [docs.rs/manta-shared](https://docs.rs/manta-shared) | rustdoc for the shared library crate |
+| [eth-cscs.github.io/manta](https://eth-cscs.github.io/manta/) | rustdoc for the whole workspace (rebuilt on every push to `main`) |
 
 ## Repository layout
 

@@ -1,0 +1,134 @@
+# Build the workspace's rustdoc and publish it to GitHub Pages.
+#
+# Why this workflow exists:
+#   - `manta-shared` (publish = true) has its docs hosted on docs.rs
+#     automatically — no workflow needed there.
+#   - `manta-server` is `publish = false`, so docs.rs never sees it.
+#     Contributors had to run `cargo doc --open` locally to read it.
+#     This workflow gives them a hosted browseable copy.
+#
+# One-time setup on the GitHub side (only needed the first time):
+#   Settings → Pages → "Build and deployment" → Source:
+#     "GitHub Actions"
+# After that, the workflow runs on every push to main and on manual
+# dispatch, and publishes to https://eth-cscs.github.io/manta/ .
+#
+# The deploy uses the modern `actions/deploy-pages` flow (an action
+# artifact upload + a separate deploy job that reads it), not the
+# legacy gh-pages branch-push pattern.
+
+name: docs
+
+on:
+  push:
+    branches: ["main"]
+  # Lets maintainers re-publish from the Actions tab without a push.
+  workflow_dispatch:
+
+# The GITHUB_TOKEN needs these scopes to talk to Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Don't let two pushes race the deploy.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # Same Rust pin as CI so rustdoc output is reproducible.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: "1.92.0"
+          components: rustfmt, clippy
+
+      # rdkafka needs these to build (mirrors the CI workflow).
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libcurl4-openssl-dev
+
+      # Build documentation for every workspace member. `--no-deps`
+      # excludes third-party crates — we only want our own. Strict
+      # rustdoc flags catch broken intra-doc links and invalid HTML
+      # the same way the CI step does.
+      - name: Build documentation
+        env:
+          RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags
+        run: cargo doc --workspace --no-deps
+
+      # `cargo doc` emits one HTML tree per crate under target/doc,
+      # but no top-level index. Land users on a small landing page
+      # that links to each crate's docs.
+      - name: Generate landing page
+        run: |
+          cat > target/doc/index.html <<'HTML'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>manta — Rust API documentation</title>
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 40em;
+                     margin: 4em auto; padding: 0 1em; line-height: 1.5; }
+              h1 { font-size: 1.4em; }
+              li { margin: 0.5em 0; }
+              code { background: #f4f4f4; padding: 0.1em 0.3em; }
+            </style>
+          </head>
+          <body>
+            <h1>manta — Rust API documentation</h1>
+            <p>Per-crate rustdoc for the
+              <a href="https://github.com/eth-cscs/manta">manta workspace</a>,
+              rebuilt on every push to <code>main</code>.</p>
+            <ul>
+              <li>
+                <a href="./manta_shared/index.html"><strong>manta-shared</strong></a> —
+                wire types, config loader, JWT / Kafka / audit helpers.
+                Also on
+                <a href="https://docs.rs/manta-shared">docs.rs</a>.
+              </li>
+              <li>
+                <a href="./manta_server/index.html"><strong>manta-server</strong></a> —
+                Axum HTTPS server, handlers, service layer, backend
+                dispatcher. Not on docs.rs (<code>publish = false</code>).
+              </li>
+              <li>
+                <a href="./manta/index.html"><strong>manta</strong> (CLI binary)</a> —
+                limited; most CLI code is private to the binary.
+              </li>
+            </ul>
+            <p>For prose docs see
+              <a href="https://github.com/eth-cscs/manta/blob/main/README.md">README</a>,
+              <a href="https://github.com/eth-cscs/manta/blob/main/GUIDE.md">GUIDE</a>,
+              <a href="https://github.com/eth-cscs/manta/blob/main/CLI.md">CLI</a>,
+              <a href="https://github.com/eth-cscs/manta/blob/main/API.md">API</a>,
+              <a href="https://github.com/eth-cscs/manta/blob/main/ARCHITECTURE.md">ARCHITECTURE</a>.</p>
+          </body>
+          </html>
+          HTML
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
