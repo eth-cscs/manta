@@ -66,6 +66,30 @@ impl MantaClient {
     })
   }
 
+  /// Emit a `curl` equivalent of `builder` at DEBUG level so an operator
+  /// can replay the request from their shell. Skipped entirely when
+  /// DEBUG is filtered out, so the clone/build/serialize cost is only
+  /// paid when the log will actually be emitted.
+  ///
+  /// Secrets-safe: the `Authorization` header value is masked, and
+  /// `password` / `token` fields anywhere in a JSON body are replaced
+  /// with `<REDACTED>` before formatting.
+  pub(super) fn log_request_as_curl(builder: &reqwest::RequestBuilder) {
+    if !tracing::enabled!(tracing::Level::DEBUG) {
+      return;
+    }
+    let Some(cloned) = builder.try_clone() else {
+      return;
+    };
+    let Ok(req) = cloned.build() else {
+      return;
+    };
+    tracing::debug!(
+      "curl equivalent (secrets replaced with <REDACTED>):\n{}",
+      format_request_as_curl(&req)
+    );
+  }
+
   // ── shared helpers (visible to sub-modules) ───────────────────────────────
   //
   // These are `pub(super)` so the resource sub-modules can call them. They
@@ -106,15 +130,14 @@ impl MantaClient {
     query: &[(&str, String)],
   ) -> anyhow::Result<T> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .get(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .query(query)
-      .send()
-      .await
-      .context("HTTP GET failed")?;
+      .query(query);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP GET failed")?;
     Self::parse_json(resp).await
   }
 
@@ -125,15 +148,14 @@ impl MantaClient {
     body: &impl serde::Serialize,
   ) -> anyhow::Result<T> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .post(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .json(body)
-      .send()
-      .await
-      .context("HTTP POST failed")?;
+      .json(body);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP POST failed")?;
     Self::parse_json(resp).await
   }
 
@@ -144,15 +166,14 @@ impl MantaClient {
     body: &impl serde::Serialize,
   ) -> anyhow::Result<()> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .put(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .json(body)
-      .send()
-      .await
-      .context("HTTP PUT failed")?;
+      .json(body);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP PUT failed")?;
     Self::parse_no_content(resp).await
   }
 
@@ -162,14 +183,13 @@ impl MantaClient {
     path: &str,
   ) -> anyhow::Result<()> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .delete(&url)
       .bearer_auth(token)
-      .header("X-Manta-Site", &self.site_name)
-      .send()
-      .await
-      .context("HTTP DELETE failed")?;
+      .header("X-Manta-Site", &self.site_name);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP DELETE failed")?;
     Self::parse_no_content(resp).await
   }
 
@@ -180,15 +200,14 @@ impl MantaClient {
     query: &[(&str, String)],
   ) -> anyhow::Result<()> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .delete(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .query(query)
-      .send()
-      .await
-      .context("HTTP DELETE failed")?;
+      .query(query);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP DELETE failed")?;
     Self::parse_no_content(resp).await
   }
 
@@ -199,15 +218,14 @@ impl MantaClient {
     body: &impl serde::Serialize,
   ) -> anyhow::Result<()> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .delete(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .json(body)
-      .send()
-      .await
-      .context("HTTP DELETE failed")?;
+      .json(body);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP DELETE failed")?;
     Self::parse_no_content(resp).await
   }
 
@@ -218,15 +236,14 @@ impl MantaClient {
     body: &impl serde::Serialize,
   ) -> anyhow::Result<T> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .delete(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .json(body)
-      .send()
-      .await
-      .context("HTTP DELETE failed")?;
+      .json(body);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP DELETE failed")?;
     Self::parse_json(resp).await
   }
 
@@ -237,15 +254,14 @@ impl MantaClient {
     query: &[(&str, String)],
   ) -> anyhow::Result<T> {
     let url = format!("{}{}", self.base_url, path);
-    let resp = self
+    let builder = self
       .client
       .delete(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name)
-      .query(query)
-      .send()
-      .await
-      .context("HTTP DELETE failed")?;
+      .query(query);
+    Self::log_request_as_curl(&builder);
+    let resp = builder.send().await.context("HTTP DELETE failed")?;
     Self::parse_json(resp).await
   }
 
@@ -329,6 +345,64 @@ impl QueryBuilder {
   }
 }
 
+/// Render `req` as a copy-pasteable `curl` invocation. Used by
+/// [`MantaClient::log_request_as_curl`]; the secrets-redaction policy
+/// lives here so it's consistent across every call site.
+fn format_request_as_curl(req: &reqwest::Request) -> String {
+  let mut out = format!("  curl -k -X {} '{}'", req.method(), req.url());
+  for (name, value) in req.headers() {
+    let raw = value.to_str().unwrap_or("<binary>");
+    let rendered = if name == reqwest::header::AUTHORIZATION {
+      if raw.starts_with("Bearer ") {
+        "Bearer <REDACTED>".to_string()
+      } else {
+        "<REDACTED>".to_string()
+      }
+    } else {
+      raw.to_string()
+    };
+    out.push_str(&format!(" \\\n    -H '{name}: {rendered}'"));
+  }
+  if let Some(body_bytes) = req.body().and_then(reqwest::Body::as_bytes) {
+    let body_str = std::str::from_utf8(body_bytes).unwrap_or("<binary>");
+    let redacted = redact_json_secrets(body_str);
+    out.push_str(&format!(" \\\n    --data-raw '{redacted}'"));
+  }
+  out
+}
+
+/// Walk `body` as JSON, replacing any `password` or `token` field value
+/// with `<REDACTED>`. Falls back to the original string when the body
+/// isn't parseable as JSON — non-JSON bodies are rare on this client
+/// and never carry credentials.
+fn redact_json_secrets(body: &str) -> String {
+  let Ok(mut value) = serde_json::from_str::<serde_json::Value>(body) else {
+    return body.to_string();
+  };
+  redact_value(&mut value);
+  serde_json::to_string(&value).unwrap_or_else(|_| body.to_string())
+}
+
+fn redact_value(v: &mut serde_json::Value) {
+  match v {
+    serde_json::Value::Object(map) => {
+      for (k, val) in map.iter_mut() {
+        if matches!(k.as_str(), "password" | "token") {
+          *val = serde_json::Value::String("<REDACTED>".to_string());
+        } else {
+          redact_value(val);
+        }
+      }
+    }
+    serde_json::Value::Array(arr) => {
+      for item in arr {
+        redact_value(item);
+      }
+    }
+    _ => {}
+  }
+}
+
 /// Convert an `http://` or `https://` base URL to the corresponding `ws://` / `wss://` URL.
 pub(super) fn ws_base_url(http_url: &str) -> String {
   if let Some(rest) = http_url.strip_prefix("https://") {
@@ -373,6 +447,57 @@ mod tests {
       ws_base_url("https://h.example/api/v1?x=1"),
       "wss://h.example/api/v1?x=1"
     );
+  }
+
+  // ---- redact_json_secrets ----
+
+  #[test]
+  fn redact_replaces_password_and_token_at_top_level() {
+    let body = r#"{"username":"alice","password":"hunter2"}"#;
+    let out = redact_json_secrets(body);
+    assert!(out.contains("\"username\":\"alice\""));
+    assert!(out.contains("\"password\":\"<REDACTED>\""));
+    assert!(!out.contains("hunter2"));
+  }
+
+  #[test]
+  fn redact_replaces_token_field() {
+    let body = r#"{"token":"eyJhbGciOi..."}"#;
+    let out = redact_json_secrets(body);
+    assert!(out.contains("\"token\":\"<REDACTED>\""));
+    assert!(!out.contains("eyJ"));
+  }
+
+  #[test]
+  fn redact_walks_into_nested_objects() {
+    let body = r#"{"outer":{"password":"x"},"inner":{"deep":{"token":"y"}}}"#;
+    let out = redact_json_secrets(body);
+    assert!(!out.contains("\"x\""));
+    assert!(!out.contains("\"y\""));
+    assert_eq!(out.matches("<REDACTED>").count(), 2);
+  }
+
+  #[test]
+  fn redact_walks_through_arrays() {
+    let body = r#"{"creds":[{"password":"a"},{"password":"b"}]}"#;
+    let out = redact_json_secrets(body);
+    assert!(!out.contains("\"a\""));
+    assert!(!out.contains("\"b\""));
+    assert_eq!(out.matches("<REDACTED>").count(), 2);
+  }
+
+  #[test]
+  fn redact_leaves_unrelated_fields_alone() {
+    let body = r#"{"a":1,"b":"x","c":{"d":[1,2,3]}}"#;
+    let out = redact_json_secrets(body);
+    // Round-trips structurally; just verify nothing got <REDACTED>.
+    assert!(!out.contains("<REDACTED>"));
+  }
+
+  #[test]
+  fn redact_passes_through_non_json_unchanged() {
+    let body = "plain text body";
+    assert_eq!(redact_json_secrets(body), "plain text body");
   }
 
   // ---- QueryBuilder ----

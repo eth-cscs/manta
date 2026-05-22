@@ -89,12 +89,14 @@ impl MantaClient {
     timestamps: bool,
   ) -> anyhow::Result<impl AsyncBufRead + Send + Unpin> {
     let url = format!("{}/sessions/{}/logs", self.base_url(), session_name);
-    let resp = self
+    let builder = self
       .http_client()
       .get(&url)
       .bearer_auth(token)
       .header("X-Manta-Site", self.site_name())
-      .query(&[("timestamps", timestamps.to_string())])
+      .query(&[("timestamps", timestamps.to_string())]);
+    Self::log_request_as_curl(&builder);
+    let resp = builder
       .send()
       .await
       .context("HTTP GET session logs failed")?;

@@ -24,15 +24,17 @@ impl MantaClient {
     use manta_shared::shared::auth::{AuthTokenRequest, AuthTokenResponse};
     let url = format!("{}/auth/token", self.base_url());
     tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/token");
-    let started = Instant::now();
-    let resp = self
+    let builder = self
       .http_client()
       .post(&url)
       .header("X-Manta-Site", self.site_name())
       .json(&AuthTokenRequest {
         username: username.to_owned(),
         password: password.to_owned(),
-      })
+      });
+    Self::log_request_as_curl(&builder);
+    let started = Instant::now();
+    let resp = builder
       .send()
       .await
       .context("HTTP POST /auth/token failed")?;
@@ -51,14 +53,16 @@ impl MantaClient {
     use manta_shared::shared::auth::ValidateTokenRequest;
     let url = format!("{}/auth/validate", self.base_url());
     tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/validate");
-    let started = Instant::now();
-    let resp = self
+    let builder = self
       .http_client()
       .post(&url)
       .header("X-Manta-Site", self.site_name())
       .json(&ValidateTokenRequest {
         token: token.to_owned(),
-      })
+      });
+    Self::log_request_as_curl(&builder);
+    let started = Instant::now();
+    let resp = builder
       .send()
       .await
       .context("HTTP POST /auth/validate failed")?;
