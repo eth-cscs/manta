@@ -23,6 +23,104 @@ const API_URL_SUFFIX: &str = "/apis";
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
 
+/// Print the resolved server settings, audit configuration, and the
+/// config-file path to stdout. Visible regardless of the `[log]`
+/// filter, so operators can confirm what the server is running on
+/// without first turning logging up.
+fn print_startup_summary(
+  configuration: &ServerConfiguration,
+  listen_addr: &str,
+  port: u16,
+  cert_path: &Option<String>,
+  key_path: &Option<String>,
+) {
+  let (config_path, source) = match manta_config::get_server_config_file_path()
+  {
+    Ok(p) => (
+      p.display().to_string(),
+      if std::env::var("MANTA_SERVER_CONFIG").is_ok() {
+        "MANTA_SERVER_CONFIG env var"
+      } else {
+        "default lookup (~/.config/manta/server.toml)"
+      },
+    ),
+    Err(_) => ("<unknown>".to_string(), "unresolved"),
+  };
+  println!("manta-server configuration");
+  println!("==========================");
+  println!("config file: {config_path}");
+  println!("source:      {source}");
+  println!();
+  println!("[server]");
+  println!("  listen_address:                   {listen_addr}");
+  println!("  port:                             {port}");
+  println!(
+    "  cert:                             {}",
+    cert_path.as_deref().unwrap_or("<none>")
+  );
+  println!(
+    "  key:                              {}",
+    key_path.as_deref().map_or("<none>", |_| "<set>")
+  );
+  println!(
+    "  console_inactivity_timeout_secs:  {}",
+    configuration.server.console_inactivity_timeout_secs
+  );
+  println!(
+    "  auth_rate_limit_per_minute:       {}",
+    configuration
+      .server
+      .auth_rate_limit_per_minute
+      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
+  );
+  println!("  log_filter:                       {}", configuration.log);
+  println!(
+    "  audit_file:                       {}",
+    configuration.audit_file
+  );
+  println!();
+  println!("[auditor]");
+  match configuration.auditor.as_ref() {
+    Some(a) => {
+      println!("  Kafka audit forwarder enabled");
+      println!("  brokers: {:?}", a.kafka.brokers);
+      println!("  topic:   {}", a.kafka.topic);
+    }
+    None => println!("  disabled (no audit messages will be emitted)"),
+  }
+  println!();
+}
+
+/// Print one site block, matching the format produced by
+/// [`print_startup_summary`].
+#[allow(clippy::too_many_arguments)]
+fn print_site_summary(
+  name: &str,
+  backend: &str,
+  shasta_base_url: &str,
+  gitea_base_url: &str,
+  k8s_api_url: Option<&str>,
+  vault_base_url: Option<&str>,
+  has_socks5_proxy: bool,
+  root_ca_cert_file: &str,
+) {
+  println!("[site: {name}]");
+  println!("  backend:           {backend}");
+  println!("  shasta_base_url:   {shasta_base_url}");
+  println!("  gitea_base_url:    {gitea_base_url}");
+  println!("  k8s_api_url:       {}", k8s_api_url.unwrap_or("<none>"));
+  println!(
+    "  vault_base_url:    {}",
+    vault_base_url.unwrap_or("<none>")
+  );
+  println!(
+    "  socks5_proxy:      {}",
+    if has_socks5_proxy { "<set>" } else { "<none>" }
+  );
+  println!("  root_ca_cert_file: {root_ca_cert_file}");
+  println!();
+}
+
 /// Process entry point. Delegates to `run` and prints any error with
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
 fn main() {
@@ -81,25 +179,6 @@ async fn run_server(
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
   log_ops::configure(configuration.log.clone());
 
-  // Path-of-record for the configuration we just loaded. `get_server_configuration`
-  // already succeeded above, so this lookup cannot meaningfully fail here.
-  let source = if std::env::var("MANTA_SERVER_CONFIG").is_ok() {
-    "MANTA_SERVER_CONFIG env var"
-  } else {
-    "default lookup (~/.config/manta/server.toml)"
-  };
-  match manta_config::get_server_config_file_path() {
-    Ok(path) => tracing::info!(
-      path = %path.display(),
-      source,
-      "Loaded server configuration"
-    ),
-    Err(e) => tracing::warn!(
-      error = %e,
-      "Loaded server configuration but path resolution failed on re-read"
-    ),
-  }
-
   // Resolution precedence for each setting: CLI flag > config file > fallback.
   let port: u16 = cli
     .get_one::<u16>("port")
@@ -121,31 +200,13 @@ async fn run_server(
     configuration.server.console_inactivity_timeout_secs,
   );
 
-  tracing::info!(
-    listen_address = %listen_addr,
+  print_startup_summary(
+    &configuration,
+    &listen_addr,
     port,
-    cert = cert_path.as_deref().unwrap_or("<none>"),
-    key = key_path.as_deref().map(|_| "<set>").unwrap_or("<none>"),
-    console_inactivity_timeout_secs =
-      configuration.server.console_inactivity_timeout_secs,
-    auth_rate_limit_per_minute = configuration
-      .server
-      .auth_rate_limit_per_minute
-      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string()),
-    log_filter = %configuration.log,
-    audit_file = %configuration.audit_file,
-    "[server] effective configuration"
+    &cert_path,
+    &key_path,
   );
-  match configuration.auditor.as_ref() {
-    Some(a) => tracing::info!(
-      brokers = ?a.kafka.brokers,
-      topic = %a.kafka.topic,
-      "[auditor] Kafka audit forwarder enabled"
-    ),
-    None => {
-      tracing::info!("[auditor] disabled (no audit messages will be emitted)")
-    }
-  }
 
   let mut sites = std::collections::HashMap::new();
   for (name, site) in &configuration.sites {
@@ -172,16 +233,15 @@ async fn run_server(
           );
           vec![]
         });
-    tracing::info!(
-      site = %name,
-      backend = site.backend.as_str(),
-      shasta_base_url = %api_url,
-      gitea_base_url = %gitea,
-      k8s_api_url = k8s_url.as_deref().unwrap_or("<none>"),
-      vault_base_url = vault_url.as_deref().unwrap_or("<none>"),
-      socks5_proxy = site.socks5_proxy.as_deref().map_or("<none>", |_| "<set>"),
-      root_ca_cert_file = %site.root_ca_cert_file,
-      "[site] configured"
+    print_site_summary(
+      name,
+      site.backend.as_str(),
+      &api_url,
+      &gitea,
+      k8s_url.as_deref(),
+      vault_url.as_deref(),
+      site.socks5_proxy.is_some(),
+      &site.root_ca_cert_file,
     );
     let site_backend_dispatcher = StaticBackendDispatcher::new(
       site.backend.as_str(),
