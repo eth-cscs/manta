@@ -81,6 +81,25 @@ async fn run_server(
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
   log_ops::configure(configuration.log.clone());
 
+  // Path-of-record for the configuration we just loaded. `get_server_configuration`
+  // already succeeded above, so this lookup cannot meaningfully fail here.
+  let source = if std::env::var("MANTA_SERVER_CONFIG").is_ok() {
+    "MANTA_SERVER_CONFIG env var"
+  } else {
+    "default lookup (~/.config/manta/server.toml)"
+  };
+  match manta_config::get_server_config_file_path() {
+    Ok(path) => tracing::info!(
+      path = %path.display(),
+      source,
+      "Loaded server configuration"
+    ),
+    Err(e) => tracing::warn!(
+      error = %e,
+      "Loaded server configuration but path resolution failed on re-read"
+    ),
+  }
+
   // Resolution precedence for each setting: CLI flag > config file > fallback.
   let port: u16 = cli
     .get_one::<u16>("port")

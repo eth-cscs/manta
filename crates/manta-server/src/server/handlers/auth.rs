@@ -52,6 +52,7 @@ pub async fn auth_token(
   ConnectInfo(peer): ConnectInfo<SocketAddr>,
   Json(req): Json<AuthTokenRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  dbg!("0");
   let infra = state.infra_context(&site_name).map_err(|e| {
     tracing::warn!("auth_token: site lookup failed: {}", e);
     generic_invalid_credentials()
