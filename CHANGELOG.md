@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.10] - 2026-05-21
+## [2.0.0-beta.11] - 2026-05-22
 
 ### Bug Fixes
 
@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 ### Documentation
 
 - Document Cargo workspace split + scope CI fmt/grep paths
+- Finish Phase 1 of rustdoc — sat_file + config types + 4 doctests + CI
 
 ### Features
 
