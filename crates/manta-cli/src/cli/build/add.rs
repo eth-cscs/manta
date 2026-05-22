@@ -3,7 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 use std::path::PathBuf;
 
-use super::HOSTLIST_HELP;
+use super::{HOSTLIST_HELP, output_flag};
 
 pub fn subcommand_add_group() -> Command {
   Command::new("group")
@@ -12,6 +12,7 @@ pub fn subcommand_add_group() -> Command {
     .arg(arg!(-l --label <NAME> "Group name").required(true))
     .arg(arg!(-d --description <VALUE> "Group description"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
+    .arg(output_flag())
 }
 
 pub fn subcommand_add_node() -> Command {
@@ -32,6 +33,7 @@ pub fn subcommand_add_node() -> Command {
       arg!(-d --disabled "Register the node as disabled")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_add_hwcomponent() -> Command {
@@ -43,6 +45,7 @@ pub fn subcommand_add_hwcomponent() -> Command {
     .arg(arg!(-p --"parent-cluster" <NAME> "Cluster that donates the components"))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     .arg(arg!(-c --"create-hsm-group" "Create the target cluster if it does not exist"))
+    .arg(output_flag())
 }
 
 pub fn subcommand_add_redfish_endpoint() -> Command {
@@ -70,6 +73,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(arg!(-t --"template-id" <VALUE> "Discovery template ID"))
+    .arg(output_flag())
     .arg_required_else_help(true)
 }
 
@@ -92,6 +96,7 @@ pub fn subcommand_add_boot_parameters() -> Command {
       arg!(-y --"assume-yes" "Skip confirmation prompts")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_add_kernel_parameters() -> Command {
@@ -100,6 +105,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     .about("Append kernel parameters to nodes")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
     .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(output_flag())
     .arg(
       arg!(-O --"overwrite" "Overwrite the value if the parameter already exists")
         .action(ArgAction::SetTrue),
@@ -140,4 +146,5 @@ pub fn subcommand_add_nodes_to_groups() -> Command {
       arg!(-d --"dry-run" "Simulate the operation without making changes")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }

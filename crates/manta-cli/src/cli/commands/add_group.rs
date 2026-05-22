@@ -4,10 +4,12 @@ use anyhow::{Context, Error, bail};
 
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::{app_context::AppContext, audit};
 use manta_shared::shared::dto::Group;
 
 /// CLI adapter for `manta add group`.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   auth_token: &str,
@@ -16,6 +18,7 @@ pub async fn exec(
   hosts_expression_opt: Option<&str>,
   assume_yes: bool,
   dryrun: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let grp = Group {
@@ -56,7 +59,7 @@ pub async fn exec(
     added = members;
   }
 
-  println!("Group '{label}' created");
+  action_result::print(&format!("Group '{label}' created"), output_opt)?;
 
   audit::maybe_send_audit(
     ctx.kafka_audit_opt,

@@ -1,5 +1,6 @@
 //! Re-exports all CLI output/rendering modules.
 
+pub mod action_result;
 pub mod boot_parameters;
 pub mod configuration;
 pub mod group;

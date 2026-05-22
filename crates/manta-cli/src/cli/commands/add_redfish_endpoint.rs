@@ -4,6 +4,7 @@ use anyhow::Error;
 
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams;
 
@@ -50,7 +51,11 @@ pub async fn exec(
     .add_redfish_endpoint(token, params)
     .await?;
 
-  println!("Redfish endpoint for node '{id}' added");
+  let output_opt = cli_args.opt_str("output");
+  action_result::print(
+    &format!("Redfish endpoint for node '{id}' added"),
+    output_opt,
+  )?;
 
   Ok(())
 }

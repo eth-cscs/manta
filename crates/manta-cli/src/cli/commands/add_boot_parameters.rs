@@ -6,6 +6,7 @@ use serde_json::Value;
 
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// CLI adapter for `manta add boot-parameters`.
@@ -58,7 +59,8 @@ pub async fn exec(
     .add_boot_parameters(token, &bp)
     .await?;
 
-  println!("Boot parameters created successfully");
+  let output_opt = cli_args.opt_str("output");
+  action_result::print("Boot parameters created successfully", output_opt)?;
 
   Ok(())
 }

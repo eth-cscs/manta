@@ -27,6 +27,7 @@ pub async fn handle_add(
       let hardware_file_opt = m.get_one::<PathBuf>("hardware");
       let arch_opt = m.opt_string("arch");
       let enabled = !m.get_flag("disabled");
+      let output_opt = m.opt_str("output");
       add_node::exec(
         ctx,
         &token,
@@ -35,6 +36,7 @@ pub async fn handle_add(
         enabled,
         arch_opt,
         hardware_file_opt,
+        output_opt,
       )
       .await?;
     }
@@ -42,6 +44,7 @@ pub async fn handle_add(
       let label = m.req_str("label")?;
       let description = m.opt_str("description");
       let node_expression = m.opt_str("nodes");
+      let output_opt = m.opt_str("output");
       add_group::exec(
         ctx,
         &token,
@@ -50,6 +53,7 @@ pub async fn handle_add(
         node_expression,
         true,
         false,
+        output_opt,
       )
       .await?;
     }
@@ -67,6 +71,7 @@ pub async fn handle_add(
       let dryrun = m.get_flag("dry-run");
       let create_hsm_group =
         *m.get_one::<bool>("create-hsm-group").unwrap_or(&false);
+      let output_opt = m.opt_str("output");
       add_hw_component_cluster::exec(
         ctx,
         &token,
@@ -75,6 +80,7 @@ pub async fn handle_add(
         m.req_str("pattern")?,
         dryrun,
         create_hsm_group,
+        output_opt,
       )
       .await?;
     }
@@ -93,6 +99,7 @@ pub async fn handle_add(
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let dryrun = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
       add_kernel_parameters::exec(
         ctx,
         &token,
@@ -103,6 +110,7 @@ pub async fn handle_add(
         assume_yes,
         do_not_reboot,
         dryrun,
+        output_opt,
       )
       .await?;
     }

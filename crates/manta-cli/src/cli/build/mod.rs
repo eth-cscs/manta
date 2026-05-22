@@ -22,6 +22,16 @@ pub(super) const HOSTLIST_HELP: &str = "Xnames, NIDs, or a hostlist expression.\
   eg: 'x1003c1s7b0n0,x1003c1s7b0n1', 'nid001313,nid001314',\n\
   'x1003c1s7b0n[0-1],x1003c1s7b1n0', 'nid00131[0-9]'";
 
+/// Standard `-o/--output {table,json}` flag with `table` as default.
+/// Mutating commands consume the result via
+/// `crate::cli::output::action_result::print`; read commands wire it
+/// into their per-resource renderer in `crate::cli::output::*`.
+pub(super) fn output_flag() -> clap::Arg {
+  arg!(-o --output <FORMAT> "Output format")
+    .value_parser(["table", "json"])
+    .default_value("table")
+}
+
 /// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
   // Hard-coded "manta" rather than `env!("CARGO_PKG_NAME")` because the

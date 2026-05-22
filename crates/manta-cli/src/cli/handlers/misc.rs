@@ -22,6 +22,7 @@ pub async fn handle_misc(
       let dryrun = m.get_flag("dry-run");
       let hosts_expression = m.req_str("nodes")?;
       let target_hsm_name = m.req_str("group")?;
+      let output_opt = m.opt_str("output");
       add_nodes_to_hsm_groups::exec(
         ctx,
         &token,
@@ -29,6 +30,7 @@ pub async fn handle_misc(
         hosts_expression,
         dryrun,
         ctx.kafka_audit_opt,
+        output_opt,
       )
       .await?;
     }
