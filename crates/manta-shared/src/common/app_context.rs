@@ -16,7 +16,16 @@ pub struct AppContext<'a> {
   pub site_name: &'a str,
   /// URL of the manta HTTP server this CLI talks to. Required.
   pub manta_server_url: &'a str,
+  /// Optional default HSM group name from `cli.toml`'s
+  /// `parent_hsm_group`; threaded into the typed `*Params`'
+  /// `settings_hsm_group_name` field by every command that builds one.
   pub settings_hsm_group_name_opt: Option<&'a str>,
+  /// Optional Kafka audit producer; constructed at startup from
+  /// `cli.toml`'s `[auditor.kafka]` block. `None` disables CLI-side
+  /// audit emission.
   pub kafka_audit_opt: Option<&'a Kafka>,
+  /// Raw loaded `cli.toml` settings; held alongside the parsed
+  /// `CliConfiguration` so handlers can read fields (e.g. `log`)
+  /// that don't live on the typed struct.
   pub settings: &'a Config,
 }

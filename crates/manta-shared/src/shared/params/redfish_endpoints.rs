@@ -1,11 +1,19 @@
 //! Parameters for `GET`, `POST`, and `PUT` on `/redfish-endpoints`.
 
 /// Typed parameters for fetching Redfish endpoints.
+///
+/// All fields are optional filters; setting none returns every
+/// registered endpoint.
 pub struct GetRedfishEndpointsParams {
+  /// Exact endpoint ID (BMC xname).
   pub id: Option<String>,
+  /// FQDN substring filter.
   pub fqdn: Option<String>,
+  /// UUID exact match.
   pub uuid: Option<String>,
+  /// MAC-address exact match (colon-separated hex).
   pub macaddr: Option<String>,
+  /// IP-address exact match (IPv4 or IPv6).
   pub ipaddress: Option<String>,
 }
 

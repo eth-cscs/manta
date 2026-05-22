@@ -22,7 +22,9 @@ const KAFKA_DELIVERY_WAIT: Duration = Duration::from_secs(0);
 /// subsequent calls via an internal [`OnceLock`].
 #[derive(Serialize, Deserialize)]
 pub struct Kafka {
+  /// Bootstrap broker list, e.g. `vec!["kafka.example.com:9092"]`.
   pub brokers: Vec<String>,
+  /// Kafka topic that audit messages are published to.
   pub topic: String,
   #[serde(skip)]
   producer: OnceLock<FutureProducer>,

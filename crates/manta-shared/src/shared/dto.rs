@@ -34,17 +34,34 @@ use serde::{Deserialize, Serialize};
 /// Mirror of `csm_rs::node::types::NodeDetails` with identical fields
 /// and identical JSON wire format. The server converts from the
 /// upstream type via `From` in `wire_conv.rs`.
+///
+/// All fields are wire-stringified (CSM serializes them that way);
+/// callers parse them as needed for display or comparison.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NodeDetails {
+  /// Physical location ID, e.g. `x3000c0s1b0n0`.
   pub xname: String,
+  /// Numeric node ID as a string, e.g. `"nid001313"`.
   pub nid: String,
+  /// Comma-separated HSM group names this node belongs to.
   pub hsm: String,
+  /// Current power state reported by PCS (`"On"`, `"Off"`, `"Ready"`,
+  /// etc.).
   pub power_status: String,
+  /// CFS desired-configuration name targeting this node.
   pub desired_configuration: String,
+  /// CFS configuration status (`"configured"`, `"pending"`,
+  /// `"failed"`, etc.).
   pub configuration_status: String,
+  /// `"true"` or `"false"` — whether the node is enabled in the
+  /// hardware state manager.
   pub enabled: String,
+  /// Stringified count of recent CFS failures.
   pub error_count: String,
+  /// IMS image ID currently set as the boot image.
   pub boot_image_id: String,
+  /// CFS configuration linked to the boot image.
   pub boot_configuration: String,
+  /// Kernel command-line parameters as last reported by BSS.
   pub kernel_params: String,
 }

@@ -7,11 +7,17 @@ use super::{error::MantaError, jwt_ops, kafka::Kafka};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.
 pub struct Auditor {
+  /// Kafka producer configured from `[auditor.kafka]` in the binary's
+  /// config file.
   pub kafka: Kafka,
 }
 
 /// Trait for producing audit messages to a message broker.
 pub trait Audit {
+  /// Publish a single audit message payload. Implementations are
+  /// expected to be fire-and-forget — failures should be logged but
+  /// not propagated to the caller, since audit failures must not
+  /// abort the outer operation.
   #[allow(async_fn_in_trait)]
   async fn produce_message(&self, data: &[u8]) -> Result<(), MantaError>;
 }
