@@ -35,8 +35,7 @@ pub async fn get_clusters(
   ctx: RequestCtx,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::cluster::GetClusterParams {
     hsm_group_name: q.hsm_group,
@@ -44,7 +43,7 @@ pub async fn get_clusters(
     status_filter: q.status,
   };
 
-  let nodes = service::cluster::get_cluster_nodes(&infra, &token, &params)
+  let nodes = service::cluster::get_cluster_nodes(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 

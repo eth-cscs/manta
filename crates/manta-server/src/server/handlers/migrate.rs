@@ -46,8 +46,7 @@ pub async fn migrate_nodes(
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_nodes dry_run={}", body.dry_run);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   // Authorization: every named group on both sides must be accessible.
   for name in body
@@ -55,14 +54,14 @@ pub async fn migrate_nodes(
     .iter()
     .chain(body.parent_hsm_names.iter())
   {
-    service::group::validate_hsm_group_access(&infra, &token, name)
+    service::group::validate_hsm_group_access(&infra, &ctx.token, name)
       .await
       .map_err(to_handler_error)?;
   }
 
   let (xnames, results) = service::migrate::migrate_nodes(
     &infra,
-    &token,
+    &ctx.token,
     &body.target_hsm_names,
     &body.parent_hsm_names,
     &body.hosts_expression,
@@ -108,12 +107,11 @@ pub async fn migrate_backup(
   Json(body): Json<MigrateBackupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_backup");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   service::migrate::migrate_backup(
     &infra,
-    &token,
+    &ctx.token,
     body.bos.as_deref(),
     body.destination.as_deref(),
   )
@@ -162,12 +160,11 @@ pub async fn migrate_restore(
   Json(body): Json<MigrateRestoreRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_restore overwrite={}", body.overwrite);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   service::migrate::migrate_restore(
     &infra,
-    &token,
+    &ctx.token,
     body.bos_file.as_deref(),
     body.cfs_file.as_deref(),
     body.hsm_file.as_deref(),

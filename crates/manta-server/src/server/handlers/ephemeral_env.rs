@@ -34,11 +34,10 @@ pub async fn create_ephemeral_env(
   Json(body): Json<CreateEphemeralEnvRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("create_ephemeral_env image_id={}", body.image_id);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let hostname =
-    crate::service::ephemeral_env::exec(&infra, &token, &body.image_id)
+    crate::service::ephemeral_env::exec(&infra, &ctx.token, &body.image_id)
       .await
       .map_err(to_handler_error)?;
 

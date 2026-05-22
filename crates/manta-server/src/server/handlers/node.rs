@@ -44,8 +44,7 @@ pub async fn get_nodes(
   ctx: RequestCtx,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::node::GetNodesParams {
     xname: q.xname,
@@ -53,7 +52,7 @@ pub async fn get_nodes(
     status_filter: q.status,
   };
 
-  let nodes = service::node::get_nodes(&infra, &token, &params)
+  let nodes = service::node::get_nodes(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 
@@ -81,10 +80,9 @@ pub async fn delete_node(
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_node id={}", id);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::node::delete_node(&infra, &token, &id)
+  service::node::delete_node(&infra, &ctx.token, &id)
     .await
     .map_err(to_handler_error)?;
 
@@ -129,12 +127,11 @@ pub async fn add_node(
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_node id={} group={}", body.id, body.group);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   service::node::add_node(
     &infra,
-    &token,
+    &ctx.token,
     &body.id,
     &body.group,
     body.enabled,

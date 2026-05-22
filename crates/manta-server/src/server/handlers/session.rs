@@ -68,13 +68,12 @@ pub async fn get_sessions(
   ctx: RequestCtx,
   Query(q): Query<SessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let xnames = match q.xnames {
     Some(expr) => crate::server::common::node_ops::resolve_hosts_expression(
       infra.backend,
-      &token,
+      &ctx.token,
       &expr,
       false,
     )
@@ -94,7 +93,7 @@ pub async fn get_sessions(
     limit: q.limit,
   };
 
-  let sessions = service::session::get_sessions(&infra, &token, &params)
+  let sessions = service::session::get_sessions(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 
@@ -131,11 +130,10 @@ pub async fn delete_session(
   Query(q): Query<DeleteSessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_session name={} dry_run={}", name, q.dry_run);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let deletion_ctx =
-    service::session::prepare_session_deletion(&infra, &token, &name, None)
+    service::session::prepare_session_deletion(&infra, &ctx.token, &name, None)
       .await
       .map_err(to_handler_error)?;
 
@@ -145,7 +143,7 @@ pub async fn delete_session(
 
   service::session::execute_session_deletion(
     &infra,
-    &token,
+    &ctx.token,
     &deletion_ctx,
     false,
   )
@@ -200,12 +198,11 @@ pub async fn create_session(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
   tracing::info!("create_session repos={:?}", body.repo_names);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   // Authorization: requested HSM group must be accessible to the token.
   if let Some(ref hsm_group) = body.hsm_group {
-    service::group::validate_hsm_group_access(&infra, &token, hsm_group)
+    service::group::validate_hsm_group_access(&infra, &ctx.token, hsm_group)
       .await
       .map_err(to_handler_error)?;
   }
@@ -218,7 +215,7 @@ pub async fn create_session(
       .collect();
     crate::server::common::authorization::validate_target_hsm_members(
       infra.backend,
-      &token,
+      &ctx.token,
       &xnames,
     )
     .await
@@ -229,7 +226,7 @@ pub async fn create_session(
 
   let gitea_token =
     crate::server::common::vault::http_client::fetch_shasta_vcs_token(
-      &token,
+      &ctx.token,
       vault_base_url,
       infra.site_name,
     )
@@ -246,7 +243,7 @@ pub async fn create_session(
 
   let (session_name, config_name) = service::session::create_cfs_session(
     &infra,
-    &token,
+    &ctx.token,
     &gitea_token,
     body.cfs_conf_sess_name.as_deref(),
     body.playbook_yaml_file_name.as_deref(),
@@ -301,8 +298,7 @@ pub async fn get_session_logs(
   Sse<impl futures::Stream<Item = Result<Event, Infallible>>>,
   (StatusCode, Json<ErrorResponse>),
 > {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
   let vault_base_url = require_vault(infra.vault_base_url)?;
@@ -316,7 +312,13 @@ pub async fn get_session_logs(
 
   let logs_stream = infra
     .backend
-    .get_session_logs_stream(&token, infra.site_name, &name, q.timestamps, &k8s)
+    .get_session_logs_stream(
+      &ctx.token,
+      infra.site_name,
+      &name,
+      q.timestamps,
+      &k8s,
+    )
     .await
     .map_err(to_handler_error)?;
 

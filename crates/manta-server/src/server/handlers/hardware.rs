@@ -33,17 +33,17 @@ pub async fn get_hardware_clusters(
   ctx: RequestCtx,
   Query(q): Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::hardware::GetHardwareClusterParams {
     hsm_group_name: q.hsm_group,
     settings_hsm_group_name: None,
   };
 
-  let result = service::hardware::get_hardware_cluster(&infra, &token, &params)
-    .await
-    .map_err(to_handler_error)?;
+  let result =
+    service::hardware::get_hardware_cluster(&infra, &ctx.token, &params)
+      .await
+      .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "hsm_group_name": result.hsm_group_name,
@@ -78,14 +78,13 @@ pub async fn get_hardware_nodes_list(
   ctx: RequestCtx,
   Query(q): Query<HardwareNodesListQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params =
     service::hardware::GetHardwareNodesListParams { xnames: q.xnames };
 
   let result =
-    service::hardware::get_hardware_nodes_list(&infra, &token, &params)
+    service::hardware::get_hardware_nodes_list(&infra, &ctx.token, &params)
       .await
       .map_err(to_handler_error)?;
 

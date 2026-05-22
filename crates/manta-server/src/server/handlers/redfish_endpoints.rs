@@ -46,8 +46,7 @@ pub async fn get_redfish_endpoints(
   ctx: RequestCtx,
   Query(q): Query<RedfishEndpointsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::redfish_endpoints::GetRedfishEndpointsParams {
     id: q.id,
@@ -57,10 +56,11 @@ pub async fn get_redfish_endpoints(
     ipaddress: q.ipaddress,
   };
 
-  let endpoints =
-    service::redfish_endpoints::get_redfish_endpoints(&infra, &token, &params)
-      .await
-      .map_err(to_handler_error)?;
+  let endpoints = service::redfish_endpoints::get_redfish_endpoints(
+    &infra, &ctx.token, &params,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json(endpoints))
 }
@@ -86,10 +86,9 @@ pub async fn delete_redfish_endpoint(
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_redfish_endpoint id={}", id);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::redfish_endpoints::delete_redfish_endpoint(&infra, &token, &id)
+  service::redfish_endpoints::delete_redfish_endpoint(&infra, &ctx.token, &id)
     .await
     .map_err(to_handler_error)?;
 
@@ -117,10 +116,9 @@ pub async fn add_redfish_endpoint(
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_redfish_endpoint");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::redfish_endpoints::add_redfish_endpoint(&infra, &token, params)
+  service::redfish_endpoints::add_redfish_endpoint(&infra, &ctx.token, params)
     .await
     .map_err(to_handler_error)?;
 
@@ -151,12 +149,13 @@ pub async fn update_redfish_endpoint(
   Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("update_redfish_endpoint");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::redfish_endpoints::update_redfish_endpoint(&infra, &token, params)
-    .await
-    .map_err(to_handler_error)?;
+  service::redfish_endpoints::update_redfish_endpoint(
+    &infra, &ctx.token, params,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }

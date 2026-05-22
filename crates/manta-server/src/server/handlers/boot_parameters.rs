@@ -38,8 +38,7 @@ pub async fn get_boot_parameters(
   ctx: RequestCtx,
   Query(q): Query<BootParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
     hsm_group: q.hsm_group,
@@ -48,7 +47,7 @@ pub async fn get_boot_parameters(
   };
 
   let boot_params =
-    service::boot_parameters::get_boot_parameters(&infra, &token, &params)
+    service::boot_parameters::get_boot_parameters(&infra, &ctx.token, &params)
       .await
       .map_err(to_handler_error)?;
 
@@ -92,12 +91,13 @@ pub async fn delete_boot_parameters(
     ));
   }
   tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::boot_parameters::delete_boot_parameters(&infra, &token, body.hosts)
-    .await
-    .map_err(to_handler_error)?;
+  service::boot_parameters::delete_boot_parameters(
+    &infra, &ctx.token, body.hosts,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }
@@ -125,12 +125,15 @@ pub async fn add_boot_parameters(
   >,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_boot_parameters");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::boot_parameters::add_boot_parameters(&infra, &token, &boot_params)
-    .await
-    .map_err(to_handler_error)?;
+  service::boot_parameters::add_boot_parameters(
+    &infra,
+    &ctx.token,
+    &boot_params,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok((
     StatusCode::CREATED,
@@ -160,10 +163,9 @@ pub async fn update_boot_parameters(
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("update_boot_parameters");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::boot_parameters::update_boot_parameters(&infra, &token, params)
+  service::boot_parameters::update_boot_parameters(&infra, &ctx.token, params)
     .await
     .map_err(to_handler_error)?;
 
@@ -214,12 +216,11 @@ pub async fn apply_boot_config(
     body.hosts_expression,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let changeset = service::boot_parameters::prepare_boot_config(
     &infra,
-    &token,
+    &ctx.token,
     &body.hosts_expression,
     body.boot_image_id.as_deref(),
     body.boot_image_configuration.as_deref(),
@@ -234,7 +235,7 @@ pub async fn apply_boot_config(
 
   service::boot_parameters::persist_boot_config(
     &infra,
-    &token,
+    &ctx.token,
     &changeset,
     body.runtime_configuration.as_deref(),
   )

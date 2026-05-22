@@ -6,7 +6,7 @@ use utoipa::ToSchema;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, display_error, require_k8s_url,
-  require_vault, to_handler_error,
+  require_vault,
 };
 use crate::service;
 
@@ -68,15 +68,14 @@ pub async fn post_sat_file(
   Json(body): Json<PostSatFileRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("post_sat_file dry_run={}", body.dry_run);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let vault_base_url = require_vault(infra.vault_base_url)?;
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
   let gitea_token =
     crate::server::common::vault::http_client::fetch_shasta_vcs_token(
-      &token,
+      &ctx.token,
       vault_base_url,
       infra.site_name,
     )
@@ -85,7 +84,7 @@ pub async fn post_sat_file(
 
   service::sat_file::apply_sat_file(
     &infra,
-    &token,
+    &ctx.token,
     &gitea_token,
     vault_base_url,
     k8s_api_url,

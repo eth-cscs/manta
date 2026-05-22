@@ -52,15 +52,14 @@ pub async fn add_hw_component(
     body.parent_cluster,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &token, &target)
+  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
     .await
     .map_err(to_handler_error)?;
   service::group::validate_hsm_group_access(
     &infra,
-    &token,
+    &ctx.token,
     &body.parent_cluster,
   )
   .await
@@ -68,7 +67,7 @@ pub async fn add_hw_component(
 
   let result = crate::service::hw_cluster::add_hw_component(
     infra.backend,
-    &token,
+    &ctx.token,
     &target,
     &body.parent_cluster,
     &body.pattern,
@@ -130,15 +129,14 @@ pub async fn delete_hw_component(
     body.parent_cluster,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &token, &target)
+  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
     .await
     .map_err(to_handler_error)?;
   service::group::validate_hsm_group_access(
     &infra,
-    &token,
+    &ctx.token,
     &body.parent_cluster,
   )
   .await
@@ -146,7 +144,7 @@ pub async fn delete_hw_component(
 
   let result = crate::service::hw_cluster::delete_hw_component(
     infra.backend,
-    &token,
+    &ctx.token,
     &target,
     &body.parent_cluster,
     &body.pattern,
@@ -225,15 +223,14 @@ pub async fn apply_hw_configuration(
     body.parent_cluster,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &token, &target)
+  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
     .await
     .map_err(to_handler_error)?;
   service::group::validate_hsm_group_access(
     &infra,
-    &token,
+    &ctx.token,
     &body.parent_cluster,
   )
   .await
@@ -247,7 +244,7 @@ pub async fn apply_hw_configuration(
   let result = crate::service::hw_cluster::apply_hw_configuration(
     infra.backend,
     mode,
-    &token,
+    &ctx.token,
     &target,
     &body.parent_cluster,
     &body.pattern,

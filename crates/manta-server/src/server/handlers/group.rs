@@ -41,9 +41,8 @@ pub struct GroupQuery {
 pub async fn get_available_groups(
   ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-  let names = service::group::get_available_group_names(&infra, &token)
+  let infra = ctx.infra();
+  let names = service::group::get_available_group_names(&infra, &ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok(Json(names))
@@ -66,9 +65,8 @@ pub async fn get_available_groups(
 pub async fn get_all_groups(
   ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-  let groups = service::group::get_all_groups(&infra, &token)
+  let infra = ctx.infra();
+  let groups = service::group::get_all_groups(&infra, &ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok(Json(groups))
@@ -89,15 +87,14 @@ pub async fn get_groups(
   ctx: RequestCtx,
   Query(q): Query<GroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::group::GetGroupParams {
     group_name: q.name,
     settings_hsm_group_name: None,
   };
 
-  let groups = service::group::get_groups(&infra, &token, &params)
+  let groups = service::group::get_groups(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 
@@ -134,10 +131,9 @@ pub async fn delete_group(
   Query(q): Query<DeleteGroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_group label={} force={}", label, q.force);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::group::delete_group(&infra, &token, &label, q.force)
+  service::group::delete_group(&infra, &ctx.token, &label, q.force)
     .await
     .map_err(to_handler_error)?;
 
@@ -166,10 +162,9 @@ pub async fn create_group(
   Json(group): Json<::manta_backend_dispatcher::types::Group>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("create_group");
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
-  service::group::create_group(&infra, &token, group)
+  service::group::create_group(&infra, &ctx.token, group)
     .await
     .map_err(to_handler_error)?;
 
@@ -223,12 +218,11 @@ pub async fn add_nodes_to_group(
     name,
     body.hosts_expression
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let (added, removed) = service::group::add_nodes_to_group(
     &infra,
-    &token,
+    &ctx.token,
     &name,
     &body.hosts_expression,
   )
@@ -276,12 +270,11 @@ pub async fn delete_group_members(
     body.xnames_expression,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let xnames = crate::server::common::node_ops::resolve_hosts_expression(
     infra.backend,
-    &token,
+    &ctx.token,
     &body.xnames_expression,
     false,
   )
@@ -292,7 +285,7 @@ pub async fn delete_group_members(
     for xname in &xnames {
       infra
         .backend
-        .delete_member_from_group(&token, &name, xname)
+        .delete_member_from_group(&ctx.token, &name, xname)
         .await
         .map_err(to_handler_error)?;
     }

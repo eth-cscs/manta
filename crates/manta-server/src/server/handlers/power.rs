@@ -71,14 +71,13 @@ pub async fn post_power(
     body.action,
     body.target_type
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let xnames: Vec<String> = match body.target_type {
     PowerTargetType::Cluster => infra
       .backend
       .get_member_vec_from_group_name_vec(
-        &token,
+        &ctx.token,
         std::slice::from_ref(&body.targets_expression),
       )
       .await
@@ -86,7 +85,7 @@ pub async fn post_power(
     PowerTargetType::Nodes => {
       crate::server::common::node_ops::resolve_hosts_expression(
         infra.backend,
-        &token,
+        &ctx.token,
         &body.targets_expression,
         false,
       )
@@ -113,7 +112,7 @@ pub async fn post_power(
     xnames,
     force: body.force,
   };
-  let result = service::power::apply_power(&infra, &token, &params)
+  let result = service::power::apply_power(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 

@@ -64,12 +64,12 @@ pub async fn console_node_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let (k8s_api_url, vault_base_url) = {
-    let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  // Read what we need from the borrowed infra; the borrow ends with the block.
+  let (k8s_api_url, vault_base_url, timeout) = {
+    let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
-    (k, v)
+    (k, v, ctx.state.console_inactivity_timeout)
   };
 
   let k8s = K8sDetails {
@@ -79,7 +79,14 @@ pub async fn console_node_ws(
     },
   };
 
-  let timeout = state.console_inactivity_timeout;
+  // Move owned state into the spawned WebSocket task. Cannot use
+  // `ctx.infra()` inside the closure because it borrows from ctx.
+  let RequestCtx {
+    state,
+    token,
+    site_name,
+  } = ctx;
+
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
     if let Some(site) = state.sites.get(&site_name) {
@@ -124,15 +131,16 @@ pub async fn console_session_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let (k8s_api_url, vault_base_url) = {
-    let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  // Validate vault/k8s presence and session liveness; the borrow ends
+  // with the block.
+  let (k8s_api_url, vault_base_url, timeout) = {
+    let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
-    service::session::validate_console_session(&infra, &token, &name)
+    service::session::validate_console_session(&infra, &ctx.token, &name)
       .await
       .map_err(to_handler_error)?;
-    (k, v)
+    (k, v, ctx.state.console_inactivity_timeout)
   };
 
   let k8s = K8sDetails {
@@ -142,7 +150,13 @@ pub async fn console_session_ws(
     },
   };
 
-  let timeout = state.console_inactivity_timeout;
+  // Move owned state into the spawned WebSocket task.
+  let RequestCtx {
+    state,
+    token,
+    site_name,
+  } = ctx;
+
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
     if let Some(site) = state.sites.get(&site_name) {

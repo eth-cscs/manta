@@ -54,8 +54,7 @@ pub async fn get_images(
   ctx: RequestCtx,
   Query(q): Query<ImageQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::image::GetImagesParams {
     id: q.id,
@@ -64,7 +63,7 @@ pub async fn get_images(
     limit: q.limit,
   };
 
-  let images = service::image::get_images(&infra, &token, &params)
+  let images = service::image::get_images(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 
@@ -113,15 +112,14 @@ pub async fn delete_images(
   Query(q): Query<DeleteImagesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let id_strings: Vec<String> =
     q.ids.split(',').map(|s| s.trim().to_string()).collect();
   let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
 
   if q.dry_run {
-    service::image::validate_image_deletion(&infra, &token, &id_refs, None)
+    service::image::validate_image_deletion(&infra, &ctx.token, &id_refs, None)
       .await
       .map_err(to_handler_error)?;
     return Ok((
@@ -130,9 +128,10 @@ pub async fn delete_images(
     ));
   }
 
-  let deleted = service::image::delete_images(&infra, &token, &id_refs, None)
-    .await
-    .map_err(to_handler_error)?;
+  let deleted =
+    service::image::delete_images(&infra, &ctx.token, &id_refs, None)
+      .await
+      .map_err(to_handler_error)?;
 
   Ok((
     StatusCode::OK,

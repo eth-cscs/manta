@@ -44,8 +44,7 @@ pub async fn get_templates(
   ctx: RequestCtx,
   Query(q): Query<TemplateQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::template::GetTemplateParams {
     name: q.name,
@@ -54,7 +53,7 @@ pub async fn get_templates(
     limit: q.limit,
   };
 
-  let templates = service::template::get_templates(&infra, &token, &params)
+  let templates = service::template::get_templates(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
 
@@ -129,8 +128,7 @@ pub async fn post_template_session(
     body.operation,
     body.dry_run
   );
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::template::ApplyTemplateParams {
     bos_session_name: body.session_name,
@@ -142,7 +140,7 @@ pub async fn post_template_session(
 
   let (bos_session, _) =
     service::template::validate_and_prepare_template_session(
-      &infra, &token, &params,
+      &infra, &ctx.token, &params,
     )
     .await
     .map_err(to_handler_error)?;
@@ -152,7 +150,7 @@ pub async fn post_template_session(
   }
 
   let created =
-    service::template::create_bos_session(&infra, &token, bos_session)
+    service::template::create_bos_session(&infra, &ctx.token, bos_session)
       .await
       .map_err(to_handler_error)?;
 

@@ -26,6 +26,7 @@ use serde::Serialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::ServerState;
+use super::common::app_context::InfraContext;
 
 mod auth;
 mod boot_parameters;
@@ -188,6 +189,11 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
       BearerToken::from_request_parts(parts, state).await?;
     let SiteName(site_name) =
       SiteName::from_request_parts(parts, state).await?;
+    // Validate the site resolves to a configured backend NOW, so the
+    // per-handler `ctx.infra()` call below cannot fail. Returning the
+    // 404-mapped error from extraction is the same shape the handler
+    // would have produced.
+    state.infra_context(&site_name).map_err(to_handler_error)?;
     Ok(Self {
       state: Arc::clone(state),
       token,
@@ -197,12 +203,15 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
 }
 
 impl RequestCtx {
-  /// Consume into `(state, token, site_name)` for the
-  /// `let (state, token, site_name) = ctx.into_parts();` opening every
-  /// authenticated handler uses. Tuple form keeps `rustfmt` from
-  /// expanding the destructure across five lines.
-  pub fn into_parts(self) -> (Arc<ServerState>, String, String) {
-    (self.state, self.token, self.site_name)
+  /// Borrow the per-site infrastructure (backend, base URLs, root
+  /// cert, optional Vault + k8s URLs). Infallible — the site was
+  /// validated during extraction; a missing site would have failed
+  /// the request before the handler body ran.
+  pub fn infra(&self) -> InfraContext<'_> {
+    self
+      .state
+      .infra_context(&self.site_name)
+      .expect("site validated during RequestCtx extraction")
   }
 }
 

@@ -39,8 +39,7 @@ pub async fn get_kernel_parameters(
   ctx: RequestCtx,
   Query(q): Query<KernelParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::kernel_parameters::GetKernelParametersParams {
     hsm_group: q.hsm_group,
@@ -48,10 +47,11 @@ pub async fn get_kernel_parameters(
     settings_hsm_group_name: None,
   };
 
-  let kernel_params =
-    service::kernel_parameters::get_kernel_parameters(&infra, &token, &params)
-      .await
-      .map_err(to_handler_error)?;
+  let kernel_params = service::kernel_parameters::get_kernel_parameters(
+    &infra, &ctx.token, &params,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json(kernel_params))
 }
@@ -111,12 +111,11 @@ pub async fn apply_kernel_parameters(
   ctx: RequestCtx,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let xnames = resolve_xnames_from_request(
     infra.backend,
-    &token,
+    &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
@@ -149,7 +148,7 @@ pub async fn apply_kernel_parameters(
   };
 
   let changeset = service::kernel_parameters::prepare_kernel_params_changes(
-    &infra, &token, &xnames, &operation,
+    &infra, &ctx.token, &xnames, &operation,
   )
   .await
   .map_err(to_handler_error)?;
@@ -165,7 +164,7 @@ pub async fn apply_kernel_parameters(
 
   service::kernel_parameters::apply_kernel_params_changes(
     &infra,
-    &token,
+    &ctx.token,
     &changeset,
     &images_to_project,
   )
@@ -223,11 +222,10 @@ pub async fn add_kernel_parameters(
   ctx: RequestCtx,
   Json(body): Json<AddKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     infra.backend,
-    &token,
+    &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
@@ -245,7 +243,7 @@ pub async fn add_kernel_parameters(
   };
 
   let changeset = service::kernel_parameters::prepare_kernel_params_changes(
-    &infra, &token, &xnames, &operation,
+    &infra, &ctx.token, &xnames, &operation,
   )
   .await
   .map_err(to_handler_error)?;
@@ -261,7 +259,7 @@ pub async fn add_kernel_parameters(
 
   service::kernel_parameters::apply_kernel_params_changes(
     &infra,
-    &token,
+    &ctx.token,
     &changeset,
     &images_to_project,
   )
@@ -313,11 +311,10 @@ pub async fn delete_kernel_parameters(
   ctx: RequestCtx,
   Json(body): Json<DeleteKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     infra.backend,
-    &token,
+    &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
   )
@@ -334,7 +331,7 @@ pub async fn delete_kernel_parameters(
   };
 
   let changeset = service::kernel_parameters::prepare_kernel_params_changes(
-    &infra, &token, &xnames, &operation,
+    &infra, &ctx.token, &xnames, &operation,
   )
   .await
   .map_err(to_handler_error)?;
@@ -345,7 +342,7 @@ pub async fn delete_kernel_parameters(
 
   service::kernel_parameters::apply_kernel_params_changes(
     &infra,
-    &token,
+    &ctx.token,
     &changeset,
     &std::collections::HashMap::new(),
   )

@@ -42,8 +42,7 @@ pub async fn get_configurations(
   ctx: RequestCtx,
   Query(q): Query<ConfigurationQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let params = service::configuration::GetConfigurationParams {
     name: q.name,
@@ -56,7 +55,7 @@ pub async fn get_configurations(
   };
 
   let configs =
-    service::configuration::get_configurations(&infra, &token, &params)
+    service::configuration::get_configurations(&infra, &ctx.token, &params)
       .await
       .map_err(to_handler_error)?;
 
@@ -98,8 +97,7 @@ pub async fn delete_configurations(
   Query(q): Query<DeleteConfigurationsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("delete_configurations dry_run={}", q.dry_run);
-  let (state, token, site_name) = ctx.into_parts();
-  let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+  let infra = ctx.infra();
 
   let since = q
     .since
@@ -114,7 +112,7 @@ pub async fn delete_configurations(
 
   let candidates = service::configuration::get_deletion_candidates(
     &infra,
-    &token,
+    &ctx.token,
     None,
     q.pattern.as_deref(),
     since,
@@ -129,7 +127,7 @@ pub async fn delete_configurations(
 
   service::configuration::delete_configurations_and_derivatives(
     &infra,
-    &token,
+    &ctx.token,
     &candidates,
   )
   .await
