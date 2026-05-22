@@ -7,6 +7,8 @@
 //! bearer token. `validate_api_token` mirrors the CLI's pre-Phase-6
 //! token-still-valid check.
 
+use std::time::Instant;
+
 use manta_backend_dispatcher::{
   error::Error, interfaces::authentication::AuthenticationTrait,
 };
@@ -15,18 +17,55 @@ use crate::server::common::app_context::InfraContext;
 
 /// Exchange `username` + `password` for a CSM bearer token via the
 /// site's configured backend.
+#[tracing::instrument(
+  skip_all,
+  fields(site = %infra.site_name, backend_url = %infra.shasta_base_url)
+)]
 pub async fn get_api_token(
   infra: &InfraContext<'_>,
   username: &str,
   password: &str,
 ) -> Result<String, Error> {
-  infra.backend.get_api_token(username, password).await
+  tracing::info!(user = %username, "backend: requesting token");
+  let started = Instant::now();
+  let result = infra.backend.get_api_token(username, password).await;
+  let elapsed_ms = started.elapsed().as_millis() as u64;
+  match &result {
+    Ok(_) => tracing::debug!(
+      user = %username,
+      elapsed_ms,
+      "backend: token issued"
+    ),
+    Err(e) => tracing::warn!(
+      user = %username,
+      elapsed_ms,
+      error = %e,
+      "backend: token request rejected"
+    ),
+  }
+  result
 }
 
 /// Verify that `token` is still accepted by the site's backend.
+#[tracing::instrument(
+  skip_all,
+  fields(site = %infra.site_name, backend_url = %infra.shasta_base_url)
+)]
 pub async fn validate_api_token(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<(), Error> {
-  infra.backend.validate_api_token(token).await
+  tracing::info!("backend: validating token");
+  let started = Instant::now();
+  let result = infra.backend.validate_api_token(token).await;
+  let elapsed_ms = started.elapsed().as_millis() as u64;
+  match &result {
+    Ok(()) => tracing::debug!(elapsed_ms, "backend: token accepted"),
+    Err(e) => tracing::warn!(
+      elapsed_ms,
+      error = %e,
+      "backend: token validation rejected"
+    ),
+  }
+  result
 }
