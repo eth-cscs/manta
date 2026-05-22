@@ -18,6 +18,13 @@ pub struct GetRedfishEndpointsParams {
 }
 
 /// Typed parameters for updating/adding a Redfish endpoint.
+//
+// The four bool fields (`enabled`, `use_ssdp`, `mac_required`,
+// `rediscover_on_update`) are independent BMC feature toggles defined
+// by the upstream HSM Redfish-endpoints API; there is no enum that
+// captures them as a single mode, so the `struct_excessive_bools` lint
+// is silenced here.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(serde::Deserialize, serde::Serialize, utoipa::ToSchema)]
 pub struct UpdateRedfishEndpointParams {
   /// Xname identifying the BMC (e.g. `x3000c0s1b0`).

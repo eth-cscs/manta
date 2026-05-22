@@ -11,6 +11,10 @@ use crate::cli::http_client::MantaClient;
 ///
 /// Bundles the many parameters needed by [`exec`] into a
 /// single struct, improving call-site readability.
+//
+// Mirrors `ApplySatFileParams` on the shared/server side — see the
+// note there for why `struct_excessive_bools` is silenced.
+#[allow(clippy::struct_excessive_bools)]
 pub struct SatApplyOptions<'a> {
   pub sat_file_content: &'a str,
   pub values_file_content_opt: Option<&'a str>,

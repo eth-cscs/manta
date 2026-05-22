@@ -15,6 +15,10 @@ use crate::service;
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /sat-file`.
+//
+// Wire mirror of `ApplySatFileParams` — see the note there for why
+// `struct_excessive_bools` is silenced.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Deserialize, ToSchema)]
 pub struct PostSatFileRequest {
   /// Raw YAML content of the SAT file to apply.

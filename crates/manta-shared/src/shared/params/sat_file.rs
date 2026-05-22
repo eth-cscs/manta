@@ -1,6 +1,14 @@
 //! Parameters for `POST /sat-file`.
 
 /// Parameters for applying a SAT file.
+//
+// Seven bools — `reboot`, `watch_logs`, `timestamps`, `image_only`,
+// `session_template_only`, `overwrite`, `dry_run`. `image_only` and
+// `session_template_only` are mutually exclusive and could be a
+// 3-variant enum, but doing so would break the HTTP request body and
+// the CLI flag surface; the rest are independent. Tracked as a future
+// API refactor — for now silence the `struct_excessive_bools` lint.
+#[allow(clippy::struct_excessive_bools)]
 pub struct ApplySatFileParams<'a> {
   /// Raw YAML body of the SAT file. May contain Jinja2 syntax that
   /// the service layer renders against `values` and
