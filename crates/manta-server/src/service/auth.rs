@@ -19,7 +19,11 @@ use crate::server::common::app_context::InfraContext;
 /// site's configured backend.
 #[tracing::instrument(
   skip_all,
-  fields(site = %infra.site_name, backend_url = %infra.shasta_base_url)
+  fields(
+    site = %infra.site_name,
+    backend = %infra.backend.backend_kind(),
+    backend_url = %infra.shasta_base_url,
+  )
 )]
 pub async fn get_api_token(
   infra: &InfraContext<'_>,
@@ -49,7 +53,11 @@ pub async fn get_api_token(
 /// Verify that `token` is still accepted by the site's backend.
 #[tracing::instrument(
   skip_all,
-  fields(site = %infra.site_name, backend_url = %infra.shasta_base_url)
+  fields(
+    site = %infra.site_name,
+    backend = %infra.backend.backend_kind(),
+    backend_url = %infra.shasta_base_url,
+  )
 )]
 pub async fn validate_api_token(
   infra: &InfraContext<'_>,

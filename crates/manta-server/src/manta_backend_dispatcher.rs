@@ -23,6 +23,15 @@ pub enum StaticBackendDispatcher {
 }
 
 impl StaticBackendDispatcher {
+  /// Returns `"csm"` or `"ochami"` for the currently-selected variant.
+  /// Cheap, infallible — intended for use as a structured `tracing` field.
+  pub fn backend_kind(&self) -> &'static str {
+    match self {
+      Self::CSM(_) => "csm",
+      Self::OCHAMI(_) => "ochami",
+    }
+  }
+
   /// Create a new dispatcher for the given backend type.
   ///
   /// `backend_type` must be `"csm"` or `"ochami"`;
