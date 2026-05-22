@@ -30,7 +30,7 @@ pub async fn exec(
     .cloned()
     .collect();
 
-  let hsm_group_name_arg_opt = cli_apply_session.opt_str("hsm-group");
+  let hsm_group_name_arg_opt = cli_apply_session.opt_str("group");
 
   let cfs_conf_sess_name_opt = cli_apply_session.opt_str("name");
   let playbook_file_name_opt = cli_apply_session.opt_str("playbook-name");

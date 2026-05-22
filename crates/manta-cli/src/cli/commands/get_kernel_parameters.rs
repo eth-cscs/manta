@@ -14,7 +14,7 @@ fn parse_kernel_parameters_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetKernelParametersParams {
   GetKernelParametersParams {
-    hsm_group: cli_args.opt_string("hsm-group"),
+    hsm_group: cli_args.opt_string("group"),
     nodes: cli_args.opt_string("nodes"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
   }
@@ -61,7 +61,7 @@ mod tests {
 
   fn kernel_params_cmd() -> clap::Command {
     clap::Command::new("kernel-parameters")
-      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
       .arg(arg!(-n --nodes <NODES> "nodes"))
       .arg(arg!(-f --filter <FILTER> "filter"))
       .arg(
@@ -83,7 +83,7 @@ mod tests {
   fn parse_hsm_group() {
     let matches = kernel_params_cmd().get_matches_from([
       "kernel-parameters",
-      "--hsm-group",
+      "--group",
       "compute",
     ]);
     let params = parse_kernel_parameters_params(&matches, None);

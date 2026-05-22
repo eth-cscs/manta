@@ -154,7 +154,7 @@ pub async fn handle_apply(
     }
 
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt = m.opt_str("hsm-group");
+      let hsm_group_name_arg_opt = m.opt_str("group");
       let nodes_opt = if hsm_group_name_arg_opt.is_none() {
         m.opt_str("nodes")
       } else {

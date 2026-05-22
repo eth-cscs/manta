@@ -68,7 +68,7 @@ pub async fn handle_delete(
       delete_redfish_endpoint::exec(ctx, &token, id).await?;
     }
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt = m.opt_str("hsm-group");
+      let hsm_group_name_arg_opt = m.opt_str("group");
       let nodes = m.opt_str("nodes");
       let kernel_parameters = m.req_str("VALUE")?;
       let assume_yes: bool = m.get_flag("assume-yes");

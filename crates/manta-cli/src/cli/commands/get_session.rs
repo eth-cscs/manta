@@ -22,7 +22,7 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
   }
 
   GetSessionParams {
-    hsm_group: cli_args.opt_string("hsm-group"),
+    hsm_group: cli_args.opt_string("group"),
     xnames: cli_args
       .opt_string("xnames")
       .map(|s| vec![s])
@@ -86,12 +86,11 @@ mod tests {
       )
       .arg(arg!(-o --output <FORMAT> "output format").value_parser(["json"]))
       .arg(arg!(-x --xnames <XNAMES> "xnames"))
-      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
-      .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
-        "hsm-group",
-        "xnames",
-        "name",
-      ]))
+      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
+      .group(
+        ArgGroup::new("hsm-group_or_xnames_or_name")
+          .args(["group", "xnames", "name"]),
+      )
       .group(ArgGroup::new("session_limit").args(["most-recent", "limit"]))
   }
 
@@ -165,7 +164,7 @@ mod tests {
   #[test]
   fn parse_hsm_group() {
     let matches =
-      sessions_cmd().get_matches_from(["sessions", "--hsm-group", "compute"]);
+      sessions_cmd().get_matches_from(["sessions", "--group", "compute"]);
     let params = parse_session_params(&matches);
     assert_eq!(params.hsm_group.as_deref(), Some("compute"));
   }

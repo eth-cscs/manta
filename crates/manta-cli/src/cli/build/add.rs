@@ -98,7 +98,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     .arg_required_else_help(true)
     .about("Append kernel parameters to nodes")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
     .arg(
       arg!(-O --"overwrite" "Overwrite the value if the parameter already exists")
         .action(ArgAction::SetTrue),
@@ -113,7 +113,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     )
     .group(
       ArgGroup::new("cluster_or_nodes")
-        .args(["hsm-group", "nodes"])
+        .args(["group", "nodes"])
         .required(true),
     )
 }

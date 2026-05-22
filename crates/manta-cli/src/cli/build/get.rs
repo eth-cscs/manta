@@ -60,8 +60,8 @@ pub fn subcommand_get_cfs_configuration() -> Command {
         .value_parser(value_parser!(u8).range(1..)),
     )
     .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["json"]))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
-    .group(ArgGroup::new("hsm-group_or_configuration").args(["hsm-group", "name"]))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .group(ArgGroup::new("hsm-group_or_configuration").args(["group", "name"]))
     .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
 }
 
@@ -86,9 +86,9 @@ pub fn subcommand_get_cfs_session() -> Command {
     )
     .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["json"]))
     .arg(arg!(-x --xnames <NODES> "Xnames, NIDs, or hostlist expression. Returns sessions targeting these nodes or their groups"))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name. Returns sessions targeting this group or its members"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name. Returns sessions targeting this group or its members").visible_alias("hsm-group"))
     .group(ArgGroup::new("hsm-group_or_xnames_or_name").args([
-      "hsm-group",
+      "group",
       "xnames",
       "name",
     ]))
@@ -104,13 +104,13 @@ pub fn subcommand_get_bos_template() -> Command {
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent templates")
         .value_parser(value_parser!(u8).range(1..)),
     )
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
     .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["json", "table"])
         .default_value("table"),
     )
-    .group(ArgGroup::new("hsm-group_or_template").args(["hsm-group", "name"]))
+    .group(ArgGroup::new("hsm-group_or_template").args(["group", "name"]))
 }
 
 pub fn subcommand_get_cluster_details() -> Command {
@@ -183,14 +183,17 @@ pub fn subcommand_get_images() -> Command {
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")
         .value_parser(value_parser!(u8).range(1..)),
     )
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
 }
 
 pub fn subcommand_get_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
     .about("Show boot parameters for nodes or a group")
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Node group name")
+        .visible_alias("hsm-group"),
+    )
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
 }
 
@@ -198,7 +201,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .about("Show kernel parameters for nodes or a group")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Show kernel parameters for all nodes in this group"))
+    .arg(arg!(-H --group <GROUP_NAME> "Show kernel parameters for all nodes in this group").visible_alias("hsm-group"))
     .arg(
       arg!(-f --filter <VALUE> "Comma-separated list of parameter names to show.\neg: 'console,bad_page,crashkernel,hugepagelist,root'"),
     )
@@ -209,7 +212,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
     )
     .group(
       ArgGroup::new("hsm-group_or_nodes")
-        .args(["hsm-group", "nodes"])
+        .args(["group", "nodes"])
         .required(true),
     )
 }

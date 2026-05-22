@@ -21,11 +21,7 @@ fn parse_images_params(
 
   GetImagesParams {
     id: cli_args.opt_string("id"),
-    hsm_group: cli_args
-      .try_get_one::<String>("hsm-group")
-      .ok()
-      .flatten()
-      .cloned(),
+    hsm_group: cli_args.opt_string("group"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     limit,
   }
@@ -57,7 +53,7 @@ mod tests {
   fn images_cmd() -> clap::Command {
     clap::Command::new("images")
       .arg(arg!(--id <ID> "image id"))
-      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
       .arg(arg!(-m --"most-recent" "most recent"))
       .arg(
         arg!(-l --limit <VALUE> "limit")

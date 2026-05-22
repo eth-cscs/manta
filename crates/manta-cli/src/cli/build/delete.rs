@@ -116,7 +116,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
     .arg_required_else_help(true)
     .about("Remove kernel parameters from nodes")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
@@ -124,7 +124,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
     .arg(arg!(<VALUE> "Comma-separated kernel parameter names to remove.\neg: console,bad_page,crashkernel,hugepagelist,quiet").value_name("PARAMS"))
     .group(
       ArgGroup::new("cluster_or_nodes")
-        .args(["hsm-group", "nodes"])
+        .args(["group", "nodes"])
         .required(true),
     )
 }

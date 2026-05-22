@@ -22,11 +22,7 @@ fn parse_configuration_params(
   GetConfigurationParams {
     name: cli_args.opt_string("name"),
     pattern: cli_args.opt_string("pattern"),
-    hsm_group: cli_args
-      .try_get_one::<String>("hsm-group")
-      .ok()
-      .flatten()
-      .cloned(),
+    hsm_group: cli_args.opt_string("group"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     since: None,
     until: None,
@@ -76,7 +72,7 @@ mod tests {
     clap::Command::new("configurations")
       .arg(arg!(-n --name <NAME> "config name"))
       .arg(arg!(-p --pattern <PATTERN> "name pattern"))
-      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
       .arg(arg!(-m --"most-recent" "most recent"))
       .arg(
         arg!(-l --limit <VALUE> "limit")

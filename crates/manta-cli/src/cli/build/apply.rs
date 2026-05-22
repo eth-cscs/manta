@@ -71,13 +71,13 @@ pub fn subcommand_apply_session() -> Command {
     )
     .arg(
       arg!(-l --"ansible-limit" <VALUE>
-        "Limit the session to specific nodes (must be a subset of --hsm-group if both are provided)")
+        "Limit the session to specific nodes (must be a subset of --group if both are provided)")
         .required(true),
     )
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
     .group(
       ArgGroup::new("hsm-group_or_ansible-limit")
-        .args(["hsm-group", "ansible-limit"])
+        .args(["group", "ansible-limit"])
         .required(true),
     )
 }
@@ -97,7 +97,7 @@ pub fn subcommand_apply_configuration() -> Command {
     )
     .arg(arg!(-V --"values" <VALUES> ... "Inline values for SAT jinja2 templates (overrides --values-file)"))
     .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["json"]))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
 }
 
 pub fn subcommand_apply_template() -> Command {
@@ -266,7 +266,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
     .arg_required_else_help(true)
     .about("Replace kernel parameters on nodes")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --"hsm-group" <GROUP_NAME> "Node group name"))
+    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
@@ -277,7 +277,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
     )
     .group(
       ArgGroup::new("cluster_or_nodes")
-        .args(["hsm-group", "nodes"])
+        .args(["group", "nodes"])
         .required(true),
     )
 }
