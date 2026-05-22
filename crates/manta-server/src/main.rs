@@ -121,6 +121,32 @@ async fn run_server(
     configuration.server.console_inactivity_timeout_secs,
   );
 
+  tracing::info!(
+    listen_address = %listen_addr,
+    port,
+    cert = cert_path.as_deref().unwrap_or("<none>"),
+    key = key_path.as_deref().map(|_| "<set>").unwrap_or("<none>"),
+    console_inactivity_timeout_secs =
+      configuration.server.console_inactivity_timeout_secs,
+    auth_rate_limit_per_minute = configuration
+      .server
+      .auth_rate_limit_per_minute
+      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string()),
+    log_filter = %configuration.log,
+    audit_file = %configuration.audit_file,
+    "[server] effective configuration"
+  );
+  match configuration.auditor.as_ref() {
+    Some(a) => tracing::info!(
+      brokers = ?a.kafka.brokers,
+      topic = %a.kafka.topic,
+      "[auditor] Kafka audit forwarder enabled"
+    ),
+    None => {
+      tracing::info!("[auditor] disabled (no audit messages will be emitted)")
+    }
+  }
+
   let mut sites = std::collections::HashMap::new();
   for (name, site) in &configuration.sites {
     let barebone = site
@@ -146,6 +172,17 @@ async fn run_server(
           );
           vec![]
         });
+    tracing::info!(
+      site = %name,
+      backend = site.backend.as_str(),
+      shasta_base_url = %api_url,
+      gitea_base_url = %gitea,
+      k8s_api_url = k8s_url.as_deref().unwrap_or("<none>"),
+      vault_base_url = vault_url.as_deref().unwrap_or("<none>"),
+      socks5_proxy = site.socks5_proxy.as_deref().map_or("<none>", |_| "<set>"),
+      root_ca_cert_file = %site.root_ca_cert_file,
+      "[site] configured"
+    );
     let site_backend_dispatcher = StaticBackendDispatcher::new(
       site.backend.as_str(),
       &api_url,
