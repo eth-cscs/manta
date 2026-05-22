@@ -26,7 +26,7 @@ pub async fn handle_update(
       )
       .await?;
     }
-    Some(("redfish-endpoint", m)) => {
+    Some(("redfish-endpoints", m)) => {
       let id = m
         .opt_string("id")
         .context("The 'id' argument is mandatory")?;

@@ -137,7 +137,8 @@ pub fn subcommand_delete_boot_parameter() -> Command {
 }
 
 pub fn subcommand_delete_redfish_endpoint() -> Command {
-  Command::new("redfish-endpoint")
+  Command::new("redfish-endpoints")
+    .visible_alias("redfish-endpoint")
     .arg_required_else_help(true)
     .about("Delete a Redfish endpoint")
     .arg(

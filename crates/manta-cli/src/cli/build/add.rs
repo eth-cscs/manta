@@ -46,7 +46,8 @@ pub fn subcommand_add_hwcomponent() -> Command {
 }
 
 pub fn subcommand_add_redfish_endpoint() -> Command {
-  Command::new("redfish-endpoint")
+  Command::new("redfish-endpoints")
+    .visible_alias("redfish-endpoint")
     .about("Register a new Redfish endpoint")
     .arg(arg!(-i --id <XNAME> "Xname of the BMC or controller").required(true))
     .arg(arg!(-n --name <VALUE> "Arbitrary user-provided name for the endpoint"))

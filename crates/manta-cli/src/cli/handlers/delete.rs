@@ -60,7 +60,7 @@ pub async fn handle_delete(
         .collect();
       delete_boot_parameters::exec(ctx, &token, hosts).await?;
     }
-    Some(("redfish-endpoint", m)) => {
+    Some(("redfish-endpoints", m)) => {
       let id = m.get_one::<String>("id").context(
         "Host argument is mandatory. \
            Please provide the host to delete",

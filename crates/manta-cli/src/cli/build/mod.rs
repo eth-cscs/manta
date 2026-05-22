@@ -335,7 +335,8 @@ fn subcommand_update_boot_parameters() -> Command {
 }
 
 fn subcommand_update_redfish_endpoint() -> Command {
-  Command::new("redfish-endpoint")
+  Command::new("redfish-endpoints")
+    .visible_alias("redfish-endpoint")
     .arg_required_else_help(true)
     .about("Update a Redfish endpoint")
     .arg(arg!(-i --id <XNAME> "Xname of the endpoint to update").required(true))

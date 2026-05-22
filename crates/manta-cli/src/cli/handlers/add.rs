@@ -106,7 +106,7 @@ pub async fn handle_add(
       )
       .await?;
     }
-    Some(("redfish-endpoint", m)) => {
+    Some(("redfish-endpoints", m)) => {
       add_redfish_endpoint::exec(ctx, &token, m).await?;
     }
     Some((other, _)) => bail!("Unknown 'add' subcommand: {other}"),
