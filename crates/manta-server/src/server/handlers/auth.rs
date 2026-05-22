@@ -58,9 +58,22 @@ pub async fn auth_token(
   })?;
   let source_ip = peer.ip().to_string();
 
+  tracing::info!(
+    user = %req.username,
+    site = %site_name,
+    from = %source_ip,
+    "auth_token: credential exchange requested"
+  );
+
   match service::auth::get_api_token(&infra, &req.username, &req.password).await
   {
     Ok(token) => {
+      tracing::info!(
+        user = %req.username,
+        site = %site_name,
+        from = %source_ip,
+        "auth_token: token issued"
+      );
       audit::send_auth_audit(
         state.auditor.as_ref(),
         "success",
@@ -113,8 +126,12 @@ pub async fn auth_validate(
     tracing::warn!("auth_validate: site lookup failed: {}", e);
     generic_invalid_credentials()
   })?;
+  tracing::info!(site = %site_name, "auth_validate: token check requested");
   match service::auth::validate_api_token(&infra, &req.token).await {
-    Ok(()) => Ok(StatusCode::OK),
+    Ok(()) => {
+      tracing::info!(site = %site_name, "auth_validate: token accepted");
+      Ok(StatusCode::OK)
+    }
     Err(e) => {
       tracing::warn!("auth_validate: backend rejected token: {}", e);
       Err(generic_invalid_credentials())

@@ -29,9 +29,15 @@ const MAX_LOGIN_ATTEMPTS: u32 = 3;
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
 /// is validated through `manta-server`.
+#[tracing::instrument(skip_all, fields(site = %ctx.site_name))]
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
   let site_name = ctx.site_name;
+
+  tracing::info!(
+    server = %ctx.manta_server_url,
+    "Beginning authentication"
+  );
 
   match get_token_from_env(&client).await {
     Ok(token) => {
@@ -40,8 +46,8 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
     }
     Err(err) => {
       tracing::warn!(
-        "{:#?}. Falling back to next authentication method",
-        err.to_string()
+        error = %err,
+        "env-var auth failed, trying cached token file"
       );
     }
   }
@@ -52,18 +58,18 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
       return Ok(token);
     }
     Err(err) => {
-      tracing::warn!("{:#?}", err.to_string());
       let stdin = io::stdin();
       if !stdin.is_terminal() {
-        tracing::info!(
-          "Running in non-interactive method. Give up authentication."
+        tracing::warn!(
+          error = %err,
+          "cached token rejected and stdin is not a terminal; giving up"
         );
         return Err(err);
-      } else {
-        tracing::info!(
-          "Running in interactive mode. Falling back to next authentication method"
-        );
       }
+      tracing::warn!(
+        error = %err,
+        "cached token rejected, prompting for credentials interactively"
+      );
     }
   }
 
@@ -71,6 +77,7 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   let shasta_token = get_token_interactively(&client).await?;
 
   store_token_in_local_file(site_name, &shasta_token)?;
+  tracing::info!("Authentication successful using interactive login");
   Ok(shasta_token)
 }
 
@@ -148,6 +155,7 @@ fn store_token_in_local_file(
     .open(&path)?;
   file.write_all(shasta_token.as_bytes())?;
 
+  tracing::info!(path = %path.display(), "Authentication token cached on disk");
   Ok(())
 }
 
@@ -165,10 +173,11 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
 
   while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
     if let Err(ref err) = shasta_token_rslt {
-      tracing::info!(
-        "Authentication attempt {} failed. Reason: {}",
-        attempts + 1,
-        err
+      tracing::warn!(
+        attempt = attempts + 1,
+        max_attempts = MAX_LOGIN_ATTEMPTS,
+        error = %err,
+        "Interactive authentication attempt failed"
       );
     }
 
@@ -180,6 +189,13 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
     shasta_token_rslt = client.get_token(&username, &password).await;
 
     attempts += 1;
+  }
+
+  if shasta_token_rslt.is_ok() && attempts > 0 {
+    tracing::info!(
+      attempts = attempts + 1,
+      "Interactive authentication succeeded after retries"
+    );
   }
 
   shasta_token_rslt

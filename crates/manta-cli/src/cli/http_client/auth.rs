@@ -5,6 +5,8 @@
 //! `X-Manta-Site` so the server knows which backend (CSM / OCHAMI)
 //! and which Keycloak realm to talk to.
 
+use std::time::Instant;
+
 use anyhow::Context;
 
 use super::MantaClient;
@@ -21,6 +23,8 @@ impl MantaClient {
   ) -> anyhow::Result<String> {
     use manta_shared::shared::auth::{AuthTokenRequest, AuthTokenResponse};
     let url = format!("{}/auth/token", self.base_url());
+    tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/token");
+    let started = Instant::now();
     let resp = self
       .http_client()
       .post(&url)
@@ -32,6 +36,11 @@ impl MantaClient {
       .send()
       .await
       .context("HTTP POST /auth/token failed")?;
+    tracing::debug!(
+      status = %resp.status(),
+      elapsed_ms = started.elapsed().as_millis() as u64,
+      "/auth/token response"
+    );
     let body: AuthTokenResponse = Self::parse_json(resp).await?;
     Ok(body.token)
   }
@@ -41,6 +50,8 @@ impl MantaClient {
   pub async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
     use manta_shared::shared::auth::ValidateTokenRequest;
     let url = format!("{}/auth/validate", self.base_url());
+    tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/validate");
+    let started = Instant::now();
     let resp = self
       .http_client()
       .post(&url)
@@ -51,6 +62,11 @@ impl MantaClient {
       .send()
       .await
       .context("HTTP POST /auth/validate failed")?;
+    tracing::debug!(
+      status = %resp.status(),
+      elapsed_ms = started.elapsed().as_millis() as u64,
+      "/auth/validate response"
+    );
     Self::parse_no_content(resp).await
   }
 }
