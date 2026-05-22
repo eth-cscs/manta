@@ -13,6 +13,31 @@
 use thiserror::Error;
 
 /// Errors returned by `manta-shared`'s pure helpers.
+///
+/// Most helpers return `Result<T, MantaError>`. The server-side code
+/// converts these to its richer `BackendError` via
+/// `crates/manta-server/src/wire_conv.rs::to_backend`, which then
+/// maps to HTTP status codes.
+///
+/// # Examples
+///
+/// Pattern-match a NotFound to log a custom message before propagating:
+///
+/// ```
+/// use manta_shared::common::error::MantaError;
+///
+/// fn lookup_thing() -> Result<(), MantaError> {
+///   Err(MantaError::NotFound("thing 42".into()))
+/// }
+///
+/// match lookup_thing() {
+///   Err(MantaError::NotFound(detail)) => {
+///     // Maps to HTTP 404 server-side.
+///     assert_eq!(detail, "thing 42");
+///   }
+///   _ => unreachable!(),
+/// }
+/// ```
 #[derive(Error, Debug)]
 pub enum MantaError {
   /// Filesystem I/O failure (config-file read, audit-log write, etc.).

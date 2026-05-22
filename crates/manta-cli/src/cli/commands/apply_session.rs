@@ -68,9 +68,9 @@ pub async fn exec(
   Ok(())
 }
 
-/// Creates a CFS session target dynamic
-/// Returns a tuple like
-/// (<cfs configuration name>, <cfs session name>)
+/// Creates a CFS session target dynamic.
+///
+/// Returns `(cfs_configuration_name, cfs_session_name)`.
 #[allow(clippy::too_many_arguments)]
 async fn apply_session(
   ctx: &AppContext<'_>,

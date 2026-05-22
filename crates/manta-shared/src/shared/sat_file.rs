@@ -150,9 +150,13 @@ pub mod sessiontemplate {
   /// and boot parameters for a set of nodes.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct SessionTemplate {
+    /// Unique name for the session template.
     pub name: String,
+    /// IMS image (or cross-reference to a SAT `images` entry) to boot.
     pub image: Image,
+    /// CFS configuration applied to the booted nodes.
     pub configuration: String,
+    /// Per-boot-set kernel / rootfs / node-targeting parameters.
     pub bos_parameters: BosParamters,
   }
 
@@ -161,9 +165,15 @@ pub mod sessiontemplate {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImsDetails {
     /// Reference by human-readable IMS image name.
-    Name { name: String },
+    Name {
+      /// IMS image name.
+      name: String,
+    },
     /// Reference by IMS image UUID.
-    Id { id: String },
+    Id {
+      /// IMS image UUID.
+      id: String,
+    },
   }
 
   /// Image reference within a session template — either an
@@ -172,14 +182,22 @@ pub mod sessiontemplate {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Image {
     /// Directly identifies an IMS image via name or UUID.
-    Ims { ims: ImsDetails },
+    Ims {
+      /// IMS image identifier (name or UUID).
+      ims: ImsDetails,
+    },
     /// Cross-references the `name` of another image in the SAT `images` section.
-    ImageRef { image_ref: String },
+    ImageRef {
+      /// `name` of a sibling image defined in the SAT file's
+      /// `images` section.
+      image_ref: String,
+    },
   }
 
   /// BOS boot parameters containing a map of named boot sets.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct BosParamters {
+    /// Named boot sets keyed by their BOS identifier.
     pub boot_sets: HashMap<String, BootSet>,
   }
 
@@ -187,20 +205,29 @@ pub mod sessiontemplate {
   /// targeting for a BOS session template.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct BootSet {
+    /// Processor architecture; defaults to whatever the linked image
+    /// reports if omitted.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub arch: Option<Arch>,
+    /// Kernel command-line parameters passed to the booted nodes.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub kernel_parameters: Option<String>,
+    /// Network name to boot over (e.g. `nmn`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network: Option<String>,
+    /// Explicit list of node xnames to target.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub node_list: Option<Vec<String>>,
+    /// HSM roles (e.g. `Compute`, `Application`) to target.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub node_roles_group: Option<Vec<String>>,
+    /// HSM group names to target.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub node_groups: Option<Vec<String>>,
+    /// Root-filesystem provider, e.g. `sbps` or `ais`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rootfs_provider: Option<String>,
+    /// Extra arguments forwarded to the rootfs provider.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub rootfs_provider_passthrough: Option<String>,
   }
@@ -240,9 +267,19 @@ pub mod image {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageIms {
     /// Image identified by name; `is_recipe` indicates whether it is an IMS recipe.
-    NameIsRecipe { name: String, is_recipe: bool },
+    NameIsRecipe {
+      /// IMS image name.
+      name: String,
+      /// `true` if `name` refers to an IMS recipe rather than a built image.
+      is_recipe: bool,
+    },
     /// Image identified by UUID; `is_recipe` indicates whether it is an IMS recipe.
-    IdIsRecipe { id: String, is_recipe: bool },
+    IdIsRecipe {
+      /// IMS image UUID.
+      id: String,
+      /// `true` if `id` refers to an IMS recipe rather than a built image.
+      is_recipe: bool,
+    },
   }
 
   /// Base IMS image reference used in newer SAT file format.
@@ -250,11 +287,26 @@ pub mod image {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum ImageBaseIms {
     /// Image identified by name and type string.
-    NameType { name: String, r#type: String },
+    NameType {
+      /// IMS image name.
+      name: String,
+      /// IMS object type, e.g. `"image"` or `"recipe"`.
+      r#type: String,
+    },
     /// Image identified by UUID and type string.
-    IdType { id: String, r#type: String },
+    IdType {
+      /// IMS image UUID.
+      id: String,
+      /// IMS object type, e.g. `"image"` or `"recipe"`.
+      r#type: String,
+    },
     /// Older format with UUID and optional `is_recipe` flag.
-    BackwardCompatible { is_recipe: Option<bool>, id: String },
+    BackwardCompatible {
+      /// `true` if `id` is a recipe; `None` defaults to image.
+      is_recipe: Option<bool>,
+      /// IMS image UUID.
+      id: String,
+    },
   }
 
   /// Criteria for filtering product catalog images.
@@ -262,20 +314,33 @@ pub mod image {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Filter {
     /// Match images whose name starts with `prefix`.
-    Prefix { prefix: String },
+    Prefix {
+      /// Required image-name prefix.
+      prefix: String,
+    },
     /// Match images whose name matches the `wildcard` glob.
-    Wildcard { wildcard: String },
+    Wildcard {
+      /// Glob pattern applied to image names.
+      wildcard: String,
+    },
     /// Match images built for the given architecture.
-    Arch { arch: Arch },
+    Arch {
+      /// Architecture filter.
+      arch: Arch,
+    },
   }
 
   /// A product catalog entry used as an image source.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Product {
+    /// Product name (e.g. `cos`, `slingshot-host-software`).
     name: String,
+    /// Optional product version pin.
     #[serde(skip_serializing_if = "Option::is_none")]
     version: Option<String>,
+    /// Product type, e.g. `"image"` or `"recipe"`.
     r#type: String,
+    /// Filter applied to the product's image list.
     filter: Filter,
   }
 
@@ -284,11 +349,21 @@ pub mod image {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum Base {
     /// Directly references an IMS image by name, UUID, or type.
-    Ims { ims: ImageBaseIms },
+    Ims {
+      /// IMS image reference (name, UUID, or legacy `is_recipe`).
+      ims: ImageBaseIms,
+    },
     /// Pulls the latest matching image from the product catalog.
-    Product { product: Product },
+    Product {
+      /// Product entry to query the catalog for.
+      product: Product,
+    },
     /// Cross-references the `name` of another image in the SAT `images` section.
-    ImageRef { image_ref: String },
+    ImageRef {
+      /// `name` of a sibling image defined in the SAT file's
+      /// `images` section.
+      image_ref: String,
+    },
   }
 
   /// Wrapper bridging the older `ims` key and the newer `base` key in SAT image entries.
@@ -296,9 +371,15 @@ pub mod image {
   #[serde(untagged)] // <-- this is important. More info https://serde.rs/enum-representations.html#untagged
   pub enum BaseOrIms {
     /// Newer format using the `base` key.
-    Base { base: Base },
+    Base {
+      /// Newer-format base reference.
+      base: Base,
+    },
     /// Legacy format using the `ims` key with a recipe flag.
-    Ims { ims: ImageIms },
+    Ims {
+      /// Legacy IMS reference carrying the `is_recipe` flag.
+      ims: ImageIms,
+    },
   }
 
   /// An image definition in the SAT file `images` section.
@@ -318,6 +399,7 @@ pub mod image {
     /// HSM group names passed as Ansible group vars during the image build.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub configuration_group_names: Option<Vec<String>>,
+    /// Free-form human description.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
   }
@@ -336,18 +418,29 @@ pub mod configuration {
   pub enum Product {
     /// Product pinned to a specific branch (and optionally a version).
     ProductVersionBranch {
+      /// Product name (e.g. `cos`).
       name: String,
+      /// Optional product version pin.
       version: Option<String>,
+      /// Git branch HEAD to track.
       branch: String,
     },
     /// Product pinned to a specific commit (and optionally a version).
     ProductVersionCommit {
+      /// Product name.
       name: String,
+      /// Optional product version pin.
       version: Option<String>,
+      /// Exact commit SHA to pin to.
       commit: String,
     },
     /// Product pinned by exact version string.
-    ProductVersion { name: String, version: String },
+    ProductVersion {
+      /// Product name.
+      name: String,
+      /// Exact product version.
+      version: String,
+    },
   }
 
   /// A Git repository reference within a CFS configuration
@@ -358,37 +451,63 @@ pub mod configuration {
   #[allow(clippy::enum_variant_names)]
   pub enum Git {
     /// Layer pinned to an exact commit SHA.
-    GitCommit { url: String, commit: String },
+    GitCommit {
+      /// Git repository URL.
+      url: String,
+      /// Exact commit SHA.
+      commit: String,
+    },
     /// Layer pinned to a branch HEAD.
-    GitBranch { url: String, branch: String },
+    GitBranch {
+      /// Git repository URL.
+      url: String,
+      /// Branch name whose HEAD is tracked.
+      branch: String,
+    },
     /// Layer pinned to a tag.
-    GitTag { url: String, tag: String },
+    GitTag {
+      /// Git repository URL.
+      url: String,
+      /// Tag name.
+      tag: String,
+    },
   }
 
   /// Extra CFS layer parameters (e.g., requiring DKMS).
   #[derive(Deserialize, Serialize, Debug)]
   pub struct SpecialParameters {
+    /// When `true`, the resulting image build must include DKMS.
     pub ims_require_dkms: bool,
   }
 
   /// A CFS configuration layer sourced from a Git repo.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct LayerGit {
+    /// Optional human-friendly name for this layer; defaults to a
+    /// CFS-generated identifier when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Optional Ansible playbook filename within the layer's repo;
+    /// CFS uses `site.yml` when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub playbook: Option<String>, // This field is optional but with default value. Therefore we won't
+    /// Git pin (commit / branch / tag).
     pub git: Git,
+    /// Layer-specific knobs such as DKMS requirements.
     pub special_parameters: Option<SpecialParameters>,
   }
 
   /// A CFS configuration layer sourced from a product catalog.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct LayerProduct {
+    /// Optional human-friendly name for this layer; defaults to a
+    /// CFS-generated identifier when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Optional Ansible playbook filename within the product's repo.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub playbook: Option<String>, // This field is optional but with default value. Therefore we won't
+    /// Product reference (name + version pin).
     pub product: Product,
   }
 
@@ -410,16 +529,22 @@ pub mod configuration {
   pub enum Inventory {
     /// Inventory repository pinned to a specific commit SHA.
     InventoryCommit {
+      /// Optional human-friendly name for the inventory source.
       #[serde(skip_serializing_if = "Option::is_none")]
       name: Option<String>,
+      /// Git repository URL.
       url: String,
+      /// Exact commit SHA.
       commit: String,
     },
     /// Inventory repository pinned to a branch HEAD.
     InventoryBranch {
+      /// Optional human-friendly name for the inventory source.
       #[serde(skip_serializing_if = "Option::is_none")]
       name: Option<String>,
+      /// Git repository URL.
       url: String,
+      /// Branch name whose HEAD is tracked.
       branch: String,
     },
   }
@@ -428,10 +553,15 @@ pub mod configuration {
   /// `configurations` section.
   #[derive(Deserialize, Serialize, Debug)]
   pub struct Configuration {
+    /// Configuration name; must be unique within the SAT file.
     pub name: String,
+    /// Free-form human description.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    /// Ordered list of CFS layers applied to nodes using this
+    /// configuration.
     pub layers: Vec<Layer>,
+    /// Optional Ansible inventory source for the configuration.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub additional_inventory: Option<Inventory>,
   }

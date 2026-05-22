@@ -1,3 +1,10 @@
+//! Typed config-file schemas for `cli.toml` and `server.toml`.
+//!
+//! See [`CliConfiguration`] and [`ServerConfiguration`] for the
+//! top-level shapes. The loaders that materialise these from disk
+//! live in the parent module ([`super::get_cli_configuration`],
+//! [`super::get_server_configuration`]).
+
 use std::collections::HashMap;
 
 use crate::common::audit::Auditor;
@@ -34,10 +41,18 @@ impl BackendTechnology {
 /// is derived from a hard-coded prefix and the site name. Neither is
 /// configured here.
 pub struct Site {
+  /// Which backend implementation this site uses (`csm` or `ochami`).
   pub backend: BackendTechnology,
+  /// Optional per-site SOCKS5 proxy URL used by every outbound HTTP
+  /// request to this site's backend. `None` means direct connection.
   pub socks5_proxy: Option<String>,
+  /// Base URL of the backend API (e.g. `https://api.alps.cscs.ch`).
   pub shasta_base_url: String,
+  /// Optional Kubernetes connection details, required by handlers
+  /// that stream CFS session logs or attach to consoles.
   pub k8s: Option<K8sDetails>,
+  /// Path (absolute or relative to the config dir) of the backend's
+  /// root CA certificate, used to verify TLS to `shasta_base_url`.
   pub root_ca_cert_file: String,
 }
 
@@ -48,13 +63,18 @@ pub struct Site {
 /// only knows about the *one* manta-server it talks to.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CliConfiguration {
+  /// `EnvFilter` directive string for the tracing subscriber
+  /// (e.g. `"info"`, `"manta=debug,hyper=warn"`).
   pub log: String,
+  /// Path to the local file the CLI appends audit lines to.
   pub audit_file: String,
   /// Active site name, sent as the `X-Manta-Site` header on every
   /// request to manta-server. Overridable per-invocation with `--site`.
   /// The server validates that the name matches one of its configured
   /// sites; the CLI does no local validation.
   pub site: String,
+  /// Default HSM group threaded into commands that accept
+  /// `--hsm-group` when none is supplied on the command line.
   pub parent_hsm_group: String,
   /// URL of the manta HTTP server this CLI talks to. Required — the CLI
   /// no longer calls CSM/OCHAMI backends directly; every operation
@@ -63,6 +83,8 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
+  /// Optional Kafka audit forwarder. When `None`, the CLI emits no
+  /// audit messages.
   pub auditor: Option<Auditor>,
 }
 
@@ -93,10 +115,17 @@ pub struct ServerSettings {
 /// clients select per-request via the `X-Manta-Site` header.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ServerConfiguration {
+  /// `EnvFilter` directive for the tracing subscriber.
   pub log: String,
+  /// Path to the local file the server appends audit lines to.
   pub audit_file: String,
+  /// Network / TLS / console / rate-limit knobs for the HTTPS server.
   pub server: ServerSettings,
+  /// Per-site backend connection details, keyed by site name. The
+  /// `X-Manta-Site` header on each request picks which one to route to.
   pub sites: HashMap<String, Site>,
+  /// Optional Kafka audit forwarder (typically used for `/auth/*`
+  /// attempts). When `None`, the server emits no audit messages.
   pub auditor: Option<Auditor>,
 }
 

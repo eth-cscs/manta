@@ -1,3 +1,11 @@
+//! JWT claim extractors used by the audit and authorization paths.
+//!
+//! Decodes a bearer token (with or without the `Bearer ` prefix),
+//! tolerates both URL-safe and standard Base64 encodings, and
+//! returns named claims as `String`. All failures map to
+//! [`MantaError::JwtMalformed`] with a structured message; the
+//! HTTP layer maps that to a 401.
+
 use base64::prelude::*;
 use serde_json::Value;
 
@@ -30,6 +38,23 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, MantaError> {
 /// Extract the `name` claim from a JWT token.
 ///
 /// Returns `"MISSING"` if the claim is absent.
+///
+/// # Examples
+///
+/// ```
+/// use base64::prelude::*;
+/// use manta_shared::common::jwt_ops::get_name;
+///
+/// // Build a minimal three-part JWT whose payload carries a `name` claim.
+/// let payload = BASE64_URL_SAFE_NO_PAD.encode(r#"{"name":"Alice"}"#);
+/// let token = format!("header.{}.sig", payload);
+///
+/// assert_eq!(get_name(&token).unwrap(), "Alice");
+///
+/// // Bearer prefix is tolerated.
+/// let with_prefix = format!("Bearer {}", token);
+/// assert_eq!(get_name(&with_prefix).unwrap(), "Alice");
+/// ```
 pub fn get_name(token: &str) -> Result<String, MantaError> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 

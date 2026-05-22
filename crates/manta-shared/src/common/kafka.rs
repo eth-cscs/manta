@@ -1,3 +1,11 @@
+//! Lazily-initialised Kafka producer used by the audit subsystem.
+//!
+//! The producer is a fire-and-forget `FutureProducer` cached behind
+//! a `OnceLock`, so the first audit message pays the connection cost
+//! and subsequent messages reuse the same client. Delivery uses a
+//! zero-duration wait — the audit path never blocks the request
+//! that triggered it.
+
 use std::{fmt, sync::OnceLock, time::Duration};
 
 use rdkafka::{
@@ -62,6 +70,23 @@ impl Clone for Kafka {
 impl Kafka {
   /// Create a new `Kafka` instance with the given broker
   /// list and topic name.
+  ///
+  /// The actual `FutureProducer` is built lazily on the first
+  /// `produce_message` call, so this constructor is cheap and
+  /// infallible.
+  ///
+  /// # Examples
+  ///
+  /// ```
+  /// use manta_shared::common::kafka::Kafka;
+  ///
+  /// let k = Kafka::new(
+  ///   vec!["kafka1.example.com:9092".into(), "kafka2.example.com:9092".into()],
+  ///   "manta-audit".into(),
+  /// );
+  /// assert_eq!(k.topic, "manta-audit");
+  /// assert_eq!(k.brokers.len(), 2);
+  /// ```
   pub fn new(brokers: Vec<String>, topic: String) -> Self {
     Self {
       brokers,

@@ -10,8 +10,8 @@ use ochami_rs::backend_connector::Ochami;
 /// Routes API calls to either a CSM or OCHAMI backend.
 ///
 /// All backend-specific trait methods are dispatched via
-/// the [`dispatch!`] macro defined in the `backend_dispatcher`
-/// module.
+/// the `dispatch!` macro defined in the
+/// [`crate::backend_dispatcher`] module.
 #[derive(Debug)]
 pub enum StaticBackendDispatcher {
   CSM(Csm),

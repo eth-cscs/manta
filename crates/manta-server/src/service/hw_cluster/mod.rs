@@ -1,18 +1,18 @@
 //! Hardware cluster pin/unpin and hw-component add/delete service logic.
 //!
-//! Split into three sub-modules:
+//! Split into three (private) sub-modules:
 //!
-//! - [`scoring`] — pure-computation functions for component scarcity,
+//! - `scoring` — pure-computation functions for component scarcity,
 //!   per-node scoring, candidate selection, pattern parsing, and the
 //!   parallel hw-inventory fetcher. Also hosts
 //!   `resolve_hw_description_to_xnames`, which dispatches between
 //!   pin and unpin.
-//! - [`pin_unpin`] — the `calculate_target_hsm_pin` / `_unpin` node
+//! - `pin_unpin` — the `calculate_target_hsm_pin` / `_unpin` node
 //!   selection algorithms plus the shared coordination helpers used
 //!   by `apply_hw_configuration` (pattern parsing, target-group
 //!   existence check, resource-sufficiency validation, group-update
 //!   orchestration).
-//! - [`apply`] — high-level coordinators called by the server
+//! - `apply` — high-level coordinators called by the server
 //!   handlers: `apply_hw_configuration`, `add_hw_component`,
 //!   `delete_hw_component`.
 //!

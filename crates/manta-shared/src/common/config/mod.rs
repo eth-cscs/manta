@@ -1,3 +1,12 @@
+//! Config-file loaders for `cli.toml` and `server.toml`.
+//!
+//! The typed schema lives in [`types`]; this module owns the
+//! file-system paths, env-var overrides
+//! (`MANTA_CLI_CONFIG`, `MANTA_SERVER_CONFIG`), and the loader
+//! functions that parse a config and merge `MANTA_*`-prefixed
+//! environment variables. See [`get_cli_configuration`] and
+//! [`get_server_configuration`] for the canonical entry points.
+
 pub mod types;
 
 use std::{

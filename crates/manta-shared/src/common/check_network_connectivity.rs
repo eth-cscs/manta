@@ -1,3 +1,9 @@
+//! Tiny TCP-reachability probe for backend API endpoints.
+//!
+//! Used at startup to fail fast with a clear error when the
+//! configured `shasta_base_url` isn't reachable, rather than
+//! deferring the failure until the first real request.
+
 use std::time::Duration;
 
 use manta_backend_dispatcher::error::Error;

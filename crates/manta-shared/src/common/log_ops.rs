@@ -1,3 +1,5 @@
+//! Tracing-subscriber initialisation shared by both binaries.
+
 use tracing_subscriber::EnvFilter;
 
 /// Configure the global tracing subscriber and bridge `log::` calls into it.

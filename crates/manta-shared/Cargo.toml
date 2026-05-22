@@ -45,3 +45,12 @@ thiserror          = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+
+# Tell docs.rs how to render this crate. `all-features = true` ensures
+# every cfg-gated item is documented (currently a no-op — we have no
+# crate features — but cheap insurance). `rustdoc-args` matches the
+# RUSTDOCFLAGS used in CI so the docs.rs build fails fast on broken
+# intra-doc links instead of silently shipping rotten cross-refs.
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

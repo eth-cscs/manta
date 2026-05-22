@@ -15,7 +15,44 @@ const MIB_PER_GIB: usize = 1024;
 
 /// Compute a summary status from a list of node details.
 ///
-/// Priority order: FAILED > OFF > ON > STANDBY > UNCONFIGURED > OK
+/// Priority order: FAILED > OFF > ON > STANDBY > UNCONFIGURED > OK.
+/// The first matching condition wins, regardless of how many nodes
+/// fall under lower-priority states.
+///
+/// # Examples
+///
+/// One failed node makes the whole cluster `"FAILED"`, even if every
+/// other node is on and configured:
+///
+/// ```
+/// use manta_shared::shared::cluster_status::compute_summary_status;
+/// use manta_shared::shared::dto::NodeDetails;
+///
+/// fn n(power: &str, config: &str) -> NodeDetails {
+///   NodeDetails {
+///     xname: String::new(), nid: String::new(), hsm: String::new(),
+///     power_status: power.into(),
+///     desired_configuration: String::new(),
+///     configuration_status: config.into(),
+///     enabled: String::new(), error_count: String::new(),
+///     boot_image_id: String::new(), boot_configuration: String::new(),
+///     kernel_params: String::new(),
+///   }
+/// }
+///
+/// assert_eq!(
+///   compute_summary_status(&[
+///     n("ON", "failed"),
+///     n("ON", "configured"),
+///   ]),
+///   "FAILED",
+/// );
+/// assert_eq!(
+///   compute_summary_status(&[n("ON", "configured"), n("OFF", "configured")]),
+///   "OFF",
+/// );
+/// assert_eq!(compute_summary_status(&[]), "OK");
+/// ```
 pub fn compute_summary_status(nodes: &[NodeDetails]) -> &'static str {
   if nodes
     .iter()

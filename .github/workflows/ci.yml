@@ -46,6 +46,18 @@ jobs:
       run: cargo fmt -p manta-shared -p manta-cli -p manta-server -- --check
     - name: Run clippy
       run: cargo clippy --workspace --no-deps -- -D warnings
+    # Build rustdoc. Fails on undocumented public items in
+    # `manta-shared` (the crate is `#![deny(missing_docs)]`), and on
+    # any broken intra-doc link or invalid HTML across the workspace.
+    # This catches doc rot the same way clippy catches code rot.
+    - name: Build rustdoc
+      env:
+        RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags
+      run: cargo doc --workspace --no-deps
+    # Compile and run doctests (the `# Examples` blocks inside ///
+    # comments). Plain `cargo test --workspace` does NOT run these.
+    - name: Run doctests
+      run: cargo test --doc --workspace
     - name: Enforce anyhow boundary
       run: |
         if grep -rn 'use anyhow' \

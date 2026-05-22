@@ -12,10 +12,11 @@
 //! impls, and `authorization` helpers that take a `&StaticBackendDispatcher`)
 //! lives in `manta-server`; the CLI never reaches it.
 
-// Track missing rustdoc coverage at WARN level for now (the workspace
-// docs are mid-ramp-up). Flip to `deny` once the per-file passes
-// land and CI's `cargo doc` step is wired in.
-#![warn(missing_docs)]
+// Every public item in this crate must carry a `///` doc comment.
+// We're a publishable crate (`publish = true`); the docs.rs page is
+// the primary external interface and stale-or-missing docs there are
+// user-facing. CI's `cargo doc` step keeps this honest.
+#![deny(missing_docs)]
 
 pub mod common;
 pub mod shared;
