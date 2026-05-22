@@ -1220,3 +1220,119 @@ When either is missing for the active site, the affected endpoints return `501 N
 |---|---|
 | `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
 | `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+
+## Troubleshooting
+
+If a request fails before reaching the service layer, you'll get one of the codes below. Match the response code against the table, then re-issue with a corrected `curl`. Bumping the server's `log` filter to `debug` (`log = "debug"` in `server.toml`, then restart) makes it obvious which extractor rejected.
+
+| Status | Most common cause |
+|---|---|
+| **400 Bad Request** | Missing/malformed `X-Manta-Site` header, missing JSON body, or body not parseable as the declared `request_body` type. |
+| **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), token expired, or `/auth/token` credentials rejected by the backend. |
+| **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
+| **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
+| **429 Too Many Requests** | Per-source-IP rate limit on `/api/v1/auth/*`. Tune `[server].auth_rate_limit_per_minute` or wait one minute. |
+| **500 Internal Server Error** | Server-side failure (backend unreachable, bad config). Check `journalctl -u manta-server` (or wherever the server's stderr is logged) for the actual cause. |
+| **501 Not Implemented** | The endpoint needs Vault or Kubernetes settings that the active site does not provide — see [Server configuration requirements](#server-configuration-requirements). |
+
+If `curl` can't connect at all (`Connection refused`, TLS handshake failure), the issue is below the HTTP layer: check the server is running on the port you're hitting, that `https://` matches your `cert`/`key` configuration, and that any reverse proxy in front is healthy.
+
+### Reusable shell vars
+
+The recipes below assume:
+
+```bash
+export MANTA_HOST=https://localhost:8443
+export MANTA_SITE=alps
+export MANTA_TOKEN=...   # see "Bootstrap a token" below
+```
+
+For a local server running plain HTTP (no `cert`/`key` configured), use `MANTA_HOST=http://localhost:8443` and drop the `-k` flag.
+
+### Health & docs (no auth)
+
+```bash
+curl -k "$MANTA_HOST/health"
+curl -k "$MANTA_HOST/openapi.json" | jq .info
+# Open in browser: $MANTA_HOST/docs
+```
+
+### Bootstrap a token
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/auth/token" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"<user>","password":"<pass>"}'
+# → { "token": "..." }
+```
+
+Then export it for the recipes below:
+
+```bash
+export MANTA_TOKEN=$(curl -ks -X POST "$MANTA_HOST/api/v1/auth/token" \
+  -H "X-Manta-Site: $MANTA_SITE" -H 'Content-Type: application/json' \
+  -d '{"username":"<user>","password":"<pass>"}' | jq -r .token)
+```
+
+### Validate a token
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/auth/validate" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H 'Content-Type: application/json' \
+  -d "{\"token\":\"$MANTA_TOKEN\"}"
+# 200 OK = valid, 401 = rejected
+```
+
+### GET a resource
+
+```bash
+curl -k "$MANTA_HOST/api/v1/sessions" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
+### POST a resource
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/groups" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"label":"test-group","description":"smoke test"}'
+```
+
+### DELETE a resource
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/groups/test-group" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
+### Stream CFS session logs (SSE)
+
+```bash
+curl -kN "$MANTA_HOST/api/v1/sessions/<session-name>/logs?timestamps=true" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
+`-N` disables curl's output buffering so SSE events appear as they arrive.
+
+### Attach to an interactive console (WebSocket)
+
+`curl` cannot upgrade to a WebSocket; use [`websocat`](https://github.com/vi/websocat) or `wscat`:
+
+```bash
+websocat -k --header "X-Manta-Site: $MANTA_SITE" \
+  --header "Authorization: Bearer $MANTA_TOKEN" \
+  "wss://localhost:8443/api/v1/nodes/<xname>/console"
+```
+
+### When `-vvv` still doesn't explain it
+
+1. Bump the server log: `log = "debug"` in `server.toml`, restart.
+2. Re-issue the request; the server now logs which extractor rejected (site lookup vs. JSON parse vs. backend call) and the round-trip into csm-rs/ochami-rs.
+3. For auth failures, the server logs the user/site/source-IP and the backend error message — the client only sees a generic `invalid credentials` 401 on purpose.
