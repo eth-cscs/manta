@@ -6,6 +6,7 @@ use anyhow::{Error, bail};
 
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// The three power operations supported by the backend.
@@ -57,7 +58,7 @@ pub async fn exec_nodes(
   hosts_expression: &str,
   force: bool,
   assume_yes: bool,
-  _output: &str,
+  output: &str,
   token: &str,
 ) -> Result<(), Error> {
   let action_str = match action {
@@ -67,6 +68,8 @@ pub async fn exec_nodes(
   };
 
   let server_url = ctx.manta_server_url;
+  // Interactive context printed before the confirm prompt; intentionally
+  // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {hosts_expression}");
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
@@ -75,10 +78,11 @@ pub async fn exec_nodes(
   let result = MantaClient::new(server_url, ctx.site_name)?
     .power(token, action_str, hosts_expression, "nodes", force)
     .await?;
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&result).unwrap_or_default()
-  );
+  action_result::print_with_data(
+    &format!("Power {action_str} requested on nodes."),
+    &result,
+    Some(output),
+  )?;
   Ok(())
 }
 
@@ -90,7 +94,7 @@ pub async fn exec_cluster(
   hsm_group_name_arg: &str,
   force: bool,
   assume_yes: bool,
-  _output: &str,
+  output: &str,
   token: &str,
 ) -> Result<(), Error> {
   let action_str = match action {
@@ -100,6 +104,8 @@ pub async fn exec_cluster(
   };
 
   let server_url = ctx.manta_server_url;
+  // Interactive context printed before the confirm prompt; intentionally
+  // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Cluster: {hsm_group_name_arg}");
   if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
   {
@@ -108,9 +114,10 @@ pub async fn exec_cluster(
   let result = MantaClient::new(server_url, ctx.site_name)?
     .power(token, action_str, hsm_group_name_arg, "cluster", force)
     .await?;
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&result).unwrap_or_default()
-  );
+  action_result::print_with_data(
+    &format!("Power {action_str} requested on cluster."),
+    &result,
+    Some(output),
+  )?;
   Ok(())
 }

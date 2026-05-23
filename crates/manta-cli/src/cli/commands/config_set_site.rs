@@ -4,6 +4,7 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use toml_edit::{Table, value};
 
+use crate::cli::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Set the active site in configuration.
@@ -41,7 +42,9 @@ fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
   write_config_toml(&path, &doc)?;
 
   match doc.get("site") {
-    Some(hsm_value) => println!("site set to {hsm_value}"),
+    Some(hsm_value) => {
+      action_result::print(&format!("site set to {hsm_value}"), None)?
+    }
     None => tracing::error!(
       "'site' key missing from config after \
        writing — this should not happen"

@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Remove the default HSM group from configuration.
@@ -17,7 +18,7 @@ fn unset_hsm() -> Result<(), Error> {
 
   write_config_toml(&path, &doc)?;
 
-  println!("Target HSM group unset");
+  action_result::print("Target HSM group unset", None)?;
 
   Ok(())
 }

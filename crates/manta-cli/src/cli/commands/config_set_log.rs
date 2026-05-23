@@ -4,6 +4,7 @@ use anyhow::Error;
 use clap::ArgMatches;
 use toml_edit::value;
 
+use crate::cli::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Set the logging verbosity level.
@@ -26,7 +27,7 @@ fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
 
   match doc.get("log") {
     Some(log_level) => {
-      println!("log verbosity set to {log_level}")
+      action_result::print(&format!("log verbosity set to {log_level}"), None)?
     }
     None => tracing::error!(
       "'log' key missing from config after \

@@ -5,6 +5,7 @@ use std::fs;
 use anyhow::{Context, Error};
 use dialoguer::Select;
 
+use crate::cli::output::action_result;
 use manta_shared::common::config::get_default_cache_path;
 
 /// Remove cached authentication credentials.
@@ -44,13 +45,16 @@ fn unset_auth() -> Result<(), Error> {
     .interact()
     .context("Failed to get user selection")?;
 
-  println!(
-    "Deleting authentication file: {}",
-    auth_token_list[selection]
-      .file_name()
-      .and_then(|n| n.to_str())
-      .unwrap_or("unknown")
-  );
+  action_result::print(
+    &format!(
+      "Deleting authentication file: {}",
+      auth_token_list[selection]
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+    ),
+    None,
+  )?;
 
   fs::remove_file(auth_token_list[selection].clone())?;
 

@@ -2,6 +2,7 @@
 
 use anyhow::Error;
 
+use crate::cli::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Remove the parent HSM group from configuration.
@@ -12,6 +13,6 @@ pub fn exec() -> Result<(), Error> {
   tracing::info!("Unset parent HSM group");
   doc.remove("parent_hsm_group");
   write_config_toml(&path, &doc)?;
-  println!("Parent HSM group unset");
+  action_result::print("Parent HSM group unset", None)?;
   Ok(())
 }

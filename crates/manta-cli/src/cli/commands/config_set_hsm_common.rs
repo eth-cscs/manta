@@ -4,6 +4,7 @@ use anyhow::{Context, Error, bail};
 use toml_edit::value;
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Sets an HSM group value in the manta configuration file.
@@ -53,7 +54,7 @@ pub async fn set_hsm_config_value(
 
   write_config_toml(&path, &doc)?;
 
-  println!("{label} set to '{new_hsm}'");
+  action_result::print(&format!("{label} set to '{new_hsm}'"), None)?;
 
   Ok(())
 }
