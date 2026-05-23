@@ -14,19 +14,56 @@ Every command takes one of the top-level verbs:
 | [`get`](#get) | Read-only queries (sessions, configurations, nodes, groups, hardware, …) |
 | [`add`](#add) | Create resources (node, group, hardware components, boot/kernel params) |
 | [`update`](#update) | Modify boot parameters or Redfish endpoints |
-| [`apply`](#apply) | Apply changes (SAT files, sessions, boot configs, kernel params, …) |
+| [`apply`](#apply) | Apply changes (SAT files, boot configs, kernel params, …) |
+| [`run`](#run) | Create and run jobs (configuration sessions) |
 | [`delete`](#delete) | Remove resources |
-| [`migrate`](#migrate) | Move nodes between groups; back up / restore virtual clusters |
-| [`power`](#power) | Power on/off/reset nodes or clusters |
+| [`backup`](#backup) | Back up cluster state (virtual cluster) |
+| [`restore`](#restore) | Restore cluster state from a backup |
+| [`migrate`](#migrate) | Move nodes between groups |
+| [`power`](#power) | Power on/off/reset nodes or groups |
 | [`log-value`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
 | [`console`](#console) | Open a WebSocket console to a node or running CFS session |
-| [`add-nodes-to-groups`](#add-nodes-to-groups) / [`remove-nodes-from-groups`](#remove-nodes-from-groups) | Bulk group-membership edits |
 
 **Global flag** (available on every command):
 
 | Flag | Description |
 |------|-------------|
 | `--site <SITE_NAME>` | Override the active site from config for this invocation |
+
+## Migrating from earlier shapes
+
+Several CLI shapes were renamed in the latest releases. Every old
+form keeps working for one release with a `[DEPRECATED]` tag in its
+help text and a one-line stderr warning on every use. Plan: drop the
+old forms in the next major release.
+
+| Old form | New canonical form |
+|---|---|
+| `manta apply session` | `manta run session` |
+| `manta apply boot cluster` | `manta apply boot group` |
+| `manta apply hardware cluster` | `manta apply hardware group` |
+| `manta get cluster` | `manta get group-nodes` |
+| `manta get hardware cluster` | `manta get group-hardware` |
+| `manta power on cluster` | `manta power on group` |
+| `manta power off cluster` | `manta power off group` |
+| `manta power reset cluster` | `manta power reset group` |
+| `manta migrate vCluster backup` | `manta backup vcluster` |
+| `manta migrate vCluster restore` | `manta restore vcluster` |
+| `manta add-nodes-to-groups` | `manta add nodes` |
+| `manta remove-nodes-from-groups` | `manta delete nodes` |
+| `--target-cluster` (flag) | `--target-group` |
+| `--parent-cluster` (flag) | `--parent-group` |
+| `--create-hsm-group` (flag) | `--create-group` |
+| `--delete-hsm-group` (flag) | `--delete-group` |
+| `--create-target-hsm-group` (flag) | `--create-target-group` |
+| `--delete-empty-parent-hsm-group` (flag) | `--delete-empty-parent-group` |
+| `--hsm-group` (flag) | `--group` |
+| `add redfish-endpoint` / `update redfish-endpoint` / `delete redfish-endpoint` | use `redfish-endpoints` (plural) — singular kept as visible alias |
+
+The renamed sections of this document still use the deprecated
+spellings for now; the next pass will rewrite each section to lead
+with the canonical form. Until then, treat the table above as
+authoritative for the new names.
 
 ---
 
