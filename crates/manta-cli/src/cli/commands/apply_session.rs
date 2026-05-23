@@ -8,6 +8,7 @@ use clap::ArgMatches;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::common::audit;
 
@@ -42,6 +43,7 @@ pub async fn exec(
 
   let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
   let timestamps: bool = cli_apply_session.get_flag("timestamps");
+  let output_opt = cli_apply_session.opt_str("output");
 
   let _ = apply_session(
     ctx,
@@ -55,6 +57,7 @@ pub async fn exec(
     ansible_passthrough,
     watch_logs,
     timestamps,
+    output_opt,
   )
   .await?;
 
@@ -77,6 +80,7 @@ async fn apply_session(
   ansible_passthrough: Option<&str>,
   watch_logs: bool,
   timestamps: bool,
+  output_opt: Option<&str>,
 ) -> Result<(String, String), Error> {
   let server_url = ctx.manta_server_url;
   let kafka_audit_opt = ctx.kafka_audit_opt;
@@ -138,6 +142,21 @@ async fn apply_session(
     Some(serde_json::json!(vec![hsm_group_opt])),
   )
   .await;
+
+  // Final result. In `--watch-logs` mode the streamed log lines above
+  // have already gone to stdout; this summary appears after them. In
+  // `--output json` mode the user should avoid `--watch-logs` to keep
+  // the JSON on stdout uninterleaved with raw log content.
+  action_result::print_with_data(
+    &format!(
+      "CFS session '{cfs_session_name}' created (configuration: '{cfs_configuration_name}')"
+    ),
+    &serde_json::json!({
+      "cfs_configuration_name": cfs_configuration_name,
+      "cfs_session_name": cfs_session_name,
+    }),
+    output_opt,
+  )?;
 
   Ok((cfs_configuration_name, cfs_session_name))
 }

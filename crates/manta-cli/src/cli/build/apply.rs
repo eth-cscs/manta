@@ -81,6 +81,7 @@ pub fn subcommand_apply_session() -> Command {
         .args(["group", "ansible-limit"])
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_apply_configuration() -> Command {

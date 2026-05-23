@@ -3,9 +3,9 @@
 use anyhow::{Error, bail};
 
 use crate::cli::common;
-use manta_shared::common::app_context::AppContext;
-
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
+use manta_shared::common::app_context::AppContext;
 
 /// Options for applying a SAT file.
 ///
@@ -31,6 +31,7 @@ pub struct SatApplyOptions<'a> {
   pub overwrite: bool,
   pub dry_run: bool,
   pub assume_yes: bool,
+  pub output_opt: Option<&'a str>,
 }
 
 /// Validate that a hook script exists and is executable.
@@ -85,7 +86,7 @@ pub async fn exec(
       )
     });
 
-  MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_sat_file(
       token,
       opts.sat_file_content,
@@ -104,5 +105,13 @@ pub async fn exec(
     .await?;
 
   run_hook_if_present(opts.posthook_opt, "post")?;
+
+  let message = if opts.dry_run {
+    "Dry-run enabled. No changes persisted into the system."
+  } else {
+    "SAT file applied."
+  };
+  action_result::print_with_data(message, &result, opts.output_opt)?;
+
   Ok(())
 }

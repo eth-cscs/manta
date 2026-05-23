@@ -89,6 +89,7 @@ pub async fn handle_apply(
       let timestamps: bool = m.get_flag("timestamps");
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
 
       commands::apply_sat_file::command::exec(
         ctx,
@@ -109,6 +110,7 @@ pub async fn handle_apply(
           overwrite,
           dry_run,
           assume_yes,
+          output_opt,
         },
       )
       .await?;

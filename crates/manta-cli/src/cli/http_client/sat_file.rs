@@ -21,7 +21,7 @@ impl MantaClient {
     session_template_only: bool,
     overwrite: bool,
     dry_run: bool,
-  ) -> anyhow::Result<()> {
+  ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
       "sat_file_content": sat_file_content,
       "values": values,
@@ -36,7 +36,6 @@ impl MantaClient {
       "overwrite": overwrite,
       "dry_run": dry_run,
     });
-    let _: Value = self.post_json(token, "/sat-file", &body).await?;
-    Ok(())
+    self.post_json(token, "/sat-file", &body).await
   }
 }
