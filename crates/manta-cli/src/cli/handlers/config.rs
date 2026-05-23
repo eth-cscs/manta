@@ -2,6 +2,7 @@
 
 use crate::cli::commands;
 use crate::cli::common::authentication::get_api_token;
+use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
@@ -14,10 +15,12 @@ pub async fn handle_config(
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
   match cli_config.subcommand() {
-    Some(("show", _)) => {
+    Some(("show", m)) => {
       let token = get_api_token(ctx).await?;
       let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
-      commands::config_show::exec(&client, &token, ctx.settings).await?;
+      let output_opt = m.opt_str("output");
+      commands::config_show::exec(&client, &token, ctx.settings, output_opt)
+        .await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {

@@ -6,6 +6,7 @@ use anyhow::{Context, Error};
 use config::{Config, Value};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::config_summary::{self, ConfigSummary};
 use manta_shared::common::config::get_cli_config_file_path;
 
 /// Display the current manta configuration.
@@ -13,16 +14,17 @@ pub async fn exec(
   client: &MantaClient,
   token: &str,
   settings: &Config,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  show(client, Some(token.to_string()), settings).await
+  show(client, Some(token.to_string()), settings, output_opt).await
 }
 
 async fn show(
   client: &MantaClient,
   shasta_token_opt: Option<String>,
   settings: &Config,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  // Read configuration file
   let log_level = settings
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
@@ -50,34 +52,20 @@ async fn show(
     .get_string("site")
     .context("'site' key not found in config")?;
 
-  // Print configuration file content to stdout
-  println!(
-    "Configuration file: {}",
-    get_cli_config_file_path().map_or_else(
+  let summary = ConfigSummary {
+    config_file: get_cli_config_file_path().map_or_else(
       |_| "<unknown>".to_string(),
-      |p| p.to_string_lossy().to_string()
-    )
-  );
-  println!("Log level: {log_level}");
-  println!(
-    "Sites: {}",
-    site_table
-      .keys()
-      .cloned()
-      .collect::<Vec<String>>()
-      .join(", ")
-  );
-  println!("Current site: {site_name}");
-  println!(
-    "Groups available: {}",
-    hsm_group_available_opt
-      .unwrap_or_else(|| vec![
-        "Could not get list of groups available".to_string()
-      ])
-      .join(", ")
-  );
-  println!("Current HSM: {settings_hsm_group}");
-  println!("Parent HSM: {settings_parent_hsm_group}");
+      |p| p.to_string_lossy().to_string(),
+    ),
+    log_level,
+    sites: site_table.keys().cloned().collect(),
+    current_site: site_name,
+    groups_available: hsm_group_available_opt,
+    current_hsm: settings_hsm_group,
+    parent_hsm: settings_parent_hsm_group,
+  };
+
+  config_summary::print(&summary, output_opt)?;
 
   Ok(())
 }

@@ -104,7 +104,11 @@ fn subcommand_config() -> Command {
   Command::new("config")
     .arg_required_else_help(true)
     .about("Manage manta CLI configuration")
-    .subcommand(Command::new("show").about("Show current configuration values"))
+    .subcommand(
+      Command::new("show")
+        .about("Show current configuration values")
+        .arg(output_flag()),
+    )
     .subcommand(
       Command::new("set")
         .arg_required_else_help(true)
