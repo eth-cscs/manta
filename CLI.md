@@ -60,11 +60,6 @@ old forms in the next major release.
 | `--hsm-group` (flag) | `--group` |
 | `add redfish-endpoint` / `update redfish-endpoint` / `delete redfish-endpoint` | use `redfish-endpoints` (plural) — singular kept as visible alias |
 
-The renamed sections of this document still use the deprecated
-spellings for now; the next pass will rewrite each section to lead
-with the canonical form. Until then, treat the table above as
-authoritative for the new names.
-
 ---
 
 ## config
@@ -156,28 +151,31 @@ manta get groups
 manta get groups my-cluster -o json
 ```
 
-### get hardware cluster \<CLUSTER_NAME\>
+### get group-hardware \<GROUP_NAME\>
 
-List hardware components in a cluster.
+List hardware components in a group.
+
+> Replaces `get hardware cluster <NAME>`, which still works for one
+> release but prints a deprecation warning on use.
 
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
-| `CLUSTER_NAME` | string | **yes** | — | Cluster (HSM group) name |
+| `GROUP_NAME` | string | **yes** | — | HSM group name |
 | `-o/--output` | string | no | `summary` | Output format: `summary`, `details`, `pattern`, `json` |
 
 Output modes:
 - `summary` — aggregated table: hw component → total count across all nodes
 - `details` — per-node table with one column per unique hw component type
-- `pattern` — single line `<cluster>:<component>:<qty>:...`
+- `pattern` — single line `<group>:<component>:<qty>:...`
 - `json` — raw JSON
 
 ```
-manta get hardware cluster gpu-cluster -o details
+manta get group-hardware gpu-cluster -o details
 ```
 
 ### get hardware nodes \<VALUE\>
 
-Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get hardware cluster --output details` but scoped to specific nodes instead of an entire cluster.
+Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get group-hardware --output details` but scoped to specific nodes instead of an entire group.
 
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
@@ -203,14 +201,14 @@ List CFS sessions with optional filters.
 | `-m/--most-recent` | flag | Return only the most recent session |
 | `-l/--limit` | u8 | Return the last N sessions |
 | `-x/--xnames` | string | Comma-separated xnames to filter by |
-| `-H/--hsm-group` | string | HSM group name to filter by |
+| `-H/--group` | string | HSM group name to filter by |
 | `-o/--output` | string | Output format: `json` |
 
-> `--hsm-group`, `--xnames`, and `--name` are mutually exclusive.  
+> `--group`, `--xnames`, and `--name` are mutually exclusive.  
 > `--most-recent` and `--limit` are mutually exclusive.
 
 ```
-manta get sessions --hsm-group compute --status running
+manta get sessions --group compute --status running
 manta get sessions --most-recent -o json
 ```
 
@@ -224,10 +222,10 @@ List CFS configurations.
 | `-p/--pattern` | string | Glob pattern for configuration name |
 | `-m/--most-recent` | flag | Show only the most recent |
 | `-l/--limit` | u8 | Return the last N configurations |
-| `-H/--hsm-group` | string | HSM group to filter by |
+| `-H/--group` | string | HSM group to filter by |
 | `-o/--output` | string | Output format: `json` |
 
-> `--hsm-group` and `--name` are mutually exclusive.  
+> `--group` and `--name` are mutually exclusive.  
 > `--most-recent` and `--limit` are mutually exclusive.
 
 ```
@@ -243,16 +241,19 @@ List BOS session templates.
 | `-n/--name` | string | — | Template name |
 | `-m/--most-recent` | flag | — | Show most recent only |
 | `-l/--limit` | u8 | — | Return last N templates |
-| `-H/--hsm-group` | string | — | HSM group name |
+| `-H/--group` | string | — | HSM group name |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
-### get cluster \<HSM_GROUP_NAME\>
+### get group-nodes \<GROUP_NAME\>
 
-Show node membership and status for a cluster.
+Show node membership and status for an HSM group.
+
+> Replaces `get cluster <NAME>`, which still works for one release
+> but prints a deprecation warning on use.
 
 | Arg/Flag | Type | Default | Description |
 |----------|------|---------|-------------|
-| `HSM_GROUP_NAME` | string | — | HSM group name |
+| `GROUP_NAME` | string | — | HSM group name |
 | `-n/--nids-only-one-line` | flag | — | Print NIDs as a single comma-separated line |
 | `-x/--xnames-only-one-line` | flag | — | Print xnames as a single comma-separated line |
 | `-s/--status` | string | — | Filter by status: `OFF`, `ON`, `READY`, `STANDBY`, `PENDING`, `FAILED`, `CONFIGURED` |
@@ -260,8 +261,8 @@ Show node membership and status for a cluster.
 | `-o/--output` | string | `table` | Output format: `table`, `table-wide`, `json`, `summary` |
 
 ```
-manta get cluster compute -o summary
-manta get cluster compute --xnames-only-one-line
+manta get group-nodes compute -o summary
+manta get group-nodes compute --xnames-only-one-line
 ```
 
 ### get nodes \<VALUE\>
@@ -291,7 +292,7 @@ List IMS images.
 | `-i/--id` | string | Specific image ID |
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return last N images |
-| `-H/--hsm-group` | string | HSM group name |
+| `-H/--group` | string | HSM group name |
 
 ### get boot-parameters
 
@@ -299,13 +300,13 @@ Get BSS boot parameters.
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `-H/--hsm-group` | string | HSM group name |
+| `-H/--group` | string | HSM group name |
 | `-n/--nodes` | string | Comma-separated xnames/nids or hostlist expression |
 
-> Pass one of `--hsm-group` or `--nodes` — clap doesn't enforce this for you, so omitting both returns the global set.
+> Pass one of `--group` or `--nodes` — clap doesn't enforce this for you, so omitting both returns the global set.
 
 ```
-manta get boot-parameters --hsm-group compute
+manta get boot-parameters --group compute
 ```
 
 ### get kernel-parameters
@@ -315,14 +316,14 @@ Get kernel boot parameters for nodes.
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `-n/--nodes` | string | — | Comma-separated xnames/nids or hostlist |
-| `-H/--hsm-group` | string | — | HSM group name |
+| `-H/--group` | string | — | HSM group name |
 | `-f/--filter` | string | — | Comma-separated parameter names to extract, e.g. `console,crashkernel` |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
-> One of `--nodes` or `--hsm-group` is required.
+> One of `--nodes` or `--group` is required.
 
 ```
-manta get kernel-parameters --hsm-group compute --filter console,loglevel
+manta get kernel-parameters --group compute --filter console,loglevel
 ```
 
 ### get redfish-endpoints
@@ -360,7 +361,7 @@ manta add group --label my-cluster --description "GPU nodes" --nodes 'x3000c0s1b
 
 ### add node
 
-Register a node with HSM.
+Register a brand-new node with HSM. Distinct from [`add nodes`](#add-nodes) (plural), which assigns existing nodes to an HSM group.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
@@ -370,17 +371,35 @@ Register a node with HSM.
 | `-a/--arch` | string | no | Architecture: `X86`, `ARM`, `Other` |
 | `-d/--disabled` | flag | no | Disable node on creation |
 
+### add nodes
+
+Add existing nodes to an HSM group's membership. Distinct from `add node` (singular), which registers a brand-new node in the inventory.
+
+> Replaces `manta add-nodes-to-groups`, which still works for one
+> release but prints a deprecation warning on use.
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `-g/--group` | string | **yes** | Group to add the nodes to |
+| `-n/--nodes` | string | **yes** | Nodes to add (xnames/nids/hostlist) |
+| `-d/--dry-run` | flag | no | Simulate without changes |
+| `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
+
 ### add hardware *(WIP)*
 
-Add hardware components to a cluster.
+Add hardware components to an HSM group.
+
+> Flag names below are the canonical group-centric form; the old
+> `--target-cluster`, `--parent-cluster`, `--create-hsm-group`
+> spellings continue to work as visible aliases.
 
 | Flag | Type | Description |
 |------|------|-------------|
 | `-P/--pattern` | string | Hardware pattern, e.g. `a100:4:epyc:2` |
-| `-t/--target-cluster` | string | Target cluster name |
-| `-p/--parent-cluster` | string | Source cluster providing the hardware |
+| `-t/--target-group` | string | Target group name |
+| `-p/--parent-group` | string | Source group providing the hardware |
 | `-d/--dry-run` | flag | Simulate without changes |
-| `-c/--create-hsm-group` | flag | Create target HSM group if it does not exist |
+| `-c/--create-group` | flag | Create target group if it does not exist |
 
 ### add boot-parameters
 
@@ -406,16 +425,16 @@ Merge kernel parameters into existing values for nodes.
 |----------|------|----------|-------------|
 | `VALUE` | string | **yes** | Space-separated `key=value` pairs |
 | `-n/--nodes` | string | no* | Target nodes (xnames/nids/hostlist) |
-| `-H/--hsm-group` | string | no* | Target HSM group |
+| `-H/--group` | string | no* | Target HSM group |
 | `-O/--overwrite` | flag | no | Overwrite existing values |
 | `-y/--assume-yes` | flag | no | Non-interactive mode |
 | `--do-not-reboot` | flag | no | Skip node reboot after change |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
-> One of `--nodes` or `--hsm-group` is required.
+> One of `--nodes` or `--group` is required.
 
 ```
-manta add kernel-parameters "console=ttyS0,115200 loglevel=7" --hsm-group compute
+manta add kernel-parameters "console=ttyS0,115200 loglevel=7" --group compute
 ```
 
 ### add redfish-endpoint
@@ -496,24 +515,28 @@ manta apply sat-file -t deploy.yaml -i   # configurations + images only
 manta apply sat-file -t deploy.yaml -s   # configurations + session templates only
 ```
 
-### apply session
+### run session
 
-Create a CFS session from one or more local git repositories.
+Create and run a CFS session from one or more local git repositories.
+
+> Replaces `apply session`, which still works for one release but
+> prints a deprecation warning on use.
 
 | Flag | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
 | `-n/--name` | string | **yes** | — | Session name |
 | `-r/--repo-path` | path… | **yes** | — | Path(s) to local git repos (repeatable) |
 | `-l/--ansible-limit` | string | **yes** | — | Target xnames |
-| `-H/--hsm-group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
+| `-H/--group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
 | `-p/--playbook-name` | string | no | `site.yml` | Ansible playbook filename |
 | `-w/--watch-logs` | flag | no | — | Stream session logs |
 | `-t/--timestamps` | flag | no | — | Show timestamps in logs |
 | `-v/--ansible-verbosity` | 0–4 | no | `2` | Ansible verbosity |
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
+| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
 
 ```
-manta apply session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
+manta run session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
 ```
 
 ### apply template
@@ -534,13 +557,16 @@ Create a BOS session from an existing BOS session template.
 manta apply template -t my-template -l compute --operation reboot
 ```
 
-### apply boot cluster \<CLUSTER_NAME\>
+### apply boot group \<GROUP_NAME\>
 
-Update boot parameters (image + runtime config + kernel parameters) for all nodes in a cluster.
+Update boot parameters (image + runtime config + kernel parameters) for all nodes in an HSM group.
+
+> Replaces `apply boot cluster <NAME>`, which still works for one
+> release but prints a deprecation warning on use.
 
 | Arg/Flag | Type | Required | Description |
 |----------|------|----------|-------------|
-| `CLUSTER_NAME` | string | **yes** | Cluster (HSM group) name |
+| `GROUP_NAME` | string | **yes** | HSM group name |
 | `-i/--boot-image` | string | no* | Specific IMS image ID |
 | `-b/--boot-image-configuration` | string | no* | CFS configuration name to derive boot image from |
 | `-r/--runtime-configuration` | string | no | CFS configuration for post-boot configuration |
@@ -548,11 +574,12 @@ Update boot parameters (image + runtime config + kernel parameters) for all node
 | `-y/--assume-yes` | flag | no | Non-interactive mode |
 | `--do-not-reboot` | flag | no | Update boot params without rebooting |
 | `-d/--dry-run` | flag | no | Simulate without changes |
+| `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
 
 > `--boot-image` and `--boot-image-configuration` are mutually exclusive.
 
 ```
-manta apply boot cluster compute -b csm-config-2024 -r csm-config-2024
+manta apply boot group compute -b csm-config-2024 -r csm-config-2024
 ```
 
 ### apply boot nodes \<VALUE\>
@@ -578,7 +605,7 @@ Replace kernel parameters for nodes (full replace, not merge).
 |----------|------|----------|-------------|
 | `VALUE` | string | **yes** | Space-separated `key=value` pairs |
 | `-n/--nodes` | string | no* | Target nodes (xnames/nids/hostlist) |
-| `-H/--hsm-group` | string | no* | Target HSM group |
+| `-H/--group` | string | no* | Target HSM group |
 | `-y/--assume-yes` | flag | no | Non-interactive mode |
 | `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
@@ -593,19 +620,26 @@ Launch a temporary container environment from an IMS image, useful for image ins
 |------|------|----------|-------------|
 | `-i/--image-id` | string | **yes** | IMS image ID to use as the container image |
 
-### apply hardware cluster *(WIP)*
+### apply hardware group *(WIP)*
 
-Upscale or downscale hardware resources in a cluster.
+Upscale or downscale hardware resources in an HSM group.
+
+> Replaces `apply hardware cluster`, which still works for one
+> release but prints a deprecation warning on use. The old flag
+> spellings (`--target-cluster`, `--parent-cluster`,
+> `--create-target-hsm-group`, `--delete-empty-parent-hsm-group`)
+> also still work as visible aliases on the new flag names below.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `-P/--pattern` | string | **yes** | Hardware pattern e.g. `a100:12:epyc:5` |
-| `-t/--target-cluster` | string | **yes** | Cluster being reconfigured |
-| `-p/--parent-cluster` | string | **yes** | Cluster offering or receiving freed resources |
+| `-t/--target-group` | string | **yes** | Group being reconfigured |
+| `-p/--parent-group` | string | **yes** | Group offering or receiving freed resources |
 | `-d/--dry-run` | flag | no | Simulate without changes |
-| `-c/--create-target-hsm-group` | flag | no | Create target cluster if it does not exist |
-| `-D/--delete-empty-parent-hsm-group` | flag | no | Delete parent cluster if it becomes empty |
+| `-c/--create-target-group` | flag | no | Create target group if it does not exist |
+| `-D/--delete-empty-parent-group` | flag | no | Delete parent group if it becomes empty |
 | `-u/--unpin-nodes` | flag | no | Allow any available nodes instead of pinned ones |
+| `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
 
 ---
 
@@ -624,11 +658,25 @@ Delete an HSM group. The group must be empty first.
 
 ### delete node \<VALUE\>
 
-Remove a node from HSM.
+Remove a node from HSM entirely. Distinct from [`delete nodes`](#delete-nodes) (plural), which removes nodes from a group's membership without touching the inventory.
 
 | Arg/Flag | Type | Required | Description |
 |----------|------|----------|-------------|
 | `VALUE` | string | **yes** | Node xname |
+
+### delete nodes
+
+Remove nodes from an HSM group's membership. Distinct from `delete node` (singular), which removes the node from the system inventory entirely.
+
+> Replaces `manta remove-nodes-from-groups`, which still works for
+> one release but prints a deprecation warning on use.
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `-g/--group` | string | **yes** | Group to remove the nodes from |
+| `-n/--nodes` | string | **yes** | Nodes to remove (xnames/nids/hostlist) |
+| `-d/--dry-run` | flag | no | Simulate without changes |
+| `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
 
 ### delete configurations
 
@@ -676,12 +724,12 @@ Remove specific kernel parameters from nodes.
 |----------|------|----------|-------------|
 | `VALUE` | string | **yes** | Comma-separated parameter names to remove |
 | `-n/--nodes` | string | no* | Target nodes (xnames/nids/hostlist) |
-| `-H/--hsm-group` | string | no* | Target HSM group |
+| `-H/--group` | string | no* | Target HSM group |
 | `-y/--assume-yes` | flag | no | Non-interactive mode |
 | `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
-> One of `--nodes` or `--hsm-group` is required.
+> One of `--nodes` or `--group` is required.
 
 ### delete boot-parameters
 
@@ -693,15 +741,19 @@ Delete BSS boot parameters for nodes.
 
 ### delete hardware *(WIP)*
 
-Remove hardware components from a cluster, returning them to the parent pool.
+Remove hardware components from a group, returning them to the parent pool.
+
+> Flag names below are the canonical group-centric form; the old
+> `--target-cluster`, `--parent-cluster`, `--delete-hsm-group`
+> spellings continue to work as visible aliases.
 
 | Flag | Type | Description |
 |------|------|-------------|
 | `-P/--pattern` | string | Hardware pattern |
-| `-t/--target-cluster` | string | Cluster losing resources |
-| `-p/--parent-cluster` | string | Cluster receiving freed resources |
+| `-t/--target-group` | string | Group losing resources |
+| `-p/--parent-group` | string | Group receiving freed resources |
 | `-d/--dry-run` | flag | Simulate without changes |
-| `-D/--delete-hsm-group` | flag | Delete the target cluster if it becomes empty |
+| `-D/--delete-group` | flag | Delete the target group if it becomes empty |
 
 ### delete redfish-endpoint
 
@@ -715,33 +767,12 @@ Delete a registered Redfish endpoint.
 
 ## migrate
 
-Backup and restore virtual cluster configurations, or move nodes.
+Move compute nodes between HSM groups.
 
-### migrate vCluster backup
-
-Backup a virtual cluster's full configuration (BOS, CFS, IMS image, HSM group).
-
-| Flag | Type | Description |
-|------|------|-------------|
-| `-b/--bos` | string | BOS session template name |
-| `-d/--destination` | dir | Destination folder for backup files |
-| `-p/--pre-hook` | string | Shell command to run before backup |
-| `-a/--post-hook` | string | Shell command to run after backup |
-
-### migrate vCluster restore
-
-Restore a virtual cluster from backup files.
-
-| Flag | Type | Description |
-|------|------|-------------|
-| `-b/--bos-file` | path | BOS session template backup file |
-| `-c/--cfs-file` | path | CFS configuration backup file |
-| `-j/--hsm-file` | path | HSM group description backup file |
-| `-m/--ims-file` | path | IMS backup file |
-| `-i/--image-dir` | dir | Directory containing image files |
-| `-p/--pre-hook` | string | Shell command before restore |
-| `-a/--post-hook` | string | Shell command after restore |
-| `-o/--overwrite` | flag | Overwrite existing data |
+> Backup/restore for virtual clusters has moved to the top-level
+> [`backup`](#backup) and [`restore`](#restore) verbs. The old
+> `manta migrate vCluster backup` / `restore` forms still work for
+> one release but print a deprecation warning on use.
 
 ### migrate nodes \<XNAMES\>
 
@@ -760,17 +791,61 @@ manta migrate nodes 'x3000c0s1b0n[0-3]' --to gpu-cluster --from nodes_free
 
 ---
 
+## backup
+
+Back up cluster state. Replaces `manta migrate vCluster backup`.
+
+### backup vcluster
+
+Backup a virtual cluster's full configuration (BOS, CFS, IMS image, HSM group).
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `-b/--bos` | string | BOS session template name |
+| `-d/--destination` | dir | Destination folder for backup files |
+| `-p/--pre-hook` | string | Shell command to run before backup |
+| `-a/--post-hook` | string | Shell command to run after backup |
+| `-o/--output` | string | Output format: `table`, `json` (default `table`) |
+
+---
+
+## restore
+
+Restore cluster state from a backup. Replaces `manta migrate vCluster restore`.
+
+### restore vcluster
+
+Restore a virtual cluster from backup files.
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `-b/--bos-file` | path | BOS session template backup file |
+| `-c/--cfs-file` | path | CFS configuration backup file |
+| `-j/--hsm-file` | path | HSM group description backup file |
+| `-m/--ims-file` | path | IMS backup file |
+| `-i/--image-dir` | dir | Directory containing image files |
+| `-p/--pre-hook` | string | Shell command before restore |
+| `-a/--post-hook` | string | Shell command after restore |
+| `-o/--overwrite` | flag | Overwrite existing data |
+| `--output` | string | Output format: `table`, `json` (default `table`) |
+
+---
+
 ## power
 
 Manage node power state.
 
-### power on cluster \<CLUSTER_NAME\>
+### power on group \<GROUP_NAME\>
 
-Power on all nodes in a cluster.
+Power on all nodes in an HSM group.
+
+> Replaces `power on cluster <NAME>`, which still works for one
+> release but prints a deprecation warning on use. Same for
+> `power off cluster` / `power reset cluster` below.
 
 | Arg/Flag | Type | Default | Description |
 |----------|------|---------|-------------|
-| `CLUSTER_NAME` | string | — | Cluster (HSM group) name |
+| `GROUP_NAME` | string | — | HSM group name |
 | `-R/--reason` | string | — | Reason for the power action |
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
@@ -785,31 +860,31 @@ Power on specific nodes.
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
-### power off cluster \<CLUSTER_NAME\> / power off nodes \<VALUE\>
+### power off group \<GROUP_NAME\> / power off nodes \<VALUE\>
 
 Power off nodes.
 
 | Arg/Flag | Type | Description |
 |----------|------|-------------|
 | `-g/--graceful` | flag | Graceful shutdown |
-| `-R/--reason` | string | Reason for power-off (cluster only) |
+| `-R/--reason` | string | Reason for power-off (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
 | `-o/--output` | string | Output format: `table`, `json` |
 
-### power reset cluster \<CLUSTER_NAME\> / power reset nodes \<VALUE\>
+### power reset group \<GROUP_NAME\> / power reset nodes \<VALUE\>
 
 Power-cycle nodes.
 
 | Arg/Flag | Type | Description |
 |----------|------|-------------|
 | `-g/--graceful` | flag | Graceful reset |
-| `-r/--reason` | string | Reason (cluster only) |
+| `-r/--reason` | string | Reason (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
 | `-o/--output` | string | Output format: `table`, `json` |
 
 ```
-manta power off cluster compute --graceful --assume-yes
-manta power on cluster compute
+manta power off group compute --graceful --assume-yes
+manta power on group compute
 manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful
 ```
 
@@ -851,27 +926,19 @@ manta console target-ansible my-session
 
 ---
 
-## add-nodes-to-groups
+## add-nodes-to-groups *(deprecated)*
 
-Add nodes to one or more HSM groups.
-
-| Flag | Type | Description |
-|------|------|-------------|
-| `-g/--group` | string | Target HSM group |
-| `-n/--nodes` | string | Nodes to add (xnames/nids/hostlist) |
-| `-d/--dry-run` | flag | Simulate without changes |
+Old top-level alias of [`add nodes`](#add-nodes). Still works for one
+release; prints a stderr warning on every invocation pointing at the
+new form. Same flag set as the canonical command.
 
 ---
 
-## remove-nodes-from-groups
+## remove-nodes-from-groups *(deprecated)*
 
-Remove nodes from one or more HSM groups.
-
-| Flag | Type | Description |
-|------|------|-------------|
-| `-g/--group` | string | Source HSM group |
-| `-n/--nodes` | string | Nodes to remove (xnames/nids/hostlist) |
-| `-d/--dry-run` | flag | Simulate without changes |
+Old top-level alias of [`delete nodes`](#delete-nodes). Still works
+for one release; prints a stderr warning on every invocation pointing
+at the new form. Same flag set as the canonical command.
 
 ---
 
