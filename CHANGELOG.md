@@ -2,85 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### CLI normalization — deferred follow-ups
-
-Several CLI shapes from the earlier Tier 1/2 plan landed; the items
-below close out the remaining Option-A renames from task #60. Every
-old form keeps working for one release with a `[DEPRECATED]` tag in
-its help text plus a one-line stderr warning on use. Plan: drop the
-old forms in the next major release.
-
-| Old form | New canonical form |
-|---|---|
-| `manta apply session` | `manta run session` |
-| `manta apply boot cluster` | `manta apply boot group` |
-| `manta apply hardware cluster` | `manta apply hardware group` |
-| `manta get cluster` | `manta get group-nodes` |
-| `manta get hardware cluster` | `manta get group-hardware` |
-| `manta power on cluster` | `manta power on group` |
-| `manta power off cluster` | `manta power off group` |
-| `manta power reset cluster` | `manta power reset group` |
-| `manta migrate vCluster backup` | `manta backup vcluster` |
-| `manta migrate vCluster restore` | `manta restore vcluster` |
-| `manta add-nodes-to-groups` | `manta add nodes` |
-| `manta remove-nodes-from-groups` | `manta delete nodes` |
-| `--target-cluster` | `--target-group` |
-| `--parent-cluster` | `--parent-group` |
-| `--create-hsm-group` | `--create-group` |
-| `--delete-hsm-group` | `--delete-group` |
-| `--create-target-hsm-group` | `--create-target-group` |
-| `--delete-empty-parent-hsm-group` | `--delete-empty-parent-group` |
-
-### Features
-
-- `config show` honours `-o/--output {table,json}` via a dedicated
-  `output::config_summary` renderer
-- `apply session` and `apply sat-file` route their final result
-  through `output::action_result` (`--output json` returns
-  `{"status":"ok","message":...,"data":...}`)
-- `MantaClient::apply_sat_file` now returns the server's response
-  payload (previously discarded)
-
-### Refactor
-
-- Internal source-tree rename — `commands::{get_cluster,
-  get_hardware_cluster, apply_hw_cluster, apply_boot_cluster,
-  add_hw_component_cluster, delete_hw_component_cluster}` -> their
-  `_group`-suffixed counterparts. No user impact.
-
-### Breaking changes
-
-- **REST endpoint rename**: `GET /clusters` is now `GET /groups/nodes`
-  and `GET /hardware-clusters` is now `GET /groups/hardware`. The old
-  paths still respond with the same shape but log a server-side
-  deprecation warning on every hit. CLI's HTTP client switched to the
-  new paths in the same release. Write-side
-  `/hardware-clusters/{target}/...` endpoints are unchanged in this
-  release; their rename is planned for the next.
-
-### Documentation
-
-- New top-level [MIGRATING.md](MIGRATING.md) covering v1 -> v2 for
-  end users, site operators, and integrators. Includes the full
-  command/flag/REST rename tables and a step-by-step playbook.
-- API.md gains documented `GET /groups/nodes` / `GET /groups/hardware`
-  sections; the old `/clusters` / `/hardware-clusters` paths are
-  retained as *(deprecated)* sub-sections with pointers to the new
-  paths. A callout on the write-side `/hardware-clusters/{target}/...`
-  endpoints explains they're scheduled for a parallel rename.
-- CLI.md per-section rewrite: every command example now uses the
-  canonical group-centric names; the old top-level
-  `add-nodes-to-groups` / `remove-nodes-from-groups` sections are
-  short deprecation stubs pointing at the new forms.
-- GUIDE.md walkthroughs updated end-to-end — every shell example uses
-  v2 syntax (no `apply session`, no `migrate vCluster …`, no
-  `--hsm-group`, no `power on cluster …`).
-- README.md "Where to look next" table links MIGRATING.md.
-- `cli.toml.example` comment refers to `--group` (was `--hsm-group`).
-
-## [2.0.0-beta.12] - 2026-05-23
+## [2.0.0-beta.13] - 2026-05-23
 
 ### Bug Fixes
 
@@ -105,6 +27,7 @@ old forms in the next major release.
 
 - Document Cargo workspace split + scope CI fmt/grep paths
 - Finish Phase 1 of rustdoc — sat_file + config types + 4 doctests + CI
+- Refresh module headers + fn docstrings after Tier 3.2 renames
 
 ### Features
 
@@ -115,6 +38,16 @@ old forms in the next major release.
 - Route delete_* commands through output::action_result
 - Route update/apply/migrate commands through output::action_result
 - Route config/power commands through output::action_result
+- Route apply session + apply sat-file through output::action_result
+- Structured renderer for config show with --output json
+- Introduce 'add nodes' / 'delete nodes' under add/delete verbs
+- Promote vCluster backup/restore to top-level verbs
+- Rename 'apply session' to 'run session'
+- Introduce 'get group-nodes' / 'get group-hardware' (Tier 3.2 phase 1/N)
+- Introduce 'apply boot group' (Tier 3.2 phase 2/N)
+- Introduce 'apply hardware group' + group-flag aliases (Tier 3.2 phase 3/N)
+- Introduce 'power on/off/reset group' (Tier 3.2 phase 4/N)
+- Rename /clusters and /hardware-clusters REST paths (Tier 3.2 phase A6)
 
 ### Miscellaneous Tasks
 
@@ -149,6 +82,7 @@ old forms in the next major release.
 - Rename --hsm-group to --group with backwards-compat alias
 - Pluralize redfish-endpoint subcommand for consistency
 - Flatten arbitrary command directory splits
+- Rename cluster-named command modules (Tier 3.2 phase 5/N)
 
 ### Styling
 
