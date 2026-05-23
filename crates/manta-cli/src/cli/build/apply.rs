@@ -241,26 +241,19 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     .arg(output_flag())
 }
 
-pub fn subcommand_apply_boot_cluster() -> Command {
-  Command::new("cluster")
+/// Attach the per-group boot-parameter argument set. Shared between
+/// the canonical `apply boot group` and the deprecated
+/// `apply boot cluster` paths so they stay in lockstep.
+fn add_apply_boot_group_args(cmd: Command) -> Command {
+  cmd
     .arg_required_else_help(true)
-    .about("Update boot parameters for all nodes in a cluster")
-    .long_about(
-      "Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a cluster.\n\n\
-      The boot image can be specified by image ID or by the configuration name used to build it \
-      (the most recent matching image is used).\n\n\
-      eg:\n  \
-      manta apply boot cluster \\\n    \
-        --boot-image-configuration <config-name> \\\n    \
-        --runtime-configuration <config-name> <cluster-name>",
-    )
     .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
     .arg(
       arg!(-b --"boot-image-configuration" <NAME>
         "Configuration name used to build the boot image (uses the most recent matching image)"),
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
-    .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all cluster nodes"))
+    .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all group members"))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(
       arg!(--"do-not-reboot" "Suppress the automatic reboot after updating boot parameters")
@@ -271,8 +264,33 @@ pub fn subcommand_apply_boot_cluster() -> Command {
       ArgGroup::new("boot-image_or_boot-config")
         .args(["boot-image", "boot-image-configuration"]),
     )
-    .arg(arg!(<CLUSTER_NAME> "Cluster name").required(true))
+    // ID preserved as "CLUSTER_NAME" for handler compatibility
+    .arg(arg!(<CLUSTER_NAME> "Group name").required(true))
     .arg(output_flag())
+}
+
+pub fn subcommand_apply_boot_cluster() -> Command {
+  add_apply_boot_group_args(Command::new("cluster"))
+    .about("[DEPRECATED] Use 'manta apply boot group' instead")
+    .long_about(
+      "Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a group.\n\n\
+      DEPRECATED: this command has been renamed to `manta apply boot group`. The old name keeps working for one release.",
+    )
+}
+
+/// Canonical replacement for `apply boot cluster`.
+pub fn subcommand_apply_boot_group() -> Command {
+  add_apply_boot_group_args(Command::new("group"))
+    .about("Update boot parameters for all nodes in a group")
+    .long_about(
+      "Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a group.\n\n\
+      The boot image can be specified by image ID or by the configuration name used to build it \
+      (the most recent matching image is used).\n\n\
+      eg:\n  \
+      manta apply boot group \\\n    \
+        --boot-image-configuration <config-name> \\\n    \
+        --runtime-configuration <config-name> <group-name>",
+    )
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {
@@ -309,6 +327,7 @@ pub fn subcommand_apply() -> Command {
         .arg_required_else_help(true)
         .about("Update boot parameters and runtime configuration")
         .subcommand(subcommand_apply_boot_nodes())
+        .subcommand(subcommand_apply_boot_group())
         .subcommand(subcommand_apply_boot_cluster()),
     )
     .subcommand(subcommand_apply_kernel_parameters())

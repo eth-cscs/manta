@@ -215,7 +215,32 @@ pub async fn handle_apply(
         )
         .await?;
       }
+      Some(("group", m)) => {
+        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
+        let assume_yes = m.get_flag("assume-yes");
+        let do_not_reboot = m.get_flag("do-not-reboot");
+        let dry_run = m.get_flag("dry-run");
+        let output_opt = m.opt_str("output");
+        commands::apply_boot_cluster::exec(
+          ctx,
+          &token,
+          m.opt_str("boot-image"),
+          m.opt_str("boot-image-configuration"),
+          m.opt_str("runtime-configuration"),
+          m.opt_str("kernel-parameters"),
+          hsm_group_name_arg,
+          assume_yes,
+          do_not_reboot,
+          dry_run,
+          output_opt,
+        )
+        .await?;
+      }
       Some(("cluster", m)) => {
+        eprintln!(
+          "warning: 'manta apply boot cluster' is deprecated; \
+           use 'manta apply boot group' instead.",
+        );
         let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
