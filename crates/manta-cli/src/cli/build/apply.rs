@@ -3,7 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
-use super::HOSTLIST_HELP;
+use super::{HOSTLIST_HELP, output_flag, output_flag_long_only};
 
 pub fn subcommand_apply_hw_configuration() -> Command {
   Command::new("hardware")
@@ -31,7 +31,8 @@ pub fn subcommand_apply_hw_configuration() -> Command {
         .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
         .arg(arg!(-c --"create-target-hsm-group" "Create the target cluster if it does not exist"))
         .arg(arg!(-D --"delete-empty-parent-hsm-group" "Delete the parent cluster if empty after this operation"))
-        .arg(arg!(-u --"unpin-nodes" "Allow any available nodes to be selected")),
+        .arg(arg!(-u --"unpin-nodes" "Allow any available nodes to be selected"))
+        .arg(output_flag()),
     )
 }
 
@@ -192,6 +193,7 @@ pub fn subcommand_apply_sat_file() -> Command {
     .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run after successful processing.\neg: --post-hook \"echo hello\""))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(output_flag_long_only())
 }
 
 pub fn subcommand_apply_boot_nodes() -> Command {
@@ -226,6 +228,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     )
     // ID preserved as "VALUE" for handler compatibility
     .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP))
+    .arg(output_flag())
 }
 
 pub fn subcommand_apply_boot_cluster() -> Command {
@@ -259,6 +262,7 @@ pub fn subcommand_apply_boot_cluster() -> Command {
         .args(["boot-image", "boot-image-configuration"]),
     )
     .arg(arg!(<CLUSTER_NAME> "Cluster name").required(true))
+    .arg(output_flag())
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {
@@ -280,6 +284,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
         .args(["group", "nodes"])
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_apply() -> Command {

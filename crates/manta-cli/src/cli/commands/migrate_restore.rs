@@ -3,6 +3,7 @@
 use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// Restore cluster configuration from a backup bundle.
@@ -18,21 +19,25 @@ pub async fn exec(
   prehook: Option<&str>,
   posthook: Option<&str>,
   overwrite: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let bos_file_value = bos_file.context("BOS file is required")?;
   let cfs_file_value = cfs_file.context("CFS file is required")?;
   let ims_file_value = ims_file.context("IMS file is required")?;
   let hsm_file_value = hsm_file.context("HSM file is required")?;
 
-  println!(
-    "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
-    prehook.unwrap_or("none"),
-    posthook.unwrap_or("none"),
-    bos_file_value,
-    cfs_file_value,
-    ims_file_value,
-    hsm_file_value
-  );
+  action_result::print(
+    &format!(
+      "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
+      prehook.unwrap_or("none"),
+      posthook.unwrap_or("none"),
+      bos_file_value,
+      cfs_file_value,
+      ims_file_value,
+      hsm_file_value
+    ),
+    output_opt,
+  )?;
 
   if let Some(prehook_path) = prehook {
     match crate::cli::common::hooks::check_hook_perms(Some(prehook_path)) {
@@ -87,9 +92,10 @@ pub async fn exec(
     }
   }
 
-  println!(
-    "\nDone, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored."
-  );
+  action_result::print(
+    "Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.",
+    output_opt,
+  )?;
 
   Ok(())
 }

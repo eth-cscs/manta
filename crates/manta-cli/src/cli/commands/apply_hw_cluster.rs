@@ -5,6 +5,7 @@ use clap::ArgMatches;
 
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::hw_cluster::HwClusterMode;
 
@@ -60,12 +61,12 @@ pub async fn exec(
       delete_empty_parent_hsm_group,
     )
     .await?;
-  if dryrun {
-    println!("Dry run enabled, not modifying the HSM groups on the system.");
-  }
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&result).unwrap_or_default()
-  );
+  let output_opt = cli_apply_hw_cluster.opt_str("output");
+  let message = if dryrun {
+    "Dry run enabled, not modifying the HSM groups on the system."
+  } else {
+    "Hardware configuration applied."
+  };
+  action_result::print_with_data(message, &result, output_opt)?;
   Ok(())
 }

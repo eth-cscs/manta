@@ -23,6 +23,7 @@ pub async fn handle_migrate(
       let from_opt = m.opt_str("from");
       let to = m.req_str("to")?;
       let xnames_string = m.req_str("XNAMES")?;
+      let output_opt = m.opt_str("output");
 
       // If --from is set, use just that group; otherwise fan out to every
       // group the token can access. The accessible-group list comes from
@@ -47,11 +48,13 @@ pub async fn handle_migrate(
         xnames_string,
         dry_run,
         false,
+        output_opt,
       )
       .await?;
     }
     Some(("vCluster", m)) => match m.subcommand() {
       Some(("backup", m)) => {
+        let output_opt = m.opt_str("output");
         migrate_backup::exec(
           ctx,
           &token,
@@ -59,11 +62,13 @@ pub async fn handle_migrate(
           m.opt_str("destination"),
           m.opt_str("pre-hook"),
           m.opt_str("post-hook"),
+          output_opt,
         )
         .await?;
       }
       Some(("restore", m)) => {
         let overwrite: bool = m.get_flag("overwrite");
+        let output_opt = m.opt_str("output");
         migrate_restore::exec(
           ctx,
           &token,
@@ -75,6 +80,7 @@ pub async fn handle_migrate(
           m.opt_str("pre-hook"),
           m.opt_str("post-hook"),
           overwrite,
+          output_opt,
         )
         .await?;
       }

@@ -3,6 +3,7 @@
 use anyhow::{Context, Error};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::common::audit;
 use manta_shared::shared::params::boot_parameters::UpdateBootParametersParams;
@@ -18,9 +19,8 @@ pub async fn exec(
   boot_params: Option<&str>,
   kernel: Option<&str>,
   initrd: Option<&str>,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  println!("Update boot parameters");
-
   let hosts: Vec<String> = xnames.split(',').map(String::from).collect();
   let macs: Option<Vec<String>> =
     macs.map(|x| x.split(',').map(String::from).collect());
@@ -59,6 +59,8 @@ pub async fn exec(
     None,
   )
   .await;
+
+  action_result::print("Boot parameters updated", output_opt)?;
 
   Ok(())
 }

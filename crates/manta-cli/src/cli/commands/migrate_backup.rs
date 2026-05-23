@@ -3,9 +3,11 @@
 use anyhow::{Context, Error, bail};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// Back up cluster configuration to a local bundle.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -13,18 +15,22 @@ pub async fn exec(
   destination: Option<&str>,
   prehook: Option<&str>,
   posthook: Option<&str>,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let bos_value = bos.context("BOS template is required")?;
   let destination_value =
     destination.context("Destination folder is required")?;
 
-  println!(
-    "Migrate backup \n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}\n",
-    bos_value,
-    destination_value,
-    prehook.unwrap_or("none"),
-    posthook.unwrap_or("none"),
-  );
+  action_result::print(
+    &format!(
+      "Migrate backup\n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}",
+      bos_value,
+      destination_value,
+      prehook.unwrap_or("none"),
+      posthook.unwrap_or("none"),
+    ),
+    output_opt,
+  )?;
 
   if let Some(prehook_path) = prehook {
     match crate::cli::common::hooks::check_hook_perms(Some(prehook_path)) {
@@ -76,6 +82,8 @@ pub async fn exec(
       }
     }
   }
+
+  action_result::print("Backup completed", output_opt)?;
 
   Ok(())
 }

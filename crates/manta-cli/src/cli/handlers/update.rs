@@ -21,8 +21,9 @@ pub async fn handle_update(
       let params = m.opt_str("params");
       let kernel = m.opt_str("kernel");
       let initrd = m.opt_str("initrd");
+      let output_opt = m.opt_str("output");
       update_boot_parameters::exec(
-        ctx, &token, hosts, None, None, params, kernel, initrd,
+        ctx, &token, hosts, None, None, params, kernel, initrd, output_opt,
       )
       .await?;
     }
@@ -43,6 +44,7 @@ pub async fn handle_update(
       let ip_address = m.opt_string("ipaddress");
       let rediscover_on_update: bool = m.get_flag("rediscover-on-update");
       let template_id = m.opt_string("template-id");
+      let output_opt = m.opt_str("output");
       update_redfish_endpoint::exec(
         ctx,
         &token,
@@ -60,6 +62,7 @@ pub async fn handle_update(
         ip_address,
         rediscover_on_update,
         template_id,
+        output_opt,
       )
       .await?;
     }

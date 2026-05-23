@@ -3,9 +3,11 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::{app_context::AppContext, audit};
 
 /// Move nodes between HSM groups with validation.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -14,6 +16,7 @@ pub async fn exec(
   hosts_expression: &str,
   dry_run: bool,
   create_hsm_group: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let result = MantaClient::new(server_url, ctx.site_name)?
@@ -26,13 +29,12 @@ pub async fn exec(
       create_hsm_group,
     )
     .await?;
-  if dry_run {
-    println!("dry-run enabled, changes not persisted.");
-  }
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&result).unwrap_or_default()
-  );
+  let message = if dry_run {
+    "dry-run enabled, changes not persisted."
+  } else {
+    "Nodes migrated."
+  };
+  action_result::print_with_data(message, &result, output_opt)?;
 
   audit::maybe_send_audit(
     ctx.kafka_audit_opt,

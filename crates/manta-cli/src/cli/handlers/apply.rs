@@ -124,6 +124,7 @@ pub async fn handle_apply(
         .context("'include-disabled' must have a value")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
       commands::apply_template::exec(
         ctx,
         &token,
@@ -134,6 +135,7 @@ pub async fn handle_apply(
         include_disabled,
         assume_yes,
         dry_run,
+        output_opt,
       )
       .await?;
     }
@@ -164,6 +166,7 @@ pub async fn handle_apply(
       let kernel_parameters = m.req_str("VALUE")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
+      let output_opt = m.opt_str("output");
       commands::apply_kernel_parameters::exec(
         ctx,
         &token,
@@ -173,6 +176,7 @@ pub async fn handle_apply(
         assume_yes,
         do_not_reboot,
         dryrun,
+        output_opt,
       )
       .await?;
     }
@@ -189,6 +193,7 @@ pub async fn handle_apply(
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
+        let output_opt = m.opt_str("output");
         commands::apply_boot_node::exec(
           ctx,
           &token,
@@ -200,6 +205,7 @@ pub async fn handle_apply(
           assume_yes,
           do_not_reboot,
           dry_run,
+          output_opt,
         )
         .await?;
       }
@@ -208,6 +214,7 @@ pub async fn handle_apply(
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
+        let output_opt = m.opt_str("output");
         commands::apply_boot_cluster::exec(
           ctx,
           &token,
@@ -219,6 +226,7 @@ pub async fn handle_apply(
           assume_yes,
           do_not_reboot,
           dry_run,
+          output_opt,
         )
         .await?;
       }

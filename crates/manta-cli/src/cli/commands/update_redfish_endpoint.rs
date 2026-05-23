@@ -3,6 +3,7 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams;
 
@@ -25,9 +26,10 @@ pub async fn exec(
   ip_address: Option<String>,
   rediscover_on_update: bool,
   template_id: Option<String>,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let params = UpdateRedfishEndpointParams {
-    id,
+    id: id.clone(),
     name,
     hostname,
     domain,
@@ -47,6 +49,11 @@ pub async fn exec(
   MantaClient::new(server_url, ctx.site_name)?
     .update_redfish_endpoint(token, &params)
     .await?;
+
+  action_result::print(
+    &format!("Redfish endpoint '{id}' updated"),
+    output_opt,
+  )?;
 
   Ok(())
 }

@@ -32,6 +32,15 @@ pub(super) fn output_flag() -> clap::Arg {
     .default_value("table")
 }
 
+/// Long-only `--output {table,json}` variant for subcommands that
+/// already use `-o` for something else (eg. `apply template --operation`
+/// or `apply sat-file --overwrite-configuration`).
+pub(super) fn output_flag_long_only() -> clap::Arg {
+  arg!(--output <FORMAT> "Output format")
+    .value_parser(["table", "json"])
+    .default_value("table")
+}
+
 /// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
   // Hard-coded "manta" rather than `env!("CARGO_PKG_NAME")` because the
@@ -145,6 +154,7 @@ fn subcommand_migrate_backup() -> Command {
     .arg(
       arg!(-a --"post-hook" <SCRIPT> "Command to run after a successful backup.\neg: --post-hook \"echo hello\""),
     )
+    .arg(output_flag())
 }
 
 fn subcommand_migrate_restore() -> Command {
@@ -176,6 +186,7 @@ fn subcommand_migrate_restore() -> Command {
       arg!(-a --"post-hook" <SCRIPT> "Command to run after a successful restore.\neg: --post-hook \"echo hello\""),
     )
     .arg(arg!(-o --"overwrite" "Overwrite existing data").action(ArgAction::SetTrue))
+    .arg(output_flag_long_only())
 }
 
 fn subcommand_power() -> Command {
@@ -342,6 +353,7 @@ fn subcommand_update_boot_parameters() -> Command {
       arg!(-y --"assume-yes" "Skip confirmation prompts")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }
 
 fn subcommand_update_redfish_endpoint() -> Command {
@@ -370,6 +382,7 @@ fn subcommand_update_redfish_endpoint() -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(arg!(-t --"template-id" <VALUE> "Discovery template ID"))
+    .arg(output_flag())
     .arg_required_else_help(true)
 }
 
@@ -402,7 +415,8 @@ fn subcommand_migrate() -> Command {
           arg!(<XNAMES> "Xnames, NIDs, or a hostlist expression.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1'")
             .required(true),
         )
-        .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue)),
+        .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+        .arg(output_flag()),
     )
 }
 

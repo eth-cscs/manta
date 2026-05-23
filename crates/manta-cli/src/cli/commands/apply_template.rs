@@ -3,6 +3,7 @@
 use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// Create a BOS session template and optionally boot.
@@ -17,6 +18,7 @@ pub async fn exec(
   include_disabled: bool,
   _assume_yes: bool,
   dry_run: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let result = MantaClient::new(server_url, ctx.site_name)?
@@ -30,16 +32,11 @@ pub async fn exec(
       dry_run,
     )
     .await?;
-  if dry_run {
-    println!(
-      "Dry-run enabled. No changes persisted into the system\n{}",
-      serde_json::to_string_pretty(&result).unwrap_or_default()
-    );
+  let message = if dry_run {
+    "Dry-run enabled. No changes persisted into the system."
   } else {
-    println!(
-      "BOS session created: {}",
-      serde_json::to_string_pretty(&result).unwrap_or_default()
-    );
-  }
+    "BOS session created."
+  };
+  action_result::print_with_data(message, &result, output_opt)?;
   Ok(())
 }
