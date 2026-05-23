@@ -1,4 +1,5 @@
-//! Implements the `manta apply boot cluster` command.
+//! Implements the `manta apply boot group` command (and the deprecated
+//! `manta apply boot cluster` alias that forwards to it).
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;

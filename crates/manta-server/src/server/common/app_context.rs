@@ -41,7 +41,7 @@ pub struct InfraContext<'a> {
   /// return 501.
   pub vault_base_url: Option<&'a str>,
   /// Base URL of the site's Gitea VCS, used by SAT-file rendering
-  /// and `apply session` to resolve repository references.
+  /// and `run session` to resolve repository references.
   pub gitea_base_url: &'a str,
   /// Optional Kubernetes API URL; `None` makes k8s-dependent handlers
   /// (console, session-logs SSE) return 501.

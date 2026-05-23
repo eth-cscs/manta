@@ -1,4 +1,8 @@
-//! Routes miscellaneous top-level commands (add-nodes-to-groups, etc.).
+//! Routes top-level deprecated aliases (add-nodes-to-groups,
+//! remove-nodes-from-groups). The canonical forms (`manta add nodes`
+//! / `manta delete nodes`) live under the add/delete verb trees; this
+//! module exists solely to keep the old top-level spellings working
+//! during the deprecation grace period.
 
 use crate::cli::commands::{
   add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
@@ -9,7 +13,7 @@ use anyhow::{Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
 
-/// Dispatch top-level misc commands (add-nodes-to-groups,
+/// Dispatch the deprecated top-level commands (add-nodes-to-groups,
 /// remove-nodes-from-groups).
 pub async fn handle_misc(
   cli_root: &ArgMatches,

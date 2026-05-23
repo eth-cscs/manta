@@ -1,4 +1,5 @@
-//! Implements the `manta remove-nodes-from-groups` command.
+//! Implements the `manta delete nodes` command (and the deprecated
+//! `manta remove-nodes-from-groups` alias that forwards to it).
 
 use anyhow::{Error, bail};
 

@@ -1,4 +1,5 @@
-//! Implements the `manta migrate vCluster backup` command.
+//! Implements the `manta backup vcluster` command (and the deprecated
+//! `manta migrate vCluster backup` alias that forwards to it).
 
 use anyhow::{Context, Error, bail};
 

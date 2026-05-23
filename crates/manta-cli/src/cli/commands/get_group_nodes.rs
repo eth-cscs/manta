@@ -1,4 +1,5 @@
-//! Implements the `manta get cluster` command.
+//! Implements the `manta get group-nodes` command (and the deprecated
+//! `manta get cluster` alias that forwards to it).
 
 use anyhow::{Context, Error, bail};
 
@@ -21,7 +22,8 @@ fn parse_cluster_params(
   }
 }
 
-/// CLI adapter for `manta get cluster`.
+/// CLI adapter for `manta get group-nodes` (and the deprecated
+/// `manta get cluster` alias).
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

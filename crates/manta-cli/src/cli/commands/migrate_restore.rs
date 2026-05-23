@@ -1,4 +1,5 @@
-//! Implements the `manta migrate vCluster restore` command.
+//! Implements the `manta restore vcluster` command (and the deprecated
+//! `manta migrate vCluster restore` alias that forwards to it).
 
 use anyhow::{Context, Error, bail};
 

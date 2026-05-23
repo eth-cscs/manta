@@ -1,4 +1,5 @@
-//! Implements the `manta apply hardware cluster` command.
+//! Implements the `manta apply hardware group` command (and the deprecated
+//! `manta apply hardware cluster` alias that forwards to it).
 
 use anyhow::{Context, Error};
 use clap::ArgMatches;
