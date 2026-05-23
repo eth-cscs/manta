@@ -50,6 +50,36 @@ old forms in the next major release.
   add_hw_component_cluster, delete_hw_component_cluster}` -> their
   `_group`-suffixed counterparts. No user impact.
 
+### Breaking changes
+
+- **REST endpoint rename**: `GET /clusters` is now `GET /groups/nodes`
+  and `GET /hardware-clusters` is now `GET /groups/hardware`. The old
+  paths still respond with the same shape but log a server-side
+  deprecation warning on every hit. CLI's HTTP client switched to the
+  new paths in the same release. Write-side
+  `/hardware-clusters/{target}/...` endpoints are unchanged in this
+  release; their rename is planned for the next.
+
+### Documentation
+
+- New top-level [MIGRATING.md](MIGRATING.md) covering v1 -> v2 for
+  end users, site operators, and integrators. Includes the full
+  command/flag/REST rename tables and a step-by-step playbook.
+- API.md gains documented `GET /groups/nodes` / `GET /groups/hardware`
+  sections; the old `/clusters` / `/hardware-clusters` paths are
+  retained as *(deprecated)* sub-sections with pointers to the new
+  paths. A callout on the write-side `/hardware-clusters/{target}/...`
+  endpoints explains they're scheduled for a parallel rename.
+- CLI.md per-section rewrite: every command example now uses the
+  canonical group-centric names; the old top-level
+  `add-nodes-to-groups` / `remove-nodes-from-groups` sections are
+  short deprecation stubs pointing at the new forms.
+- GUIDE.md walkthroughs updated end-to-end — every shell example uses
+  v2 syntax (no `apply session`, no `migrate vCluster …`, no
+  `--hsm-group`, no `power on cluster …`).
+- README.md "Where to look next" table links MIGRATING.md.
+- `cli.toml.example` comment refers to `--group` (was `--hsm-group`).
+
 ## [2.0.0-beta.12] - 2026-05-23
 
 ### Bug Fixes
