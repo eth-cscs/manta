@@ -438,6 +438,7 @@ fn subcommand_remove_nodes_from_groups() -> Command {
       arg!(-d --"dry-run" "Simulate the operation without making changes")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }
 
 #[cfg(test)]

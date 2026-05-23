@@ -2,7 +2,7 @@
 
 use clap::{ArgAction, ArgGroup, Command, arg};
 
-use super::HOSTLIST_HELP;
+use super::{HOSTLIST_HELP, output_flag};
 
 pub fn subcommand_delete() -> Command {
   Command::new("delete")
@@ -35,6 +35,7 @@ pub fn subcommand_delete_group() -> Command {
         .value_name("GROUP_NAME")
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_node() -> Command {
@@ -47,6 +48,7 @@ pub fn subcommand_delete_node() -> Command {
         .value_name("XNAME")
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_hw_component() -> Command {
@@ -58,6 +60,7 @@ pub fn subcommand_delete_hw_component() -> Command {
     .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Cluster that receives the freed components"))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     .arg(arg!(-D --"delete-hsm-group" "Delete the group if empty after this operation").action(ArgAction::SetTrue))
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_image() -> Command {
@@ -71,6 +74,7 @@ pub fn subcommand_delete_image() -> Command {
         .value_name("IMAGE_IDS")
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_configuration() -> Command {
@@ -88,6 +92,7 @@ pub fn subcommand_delete_configuration() -> Command {
     .arg(arg!(-s --since <DATE> "Delete configurations last updated after this date (format: %Y-%m-%d)"))
     .arg(arg!(-u --until <DATE> "Delete configurations last updated before this date (format: %Y-%m-%d)"))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+    .arg(output_flag())
     .group(
       ArgGroup::new("since_and_until")
         .args(["since", "until"])
@@ -109,6 +114,7 @@ pub fn subcommand_delete_session() -> Command {
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     .arg(arg!(<SESSION_NAME> "Name of the session to delete").required(true))
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_kernel_parameter() -> Command {
@@ -127,6 +133,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
         .args(["group", "nodes"])
         .required(true),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_boot_parameter() -> Command {
@@ -134,6 +141,7 @@ pub fn subcommand_delete_boot_parameter() -> Command {
     .arg_required_else_help(true)
     .about("Delete boot parameters for nodes")
     .arg(arg!(-H --hosts <XNAMES> "Xnames of the nodes"))
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_redfish_endpoint() -> Command {
@@ -145,4 +153,5 @@ pub fn subcommand_delete_redfish_endpoint() -> Command {
       arg!(-i --id <XNAME> "Xname of the Redfish endpoint to delete")
         .required(true),
     )
+    .arg(output_flag())
 }

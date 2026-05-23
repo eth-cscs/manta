@@ -2,6 +2,7 @@
 
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// Delete or cancel a CFS session.
@@ -11,6 +12,7 @@ pub async fn exec(
   session_name: &str,
   dry_run: bool,
   assume_yes: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), anyhow::Error> {
   let server_url = ctx.manta_server_url;
   if !common::user_interaction::confirm(
@@ -19,11 +21,15 @@ pub async fn exec(
     ),
     assume_yes,
   ) {
-    println!("Operation cancelled by user");
+    action_result::print("Operation cancelled by user", output_opt)?;
     return Ok(());
   }
   MantaClient::new(server_url, ctx.site_name)?
     .delete_session(token, session_name, dry_run)
     .await?;
+  action_result::print(
+    &format!("Session '{session_name}' deleted"),
+    output_opt,
+  )?;
   Ok(())
 }

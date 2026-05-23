@@ -27,12 +27,21 @@ pub async fn handle_delete(
       let force: bool = *m
         .get_one("force")
         .context("'force' argument must have a value")?;
-      delete_group::exec(ctx, &token, label, force, ctx.kafka_audit_opt)
-        .await?;
+      let output_opt = m.opt_str("output");
+      delete_group::exec(
+        ctx,
+        &token,
+        label,
+        force,
+        ctx.kafka_audit_opt,
+        output_opt,
+      )
+      .await?;
     }
     Some(("node", m)) => {
       let id = m.req_str("VALUE")?;
-      delete_node::exec(ctx, &token, id).await?;
+      let output_opt = m.opt_str("output");
+      delete_node::exec(ctx, &token, id, output_opt).await?;
     }
     Some(("hardware", m)) => {
       let dryrun = m.get_flag("dry-run");
@@ -40,6 +49,7 @@ pub async fn handle_delete(
       let target_hsm_group_name_arg_opt = m.opt_str("target-cluster");
       let parent_hsm_group_name_arg_opt = m.opt_str("parent-cluster");
       let pattern = m.req_str("pattern")?;
+      let output_opt = m.opt_str("output");
       delete_hw_component_cluster::exec(
         ctx,
         &token,
@@ -48,6 +58,7 @@ pub async fn handle_delete(
         pattern,
         dryrun,
         delete_hsm_group,
+        output_opt,
       )
       .await?;
     }
@@ -58,14 +69,16 @@ pub async fn handle_delete(
         .split(',')
         .map(String::from)
         .collect();
-      delete_boot_parameters::exec(ctx, &token, hosts).await?;
+      let output_opt = m.opt_str("output");
+      delete_boot_parameters::exec(ctx, &token, hosts, output_opt).await?;
     }
     Some(("redfish-endpoints", m)) => {
       let id = m.get_one::<String>("id").context(
         "Host argument is mandatory. \
            Please provide the host to delete",
       )?;
-      delete_redfish_endpoint::exec(ctx, &token, id).await?;
+      let output_opt = m.opt_str("output");
+      delete_redfish_endpoint::exec(ctx, &token, id, output_opt).await?;
     }
     Some(("kernel-parameters", m)) => {
       let hsm_group_name_arg_opt = m.opt_str("group");
@@ -74,6 +87,7 @@ pub async fn handle_delete(
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let dryrun = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
       delete_kernel_parameters::exec(
         ctx,
         &token,
@@ -83,6 +97,7 @@ pub async fn handle_delete(
         assume_yes,
         do_not_reboot,
         dryrun,
+        output_opt,
       )
       .await?;
     }
@@ -90,12 +105,14 @@ pub async fn handle_delete(
       let session_name = m.req_str("SESSION_NAME")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
       if let Err(e) = delete_and_cancel_session::exec(
         ctx,
         &token,
         session_name,
         dry_run,
         assume_yes,
+        output_opt,
       )
       .await
       {
@@ -129,6 +146,7 @@ pub async fn handle_delete(
       };
       let cfs_configuration_name_pattern = m.opt_str("configuration-name");
       let assume_yes = m.get_flag("assume-yes");
+      let output_opt = m.opt_str("output");
       if let Err(e) = delete_configurations_and_derivatives::exec(
         ctx,
         &token,
@@ -136,6 +154,7 @@ pub async fn handle_delete(
         since_opt,
         until_opt,
         assume_yes,
+        output_opt,
       )
       .await
       {
@@ -146,11 +165,17 @@ pub async fn handle_delete(
       let image_id_vec: Vec<&str> =
         m.req_str("IMAGE_LIST")?.split(',').map(str::trim).collect();
       let dry_run: bool = m.get_flag("dry-run");
-      match delete_images::exec(ctx, &token, image_id_vec.as_slice(), dry_run)
-        .await
+      let output_opt = m.opt_str("output");
+      if let Err(e) = delete_images::exec(
+        ctx,
+        &token,
+        image_id_vec.as_slice(),
+        dry_run,
+        output_opt,
+      )
+      .await
       {
-        Ok(_) => println!("Images deleted successfully"),
-        Err(e) => bail!("Failed to delete images: {e}"),
+        bail!("Failed to delete images: {e}");
       }
     }
     Some((other, _)) => bail!("Unknown 'delete' subcommand: {other}"),

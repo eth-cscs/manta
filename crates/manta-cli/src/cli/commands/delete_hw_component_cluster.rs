@@ -3,9 +3,11 @@
 use anyhow::{Error, anyhow};
 
 use crate::cli::http_client::MantaClient;
+use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
 
 /// Remove hardware components from a cluster group.
+#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -14,6 +16,7 @@ pub async fn exec(
   pattern: &str,
   dryrun: bool,
   delete_hsm_group: bool,
+  output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let target = target_hsm_group_name_arg_opt
@@ -32,12 +35,11 @@ pub async fn exec(
       dryrun,
     )
     .await?;
-  if dryrun {
-    println!("Dry run enabled, not modifying the HSM groups on the system.");
-  }
-  println!(
-    "{}",
-    serde_json::to_string_pretty(&result).unwrap_or_default()
-  );
+  let message = if dryrun {
+    "Dry run enabled, not modifying the HSM groups on the system."
+  } else {
+    "Hardware components removed."
+  };
+  action_result::print_with_data(message, &result, output_opt)?;
   Ok(())
 }
