@@ -63,6 +63,8 @@ pub fn build_cli() -> Command {
     .subcommand(apply::subcommand_apply())
     .subcommand(delete::subcommand_delete())
     .subcommand(subcommand_migrate())
+    .subcommand(subcommand_backup())
+    .subcommand(subcommand_restore())
     .subcommand(subcommand_power())
     .subcommand(subcommand_log())
     .subcommand(subcommand_console())
@@ -141,14 +143,12 @@ fn subcommand_config() -> Command {
     )
 }
 
-fn subcommand_migrate_backup() -> Command {
-  Command::new("backup")
+/// Attach the vCluster-backup argument set to a clap `Command`. Shared
+/// between the canonical `manta backup vcluster` and the deprecated
+/// `manta migrate vCluster backup` paths so both stay in lockstep.
+fn add_vcluster_backup_args(cmd: Command) -> Command {
+  cmd
     .arg_required_else_help(true)
-    .about("Back up a cluster's configuration")
-    .long_about(
-      "Back up a cluster's configuration: images, boot settings, and group membership.\n\n\
-      The backup is derived from the specified session template.",
-    )
     .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "Session template to derive the backup from"))
     .arg(
       arg!(-d --"destination" <FOLDER> "Destination directory for the backup files")
@@ -161,10 +161,11 @@ fn subcommand_migrate_backup() -> Command {
     .arg(output_flag())
 }
 
-fn subcommand_migrate_restore() -> Command {
-  Command::new("restore")
+/// Attach the vCluster-restore argument set. Shared between
+/// `manta restore vcluster` and `manta migrate vCluster restore`.
+fn add_vcluster_restore_args(cmd: Command) -> Command {
+  cmd
     .arg_required_else_help(true)
-    .about("Restore a cluster from a backup")
     .arg(
       arg!(-b --"bos-file" <FILE> "Session template backup file")
         .value_hint(ValueHint::FilePath),
@@ -191,6 +192,50 @@ fn subcommand_migrate_restore() -> Command {
     )
     .arg(arg!(-o --"overwrite" "Overwrite existing data").action(ArgAction::SetTrue))
     .arg(output_flag_long_only())
+}
+
+fn subcommand_migrate_backup() -> Command {
+  add_vcluster_backup_args(Command::new("backup"))
+    .about("[DEPRECATED] Use 'manta backup vcluster' instead")
+    .long_about(
+      "Back up a cluster's configuration: images, boot settings, and group membership.\n\n\
+      The backup is derived from the specified session template.\n\n\
+      DEPRECATED: this command has moved to the top-level verb tree as \
+      `manta backup vcluster`. The old path keeps working for one release.",
+    )
+}
+
+fn subcommand_migrate_restore() -> Command {
+  add_vcluster_restore_args(Command::new("restore")).about(
+    "[DEPRECATED] Use 'manta restore vcluster' instead. \
+     The old path keeps working for one release.",
+  )
+}
+
+/// Top-level `manta backup` verb.
+fn subcommand_backup() -> Command {
+  Command::new("backup")
+    .arg_required_else_help(true)
+    .about("Back up cluster state")
+    .subcommand(
+      add_vcluster_backup_args(Command::new("vcluster"))
+        .about("Back up a virtual cluster (images, boot settings, group membership)")
+        .long_about(
+          "Back up a virtual cluster's configuration: images, boot settings, \
+          and group membership.\n\nThe backup is derived from the specified session template.",
+        ),
+    )
+}
+
+/// Top-level `manta restore` verb.
+fn subcommand_restore() -> Command {
+  Command::new("restore")
+    .arg_required_else_help(true)
+    .about("Restore cluster state from a backup")
+    .subcommand(
+      add_vcluster_restore_args(Command::new("vcluster"))
+        .about("Restore a virtual cluster from a backup bundle"),
+    )
 }
 
 fn subcommand_power() -> Command {

@@ -54,6 +54,10 @@ pub async fn handle_migrate(
     }
     Some(("vCluster", m)) => match m.subcommand() {
       Some(("backup", m)) => {
+        eprintln!(
+          "warning: 'manta migrate vCluster backup' is deprecated; \
+           use 'manta backup vcluster' instead.",
+        );
         let output_opt = m.opt_str("output");
         migrate_backup::exec(
           ctx,
@@ -67,6 +71,10 @@ pub async fn handle_migrate(
         .await?;
       }
       Some(("restore", m)) => {
+        eprintln!(
+          "warning: 'manta migrate vCluster restore' is deprecated; \
+           use 'manta restore vcluster' instead.",
+        );
         let overwrite: bool = m.get_flag("overwrite");
         let output_opt = m.opt_str("output");
         migrate_restore::exec(

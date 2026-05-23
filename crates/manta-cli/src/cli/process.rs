@@ -5,7 +5,8 @@ use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
 
 use crate::cli::handlers::{
-  add, apply, config, console, delete, get, log, migrate, misc, power, update,
+  add, apply, backup, config, console, delete, get, log, migrate, misc, power,
+  restore, update,
 };
 
 /// Parse CLI arguments and dispatch to the appropriate
@@ -24,6 +25,8 @@ pub async fn process_cli(
     Some(("log", m)) => log::handle_log(m, ctx).await?,
     Some(("console", m)) => console::handle_console(m, ctx).await?,
     Some(("migrate", m)) => migrate::handle_migrate(m, ctx).await?,
+    Some(("backup", m)) => backup::handle_backup(m, ctx).await?,
+    Some(("restore", m)) => restore::handle_restore(m, ctx).await?,
     Some(("delete", m)) => delete::handle_delete(m, ctx).await?,
     _ => misc::handle_misc(cli_root, ctx).await?,
   }
