@@ -20,16 +20,25 @@ pub fn subcommand_get_group() -> Command {
     )
 }
 
-pub fn subcommand_get_hardware() -> Command {
-  let command_get_hw_configuration_cluster = Command::new("cluster")
+/// Attach the hardware-inventory-for-a-group argument set to a clap
+/// `Command`. Shared between the canonical `get group-hardware` and
+/// the deprecated `get hardware cluster` paths so they stay in lockstep.
+fn add_group_hardware_args(cmd: Command) -> Command {
+  cmd
     .arg_required_else_help(true)
-    .about("Show hardware inventory for a cluster")
-    .arg(arg!(<CLUSTER_NAME> "Cluster name").required(true))
+    .arg(arg!(<CLUSTER_NAME> "Group name").required(true))
     .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["json", "summary", "details", "pattern"])
         .default_value("summary"),
-    );
+    )
+}
+
+pub fn subcommand_get_hardware() -> Command {
+  let command_get_hw_configuration_cluster = add_group_hardware_args(
+    Command::new("cluster")
+      .about("[DEPRECATED] Use 'manta get group-hardware' instead"),
+  );
 
   let command_get_hw_nodes = Command::new("nodes")
     .arg_required_else_help(true)
@@ -47,6 +56,12 @@ pub fn subcommand_get_hardware() -> Command {
     .about("Inspect hardware components")
     .subcommand(command_get_hw_configuration_cluster)
     .subcommand(command_get_hw_nodes)
+}
+
+/// Canonical replacement for `get hardware cluster`.
+pub fn subcommand_get_group_hardware() -> Command {
+  add_group_hardware_args(Command::new("group-hardware"))
+    .about("Show hardware inventory for a group")
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {
@@ -113,9 +128,11 @@ pub fn subcommand_get_bos_template() -> Command {
     .group(ArgGroup::new("hsm-group_or_template").args(["group", "name"]))
 }
 
-pub fn subcommand_get_cluster_details() -> Command {
-  Command::new("cluster")
-    .about("Show cluster node details and status")
+/// Attach the per-group node-details argument set to a clap `Command`.
+/// Shared between the canonical `get group-nodes` and the deprecated
+/// `get cluster` paths so they stay in lockstep.
+fn add_group_nodes_args(cmd: Command) -> Command {
+  cmd
     .arg(arg!(-n --"nids-only-one-line" "Print NIDs on a single line").action(ArgAction::SetTrue))
     .arg(arg!(-x --"xnames-only-one-line" "Print xnames on a single line").action(ArgAction::SetTrue))
     .arg(
@@ -123,7 +140,7 @@ pub fn subcommand_get_cluster_details() -> Command {
         .value_parser(["OFF", "ON", "READY", "STANDBY", "PENDING", "FAILED", "CONFIGURED"]),
     )
     .arg(
-      arg!(-T --"summary-status" "Show a cluster status summary:\n\
+      arg!(-T --"summary-status" "Show a group status summary:\n\
         OK          — all nodes booted and configured\n\
         OFF         — at least one node is OFF\n\
         ON          — no nodes OFF, at least one is ON\n\
@@ -139,7 +156,18 @@ pub fn subcommand_get_cluster_details() -> Command {
     )
     .arg_required_else_help(true)
     // ID preserved as "HSM_GROUP_NAME" for handler compatibility
-    .arg(arg!(<HSM_GROUP_NAME> "Cluster name").value_name("CLUSTER_NAME"))
+    .arg(arg!(<HSM_GROUP_NAME> "Group name").value_name("GROUP_NAME"))
+}
+
+pub fn subcommand_get_cluster_details() -> Command {
+  add_group_nodes_args(Command::new("cluster"))
+    .about("[DEPRECATED] Use 'manta get group-nodes' instead")
+}
+
+/// Canonical replacement for `get cluster`.
+pub fn subcommand_get_group_nodes() -> Command {
+  add_group_nodes_args(Command::new("group-nodes"))
+    .about("Show node details and status for a group")
 }
 
 pub fn subcommand_get_node_details() -> Command {
@@ -244,6 +272,8 @@ pub fn subcommand_get() -> Command {
     .subcommand(subcommand_get_cfs_configuration())
     .subcommand(subcommand_get_bos_template())
     .subcommand(subcommand_get_cluster_details())
+    .subcommand(subcommand_get_group_nodes())
+    .subcommand(subcommand_get_group_hardware())
     .subcommand(subcommand_get_node_details())
     .subcommand(subcommand_get_images())
     .subcommand(subcommand_get_boot_parameters())

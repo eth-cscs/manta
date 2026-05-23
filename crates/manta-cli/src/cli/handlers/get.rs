@@ -21,8 +21,16 @@ pub async fn handle_get(
 
   match cli_get.subcommand() {
     Some(("groups", m)) => get_group::exec(ctx, &token, m).await?,
+    Some(("group-nodes", m)) => get_cluster::exec(ctx, &token, m).await?,
+    Some(("group-hardware", m)) => {
+      get_hardware_cluster::exec(ctx, &token, m).await?
+    }
     Some(("hardware", m)) => match m.subcommand() {
       Some(("cluster", m)) => {
+        eprintln!(
+          "warning: 'manta get hardware cluster' is deprecated; \
+           use 'manta get group-hardware' instead.",
+        );
         get_hardware_cluster::exec(ctx, &token, m).await?
       }
       Some(("nodes", m)) => get_hardware_nodes::exec(ctx, &token, m).await?,
@@ -34,7 +42,13 @@ pub async fn handle_get(
     }
     Some(("sessions", m)) => get_session::exec(ctx, &token, m).await?,
     Some(("templates", m)) => get_template::exec(ctx, &token, m).await?,
-    Some(("cluster", m)) => get_cluster::exec(ctx, &token, m).await?,
+    Some(("cluster", m)) => {
+      eprintln!(
+        "warning: 'manta get cluster' is deprecated; \
+         use 'manta get group-nodes' instead.",
+      );
+      get_cluster::exec(ctx, &token, m).await?
+    }
     Some(("nodes", m)) => get_nodes::exec(ctx, &token, m).await?,
     Some(("images", m)) => get_images::exec(ctx, &token, m).await?,
     Some(("boot-parameters", m)) => {
