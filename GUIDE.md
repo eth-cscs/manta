@@ -38,15 +38,15 @@ manta get groups
 **Show nodes in a group with their current status:**
 
 ```bash
-manta get cluster compute
-manta get cluster compute -o summary          # counts per status
-manta get cluster compute --status ON         # only powered-on nodes
+manta get group-nodes compute
+manta get group-nodes compute -o summary          # counts per status
+manta get group-nodes compute --status ON         # only powered-on nodes
 ```
 
 **Get a flat list of xnames (useful for scripting):**
 
 ```bash
-manta get cluster compute --xnames-only-one-line
+manta get group-nodes compute --xnames-only-one-line
 ```
 
 **Check specific nodes:**
@@ -59,7 +59,7 @@ manta get nodes nid001313,nid001314 -o json
 **Check recent CFS sessions:**
 
 ```bash
-manta get sessions --hsm-group compute --status running
+manta get sessions --group compute --status running
 manta get sessions --most-recent
 manta get sessions --limit 10 -o json
 ```
@@ -89,19 +89,19 @@ manta add group --label gpu-cluster --nodes x3000c0s1b0n[0-7]
 **Add nodes to an existing group:**
 
 ```bash
-manta add-nodes-to-groups --group gpu-cluster --nodes x3000c0s9b0n[0-3]
+manta add nodes --group gpu-cluster --nodes x3000c0s9b0n[0-3]
 ```
 
 **Remove nodes from a group:**
 
 ```bash
-manta remove-nodes-from-groups --group gpu-cluster --nodes x3000c0s9b0n[0-3]
+manta delete nodes --group gpu-cluster --nodes x3000c0s9b0n[0-3]
 ```
 
 **Delete a group** (must be empty first):
 
 ```bash
-manta remove-nodes-from-groups --group gpu-cluster --nodes x3000c0s1b0n[0-7]
+manta delete nodes --group gpu-cluster --nodes x3000c0s1b0n[0-7]
 manta delete group gpu-cluster
 ```
 
@@ -169,17 +169,17 @@ Use this to run Ansible from a local git repository without going through the fu
 **Run a session targeting a group:**
 
 ```bash
-manta apply session \
+manta run session \
   --name my-session \
   --repo-path ~/repos/csm-config \
-  --hsm-group compute \
+  --group compute \
   --watch-logs
 ```
 
 **Run a session targeting specific nodes:**
 
 ```bash
-manta apply session \
+manta run session \
   --name my-session \
   --repo-path ~/repos/csm-config \
   --ansible-limit x3000c0s1b0n[0-3] \
@@ -189,10 +189,10 @@ manta apply session \
 **Use a non-default playbook:**
 
 ```bash
-manta apply session \
+manta run session \
   --name my-session \
   --repo-path ~/repos/csm-config \
-  --hsm-group compute \
+  --group compute \
   --playbook-name custom.yml \
   --ansible-verbosity 4
 ```
@@ -213,13 +213,13 @@ Boot parameters control which kernel, initrd, and image a node uses on next boot
 **View current boot parameters for a group:**
 
 ```bash
-manta get boot-parameters --hsm-group compute
+manta get boot-parameters --group compute
 ```
 
 **Update boot image for a whole cluster** (looks up image by CFS config name):
 
 ```bash
-manta apply boot cluster compute \
+manta apply boot group compute \
   --boot-image-configuration csm-config-2024 \
   --runtime-configuration csm-config-2024 \
   --assume-yes
@@ -228,7 +228,7 @@ manta apply boot cluster compute \
 **Update boot image using a specific image ID:**
 
 ```bash
-manta apply boot cluster compute \
+manta apply boot group compute \
   --boot-image 93b4ea2a-1234-5678-abcd-ef0123456789 \
   --assume-yes
 ```
@@ -236,7 +236,7 @@ manta apply boot cluster compute \
 **Update boot parameters without rebooting:**
 
 ```bash
-manta apply boot cluster compute \
+manta apply boot group compute \
   --boot-image-configuration csm-config-2024 \
   --do-not-reboot \
   --assume-yes
@@ -267,25 +267,25 @@ manta add boot-parameters \
 **View kernel parameters for a group:**
 
 ```bash
-manta get kernel-parameters --hsm-group compute
+manta get kernel-parameters --group compute
 ```
 
 **Filter to specific parameters:**
 
 ```bash
-manta get kernel-parameters --hsm-group compute --filter console,loglevel
+manta get kernel-parameters --group compute --filter console,loglevel
 ```
 
 **Add a parameter** (merges, does not replace existing values):
 
 ```bash
-manta add kernel-parameters "loglevel=7" --hsm-group compute
+manta add kernel-parameters "loglevel=7" --group compute
 ```
 
 **Overwrite an existing parameter:**
 
 ```bash
-manta add kernel-parameters "console=ttyS0,115200" --hsm-group compute --overwrite
+manta add kernel-parameters "console=ttyS0,115200" --group compute --overwrite
 ```
 
 **Replace all kernel parameters** (full replacement):
@@ -293,20 +293,20 @@ manta add kernel-parameters "console=ttyS0,115200" --hsm-group compute --overwri
 ```bash
 manta apply kernel-parameters \
   "console=ttyS0,115200 loglevel=3 ip=dhcp" \
-  --hsm-group compute \
+  --group compute \
   --assume-yes
 ```
 
 **Remove a specific parameter:**
 
 ```bash
-manta delete kernel-parameters "loglevel" --hsm-group compute --assume-yes
+manta delete kernel-parameters "loglevel" --group compute --assume-yes
 ```
 
 **Skip the automatic reboot after any kernel parameter change:**
 
 ```bash
-manta add kernel-parameters "loglevel=7" --hsm-group compute --do-not-reboot
+manta add kernel-parameters "loglevel=7" --group compute --do-not-reboot
 ```
 
 ---
@@ -316,13 +316,13 @@ manta add kernel-parameters "loglevel=7" --hsm-group compute --do-not-reboot
 **Power off a cluster gracefully:**
 
 ```bash
-manta power off cluster compute --graceful --assume-yes
+manta power off group compute --graceful --assume-yes
 ```
 
 **Power on a cluster:**
 
 ```bash
-manta power on cluster compute --assume-yes
+manta power on group compute --assume-yes
 ```
 
 **Power-cycle specific nodes:**
@@ -334,8 +334,8 @@ manta power reset nodes x3000c0s1b0n[0-3] --graceful --assume-yes
 **Check power status after the operation:**
 
 ```bash
-manta get cluster compute --status OFF
-manta get cluster compute -o summary
+manta get group-nodes compute --status OFF
+manta get group-nodes compute -o summary
 ```
 
 ---
@@ -386,7 +386,7 @@ manta migrate nodes x3000c0s1b0n[0-3] \
 **Backup a virtual cluster before major changes:**
 
 ```bash
-manta migrate vCluster backup \
+manta backup vcluster \
   --bos my-cluster-template \
   --destination ~/backups/my-cluster-2024-01-15
 ```
@@ -394,7 +394,7 @@ manta migrate vCluster backup \
 **Restore from backup:**
 
 ```bash
-manta migrate vCluster restore \
+manta restore vcluster \
   --bos-file ~/backups/my-cluster-2024-01-15/bos.json \
   --cfs-file ~/backups/my-cluster-2024-01-15/cfs.json \
   --hsm-file ~/backups/my-cluster-2024-01-15/hsm.json
@@ -470,7 +470,7 @@ manta config set site local_test
 **Override the site for a single command:**
 
 ```bash
-manta --site local_test get cluster compute
+manta --site local_test get group-nodes compute
 ```
 
 ---
@@ -481,21 +481,21 @@ Most write commands prompt for confirmation. Suppress prompts for scripted use:
 
 ```bash
 manta apply sat-file -t cluster.yaml --assume-yes
-manta power off cluster compute --graceful --assume-yes
+manta power off group compute --graceful --assume-yes
 manta delete configurations --configuration-name "old-*" --assume-yes
 ```
 
 **JSON output for scripting:**
 
 ```bash
-manta get sessions --hsm-group compute -o json | jq '.[].name'
-manta get cluster compute -o json | jq '.[].xname'
+manta get sessions --group compute -o json | jq '.[].name'
+manta get group-nodes compute -o json | jq '.[].xname'
 ```
 
 **Get a flat xname list:**
 
 ```bash
-NODES=$(manta get cluster compute --xnames-only-one-line)
+NODES=$(manta get group-nodes compute --xnames-only-one-line)
 echo "Nodes: $NODES"
 ```
 
