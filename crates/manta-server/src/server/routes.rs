@@ -34,8 +34,16 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/boot-parameters", get(handlers::get_boot_parameters))
     .route("/kernel-parameters", get(handlers::get_kernel_parameters))
     .route("/redfish-endpoints", get(handlers::get_redfish_endpoints))
-    .route("/clusters", get(handlers::get_clusters))
-    .route("/hardware-clusters", get(handlers::get_hardware_clusters))
+    // Canonical (group-centric) read endpoints
+    .route("/groups/nodes", get(handlers::get_groups_nodes))
+    .route("/groups/hardware", get(handlers::get_groups_hardware))
+    // Deprecated aliases retained for one release. Each handler logs
+    // a server-side warning and forwards to the canonical impl.
+    .route("/clusters", get(handlers::get_clusters_deprecated))
+    .route(
+      "/hardware-clusters",
+      get(handlers::get_hardware_clusters_deprecated),
+    )
     .route(
       "/hardware-nodes-list",
       get(handlers::get_hardware_nodes_list),

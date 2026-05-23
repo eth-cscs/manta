@@ -20,6 +20,6 @@ impl MantaClient {
       .opt("hsm_group", &hsm)
       .opt("status", &params.status_filter)
       .build();
-    self.get_json(token, "/clusters", &q).await
+    self.get_json(token, "/groups/nodes", &q).await
   }
 }

@@ -8,28 +8,29 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/hardware-clusters
+// GET /api/v1/groups/hardware (canonical) and /hardware-clusters (deprecated)
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /hardware-clusters`.
+/// Query parameters for `GET /groups/hardware`.
 #[derive(Deserialize, IntoParams)]
 pub struct HardwareClusterQuery {
-  /// Cluster (HSM group) name to inventory.
+  /// HSM group name to inventory. When omitted the response covers
+  /// every group the bearer token can access.
   pub hsm_group: Option<String>,
 }
 
-/// GET /hardware-clusters — summarize hardware components per node for a cluster.
-#[utoipa::path(get, path = "/hardware-clusters", tag = "hardware",
+/// GET /groups/hardware — summarize hardware components per node for a group.
+#[utoipa::path(get, path = "/groups/hardware", tag = "groups",
   params(HardwareClusterQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Hardware summary for cluster nodes", body = serde_json::Value),
-    (status = 401, description = "Unauthorized",                       body = ErrorResponse),
-    (status = 500, description = "Internal error",                     body = ErrorResponse),
+    (status = 200, description = "Hardware summary for group nodes", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                      body = ErrorResponse),
+    (status = 500, description = "Internal error",                    body = ErrorResponse),
   )
 )]
 #[tracing::instrument(skip_all)]
-pub async fn get_hardware_clusters(
+pub async fn get_groups_hardware(
   ctx: RequestCtx,
   Query(q): Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -49,6 +50,29 @@ pub async fn get_hardware_clusters(
     "hsm_group_name": result.hsm_group_name,
     "node_summaries": result.node_summaries,
   })))
+}
+
+/// DEPRECATED alias for `GET /hardware-clusters`. Logs a server-side
+/// warning and delegates to the canonical handler. Old path kept for
+/// one release.
+#[utoipa::path(get, path = "/hardware-clusters", tag = "hardware",
+  params(HardwareClusterQuery, SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "[DEPRECATED] use /groups/hardware — hardware summary for group nodes", body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                                                          body = ErrorResponse),
+    (status = 500, description = "Internal error",                                                        body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_hardware_clusters_deprecated(
+  ctx: RequestCtx,
+  q: Query<HardwareClusterQuery>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::warn!(
+    "deprecated endpoint: GET /hardware-clusters — use /groups/hardware instead"
+  );
+  get_groups_hardware(ctx, q).await
 }
 
 // ---------------------------------------------------------------------------

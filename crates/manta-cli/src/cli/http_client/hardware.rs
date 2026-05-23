@@ -20,7 +20,7 @@ impl MantaClient {
       .or(params.settings_hsm_group_name.as_deref())
       .map(String::from);
     let q = QueryBuilder::new().opt("hsm_group", &hsm).build();
-    self.get_json(token, "/hardware-clusters", &q).await
+    self.get_json(token, "/groups/hardware", &q).await
   }
 
   pub async fn get_hardware_nodes_list(
