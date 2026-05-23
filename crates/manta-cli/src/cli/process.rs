@@ -6,7 +6,7 @@ use manta_shared::common::app_context::AppContext;
 
 use crate::cli::handlers::{
   add, apply, backup, config, console, delete, get, log, migrate, misc, power,
-  restore, update,
+  restore, run, update,
 };
 
 /// Parse CLI arguments and dispatch to the appropriate
@@ -27,6 +27,7 @@ pub async fn process_cli(
     Some(("migrate", m)) => migrate::handle_migrate(m, ctx).await?,
     Some(("backup", m)) => backup::handle_backup(m, ctx).await?,
     Some(("restore", m)) => restore::handle_restore(m, ctx).await?,
+    Some(("run", m)) => run::handle_run(m, ctx).await?,
     Some(("delete", m)) => delete::handle_delete(m, ctx).await?,
     _ => misc::handle_misc(cli_root, ctx).await?,
   }

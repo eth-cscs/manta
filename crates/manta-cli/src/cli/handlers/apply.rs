@@ -26,6 +26,10 @@ pub async fn handle_apply(
     },
 
     Some(("session", m)) => {
+      eprintln!(
+        "warning: 'manta apply session' is deprecated; \
+         use 'manta run session' instead.",
+      );
       commands::apply_session::exec(m, ctx, &token).await?
     }
 

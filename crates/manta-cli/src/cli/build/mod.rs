@@ -65,6 +65,7 @@ pub fn build_cli() -> Command {
     .subcommand(subcommand_migrate())
     .subcommand(subcommand_backup())
     .subcommand(subcommand_restore())
+    .subcommand(subcommand_run())
     .subcommand(subcommand_power())
     .subcommand(subcommand_log())
     .subcommand(subcommand_console())
@@ -223,6 +224,22 @@ fn subcommand_backup() -> Command {
         .long_about(
           "Back up a virtual cluster's configuration: images, boot settings, \
           and group membership.\n\nThe backup is derived from the specified session template.",
+        ),
+    )
+}
+
+/// Top-level `manta run` verb.
+fn subcommand_run() -> Command {
+  Command::new("run")
+    .arg_required_else_help(true)
+    .about("Create and run jobs (configuration sessions, etc.)")
+    .subcommand(
+      apply::add_run_session_args(Command::new("session"))
+        .about("Create and run a configuration session from a local repo")
+        .long_about(
+          "Create and run a configuration session from a local git repo.\n\n\
+          The repo must already exist in the system's VCS. The session runs \
+          the specified Ansible playbook against the target nodes or group.",
         ),
     )
 }

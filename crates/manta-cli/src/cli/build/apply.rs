@@ -36,15 +36,12 @@ pub fn subcommand_apply_hw_configuration() -> Command {
     )
 }
 
-pub fn subcommand_apply_session() -> Command {
-  Command::new("session")
+/// Attach the session-run argument set to a clap `Command`. Shared
+/// between the canonical `manta run session` and the deprecated
+/// `manta apply session` paths so both stay in lockstep.
+pub fn add_run_session_args(cmd: Command) -> Command {
+  cmd
     .arg_required_else_help(true)
-    .about("Create and run a configuration session from a local repo")
-    .long_about(
-      "Create and run a configuration session from a local git repo.\n\n\
-      The repo must already exist in the system's VCS. The session runs \
-      the specified Ansible playbook against the target nodes or group.",
-    )
     .arg(arg!(-n --name <VALUE> "Session name").required(true))
     .arg(
       arg!(-p --"playbook-name" <VALUE> "Ansible playbook filename")
@@ -82,6 +79,18 @@ pub fn subcommand_apply_session() -> Command {
         .required(true),
     )
     .arg(output_flag())
+}
+
+pub fn subcommand_apply_session() -> Command {
+  add_run_session_args(Command::new("session"))
+    .about("[DEPRECATED] Use 'manta run session' instead")
+    .long_about(
+      "Create and run a configuration session from a local git repo.\n\n\
+      The repo must already exist in the system's VCS. The session runs \
+      the specified Ansible playbook against the target nodes or group.\n\n\
+      DEPRECATED: this command has moved to `manta run session`. The old \
+      path keeps working for one release.",
+    )
 }
 
 pub fn subcommand_apply_configuration() -> Command {
