@@ -7,8 +7,86 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use manta_shared::common::app_context::AppContext;
 
+/// Dispatch a single `power on group/cluster` invocation. Shared
+/// between the canonical `group` arm and the deprecated `cluster`
+/// arm so both stay in lockstep.
+async fn dispatch_power_on_group(
+  m: &ArgMatches,
+  ctx: &AppContext<'_>,
+  token: &str,
+) -> Result<(), Error> {
+  let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
+  let assume_yes: bool = m.get_flag("assume-yes");
+  let output = m.req_str("output")?;
+  power_common::exec_cluster(
+    ctx,
+    PowerAction::On,
+    hsm_group_name_arg,
+    false,
+    assume_yes,
+    output,
+    token,
+  )
+  .await
+}
+
+/// Shared dispatch for `power off group/cluster`.
+async fn dispatch_power_off_group(
+  m: &ArgMatches,
+  ctx: &AppContext<'_>,
+  token: &str,
+) -> Result<(), Error> {
+  let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
+  let graceful = m
+    .get_one::<bool>("graceful")
+    .context("The 'graceful' argument must have a value")?;
+  let output = m.req_str("output")?;
+  let assume_yes: bool = m.get_flag("assume-yes");
+  power_common::exec_cluster(
+    ctx,
+    PowerAction::Off,
+    hsm_group_name_arg,
+    !graceful,
+    assume_yes,
+    output,
+    token,
+  )
+  .await
+}
+
+/// Shared dispatch for `power reset group/cluster`.
+async fn dispatch_power_reset_group(
+  m: &ArgMatches,
+  ctx: &AppContext<'_>,
+  token: &str,
+) -> Result<(), Error> {
+  let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
+  let force = m
+    .get_one::<bool>("graceful")
+    .context("The 'graceful' argument must have a value")?;
+  let output = m.req_str("output")?;
+  let assume_yes: bool = m.get_flag("assume-yes");
+  power_common::exec_cluster(
+    ctx,
+    PowerAction::Reset,
+    hsm_group_name_arg,
+    *force,
+    assume_yes,
+    output,
+    token,
+  )
+  .await
+}
+
+fn warn_cluster_deprecated(action: &str) {
+  eprintln!(
+    "warning: 'manta power {action} cluster' is deprecated; \
+     use 'manta power {action} group' instead.",
+  );
+}
+
 /// Dispatch `manta power` subcommands (on, off, reset —
-/// each targeting nodes or clusters).
+/// each targeting nodes or groups).
 pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -17,20 +95,10 @@ pub async fn handle_power(
 
   match cli_power.subcommand() {
     Some(("on", m)) => match m.subcommand() {
+      Some(("group", m)) => dispatch_power_on_group(m, ctx, &token).await?,
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
-        let assume_yes: bool = m.get_flag("assume-yes");
-        let output = m.req_str("output")?;
-        power_common::exec_cluster(
-          ctx,
-          PowerAction::On,
-          hsm_group_name_arg,
-          false,
-          assume_yes,
-          output,
-          &token,
-        )
-        .await?;
+        warn_cluster_deprecated("on");
+        dispatch_power_on_group(m, ctx, &token).await?;
       }
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
@@ -51,26 +119,10 @@ pub async fn handle_power(
       None => bail!("No 'power on' subcommand provided"),
     },
     Some(("off", m)) => match m.subcommand() {
+      Some(("group", m)) => dispatch_power_off_group(m, ctx, &token).await?,
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
-        let graceful = m
-          .get_one::<bool>("graceful")
-          .context("The 'graceful' argument must have a value")?;
-        let output = m.req_str("output")?;
-        let assume_yes: bool = m.get_flag("assume-yes");
-
-        let force = !graceful;
-
-        power_common::exec_cluster(
-          ctx,
-          PowerAction::Off,
-          hsm_group_name_arg,
-          force,
-          assume_yes,
-          output,
-          &token,
-        )
-        .await?;
+        warn_cluster_deprecated("off");
+        dispatch_power_off_group(m, ctx, &token).await?;
       }
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
@@ -94,23 +146,10 @@ pub async fn handle_power(
       None => bail!("No 'power off' subcommand provided"),
     },
     Some(("reset", m)) => match m.subcommand() {
+      Some(("group", m)) => dispatch_power_reset_group(m, ctx, &token).await?,
       Some(("cluster", m)) => {
-        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
-        let force = m
-          .get_one::<bool>("graceful")
-          .context("The 'graceful' argument must have a value")?;
-        let output = m.req_str("output")?;
-        let assume_yes: bool = m.get_flag("assume-yes");
-        power_common::exec_cluster(
-          ctx,
-          PowerAction::Reset,
-          hsm_group_name_arg,
-          *force,
-          assume_yes,
-          output,
-          &token,
-        )
-        .await?;
+        warn_cluster_deprecated("reset");
+        dispatch_power_reset_group(m, ctx, &token).await?;
       }
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
