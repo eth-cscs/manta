@@ -7,7 +7,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 - **Base URL:** `https://<host>:8443/api/v1`
 - **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, `/docs`, and `/api/v1/auth/*`.
 - **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
-- **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, clusters, migrations, SAT files, power, ephemeral envs).
+- **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
 - **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
 - **Interactive exploration:** `https://<host>:8443/docs` (Swagger UI loads the spec from `/openapi.json`).
@@ -793,34 +793,46 @@ Delete a Redfish endpoint.
 
 ---
 
-## Hardware inventory
+## Group inventory
 
-### GET /clusters
+### GET /groups/nodes
 
-Get cluster node details with optional status filtering.
+Get node details for an HSM group with optional power-status filtering.
 
 **Query parameters**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `hsm_group` | string | no | Filter by HSM group |
-| `status` | string | no | Filter by node power status |
+| `hsm_group` | string | no | HSM group name. When omitted the response covers every group the bearer token can access. |
+| `status` | string | no | Filter by node power status (`ON`, `OFF`, `READY`, …) |
 
-**Response `200`** — array of cluster node objects.
+**Response `200`** — array of node-detail objects.
 
 ---
 
-### GET /hardware-clusters
+### GET /groups/hardware
 
-Get hardware component summary for one or more clusters.
+Get a hardware component summary per node for an HSM group.
 
 **Query parameters**
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `hsm_group` | string | no | Filter by HSM group |
+| `hsm_group` | string | no | HSM group name. When omitted the response covers every group the bearer token can access. |
 
 **Response `200`** — object with `hsm_group_name` and `node_summaries`.
+
+---
+
+### GET /clusters *(deprecated)*
+
+Old alias for `GET /groups/nodes`. Same query parameters, same response. Continues to work for one release; the server logs a warning on every request. Drop in the next major release.
+
+---
+
+### GET /hardware-clusters *(deprecated)*
+
+Old alias for `GET /groups/hardware`. Same query parameters, same response. Continues to work for one release; the server logs a warning on every request. Drop in the next major release.
 
 ---
 
@@ -838,7 +850,14 @@ Get hardware component details for specific nodes.
 
 ---
 
-## Hardware cluster management
+## Hardware-component group management
+
+> The write endpoints in this section still use `/hardware-clusters/{target}/...`
+> in the URL and `parent_cluster` / `target_cluster` as JSON field names. A
+> parallel rename to `/groups/{target}/hardware/...` + `parent_group` /
+> `target_group` is planned for a future release and will mirror the
+> deprecation pattern used by `GET /clusters` / `GET /hardware-clusters`
+> above. Existing client code keeps working in the meantime.
 
 ### POST /hardware-clusters/{target}/members
 
