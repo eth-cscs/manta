@@ -79,12 +79,22 @@ pub fn subcommand_delete_node() -> Command {
 pub fn subcommand_delete_hw_component() -> Command {
   Command::new("hardware")
     .arg_required_else_help(true)
-    .about("[experimental] Remove hardware components from a cluster")
+    .about("[experimental] Remove hardware components from a group")
     .arg(arg!(-P --pattern <PATTERN> "Hardware component pattern"))
-    .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Cluster to remove components from"))
-    .arg(arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Cluster that receives the freed components"))
+    .arg(
+      arg!(-t --"target-group" <TARGET_GROUP_NAME> "Group to remove components from")
+        .visible_alias("target-cluster"),
+    )
+    .arg(
+      arg!(-p --"parent-group" <PARENT_GROUP_NAME> "Group that receives the freed components")
+        .visible_alias("parent-cluster"),
+    )
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
-    .arg(arg!(-D --"delete-hsm-group" "Delete the group if empty after this operation").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-D --"delete-group" "Delete the group if empty after this operation")
+        .action(ArgAction::SetTrue)
+        .visible_alias("delete-hsm-group"),
+    )
     .arg(output_flag())
 }
 

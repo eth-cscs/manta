@@ -61,9 +61,9 @@ pub async fn handle_delete(
     }
     Some(("hardware", m)) => {
       let dryrun = m.get_flag("dry-run");
-      let delete_hsm_group = m.get_flag("delete-hsm-group");
-      let target_hsm_group_name_arg_opt = m.opt_str("target-cluster");
-      let parent_hsm_group_name_arg_opt = m.opt_str("parent-cluster");
+      let delete_hsm_group = m.get_flag("delete-group");
+      let target_hsm_group_name_arg_opt = m.opt_str("target-group");
+      let parent_hsm_group_name_arg_opt = m.opt_str("parent-group");
       let pattern = m.req_str("pattern")?;
       let output_opt = m.opt_str("output");
       delete_hw_component_cluster::exec(

@@ -5,34 +5,60 @@ use std::path::PathBuf;
 
 use super::{HOSTLIST_HELP, output_flag, output_flag_long_only};
 
+/// Attach the hardware-rescale argument set to a clap `Command`.
+/// Shared between the canonical `apply hardware group` and the
+/// deprecated `apply hardware cluster` paths so they stay in lockstep.
+///
+/// `--target-cluster`/`--parent-cluster` are renamed to
+/// `--target-group`/`--parent-group`; old flag names retained as
+/// visible aliases. Same for the create/delete lifecycle flags.
+fn add_apply_hw_group_args(cmd: Command) -> Command {
+  cmd
+    .arg_required_else_help(true)
+    .arg(
+      arg!(-P -- pattern <PATTERN> "Hardware pattern: <component>:<qty>[:<component>:<qty>...].\neg: 'a100:12:epyc:5'")
+        .required(true),
+    )
+    .arg(
+      arg!(-t --"target-group" <TARGET_GROUP_NAME> "Group to rescale")
+        .required(true)
+        .visible_alias("target-cluster"),
+    )
+    .arg(
+      arg!(-p --"parent-group" <PARENT_GROUP_NAME> "Group that donates or receives the redistributed nodes")
+        .required(true)
+        .visible_alias("parent-cluster"),
+    )
+    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-c --"create-target-group" "Create the target group if it does not exist")
+        .visible_alias("create-target-hsm-group"),
+    )
+    .arg(
+      arg!(-D --"delete-empty-parent-group" "Delete the parent group if empty after this operation")
+        .visible_alias("delete-empty-parent-hsm-group"),
+    )
+    .arg(arg!(-u --"unpin-nodes" "Allow any available nodes to be selected"))
+    .arg(output_flag())
+}
+
 pub fn subcommand_apply_hw_configuration() -> Command {
   Command::new("hardware")
-    .about("[experimental] Rescale a cluster's hardware allocation")
+    .about("[experimental] Rescale a group's hardware allocation")
     .arg_required_else_help(true)
     .subcommand(
-      Command::new("cluster")
-        .arg_required_else_help(true)
-        .about("[experimental] Rescale a cluster's hardware allocation")
+      add_apply_hw_group_args(Command::new("group"))
+        .about("[experimental] Rescale a group's hardware allocation")
         .long_about(
-          "[experimental] Upscale or downscale a cluster by specifying a hardware component pattern.\n\n\
-          If the cluster does not exist it will be created; otherwise its node assignment is updated.\n\n\
+          "[experimental] Upscale or downscale a group by specifying a hardware component pattern.\n\n\
+          If the group does not exist it will be created; otherwise its node assignment is updated.\n\n\
           Pattern format: <component>:<quantity>[:<component>:<quantity>...]\n\
           eg: 'a100:12:epyc:5'  — assign nodes with 12 A100 GPUs and 5 EPYC CPUs total",
-        )
-        .arg(
-          arg!(-P -- pattern <PATTERN> "Hardware pattern: <component>:<qty>[:<component>:<qty>...].\neg: 'a100:12:epyc:5'")
-            .required(true),
-        )
-        .arg(arg!(-t --"target-cluster" <TARGET_CLUSTER_NAME> "Cluster to rescale").required(true))
-        .arg(
-          arg!(-p --"parent-cluster" <PARENT_CLUSTER_NAME> "Cluster that donates or receives the redistributed nodes")
-            .required(true),
-        )
-        .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
-        .arg(arg!(-c --"create-target-hsm-group" "Create the target cluster if it does not exist"))
-        .arg(arg!(-D --"delete-empty-parent-hsm-group" "Delete the parent cluster if empty after this operation"))
-        .arg(arg!(-u --"unpin-nodes" "Allow any available nodes to be selected"))
-        .arg(output_flag()),
+        ),
+    )
+    .subcommand(
+      add_apply_hw_group_args(Command::new("cluster"))
+        .about("[DEPRECATED] Use 'manta apply hardware group' instead"),
     )
 }
 

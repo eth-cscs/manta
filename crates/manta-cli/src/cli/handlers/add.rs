@@ -78,16 +78,16 @@ pub async fn handle_add(
       // Authorization (target + parent HSM group access) is enforced by
       // POST /api/v1/hardware-clusters/{target}/members on the server.
       let target = m
-        .opt_str("target-cluster")
+        .opt_str("target-group")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'target-cluster' is required (no default in cli.toml)")?;
       let parent = m
-        .opt_str("parent-cluster")
+        .opt_str("parent-group")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
       let dryrun = m.get_flag("dry-run");
       let create_hsm_group =
-        *m.get_one::<bool>("create-hsm-group").unwrap_or(&false);
+        *m.get_one::<bool>("create-group").unwrap_or(&false);
       let output_opt = m.opt_str("output");
       add_hw_component_cluster::exec(
         ctx,

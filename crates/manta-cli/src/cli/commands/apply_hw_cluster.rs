@@ -18,15 +18,15 @@ pub async fn exec(
   let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
 
   let target_hsm_group_name_arg_opt =
-    cli_apply_hw_cluster.opt_str("target-cluster");
+    cli_apply_hw_cluster.opt_str("target-group");
   let parent_hsm_group_name_arg_opt =
-    cli_apply_hw_cluster.opt_str("parent-cluster");
+    cli_apply_hw_cluster.opt_str("parent-group");
   let dryrun = cli_apply_hw_cluster.get_flag("dry-run");
   let create_target_hsm_group = *cli_apply_hw_cluster
-    .get_one::<bool>("create-target-hsm-group")
+    .get_one::<bool>("create-target-group")
     .unwrap_or(&true);
   let delete_empty_parent_hsm_group = *cli_apply_hw_cluster
-    .get_one::<bool>("delete-empty-parent-hsm-group")
+    .get_one::<bool>("delete-empty-parent-group")
     .unwrap_or(&true);
   let is_unpin = cli_apply_hw_cluster
     .get_one::<bool>("unpin-nodes")

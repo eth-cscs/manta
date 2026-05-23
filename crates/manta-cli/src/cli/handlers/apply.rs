@@ -18,7 +18,14 @@ pub async fn handle_apply(
 
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
+      Some(("group", m)) => {
+        commands::apply_hw_cluster::exec(m, ctx, &token).await?
+      }
       Some(("cluster", m)) => {
+        eprintln!(
+          "warning: 'manta apply hardware cluster' is deprecated; \
+           use 'manta apply hardware group' instead.",
+        );
         commands::apply_hw_cluster::exec(m, ctx, &token).await?
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),

@@ -39,12 +39,24 @@ pub fn subcommand_add_node() -> Command {
 pub fn subcommand_add_hwcomponent() -> Command {
   Command::new("hardware")
     .arg_required_else_help(true)
-    .about("[experimental] Add hardware components to a cluster")
+    .about("[experimental] Add hardware components to a group")
     .arg(arg!(-P --pattern <PATTERN> "Hardware component pattern"))
-    .arg(arg!(-t --"target-cluster" <NAME> "Cluster to add components to"))
-    .arg(arg!(-p --"parent-cluster" <NAME> "Cluster that donates the components"))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
-    .arg(arg!(-c --"create-hsm-group" "Create the target cluster if it does not exist"))
+    .arg(
+      arg!(-t --"target-group" <NAME> "Group to add components to")
+        .visible_alias("target-cluster"),
+    )
+    .arg(
+      arg!(-p --"parent-group" <NAME> "Group that donates the components")
+        .visible_alias("parent-cluster"),
+    )
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(-c --"create-group" "Create the target group if it does not exist")
+        .visible_alias("create-hsm-group"),
+    )
     .arg(output_flag())
 }
 
