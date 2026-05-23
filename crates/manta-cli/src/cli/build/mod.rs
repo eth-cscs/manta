@@ -447,9 +447,11 @@ fn subcommand_console() -> Command {
     )
 }
 
+/// DEPRECATED top-level form retained for one release. New name:
+/// `manta delete nodes --group <name> --nodes <expr>`.
 fn subcommand_remove_nodes_from_groups() -> Command {
   Command::new("remove-nodes-from-groups")
-    .about("Remove nodes from one or more groups")
+    .about("[DEPRECATED] Use 'manta delete nodes' instead")
     .arg(arg!(-g --group <NAME> "Group to remove the nodes from"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
     .arg(

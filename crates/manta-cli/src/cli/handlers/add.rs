@@ -2,7 +2,8 @@
 
 use crate::cli::commands::{
   add_boot_parameters, add_group, add_hw_component_cluster,
-  add_kernel_parameters, add_node, add_redfish_endpoint,
+  add_kernel_parameters, add_node, add_nodes_to_hsm_groups,
+  add_redfish_endpoint,
 };
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
@@ -21,6 +22,22 @@ pub async fn handle_add(
   let token = get_api_token(ctx).await?;
 
   match cli_add.subcommand() {
+    Some(("nodes", m)) => {
+      let target_hsm_name = m.req_str("group")?;
+      let hosts_expression = m.req_str("nodes")?;
+      let dryrun = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
+      add_nodes_to_hsm_groups::exec(
+        ctx,
+        &token,
+        target_hsm_name,
+        hosts_expression,
+        dryrun,
+        ctx.kafka_audit_opt,
+        output_opt,
+      )
+      .await?;
+    }
     Some(("node", m)) => {
       let id = m.req_str("id")?;
       let group = m.req_str("group")?;

@@ -4,7 +4,7 @@ use crate::cli::commands::{
   delete_and_cancel_session, delete_boot_parameters,
   delete_configurations_and_derivatives, delete_group,
   delete_hw_component_cluster, delete_images, delete_kernel_parameters,
-  delete_node, delete_redfish_endpoint,
+  delete_node, delete_redfish_endpoint, remove_nodes_from_hsm_groups,
 };
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
@@ -42,6 +42,22 @@ pub async fn handle_delete(
       let id = m.req_str("VALUE")?;
       let output_opt = m.opt_str("output");
       delete_node::exec(ctx, &token, id, output_opt).await?;
+    }
+    Some(("nodes", m)) => {
+      let target_hsm_name = m.req_str("group")?;
+      let hosts_expression = m.req_str("nodes")?;
+      let dryrun = m.get_flag("dry-run");
+      let output_opt = m.opt_str("output");
+      remove_nodes_from_hsm_groups::exec(
+        ctx,
+        &token,
+        target_hsm_name,
+        hosts_expression,
+        dryrun,
+        ctx.kafka_audit_opt,
+        output_opt,
+      )
+      .await?;
     }
     Some(("hardware", m)) => {
       let dryrun = m.get_flag("dry-run");

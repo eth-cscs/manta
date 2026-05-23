@@ -130,6 +130,7 @@ pub fn subcommand_add() -> Command {
     .arg_required_else_help(true)
     .about("Create system resources")
     .subcommand(subcommand_add_node())
+    .subcommand(subcommand_add_nodes())
     .subcommand(subcommand_add_group())
     .subcommand(subcommand_add_hwcomponent())
     .subcommand(subcommand_add_boot_parameters())
@@ -137,9 +138,33 @@ pub fn subcommand_add() -> Command {
     .subcommand(subcommand_add_redfish_endpoint())
 }
 
+/// `manta add nodes` — assign existing nodes to a group. Distinct from
+/// `add node` (singular), which registers a brand new node in the
+/// inventory.
+pub fn subcommand_add_nodes() -> Command {
+  Command::new("nodes")
+    .about("Add existing nodes to a group")
+    .long_about(
+      "Add existing nodes to a group's membership.\n\n\
+      Differs from `manta add node` (singular), which registers a brand-new \
+      node in the inventory; this command operates on nodes that already \
+      exist and just changes which group(s) they belong to.",
+    )
+    .arg_required_else_help(true)
+    .arg(arg!(-g --group <NAME> "Group to add the nodes to").required(true))
+    .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(output_flag())
+}
+
+/// DEPRECATED top-level form retained for one release. New name:
+/// `manta add nodes --group <name> --nodes <expr>`.
 pub fn subcommand_add_nodes_to_groups() -> Command {
   Command::new("add-nodes-to-groups")
-    .about("Add nodes to one or more groups")
+    .about("[DEPRECATED] Use 'manta add nodes' instead")
     .arg(arg!(-g --group <NAME> "Group to add the nodes to"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
     .arg(

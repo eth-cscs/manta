@@ -10,6 +10,7 @@ pub fn subcommand_delete() -> Command {
     .about("Delete system resources")
     .subcommand(subcommand_delete_group())
     .subcommand(subcommand_delete_node())
+    .subcommand(subcommand_delete_nodes())
     .subcommand(subcommand_delete_kernel_parameter())
     .subcommand(subcommand_delete_boot_parameter())
     .subcommand(subcommand_delete_configuration())
@@ -17,6 +18,30 @@ pub fn subcommand_delete() -> Command {
     .subcommand(subcommand_delete_image())
     .subcommand(subcommand_delete_hw_component())
     .subcommand(subcommand_delete_redfish_endpoint())
+}
+
+/// `manta delete nodes` — remove nodes from a group's membership.
+/// Distinct from `delete node` (singular), which removes the node
+/// from the system inventory entirely.
+pub fn subcommand_delete_nodes() -> Command {
+  Command::new("nodes")
+    .about("Remove nodes from a group")
+    .long_about(
+      "Remove nodes from a group's membership.\n\n\
+      Differs from `manta delete node` (singular), which removes a node \
+      from the system inventory entirely; this command leaves the nodes \
+      in place and only changes which group(s) they belong to.",
+    )
+    .arg_required_else_help(true)
+    .arg(
+      arg!(-g --group <NAME> "Group to remove the nodes from").required(true),
+    )
+    .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(output_flag())
 }
 
 pub fn subcommand_delete_group() -> Command {

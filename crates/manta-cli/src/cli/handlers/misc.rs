@@ -19,6 +19,10 @@ pub async fn handle_misc(
 
   match cli_root.subcommand() {
     Some(("add-nodes-to-groups", m)) => {
+      eprintln!(
+        "warning: 'manta add-nodes-to-groups' is deprecated; \
+         use 'manta add nodes' instead.",
+      );
       let dryrun = m.get_flag("dry-run");
       let hosts_expression = m.req_str("nodes")?;
       let target_hsm_name = m.req_str("group")?;
@@ -35,6 +39,10 @@ pub async fn handle_misc(
       .await?;
     }
     Some(("remove-nodes-from-groups", m)) => {
+      eprintln!(
+        "warning: 'manta remove-nodes-from-groups' is deprecated; \
+         use 'manta delete nodes' instead.",
+      );
       let dryrun = m.get_flag("dry-run");
       let nodes = m.req_str("nodes")?;
       let target_hsm_name = m.req_str("group")?;
