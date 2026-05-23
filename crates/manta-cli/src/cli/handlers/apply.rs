@@ -19,14 +19,14 @@ pub async fn handle_apply(
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
       Some(("group", m)) => {
-        commands::apply_hw_cluster::exec(m, ctx, &token).await?
+        commands::apply_hw_group::exec(m, ctx, &token).await?
       }
       Some(("cluster", m)) => {
         eprintln!(
           "warning: 'manta apply hardware cluster' is deprecated; \
            use 'manta apply hardware group' instead.",
         );
-        commands::apply_hw_cluster::exec(m, ctx, &token).await?
+        commands::apply_hw_group::exec(m, ctx, &token).await?
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),
@@ -228,7 +228,7 @@ pub async fn handle_apply(
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
         let output_opt = m.opt_str("output");
-        commands::apply_boot_cluster::exec(
+        commands::apply_boot_group::exec(
           ctx,
           &token,
           m.opt_str("boot-image"),
@@ -253,7 +253,7 @@ pub async fn handle_apply(
         let do_not_reboot = m.get_flag("do-not-reboot");
         let dry_run = m.get_flag("dry-run");
         let output_opt = m.opt_str("output");
-        commands::apply_boot_cluster::exec(
+        commands::apply_boot_group::exec(
           ctx,
           &token,
           m.opt_str("boot-image"),

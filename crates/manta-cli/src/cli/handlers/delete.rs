@@ -3,7 +3,7 @@
 use crate::cli::commands::{
   delete_and_cancel_session, delete_boot_parameters,
   delete_configurations_and_derivatives, delete_group,
-  delete_hw_component_cluster, delete_images, delete_kernel_parameters,
+  delete_hw_component_group, delete_images, delete_kernel_parameters,
   delete_node, delete_redfish_endpoint, remove_nodes_from_hsm_groups,
 };
 use crate::cli::common::authentication::get_api_token;
@@ -66,7 +66,7 @@ pub async fn handle_delete(
       let parent_hsm_group_name_arg_opt = m.opt_str("parent-group");
       let pattern = m.req_str("pattern")?;
       let output_opt = m.opt_str("output");
-      delete_hw_component_cluster::exec(
+      delete_hw_component_group::exec(
         ctx,
         &token,
         target_hsm_group_name_arg_opt,

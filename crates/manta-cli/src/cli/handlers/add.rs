@@ -1,7 +1,7 @@
 //! Routes `manta add *` subcommands to their exec functions.
 
 use crate::cli::commands::{
-  add_boot_parameters, add_group, add_hw_component_cluster,
+  add_boot_parameters, add_group, add_hw_component_group,
   add_kernel_parameters, add_node, add_nodes_to_hsm_groups,
   add_redfish_endpoint,
 };
@@ -89,7 +89,7 @@ pub async fn handle_add(
       let create_hsm_group =
         *m.get_one::<bool>("create-group").unwrap_or(&false);
       let output_opt = m.opt_str("output");
-      add_hw_component_cluster::exec(
+      add_hw_component_group::exec(
         ctx,
         &token,
         target,

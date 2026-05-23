@@ -1,8 +1,8 @@
 //! Routes `manta get *` subcommands to their exec functions.
 
 use crate::cli::commands::{
-  get_boot_parameters, get_cluster, get_configuration, get_group,
-  get_hardware_cluster, get_hardware_nodes, get_images, get_kernel_parameters,
+  get_boot_parameters, get_configuration, get_group, get_group_hardware,
+  get_group_nodes, get_hardware_nodes, get_images, get_kernel_parameters,
   get_nodes, get_session, get_template,
 };
 use crate::cli::common::authentication::get_api_token;
@@ -21,9 +21,9 @@ pub async fn handle_get(
 
   match cli_get.subcommand() {
     Some(("groups", m)) => get_group::exec(ctx, &token, m).await?,
-    Some(("group-nodes", m)) => get_cluster::exec(ctx, &token, m).await?,
+    Some(("group-nodes", m)) => get_group_nodes::exec(ctx, &token, m).await?,
     Some(("group-hardware", m)) => {
-      get_hardware_cluster::exec(ctx, &token, m).await?
+      get_group_hardware::exec(ctx, &token, m).await?
     }
     Some(("hardware", m)) => match m.subcommand() {
       Some(("cluster", m)) => {
@@ -31,7 +31,7 @@ pub async fn handle_get(
           "warning: 'manta get hardware cluster' is deprecated; \
            use 'manta get group-hardware' instead.",
         );
-        get_hardware_cluster::exec(ctx, &token, m).await?
+        get_group_hardware::exec(ctx, &token, m).await?
       }
       Some(("nodes", m)) => get_hardware_nodes::exec(ctx, &token, m).await?,
       Some((other, _)) => bail!("Unknown 'get hardware' subcommand: {other}"),
@@ -47,7 +47,7 @@ pub async fn handle_get(
         "warning: 'manta get cluster' is deprecated; \
          use 'manta get group-nodes' instead.",
       );
-      get_cluster::exec(ctx, &token, m).await?
+      get_group_nodes::exec(ctx, &token, m).await?
     }
     Some(("nodes", m)) => get_nodes::exec(ctx, &token, m).await?,
     Some(("images", m)) => get_images::exec(ctx, &token, m).await?,

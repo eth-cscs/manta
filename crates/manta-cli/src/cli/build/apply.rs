@@ -295,7 +295,7 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
-pub fn subcommand_apply_boot_cluster() -> Command {
+pub fn subcommand_apply_boot_cluster_deprecated() -> Command {
   add_apply_boot_group_args(Command::new("cluster"))
     .about("[DEPRECATED] Use 'manta apply boot group' instead")
     .long_about(
@@ -354,7 +354,7 @@ pub fn subcommand_apply() -> Command {
         .about("Update boot parameters and runtime configuration")
         .subcommand(subcommand_apply_boot_nodes())
         .subcommand(subcommand_apply_boot_group())
-        .subcommand(subcommand_apply_boot_cluster()),
+        .subcommand(subcommand_apply_boot_cluster_deprecated()),
     )
     .subcommand(subcommand_apply_kernel_parameters())
     .subcommand(subcommand_apply_session())
