@@ -40,12 +40,12 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # block:
 #
 #   [patch.crates-io]
-#   manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-#   csm-rs                   = { path = "../csm-rs" }
-#   ochami-rs                = { path = "../ochami-rs" }
-manta-backend-dispatcher = "0.26.0"
-csm-rs                   = "0.106.0"
-ochami-rs                = "0.14.0"
+  manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+  csm-rs                   = { path = "../csm-rs" }
+  ochami-rs                = { path = "../ochami-rs" }
+# manta-backend-dispatcher = "0.26.0"
+# csm-rs                   = "0.106.0"
+# ochami-rs                = "0.14.0"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }

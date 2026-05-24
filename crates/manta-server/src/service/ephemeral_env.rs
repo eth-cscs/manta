@@ -2,7 +2,7 @@
 //! container booted from an existing IMS image and returns its
 //! hostname.
 
-use csm_rs::ims;
+use csm_rs::ShastaClient;
 use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
@@ -25,15 +25,18 @@ pub async fn exec(
 
   tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
+  let shasta = ShastaClient::new(
+    infra.shasta_base_url,
+    token,
+    infra.shasta_root_cert.to_vec(),
+    infra.socks5_proxy.map(|s| s.to_string()),
+  )
+  .map_err(|e| {
+    Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
+  })?;
+
   let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
-    ims::public_keys::http_client::v3::get_single(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      infra.socks5_proxy,
-      &user_public_key_name,
-    )
-    .await
+    shasta.ims_public_keys_v3_get_single(&user_public_key_name).await
   {
     user_public_ssh_value["id"].clone()
   } else {
@@ -49,23 +52,20 @@ pub async fn exec(
     image_id
   );
 
-  let resp_json = ims::job::http_client::post_customize(
-    token,
-    infra.shasta_base_url,
-    infra.shasta_root_cert,
-    infra.socks5_proxy,
-    EPHEMERAL_IMAGE_NAME,
-    image_id,
-    user_public_ssh_id_value.as_str().ok_or_else(|| {
-      Error::MissingField("SSH key ID is not a string".to_string())
-    })?,
-  )
-  .await
-  .map_err(|e| {
-    Error::BadRequest(format!(
-      "Could not create ephemeral environment based on image ID {image_id}: {e}"
-    ))
-  })?;
+  let resp_json = shasta
+    .ims_job_post_customize(
+      EPHEMERAL_IMAGE_NAME,
+      image_id,
+      user_public_ssh_id_value.as_str().ok_or_else(|| {
+        Error::MissingField("SSH key ID is not a string".to_string())
+      })?,
+    )
+    .await
+    .map_err(|e| {
+      Error::BadRequest(format!(
+        "Could not create ephemeral environment based on image ID {image_id}: {e}"
+      ))
+    })?;
 
   let hostname = resp_json
     .pointer("/ssh_containers/0/connection_info/customer_access/host")
