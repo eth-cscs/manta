@@ -43,7 +43,7 @@ impl StaticBackendDispatcher {
     socks5_proxy: Option<&str>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert, socks5_proxy))),
+      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert, socks5_proxy)?)),
       "ochami" => {
         Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy)))
       }

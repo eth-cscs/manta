@@ -27,7 +27,6 @@ pub async fn exec(
 
   let shasta = ShastaClient::new(
     infra.shasta_base_url,
-    token,
     infra.shasta_root_cert.to_vec(),
     infra.socks5_proxy.map(|s| s.to_string()),
   )
@@ -35,8 +34,9 @@ pub async fn exec(
     Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
   })?;
 
-  let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) =
-    shasta.ims_public_keys_v3_get_single(&user_public_key_name).await
+  let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) = shasta
+    .ims_public_keys_v3_get_single(token, &user_public_key_name)
+    .await
   {
     user_public_ssh_value["id"].clone()
   } else {
@@ -54,6 +54,7 @@ pub async fn exec(
 
   let resp_json = shasta
     .ims_job_post_customize(
+      token,
       EPHEMERAL_IMAGE_NAME,
       image_id,
       user_public_ssh_id_value.as_str().ok_or_else(|| {
