@@ -5,34 +5,30 @@ use serde_json::Value;
 use super::MantaClient;
 
 impl MantaClient {
+  /// `POST /api/v1/sat-file` — apply a pre-rendered SAT file.
+  ///
+  /// The CLI renders Jinja2, parses, and filters the SAT YAML locally;
+  /// only the post-processed YAML plus apply-time flags are forwarded.
   #[allow(clippy::too_many_arguments)]
   pub async fn apply_sat_file(
     &self,
     token: &str,
-    sat_file_content: &str,
-    values: Option<serde_json::Value>,
-    values_file_content: Option<&str>,
+    sat_yaml: &str,
     ansible_verbosity: Option<u8>,
     ansible_passthrough: Option<&str>,
     reboot: bool,
     watch_logs: bool,
     timestamps: bool,
-    image_only: bool,
-    session_template_only: bool,
     overwrite: bool,
     dry_run: bool,
   ) -> anyhow::Result<Value> {
     let body = serde_json::json!({
-      "sat_file_content": sat_file_content,
-      "values": values,
-      "values_file_content": values_file_content,
+      "sat_yaml": sat_yaml,
       "ansible_verbosity": ansible_verbosity,
       "ansible_passthrough": ansible_passthrough,
       "reboot": reboot,
       "watch_logs": watch_logs,
       "timestamps": timestamps,
-      "image_only": image_only,
-      "session_template_only": session_template_only,
       "overwrite": overwrite,
       "dry_run": dry_run,
     });

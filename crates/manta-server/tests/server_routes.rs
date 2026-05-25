@@ -390,7 +390,7 @@ async fn post_sat_file_without_vault_config_returns_501() {
   let resp = router()
     .oneshot(post_json(
       "/api/v1/sat-file",
-      r#"{"sat_file_content":"schema: 1.0\n"}"#,
+      r#"{"sat_yaml":"schema: 1.0\n"}"#,
     ))
     .await
     .unwrap();
@@ -425,7 +425,7 @@ async fn post_sat_file_without_k8s_config_returns_501() {
   let resp = build_router(state)
     .oneshot(post_json(
       "/api/v1/sat-file",
-      r#"{"sat_file_content":"schema: 1.0\n"}"#,
+      r#"{"sat_yaml":"schema: 1.0\n"}"#,
     ))
     .await
     .unwrap();

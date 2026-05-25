@@ -1,4 +1,4 @@
-use manta_shared::shared::sat_file::render_jinja2_sat_file_yaml;
+use manta_shared::shared::sat_file::{SatFile, render_jinja2_sat_file_yaml};
 
 /// Test rendering a SAT template file with the values file
 #[test]
@@ -175,4 +175,64 @@ fn test_render_sat_file_with_values_no_overrides() {
 
   assert_eq!(result.get("name").unwrap().as_str().unwrap(), "my-app");
   assert_eq!(result.get("version").unwrap().as_str().unwrap(), "2.0");
+}
+
+/// End-to-end client-side pipeline: render Jinja2, parse SatFile, apply
+/// `image_only=true`, and confirm the session_templates section was
+/// stripped before the YAML would be sent to the server.
+#[test]
+fn test_client_side_pipeline_with_image_only_filter() {
+  let sat_file_content = r#"
+configurations:
+- name: cfg-{{ app.version }}
+  layers:
+    - name: layer1
+      git:
+        url: https://example.com/repo.git
+        branch: main
+images:
+- name: img-{{ app.version }}
+  ims:
+    is_recipe: false
+    id: abc-123
+  configuration: cfg-{{ app.version }}
+session_templates:
+- name: st-{{ app.version }}
+  image:
+    image_ref: img-{{ app.version }}
+  configuration: cfg-{{ app.version }}
+  bos_parameters:
+    boot_sets:
+      compute:
+        node_groups:
+          - group1
+"#;
+  let values_file_content = r#"
+app:
+  version: v1
+"#;
+
+  let rendered = render_jinja2_sat_file_yaml(
+    sat_file_content,
+    Some(values_file_content),
+    None,
+  )
+  .expect("render");
+
+  // Match the command path: re-serialize the Value to string, then parse.
+  let rendered_str = serde_yaml::to_string(&rendered).expect("to_string");
+  let mut sat: SatFile = serde_yaml::from_str(&rendered_str).expect("parse");
+  sat.filter(true, false).expect("filter image_only");
+
+  assert!(
+    sat.session_templates.is_none(),
+    "image_only filter should drop session_templates"
+  );
+  let images = sat.images.as_ref().expect("images present");
+  assert_eq!(images.len(), 1);
+  assert_eq!(images[0].name, "img-v1");
+  // Configuration referenced by the image survives.
+  let configs = sat.configurations.as_ref().expect("configurations present");
+  assert_eq!(configs.len(), 1);
+  assert_eq!(configs[0].name, "cfg-v1");
 }

@@ -15,18 +15,16 @@ use crate::service;
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /sat-file`.
-//
-// Wire mirror of `ApplySatFileParams` — see the note there for why
-// `struct_excessive_bools` is silenced.
-#[allow(clippy::struct_excessive_bools)]
+///
+/// The CLI renders Jinja2, parses, and filters the SAT file locally and
+/// then sends the post-processed YAML in `sat_yaml`. The server only
+/// orchestrates the apply (Vault secrets, HSM groups, backend call).
 #[derive(Deserialize, ToSchema)]
 pub struct PostSatFileRequest {
-  /// Raw YAML content of the SAT file to apply.
-  pub sat_file_content: String,
-  /// Inline Jinja2 variable overrides (merged with `values_file_content`).
-  pub values: Option<serde_json::Value>,
-  /// Raw YAML content of a values file supplying Jinja2 variable overrides.
-  pub values_file_content: Option<String>,
+  /// Final, fully-rendered SAT YAML (Jinja2 already evaluated and
+  /// `image_only`/`session_template_only` filters already applied
+  /// client-side).
+  pub sat_yaml: String,
   /// Ansible verbosity level passed to any CFS sessions created.
   pub ansible_verbosity: Option<u8>,
   /// Extra arguments forwarded verbatim to `ansible-playbook`.
@@ -40,12 +38,6 @@ pub struct PostSatFileRequest {
   /// Prefix log lines with timestamps when streaming logs.
   #[serde(default)]
   pub timestamps: bool,
-  /// Only process image sections; skip session templates.
-  #[serde(default)]
-  pub image_only: bool,
-  /// Only process session template sections; skip images.
-  #[serde(default)]
-  pub session_template_only: bool,
   /// Overwrite existing IMS images or BOS session templates.
   #[serde(default)]
   pub overwrite: bool,
@@ -54,7 +46,8 @@ pub struct PostSatFileRequest {
   pub dry_run: bool,
 }
 
-/// `POST /api/v1/sat-file` — apply a SAT file (images, session templates, and CFS sessions).
+/// `POST /api/v1/sat-file` — apply a pre-rendered SAT file (images, session
+/// templates, and CFS sessions).
 #[utoipa::path(post, path = "/sat-file", tag = "sat-file",
   params(SiteHeader),
   request_body = PostSatFileRequest,
@@ -93,16 +86,12 @@ pub async fn post_sat_file(
     vault_base_url,
     k8s_api_url,
     service::sat_file::ApplySatFileParams {
-      sat_file_content: &body.sat_file_content,
-      values: body.values.as_ref(),
-      values_file_content: body.values_file_content.as_deref(),
+      sat_yaml: &body.sat_yaml,
       ansible_verbosity: body.ansible_verbosity,
       ansible_passthrough: body.ansible_passthrough.as_deref(),
       reboot: body.reboot,
       watch_logs: body.watch_logs,
       timestamps: body.timestamps,
-      image_only: body.image_only,
-      session_template_only: body.session_template_only,
       overwrite: body.overwrite,
       dry_run: body.dry_run,
     },

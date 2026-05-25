@@ -1,4 +1,9 @@
-//! SAT file rendering (Jinja2) and application through the backend.
+//! SAT file apply orchestration (Vault + K8s + backend).
+//!
+//! Rendering (Jinja2), parsing, and `image_only` / `session_template_only`
+//! filtering are performed client-side by the CLI; this layer receives the
+//! post-processed SAT YAML and forwards it to the backend together with
+//! the K8s secrets and the available HSM groups.
 
 use manta_backend_dispatcher::{
   error::Error,
@@ -8,7 +13,7 @@ use manta_backend_dispatcher::{
 use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::sat_file::ApplySatFileParams;
 
-/// Render, filter, and apply a SAT file via the backend.
+/// Apply a pre-rendered SAT file via the backend.
 pub async fn apply_sat_file(
   infra: &InfraContext<'_>,
   token: &str,
@@ -17,37 +22,7 @@ pub async fn apply_sat_file(
   k8s_api_url: &str,
   params: ApplySatFileParams<'_>,
 ) -> Result<(), Error> {
-  let values_cli_vec: Vec<String> = params
-    .values
-    .and_then(|v| v.as_object())
-    .map(|map| {
-      map
-        .iter()
-        .map(|(k, v)| format!("{}={}", k, v.as_str().unwrap_or(&v.to_string())))
-        .collect()
-    })
-    .unwrap_or_default();
-
-  let sat_template_yaml =
-    manta_shared::shared::sat_file::render_jinja2_sat_file_yaml(
-      params.sat_file_content,
-      params.values_file_content,
-      if values_cli_vec.is_empty() {
-        None
-      } else {
-        Some(&values_cli_vec)
-      },
-    )
-    .map_err(crate::wire_conv::to_backend)?;
-
-  let mut sat_file: manta_shared::shared::sat_file::SatFile =
-    serde_yaml::from_value(sat_template_yaml)?;
-
-  sat_file
-    .filter(params.image_only, params.session_template_only)
-    .map_err(crate::wire_conv::to_backend)?;
-
-  let sat_file_yaml = serde_yaml::to_value(sat_file)?;
+  let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(params.sat_yaml)?;
 
   let shasta_k8s_secrets =
     crate::server::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
