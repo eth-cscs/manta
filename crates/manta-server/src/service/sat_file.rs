@@ -1,19 +1,36 @@
-//! SAT file apply orchestration (Vault + K8s + backend).
+//! SAT file apply orchestration (backend trait + HSM groups).
 //!
 //! Rendering (Jinja2), parsing, and `image_only` / `session_template_only`
-//! filtering are performed client-side by the CLI; this layer receives the
-//! post-processed SAT YAML and forwards it to the backend together with
-//! the K8s secrets and the available HSM groups.
+//! filtering are performed client-side by the CLI; this layer receives
+//! the already-parsed SAT file as a `serde_json::Value`, looks up the
+//! caller's available HSM groups, and forwards everything to the
+//! backend's `SatTrait`. The backend fetches its own Kubernetes secrets
+//! from Vault internally.
 
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{apply_sat_file::SatTrait, hsm::group::GroupTrait},
+  interfaces::{
+    apply_sat_file::{
+      ApplySatFileParams as BackendApplySatFileParams, SatTrait,
+    },
+    hsm::group::GroupTrait,
+  },
+  types::{
+    bos::{session::BosSession, session_template::BosSessionTemplate},
+    cfs::cfs_configuration_response::CfsConfigurationResponse,
+    ims::Image,
+  },
 };
 
 use crate::server::common::app_context::InfraContext;
 pub use manta_shared::shared::params::sat_file::ApplySatFileParams;
 
 /// Apply a pre-rendered SAT file via the backend.
+///
+/// Returns the four lists of artifacts the backend produced (or would
+/// produce, in `dry_run` mode): CFS configurations, IMS images, BOS
+/// session templates, and BOS sessions. The handler serialises these as
+/// the JSON response body so `manta apply sat-file` can show them.
 pub async fn apply_sat_file(
   infra: &InfraContext<'_>,
   token: &str,
@@ -21,42 +38,40 @@ pub async fn apply_sat_file(
   vault_base_url: &str,
   k8s_api_url: &str,
   params: ApplySatFileParams<'_>,
-) -> Result<(), Error> {
-  let sat_file_yaml: serde_yaml::Value = serde_yaml::from_str(params.sat_yaml)?;
-
-  let shasta_k8s_secrets =
-    crate::server::common::vault::http_client::fetch_shasta_k8s_secrets_from_vault(
-      vault_base_url,
-      infra.site_name,
-      token,
-    )
-    .await?;
-
+) -> Result<
+  (
+    Vec<CfsConfigurationResponse>,
+    Vec<Image>,
+    Vec<BosSessionTemplate>,
+    Vec<BosSession>,
+  ),
+  Error,
+> {
   let hsm_group_available_vec =
     infra.backend.get_group_name_available(token).await?;
 
   infra
     .backend
-    .apply_sat_file(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
+    .apply_sat_file(BackendApplySatFileParams {
+      shasta_token: token,
+      shasta_base_url: infra.shasta_base_url,
+      shasta_root_cert: infra.shasta_root_cert,
+      socks5_proxy: infra.socks5_proxy,
       vault_base_url,
-      infra.site_name,
+      site_name: infra.site_name,
       k8s_api_url,
-      shasta_k8s_secrets,
-      sat_file_yaml,
-      &hsm_group_available_vec,
-      params.ansible_verbosity,
-      params.ansible_passthrough,
-      infra.gitea_base_url,
+      sat_file: params.sat_file,
+      hsm_group_available_vec: &hsm_group_available_vec,
+      ansible_verbosity: params.ansible_verbosity,
+      ansible_passthrough: params.ansible_passthrough,
+      gitea_base_url: infra.gitea_base_url,
       gitea_token,
-      params.reboot,
-      params.watch_logs,
-      params.timestamps,
-      true,
-      params.overwrite,
-      params.dry_run,
-    )
+      reboot: params.reboot,
+      watch_logs: params.watch_logs,
+      timestamps: params.timestamps,
+      debug_on_failure: true,
+      overwrite: params.overwrite,
+      dry_run: params.dry_run,
+    })
     .await
 }

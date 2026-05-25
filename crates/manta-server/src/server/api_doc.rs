@@ -86,6 +86,7 @@ use super::handlers;
     handlers::BosOperation,
     handlers::PostTemplateSessionRequest,
     handlers::PostSatFileRequest,
+    handlers::PostSatFileResponse,
     handlers::AddKernelParametersRequest,
     handlers::DeleteKernelParametersRequest,
     handlers::AddHwComponentRequest,

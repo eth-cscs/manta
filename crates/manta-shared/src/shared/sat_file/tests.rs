@@ -1,4 +1,5 @@
 use super::*;
+use serde_json::json;
 use serde_yaml::Value;
 
 // ── merge_yaml ──
@@ -73,124 +74,137 @@ fn dot_notation_multiple_equals_rejected() {
   assert!(dot_notation_to_yaml("a=b=c").is_err());
 }
 
-// ── SatFile::filter ──
+// ── apply_sat_file_filters ──
 
 #[test]
-fn filter_image_only_removes_session_templates() {
-  let yaml = r#"
-configurations:
-- name: cfg-used
-  layers:
-    - name: layer1
-      git:
-        url: https://example.com/repo.git
-        branch: main
-- name: cfg-unused
-  layers:
-    - name: layer2
-      git:
-        url: https://example.com/repo.git
-        branch: main
-images:
-- name: img1
-  ims:
-    is_recipe: false
-    id: abc-123
-  configuration: cfg-used
-session_templates:
-- name: st1
-  image:
-    image_ref: img1
-  configuration: cfg-used
-  bos_parameters:
-    boot_sets:
-      compute:
-        node_groups:
-          - group1
-"#;
-  let mut sat: SatFile = serde_yaml::from_str(yaml).unwrap();
-  sat.filter(true, false).unwrap();
-  assert!(sat.session_templates.is_none());
-  // Only cfg-used is kept
-  let configs = sat.configurations.unwrap();
+fn filter_image_only_drops_session_templates_and_prunes_configurations() {
+  let mut sat = json!({
+      "configurations": [
+          { "name": "cfg-used", "layers": [] },
+          { "name": "cfg-unused", "layers": [] },
+      ],
+      "images": [
+          { "name": "img1", "configuration": "cfg-used" },
+      ],
+      "session_templates": [
+          { "name": "st1", "image": { "image_ref": "img1" }, "configuration": "cfg-used" },
+      ],
+      "hardware": [{ "pattern": "x" }],
+  });
+
+  apply_sat_file_filters(&mut sat, true, false).unwrap();
+
+  assert!(sat.get("session_templates").is_none());
+  assert!(sat.get("hardware").is_none());
+  let configs = sat.get("configurations").unwrap().as_array().unwrap();
   assert_eq!(configs.len(), 1);
-  assert_eq!(configs[0].name, "cfg-used");
+  assert_eq!(configs[0]["name"], "cfg-used");
 }
 
 #[test]
-fn filter_session_template_only_removes_unused_images() {
-  let yaml = r#"
-configurations:
-- name: cfg-st
-  layers:
-    - name: layer1
-      git:
-        url: https://example.com/repo.git
-        branch: main
-- name: cfg-img-only
-  layers:
-    - name: layer2
-      git:
-        url: https://example.com/repo.git
-        branch: main
-images:
-- name: used-image
-  ims:
-    is_recipe: false
-    id: abc-123
-  configuration: cfg-img-only
-- name: unused-image
-  ims:
-    is_recipe: false
-    id: def-456
-session_templates:
-- name: st1
-  image:
-    image_ref: used-image
-  configuration: cfg-st
-  bos_parameters:
-    boot_sets:
-      compute:
-        node_groups:
-          - group1
-"#;
-  let mut sat: SatFile = serde_yaml::from_str(yaml).unwrap();
-  sat.filter(false, true).unwrap();
-  // Only used-image should remain
-  let images = sat.images.unwrap();
+fn filter_session_template_only_retains_referenced_images_and_drops_unreferenced() {
+  let mut sat = json!({
+      "configurations": [
+          { "name": "cfg-st" },
+          { "name": "cfg-img-only" },
+      ],
+      "images": [
+          { "name": "used-image", "configuration": "cfg-img-only" },
+          { "name": "unused-image" },
+      ],
+      "session_templates": [
+          { "name": "st1", "image": { "image_ref": "used-image" }, "configuration": "cfg-st" },
+      ],
+  });
+
+  apply_sat_file_filters(&mut sat, false, true).unwrap();
+
+  let images = sat.get("images").unwrap().as_array().unwrap();
   assert_eq!(images.len(), 1);
-  assert_eq!(images[0].name, "used-image");
+  assert_eq!(images[0]["name"], "used-image");
+
+  // Both configurations are kept: cfg-img-only via the surviving image,
+  // cfg-st via the session template.
+  let configs = sat.get("configurations").unwrap().as_array().unwrap();
+  assert_eq!(configs.len(), 2);
+}
+
+#[test]
+fn filter_session_template_only_drops_images_section_when_no_match() {
+  let mut sat = json!({
+      "configurations": [{ "name": "cfg-st" }],
+      "images": [{ "name": "img-not-referenced" }],
+      "session_templates": [
+          { "name": "st1", "image": { "ims": { "id": "abc-123" } }, "configuration": "cfg-st" },
+      ],
+  });
+
+  apply_sat_file_filters(&mut sat, false, true).unwrap();
+
+  // No image survives the retain, so the whole section goes.
+  assert!(sat.get("images").is_none());
+  // Configuration remains because the session_template references it.
+  let configs = sat.get("configurations").unwrap().as_array().unwrap();
+  assert_eq!(configs.len(), 1);
+}
+
+#[test]
+fn filter_session_template_only_matches_ims_name_variant() {
+  // image: { ims: { name: "..." } } form should also retain the image.
+  let mut sat = json!({
+      "images": [{ "name": "ims-name-target" }],
+      "session_templates": [
+          { "name": "st1", "image": { "ims": { "name": "ims-name-target" } }, "configuration": "cfg" },
+      ],
+      "configurations": [{ "name": "cfg" }],
+  });
+
+  apply_sat_file_filters(&mut sat, false, true).unwrap();
+
+  let images = sat.get("images").unwrap().as_array().unwrap();
+  assert_eq!(images.len(), 1);
+  assert_eq!(images[0]["name"], "ims-name-target");
 }
 
 #[test]
 fn filter_neither_flag_is_noop() {
-  let yaml = r#"
-configurations:
-- name: cfg1
-  layers:
-    - name: layer1
-      git:
-        url: https://example.com/repo.git
-        branch: main
-images:
-- name: img1
-  ims:
-    is_recipe: false
-    id: abc-123
-session_templates:
-- name: st1
-  image:
-    image_ref: img1
-  configuration: cfg1
-  bos_parameters:
-    boot_sets:
-      compute:
-        node_groups:
-          - group1
-"#;
-  let mut sat: SatFile = serde_yaml::from_str(yaml).unwrap();
-  sat.filter(false, false).unwrap();
-  assert!(sat.images.is_some());
-  assert!(sat.session_templates.is_some());
-  assert!(sat.configurations.is_some());
+  let mut sat = json!({
+      "configurations": [{ "name": "cfg1" }],
+      "images": [{ "name": "img1" }],
+      "session_templates": [
+          { "name": "st1", "image": { "image_ref": "img1" }, "configuration": "cfg1" },
+      ],
+  });
+  let before = sat.clone();
+
+  apply_sat_file_filters(&mut sat, false, false).unwrap();
+
+  assert_eq!(sat, before);
+}
+
+#[test]
+fn filter_image_only_errors_when_images_missing() {
+  let mut sat = json!({
+      "configurations": [{ "name": "cfg1" }],
+      "session_templates": [],
+  });
+  let err = apply_sat_file_filters(&mut sat, true, false).unwrap_err();
+  assert!(err.to_string().contains("'images' section missing"));
+}
+
+#[test]
+fn filter_session_template_only_errors_when_section_missing() {
+  let mut sat = json!({
+      "configurations": [{ "name": "cfg1" }],
+      "images": [],
+  });
+  let err = apply_sat_file_filters(&mut sat, false, true).unwrap_err();
+  assert!(err.to_string().contains("'session_templates' section"));
+}
+
+#[test]
+fn filter_errors_when_root_is_not_a_mapping() {
+  let mut sat = json!([1, 2, 3]);
+  let err = apply_sat_file_filters(&mut sat, true, false).unwrap_err();
+  assert!(err.to_string().contains("not a YAML/JSON mapping"));
 }

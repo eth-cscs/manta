@@ -1,10 +1,24 @@
 //! Implements the `manta apply sat-file` command.
 //!
-//! Jinja2 rendering, `SatFile` parsing, and the `image_only` /
-//! `session_template_only` filters all run client-side so the operator
-//! can preview the final YAML before any backend mutation. The slim
-//! `POST /sat-file` endpoint then forwards the post-processed YAML to
-//! the backend together with the Vault/K8s context.
+//! Jinja2 rendering, parsing into a `serde_json::Value`, and the
+//! `image_only` / `session_template_only` filters (prune-by-reference
+//! over the parsed Value) all run client-side so the operator can
+//! preview the filtered SAT file before any backend mutation. The slim
+//! `POST /sat-file` endpoint then forwards the structured value to the
+//! backend together with the Vault/K8s context.
+//!
+//! The CLI never embeds the SAT schema: filtering navigates a small
+//! set of field names (`configurations`, `images`, `session_templates`,
+//! `hardware`, `name`, `configuration`, `image`, `image_ref`,
+//! `ims`) on the `serde_json::Value`. The canonical schema lives in
+//! csm-rs (which deserialises during apply).
+//!
+//! On success the server returns the four lists of artifacts the
+//! backend produced (`configurations`, `images`, `session_templates`,
+//! `bos_sessions`); the command pipes them through
+//! [`crate::cli::output::action_result::print_with_data`] so the user
+//! sees a status message plus pretty-printed JSON (or `{ "status":
+//! "ok", "message": ..., "data": ... }` with `--output json`).
 
 use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
@@ -13,7 +27,9 @@ use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
-use manta_shared::shared::sat_file::{SatFile, render_jinja2_sat_file_yaml};
+use manta_shared::shared::sat_file::{
+  apply_sat_file_filters, render_jinja2_sat_file_yaml,
+};
 
 /// Options for applying a SAT file.
 #[allow(clippy::struct_excessive_bools)]
@@ -69,7 +85,7 @@ pub async fn exec(
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 
-  // 1. Render Jinja2 (shared helper, MantaError -> anyhow)
+  // 1. Render Jinja2 (text-in / text-out).
   tracing::info!("Render SAT template file");
   let rendered_yaml = render_jinja2_sat_file_yaml(
     opts.sat_file_content,
@@ -78,27 +94,30 @@ pub async fn exec(
   )
   .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-  // 2. Parse + filter the SAT file (image_only / session_template_only).
-  //
-  // Round-trip through a YAML string: `serde_yaml::from_value` is brittle
-  // around untagged enums (see SatFile's `BaseOrIms` / `ImageIms`), while
-  // `from_str` handles them reliably.
-  let rendered_str = serde_yaml::to_string(&rendered_yaml)
-    .context("Failed to serialize rendered SAT template to YAML")?;
-  let mut sat_file: SatFile = serde_yaml::from_str(&rendered_str)
-    .context("Could not parse rendered SAT template into SatFile")?;
-  sat_file
-    .filter(opts.image_only, opts.session_template_only)
-    .map_err(|e| anyhow::anyhow!("{e}"))?;
+  // 2. Parse into a structured value. The CLI carries the SAT file as
+  //    `serde_json::Value` end-to-end — the server forwards it
+  //    verbatim, and csm-rs transcodes to its preferred shape during
+  //    apply. No SAT schema lives in the CLI.
+  let mut sat_file: serde_json::Value = serde_yaml::from_str(&rendered_yaml)
+    .context("Rendered SAT template is not valid YAML")?;
 
-  let sat_yaml_string = serde_yaml::to_string(&sat_file)
-    .context("Failed to serialize filtered SAT file to YAML")?;
+  // 3. Apply --image-only / --sessiontemplate-only by walking the Value
+  //    (drops top-level sections + prunes unreferenced configurations
+  //    /images — see `apply_sat_file_filters` for the exact rules).
+  apply_sat_file_filters(
+    &mut sat_file,
+    opts.image_only,
+    opts.session_template_only,
+  )
+  .map_err(|e| anyhow::anyhow!("{e}"))?;
 
-  // 3. Display + confirm.
+  // 4. Display the filtered SAT file as YAML and confirm.
+  let preview = serde_yaml::to_string(&sat_file)
+    .context("Failed to serialize filtered SAT value for preview")?;
   println!(
     "{}\n{}",
     "#### SAT file content ####".blue(),
-    &sat_yaml_string,
+    &preview,
   );
   if !common::user_interaction::confirm(
     "Please review the rendered SAT file above and confirm to proceed.",
@@ -107,8 +126,9 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  // 4. Extra reboot confirmation if session templates are present.
-  if sat_file.session_templates.is_some()
+  // 5. Extra reboot confirmation if session_templates are still present
+  //    after filtering.
+  if sat_file.get("session_templates").is_some()
     && opts.reboot
     && !common::user_interaction::confirm(
       "This operation will reboot nodes. Please confirm to proceed.",
@@ -118,13 +138,13 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  // 5. Pre-hook -> server call -> post-hook.
+  // 6. Pre-hook -> server call -> post-hook.
   run_hook_if_present(opts.prehook_opt, "pre")?;
 
   let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_sat_file(
       token,
-      &sat_yaml_string,
+      sat_file,
       opts.ansible_verbosity_opt,
       opts.ansible_passthrough_opt,
       opts.reboot,

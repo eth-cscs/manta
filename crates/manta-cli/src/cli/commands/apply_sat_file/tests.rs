@@ -1,6 +1,11 @@
-use manta_shared::shared::sat_file::{SatFile, render_jinja2_sat_file_yaml};
+use manta_shared::shared::sat_file::{
+  apply_sat_file_filters, render_jinja2_sat_file_yaml,
+};
+use serde_yaml::Value;
 
-/// Test rendering a SAT template file with the values file
+/// Render a SAT template + values file (with a CLI `--var` override) and
+/// confirm the rendered YAML string substitutes variables from all
+/// three sources.
 #[test]
 fn test_render_sat_file_yaml_template_with_yaml_values_file() {
   let sat_file_content = r#"
@@ -66,25 +71,28 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
 
   let var_content: Vec<String> = vec!["config.name = new-value".to_string()];
 
-  let result = render_jinja2_sat_file_yaml(
+  let rendered = render_jinja2_sat_file_yaml(
     sat_file_content,
     Some(values_file_content),
     Some(&var_content),
   )
   .unwrap();
 
+  // Parse the rendered string so assertions can navigate the structure.
+  let parsed: Value = serde_yaml::from_str(&rendered).unwrap();
+
   // Verify CLI var override took effect (config.name = "new-value" instead of "test-config")
-  let name = result.get("name").unwrap().as_str().unwrap();
+  let name = parsed.get("name").unwrap().as_str().unwrap();
   assert_eq!(name, "new-value", "CLI --var should override values file");
 
   // Verify configuration name uses the overridden config.name
-  let configs = result.get("configurations").unwrap().as_sequence().unwrap();
+  let configs = parsed.get("configurations").unwrap().as_sequence().unwrap();
   assert_eq!(configs.len(), 1);
   let config_name = configs[0].get("name").unwrap().as_str().unwrap();
   assert_eq!(config_name, "new-value-v1.0.0");
 
   // Verify image name uses value from values file
-  let images = result.get("images").unwrap().as_sequence().unwrap();
+  let images = parsed.get("images").unwrap().as_sequence().unwrap();
   let image_name = images[0].get("name").unwrap().as_str().unwrap();
   assert_eq!(image_name, "zinal-nomad-v1.0.5");
 
@@ -97,7 +105,7 @@ fn test_render_sat_file_yaml_template_with_yaml_values_file() {
   assert_eq!(image_groups[1].as_str().unwrap(), "zinal_cta");
 
   // Verify session template name
-  let templates = result
+  let templates = parsed
     .get("session_templates")
     .unwrap()
     .as_sequence()
@@ -141,11 +149,12 @@ fn test_render_plain_sat_file_no_variables() {
               branch: main
         "#;
 
-  let result =
+  let rendered =
     render_jinja2_sat_file_yaml(sat_file_content, None, None).unwrap();
+  let parsed: Value = serde_yaml::from_str(&rendered).unwrap();
 
-  assert_eq!(result.get("name").unwrap().as_str().unwrap(), "my-config");
-  let configs = result.get("configurations").unwrap().as_sequence().unwrap();
+  assert_eq!(parsed.get("name").unwrap().as_str().unwrap(), "my-config");
+  let configs = parsed.get("configurations").unwrap().as_sequence().unwrap();
   assert_eq!(
     configs[0].get("name").unwrap().as_str().unwrap(),
     "static-config"
@@ -166,20 +175,22 @@ fn test_render_sat_file_with_values_no_overrides() {
           version: "2.0"
         "#;
 
-  let result = render_jinja2_sat_file_yaml(
+  let rendered = render_jinja2_sat_file_yaml(
     sat_file_content,
     Some(values_file_content),
     None,
   )
   .unwrap();
+  let parsed: Value = serde_yaml::from_str(&rendered).unwrap();
 
-  assert_eq!(result.get("name").unwrap().as_str().unwrap(), "my-app");
-  assert_eq!(result.get("version").unwrap().as_str().unwrap(), "2.0");
+  assert_eq!(parsed.get("name").unwrap().as_str().unwrap(), "my-app");
+  assert_eq!(parsed.get("version").unwrap().as_str().unwrap(), "2.0");
 }
 
-/// End-to-end client-side pipeline: render Jinja2, parse SatFile, apply
-/// `image_only=true`, and confirm the session_templates section was
-/// stripped before the YAML would be sent to the server.
+/// End-to-end client-side pipeline: render Jinja2, parse to
+/// `serde_json::Value`, apply `image_only=true`, and confirm the
+/// session_templates section was stripped and unreferenced
+/// configurations were pruned before the value would be sent.
 #[test]
 fn test_client_side_pipeline_with_image_only_filter() {
   let sat_file_content = r#"
@@ -187,6 +198,12 @@ configurations:
 - name: cfg-{{ app.version }}
   layers:
     - name: layer1
+      git:
+        url: https://example.com/repo.git
+        branch: main
+- name: cfg-unused-{{ app.version }}
+  layers:
+    - name: layer-unused
       git:
         url: https://example.com/repo.git
         branch: main
@@ -218,21 +235,20 @@ app:
     None,
   )
   .expect("render");
+  let mut sat: serde_json::Value =
+    serde_yaml::from_str(&rendered).expect("parse to Value");
 
-  // Match the command path: re-serialize the Value to string, then parse.
-  let rendered_str = serde_yaml::to_string(&rendered).expect("to_string");
-  let mut sat: SatFile = serde_yaml::from_str(&rendered_str).expect("parse");
-  sat.filter(true, false).expect("filter image_only");
+  apply_sat_file_filters(&mut sat, true, false).expect("filter image_only");
 
   assert!(
-    sat.session_templates.is_none(),
+    sat.get("session_templates").is_none(),
     "image_only filter should drop session_templates"
   );
-  let images = sat.images.as_ref().expect("images present");
+  let images = sat.get("images").unwrap().as_array().unwrap();
   assert_eq!(images.len(), 1);
-  assert_eq!(images[0].name, "img-v1");
-  // Configuration referenced by the image survives.
-  let configs = sat.configurations.as_ref().expect("configurations present");
+  assert_eq!(images[0]["name"], "img-v1");
+  // Only the referenced configuration survives the prune.
+  let configs = sat.get("configurations").unwrap().as_array().unwrap();
   assert_eq!(configs.len(), 1);
-  assert_eq!(configs[0].name, "cfg-v1");
+  assert_eq!(configs[0]["name"], "cfg-v1");
 }

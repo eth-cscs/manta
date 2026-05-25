@@ -45,7 +45,7 @@ flowchart LR
     direction TB
     Wire[wire types & DTOs]
     Common[config / audit / log_ops / MantaError]
-    Helpers[pure helpers<br/>sat_file render+filter, jwt, kafka]
+    Helpers[pure helpers<br/>sat_file renderer + Value filter, jwt, kafka]
   end
 
   subgraph ServerInternals[manta-server internals]
@@ -63,7 +63,7 @@ flowchart LR
   Service -.-> K8s[(Kubernetes API)]
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering and filtering) are used by both — the CLI runs them locally for client-side processing, the server uses the same code when it needs the shapes.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering, plus the `serde_json::Value`-walking filter that drops top-level sections and prunes unreferenced configurations / images) are used by the CLI; the server is a pass-through for the filtered SAT value. The canonical SAT-file schema lives in csm-rs — the CLI carries the SAT file as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
 
 ---
 
@@ -243,7 +243,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 Three error types, partitioned by layer (the backend-dispatcher rule is enforced by CI):
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,manta_backend_dispatcher.rs}`).
-- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file parser, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
+- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja renderer + Value-walking filter, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.

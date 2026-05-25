@@ -2,15 +2,16 @@
 
 /// Parameters for applying a SAT file.
 ///
-/// The CLI now renders Jinja2, parses the SAT YAML, and applies the
-/// `image_only` / `session_template_only` filters locally before the
-/// request reaches the server, so only the post-processed YAML and the
-/// apply-time flags travel on the wire.
+/// The CLI renders Jinja2, parses the rendered YAML into a structured
+/// value, applies the `image_only` / `session_template_only` filters
+/// client-side (by removing top-level keys), and forwards the resulting
+/// `serde_json::Value` plus the apply-time flags through the server to
+/// the backend.
 pub struct ApplySatFileParams<'a> {
-  /// Final, fully-rendered SAT YAML — Jinja2 already evaluated and
-  /// `image_only` / `session_template_only` filters already applied
-  /// client-side.
-  pub sat_yaml: &'a str,
+  /// SAT file parsed into a structured value — Jinja2 already
+  /// evaluated and `image_only` / `session_template_only` filters
+  /// already applied client-side.
+  pub sat_file: serde_json::Value,
   /// Ansible verbosity level (0–4) passed to any CFS sessions
   /// created by this SAT file.
   pub ansible_verbosity: Option<u8>,
