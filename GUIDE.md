@@ -109,7 +109,7 @@ manta delete group gpu-cluster
 
 ## 3. Deploying with a SAT file
 
-The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to three sections: `configurations`, `images`, and `session_templates`.
+The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to four top-level sections: `configurations`, `images`, `session_templates`, and an optional `hardware` block describing hardware patterns to apply.
 
 The CLI renders Jinja2, parses the SAT file into a structured value, and applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images by walking the value) before sending anything to the server. You'll see the **final filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--reboot` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
 

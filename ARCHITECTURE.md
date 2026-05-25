@@ -101,7 +101,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer (16 modules): `auth`, `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `power`, `redfish_endpoints`.
+Business logic layer (17 modules): `auth`, `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `power`, `redfish_endpoints`.
 
 Each module receives an `&InfraContext<'_>` plus a bearer token and typed parameters, and returns typed results. This layer:
 
