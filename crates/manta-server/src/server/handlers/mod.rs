@@ -215,6 +215,24 @@ impl RequestCtx {
   }
 }
 
+/// Render an error and its `source()` chain as a multi-line string.
+///
+/// `thiserror`'s `Display` only emits the top-level message; nested
+/// errors reached via `std::error::Error::source()` are dropped. This
+/// walks the chain so the server log carries the full causal context
+/// (e.g. the underlying TLS / connect error behind a `reqwest::Error`).
+/// Works uniformly for thiserror-derived and `anyhow::Error` chains.
+fn format_with_causes(e: &(dyn std::error::Error + 'static)) -> String {
+  let mut out = e.to_string();
+  let mut src = e.source();
+  while let Some(cause) = src {
+    out.push_str("\n  caused by: ");
+    out.push_str(&cause.to_string());
+    src = cause.source();
+  }
+  out
+}
+
 /// Convert a `BackendError` into the best-fitting HTTP error response.
 ///
 /// `pub` (rather than `pub(crate)`) so the integration tests in
@@ -235,10 +253,11 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     BackendError::InsufficientResources(_) => StatusCode::UNPROCESSABLE_ENTITY,
     _ => StatusCode::INTERNAL_SERVER_ERROR,
   };
+  let chain = format_with_causes(&e);
   if status == StatusCode::INTERNAL_SERVER_ERROR {
-    tracing::error!("Internal error: {}", e);
+    tracing::error!("Internal error: {}", chain);
   } else {
-    tracing::debug!("Service error {}: {}", status, e);
+    tracing::debug!("Service error {}: {}", status, chain);
   }
   (
     status,
@@ -248,22 +267,34 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
   )
 }
 
-/// Convert any `Display` error (e.g. anyhow) into an HTTP error response.
-pub(super) fn display_error<E: std::fmt::Display>(
+/// Convert any error (typically `BackendError` or `anyhow::Error`) into
+/// a 500 HTTP response while logging the full `source()` chain.
+///
+/// The response body carries only the top-level `Display` rendering;
+/// nested cause detail stays in the server log so it doesn't leak
+/// internals to clients.
+pub(super) fn display_error<E: std::error::Error + 'static>(
   e: E,
 ) -> (StatusCode, Json<ErrorResponse>) {
-  to_handler_error(BackendError::Message(e.to_string()))
+  let body_msg = e.to_string();
+  tracing::error!("Internal error: {}", format_with_causes(&e));
+  (
+    StatusCode::INTERNAL_SERVER_ERROR,
+    Json(ErrorResponse { error: body_msg }),
+  )
 }
 
 pub(super) fn serialize_or_500<T: Serialize>(
   v: &T,
 ) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
   serde_json::to_value(v).map_err(|e| {
-    let msg = format!("Failed to serialize: {e}");
-    tracing::error!("{}", msg);
+    let chain = format_with_causes(&e);
+    tracing::error!("Failed to serialize: {}", chain);
     (
       StatusCode::INTERNAL_SERVER_ERROR,
-      Json(ErrorResponse { error: msg }),
+      Json(ErrorResponse {
+        error: format!("Failed to serialize: {e}"),
+      }),
     )
   })
 }
