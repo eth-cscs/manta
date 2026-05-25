@@ -1058,24 +1058,42 @@ Create an ephemeral CFS environment from an existing image.
 
 ### POST /sat-file
 
-Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds images, creates BOS session templates, and optionally reboots nodes.
+Apply a pre-rendered SAT (Shasta Artifact Template) file. Builds images, creates BOS session templates, and optionally reboots nodes.
 
 > Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
+
+**Client responsibility.** Jinja2 rendering, `SatFile` deserialization, and the `image_only` / `session_template_only` filters all run client-side (see `manta apply sat-file` in [CLI.md](CLI.md)). The server receives the post-processed YAML in `sat_yaml` and forwards it to the backend together with Vault-fetched secrets and the caller's available HSM groups.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant CLI as manta apply sat-file
+  participant Srv as POST /sat-file
+  participant Vault
+  participant BE as Backend (CSM / OCHAMI)
+
+  U->>CLI: -t sat.yaml -f values.yaml [-i | -s]
+  CLI->>CLI: render Jinja2 + parse + filter
+  CLI-->>U: preview rendered YAML
+  U-->>CLI: confirm (and reboot confirm if applicable)
+  CLI->>Srv: POST { sat_yaml, flags }
+  Srv->>Vault: fetch gitea_token + k8s secrets
+  Srv->>BE: apply_sat_file(sat_yaml, secrets, hsm_groups, flags)
+  BE-->>Srv: ok / error
+  Srv-->>CLI: 200 { applied: true } or error
+```
 
 **Request body**
 
 ```json
 {
-  "sat_file_content": "schema: 1.0\nimages:\n  - ...",
-  "values": { "version": "1.5.0", "site": "alps" },
-  "values_file_content": null,
+  "sat_yaml": "configurations:\n  - name: cfg-v1\n    layers: [...]\nimages: [...]\n",
   "ansible_verbosity": 0,
   "ansible_passthrough": "",
   "reboot": false,
   "watch_logs": false,
   "timestamps": false,
-  "image_only": false,
-  "session_template_only": false,
   "overwrite": false,
   "dry_run": false
 }
@@ -1083,18 +1101,14 @@ Apply a SAT (Shasta Artifact Template) file. Renders Jinja2 templates, builds im
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `sat_file_content` | string | **yes** | SAT YAML file content (may contain Jinja2 syntax) |
-| `values` | object | no | Key-value pairs for Jinja2 template rendering |
-| `values_file_content` | string | no | YAML values file content (alternative to `values`) |
+| `sat_yaml` | string | **yes** | Final SAT YAML — Jinja2 already evaluated and `image_only` / `session_template_only` filters already applied client-side. |
 | `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 |
 | `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
 | `reboot` | bool | no | Reboot nodes after applying session templates (default: `false`) |
 | `watch_logs` | bool | no | Stream CFS session logs during apply (default: `false`) |
 | `timestamps` | bool | no | Include timestamps in streamed logs (default: `false`) |
-| `image_only` | bool | no | Process only the `images` section (default: `false`) |
-| `session_template_only` | bool | no | Process only the `session_templates` section (default: `false`) |
 | `overwrite` | bool | no | Overwrite existing configurations and images (default: `false`) |
-| `dry_run` | bool | no | Render and validate without creating anything (default: `false`) |
+| `dry_run` | bool | no | Validate without creating anything (default: `false`) |
 
 **Response `200`** — `{ "applied": true }`.
 

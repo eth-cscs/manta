@@ -34,24 +34,36 @@ The backend bridge (`StaticBackendDispatcher` enum and the 18 trait-impl files r
 
 ## Layer overview
 
-```
-User
-  │
-  ├─ CLI mode (manta-cli binary)
-  │    crates/manta-cli/src/cli/          — argument parsing, output tables, user prompts
-  │      └─ crates/manta-shared/          — wire types, AppContext, MantaError, config, audit
-  │           └─ manta-backend-dispatcher — lightweight types/traits crate (transitive only)
-  │      └─ MantaClient                   — HTTP client; all backend calls go via manta-server
-  │
-  └─ HTTP server mode (manta-server binary)
-       crates/manta-server/src/server/      — axum HTTPS server, JWT auth middleware
-         ├─ crates/manta-server/src/service/        — business logic, orchestration, filtering
-         ├─ crates/manta-server/src/backend_dispatcher/ — trait impls on StaticBackendDispatcher
-         │    └─ csm-rs / ochami-rs                 — HTTP clients for CSM / OpenCHAMI
-         └─ crates/manta-shared/                    — same shared library as the CLI
+```mermaid
+flowchart LR
+  User((User)) --> CLI[manta CLI]
+  CLI -->|HTTPS| Server[manta-server]
+  CLI -. shares .-> Shared
+  Server -. shares .-> Shared
+
+  subgraph Shared[manta-shared]
+    direction TB
+    Wire[wire types & DTOs]
+    Common[config / audit / log_ops / MantaError]
+    Helpers[pure helpers<br/>sat_file render+filter, jwt, kafka]
+  end
+
+  subgraph ServerInternals[manta-server internals]
+    direction TB
+    Handlers[server/handlers/<br/>axum extractors + error mapping]
+    Service[service/<br/>business logic, orchestration]
+    Dispatcher[backend_dispatcher/<br/>StaticBackendDispatcher]
+    Handlers --> Service --> Dispatcher
+  end
+
+  Server --> ServerInternals
+  Dispatcher -->|HTTP| CSM[(CSM / csm-rs)]
+  Dispatcher -->|HTTP| OCHAMI[(OpenCHAMI / ochami-rs)]
+  Service -.-> Vault[(Vault)]
+  Service -.-> K8s[(Kubernetes API)]
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering and filtering) are used by both — the CLI runs them locally for client-side processing, the server uses the same code when it needs the shapes.
 
 ---
 
@@ -235,6 +247,21 @@ Three error types, partitioned by layer (the backend-dispatcher rule is enforced
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.
+
+When a handler error reaches `to_handler_error` / `display_error` / `serialize_or_500`, the log line walks the `std::error::Error::source()` chain (`format_with_causes`) and emits each level prefixed with `caused by:`. `thiserror`'s `Display` only renders the top-level `#[error("…")]` string, so without this walk `#[from]`-wrapped inner errors (`reqwest::Error`, `serde_json::Error`, etc.) would be lost. The HTTP response body still carries only the top-level message to avoid leaking internals to clients.
+
+---
+
+## Observability
+
+Logging is initialised by `manta_shared::common::log_ops::configure(log_level, with_timestamps)`. Both binaries share the function but differ on one flag:
+
+| Binary | `with_timestamps` | Rationale |
+|--------|--------------------|-----------|
+| `manta-server` | `true` | Long-running process; ISO-8601 timestamps help correlate events across requests in `journalctl` / file logs. |
+| `manta-cli` | `false` | Interactive use; timestamps clutter terminal output. |
+
+The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"info"`, `"manta=debug,hyper=warn"`); invalid directives fall back to `"error"`. Targets are suppressed (`with_target(false)`); the `target=` field would just repeat the module path that's already visible from the message.
 
 ---
 
