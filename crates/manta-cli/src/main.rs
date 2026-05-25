@@ -71,7 +71,7 @@ async fn run_cli(
   let log_level = settings
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
-  log_ops::configure(log_level);
+  log_ops::configure(log_level, false);
 
   if let Some(socks_proxy) = &configuration.socks5_proxy {
     if !socks_proxy.is_empty() {

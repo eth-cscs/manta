@@ -177,7 +177,7 @@ async fn run_server(
   configuration: ServerConfiguration,
   cli: clap::ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-  log_ops::configure(configuration.log.clone());
+  log_ops::configure(configuration.log.clone(), true);
 
   // Resolution precedence for each setting: CLI flag > config file > fallback.
   let port: u16 = cli
