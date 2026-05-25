@@ -75,12 +75,13 @@ mapping is:
 
 ```
 copy these fields verbatim:        log, audit_file, site, parent_hsm_group,
-                                   auditor, sites
+                                   auditor
 add CLI-only (now required):       manta_server_url = "https://..."
                                    (CLI talks only to the manta server)
-drop (no longer recognised):       sites.<X>.manta_server_url
-do not copy (server-only fields):  the [server] section belongs in
-                                   server.toml, not cli.toml
+do not copy (server-only fields):  [sites.*] (every backend connection
+                                   bundle lives in server.toml now), the
+                                   [server] section, and the old
+                                   sites.<X>.manta_server_url key
 ```
 
 Minimal v2 `cli.toml`:
@@ -91,12 +92,11 @@ audit_file = "/tmp/manta-cli-audit.log"
 site = "alps"
 parent_hsm_group = ""
 manta_server_url = "https://manta-server.example.com:8443"
-
-[sites.alps]
-backend = "csm"                 # or "ochami"
-shasta_base_url = "https://api.example.com"
-root_ca_cert_file = "alps_root_cert.pem"
 ```
+
+> The CLI struct has no `[sites]` table. Any `[sites.*]` block left
+> over from a v1 `config.toml` is silently ignored by the CLI but
+> belongs in your operator's `server.toml` — see [§2 Server setup](#2-server-setup).
 
 > `manta_server_url` is **required**. Ask your site operator for the
 > URL — it's whatever they used as `listen_address`/`port` in the
