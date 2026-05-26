@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.13] - 2026-05-23
+## [2.0.0-beta.14] - 2026-05-26
 
 ### Bug Fixes
 
@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file.
 - Introduce 'apply hardware group' + group-flag aliases (Tier 3.2 phase 3/N)
 - Introduce 'power on/off/reset group' (Tier 3.2 phase 4/N)
 - Rename /clusters and /hardware-clusters REST paths (Tier 3.2 phase A6)
+- Show timestamps in server log output
 
 ### Miscellaneous Tasks
 
@@ -83,6 +84,8 @@ All notable changes to this project will be documented in this file.
 - Pluralize redfish-endpoint subcommand for consistency
 - Flatten arbitrary command directory splits
 - Rename cluster-named command modules (Tier 3.2 phase 5/N)
+- [**breaking**] Move render + filter + preview to CLI
+- Pipe parsed Value through trait; delete manta-shared SatFile
 
 ### Styling
 
