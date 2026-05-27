@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.14] - 2026-05-26
+## [2.0.0-beta.15] - 2026-05-27
 
 ### Bug Fixes
 
@@ -55,6 +55,7 @@ All notable changes to this project will be documented in this file.
 - Untrack stray runtime config.toml; ignore /crates/*/config.toml
 - Add LICENSE file to creates
 - Update Cargo.toml
+- Bump csm-rs to 1.0.0-beta.2
 
 ### Refactor
 
