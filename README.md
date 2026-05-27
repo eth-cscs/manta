@@ -101,11 +101,13 @@ A `.dockerignore` at the workspace root keeps `target/`, `.git/`, and editor sta
 
 #### Copy configuration file
 
-The CLI reads `~/.config/manta/cli.toml`; the HTTP server reads `~/.config/manta/server.toml`. Each has its own schema — see the [Configuration files](#configuration-files) section below for the full layout. A minimal CLI config looks like:
+The CLI reads `cli.toml`; the HTTP server reads `server.toml`. Both live in manta's config directory (`~/.config/manta/` on Linux, `~/Library/Application Support/local.cscs.manta/` on macOS). Each has its own schema — see the [Configuration files](#configuration-files) section below for the full layout. A minimal CLI config looks like:
 
 ```bash
-mkdir -p ~/.config/manta
-cat > ~/.config/manta/cli.toml <<EOF
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/manta"             # Linux
+# CONFIG_DIR="$HOME/Library/Application Support/local.cscs.manta" # macOS
+mkdir -p "$CONFIG_DIR"
+cat > "$CONFIG_DIR/cli.toml" <<EOF
 log = "info"
 
 site = "ochami"
@@ -130,7 +132,7 @@ The CLI config has no `[sites.*]` block — per-site backend connection details 
 >
 > # set environment variable then create the cert
 > export ACCESS_TOKEN=$(gen_access_token)
-> get_ca_cert > $HOME/.config/manta/ochami_root_cert.pem
+> get_ca_cert > "$CONFIG_DIR/ochami_root_cert.pem"   # $CONFIG_DIR set above
 > ```
 
 #### Run the CLI with one of the two options mentioned above to confirm that `manta` is working.
@@ -139,7 +141,7 @@ The `manta-cli` image has `manta` as its ENTRYPOINT, so anything after the image
 
 ```bash
 docker run -it --network=host \
-  -v $HOME/.config/manta:/root/.config/manta \
+  -v "$CONFIG_DIR":/root/.config/manta \
   -e MANTA_CSM_TOKEN \
   manta-cli get redfish-endpoints
 ```
@@ -148,7 +150,7 @@ The `manta-server` image runs the HTTPS server; mount your config + TLS material
 
 ```bash
 docker run -p 8443:8443 \
-  -v $HOME/.config/manta:/root/.config/manta:ro \
+  -v "$CONFIG_DIR":/root/.config/manta:ro \
   -v /etc/manta/tls:/etc/manta/tls:ro \
   manta-server
 ```
@@ -158,7 +160,7 @@ docker run -p 8443:8443 \
 >
 > ```bash
 > docker run -it --rm --network=host \
->   -v $HOME/.config/manta:/root/.config/manta \
+>   -v "$CONFIG_DIR":/root/.config/manta \
 >   -e MANTA_CSM_TOKEN \
 >   manta-cli get sessions
 > ERROR | Get and filter sessions command not implemented for this backend
@@ -175,7 +177,7 @@ The HTTP server lives in its own binary (`manta-server`) inside the `crates/mant
 
 **Start the server**
 
-Write `~/.config/manta/server.toml` first — see the [Configuration files](#configuration-files) section below. Then:
+Write `server.toml` in manta's config directory first — see the [Configuration files](#configuration-files) section below for the path on your platform. Then:
 
 ```bash
 manta-server
@@ -196,11 +198,16 @@ Each setting in the `[server]` block can be overridden at runtime:
 
 ### Configuration files
 
-Manta reads two TOML files, one per binary. The CLI uses `~/.config/manta/cli.toml`; the HTTP server uses `~/.config/manta/server.toml`. Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
+Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.toml` for the HTTP server. Both live in manta's config directory:
+
+- Linux: `~/.config/manta/` (or `$XDG_CONFIG_HOME/manta/` if set)
+- macOS: `~/Library/Application Support/local.cscs.manta/`
+
+Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
 The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `parent_hsm_group`, `manta_server_url`, optional `socks5_proxy`, optional `[auditor.kafka]`) — it has **no `[sites.*]` block**. Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit).
 
-**`~/.config/manta/cli.toml`**
+**`cli.toml`**
 
 `manta_server_url` is required: the CLI no longer talks to CSM/OCHAMI backends directly — every operation (including auth) is forwarded to the named manta server. Run `manta-server` on a reachable host first.
 
@@ -223,7 +230,7 @@ The CLI has no `[sites]` section: it only knows about the one
 (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) live entirely
 in `server.toml`.
 
-**`~/.config/manta/server.toml`**
+**`server.toml`**
 
 ```toml
 log = "info"
@@ -260,7 +267,7 @@ See `cli.toml.example` and `server.toml.example` at the workspace root for fully
 
 **Migrating from the pre-split `config.toml`**
 
-There is no auto-migration command. When either binary starts and finds its config file missing, it prints a minimal example and — if `~/.config/manta/config.toml` exists — a field-by-field mapping of what to copy where. Copy by hand following that mapping. The per-site `sites.X.manta_server_url` field was removed; use the top-level `manta_server_url` in `cli.toml` if you need it.
+There is no auto-migration command. When either binary starts and finds its config file missing, it prints a minimal example and — if a legacy `config.toml` exists in manta's config directory — a field-by-field mapping of what to copy where. Copy by hand following that mapping. The per-site `sites.X.manta_server_url` field was removed; use the top-level `manta_server_url` in `cli.toml` if you need it.
 
 **Example — list CFS sessions**
 
