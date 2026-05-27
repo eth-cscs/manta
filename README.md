@@ -14,14 +14,22 @@ A command-line + HTTP API frontend for HPC clusters running [CSM](https://github
 **Get something running locally:**
 
 ```bash
-# 1. build both binaries
+# 1. clone and enter the repo
+git clone https://github.com/eth-cscs/manta && cd manta
+
+# 2. build both binaries
 cargo build -p manta-cli -p manta-server
 
-# 2. fill in your sites + manta-server URL
-cp cli.toml.example    ~/.config/manta/cli.toml      # edit
-cp server.toml.example ~/.config/manta/server.toml   # edit
+# 3. copy the example configs into manta's config directory
+#    Linux: ~/.config/manta/
+#    macOS: ~/Library/Application Support/local.cscs.manta/
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/manta"             # Linux
+# CONFIG_DIR="$HOME/Library/Application Support/local.cscs.manta" # macOS
+mkdir -p "$CONFIG_DIR"
+cp cli.toml.example    "$CONFIG_DIR/cli.toml"      # edit
+cp server.toml.example "$CONFIG_DIR/server.toml"   # edit
 
-# 3. start the server, then drive it with the CLI
+# 4. start the server, then drive it with the CLI
 ./target/debug/manta-server &
 ./target/debug/manta get sessions
 ```
