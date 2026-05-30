@@ -1,21 +1,31 @@
 //! Implements the `manta apply sat-file` command.
 //!
-//! Jinja2 rendering, parsing into a `serde_json::Value`, and the
-//! `image_only` / `session_template_only` filters (prune-by-reference
-//! over the parsed Value) all run client-side so the operator can
-//! preview the filtered SAT file before any backend mutation. The slim
-//! `POST /sat-file` endpoint then forwards the structured value to the
-//! backend together with the Vault/K8s context.
+//! Everything before any HTTP call runs client-side so the operator
+//! can preview and abort: Jinja2 rendering, parsing into a
+//! `serde_json::Value`, applying the `image_only` /
+//! `session_template_only` filters (prune-by-reference over the parsed
+//! Value), and building the in-memory execution plan
+//! (configurations → images topologically sorted by `base.image_ref` →
+//! session_templates, with up-front validation of cross-references).
+//! See the sibling [`plan`] module for the plan builder.
 //!
-//! The CLI never embeds the SAT schema: filtering navigates a small
-//! set of field names (`configurations`, `images`, `session_templates`,
-//! `hardware`, `name`, `configuration`, `image`, `image_ref`,
-//! `ims`) on the `serde_json::Value`. The canonical schema lives in
-//! csm-rs (which deserialises during apply).
+//! After the preview confirm and the optional reboot confirm, the
+//! command hands the plan to [`dispatch::dispatch_plan`], which POSTs
+//! one element per request to the per-element server endpoints
+//! (`POST /sat-file/{configurations,images,session-templates}`) and
+//! accumulates the `ref_name → image_id` map between calls so
+//! downstream `image_ref` references resolve.
 //!
-//! On success the server returns the four lists of artifacts the
-//! backend produced (`configurations`, `images`, `session_templates`,
-//! `bos_sessions`); the command pipes them through
+//! The CLI never embeds the SAT schema: filtering and plan-building
+//! navigate a small set of field names (`configurations`, `images`,
+//! `session_templates`, `hardware`, `name`, `ref_name`, `configuration`,
+//! `image`, `image_ref`, `ims`) on the `serde_json::Value`. The
+//! canonical schema lives in csm-rs (which deserialises during apply).
+//!
+//! On success [`dispatch::dispatch_plan`] returns the same four-list
+//! summary the legacy `POST /sat-file` endpoint used to produce
+//! (`configurations`, `images`, `session_templates`, `bos_sessions`);
+//! the command pipes it through
 //! [`crate::cli::output::action_result::print_with_data`] so the user
 //! sees a status message plus pretty-printed JSON (or `{ "status":
 //! "ok", "message": ..., "data": ... }` with `--output json`).

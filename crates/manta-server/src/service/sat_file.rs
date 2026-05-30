@@ -1,11 +1,26 @@
 //! SAT file apply orchestration (backend trait + HSM groups).
 //!
-//! Rendering (Jinja2), parsing, and `image_only` / `session_template_only`
-//! filtering are performed client-side by the CLI; this layer receives
-//! the already-parsed SAT file as a `serde_json::Value`, looks up the
-//! caller's available HSM groups, and forwards everything to the
-//! backend's `SatTrait`. The backend fetches its own Kubernetes secrets
-//! from Vault internally.
+//! Rendering (Jinja2), parsing, the `image_only` /
+//! `session_template_only` filters, the topological sort of images,
+//! and the dispatch loop all run client-side. This layer hosts thin
+//! pass-throughs to the four `SatTrait` methods that csm-rs (and any
+//! other backend) implements:
+//!
+//! - [`apply_sat_file`] — legacy whole-file path, still used for SAT
+//!   files with a `hardware:` section.
+//! - [`apply_configuration`] — one SAT `configurations[]` entry per
+//!   call. Fetches the gitea token; the backend reaches into Vault
+//!   and the `cray-product-catalog` ConfigMap itself.
+//! - [`apply_image`] — one SAT `images[]` entry per call, plus the
+//!   CLI's accumulated `ref_lookup` map. Looks up the caller's
+//!   available HSM groups (the backend uses them for
+//!   `configuration_group_names` access checks).
+//! - [`apply_session_template`] — one SAT `session_templates[]` entry
+//!   per call, plus `ref_lookup`. Looks up HSM groups (the backend
+//!   uses them to enforce `boot_sets.node_groups` access).
+//!
+//! The backend fetches its own Kubernetes secrets from Vault
+//! internally for each call.
 
 use std::collections::HashMap;
 

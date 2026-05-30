@@ -43,13 +43,7 @@ pub async fn dispatch_plan(
         configurations.push(cfg);
       }
       SatElement::Image(body) => {
-        // `ref_name.or(name)` — the label downstream refs resolve
-        // against, matching csm-rs's resolver.
-        let label = body
-          .get("ref_name")
-          .or_else(|| body.get("name"))
-          .and_then(Value::as_str)
-          .map(str::to_string);
+        let label = image_label(&body);
 
         let img = client
           .apply_sat_image(
@@ -64,16 +58,8 @@ pub async fn dispatch_plan(
           )
           .await?;
 
-        // Record the resolved id under the label so chained images and
-        // session_templates can find it. csm-rs's dry-run path already
-        // returns an id (`DRYRUN_<uuid>`); if for any reason there's
-        // none, fall back to a synthetic key.
         if let Some(lab) = label {
-          let id = img
-            .get("id")
-            .and_then(Value::as_str)
-            .map(str::to_string)
-            .unwrap_or_else(|| format!("dry-run-{lab}"));
+          let id = resolve_image_id(&img, &lab);
           ref_lookup.insert(lab, id);
         }
 
@@ -114,4 +100,70 @@ pub async fn dispatch_plan(
     "session_templates": session_templates,
     "bos_sessions": bos_sessions,
   }))
+}
+
+/// The label downstream `image_ref` references resolve against —
+/// `ref_name` if the image declares one, else `name`. Matches csm-rs's
+/// `ref_name.or(name)` resolver.
+fn image_label(body: &Value) -> Option<String> {
+  body
+    .get("ref_name")
+    .or_else(|| body.get("name"))
+    .and_then(Value::as_str)
+    .map(str::to_string)
+}
+
+/// Pick the image id to record under a label in the ref_lookup map.
+/// csm-rs's normal and dry-run paths both populate `id`; the synthetic
+/// fallback only fires if for any reason the response has no `id`.
+fn resolve_image_id(img: &Value, label: &str) -> String {
+  img
+    .get("id")
+    .and_then(Value::as_str)
+    .map(str::to_string)
+    .unwrap_or_else(|| format!("dry-run-{label}"))
+}
+
+#[cfg(test)]
+mod tests {
+  use super::{image_label, resolve_image_id};
+  use serde_json::json;
+
+  #[test]
+  fn image_label_prefers_ref_name() {
+    let body = json!({ "name": "my-image", "ref_name": "base" });
+    assert_eq!(image_label(&body), Some("base".to_string()));
+  }
+
+  #[test]
+  fn image_label_falls_back_to_name() {
+    let body = json!({ "name": "my-image" });
+    assert_eq!(image_label(&body), Some("my-image".to_string()));
+  }
+
+  #[test]
+  fn image_label_returns_none_when_neither_field_present() {
+    let body = json!({ "configuration": "cfg-1" });
+    assert_eq!(image_label(&body), None);
+  }
+
+  #[test]
+  fn resolve_image_id_uses_response_id_when_present() {
+    let img = json!({ "id": "abc-123", "name": "my-image" });
+    assert_eq!(resolve_image_id(&img, "base"), "abc-123");
+  }
+
+  #[test]
+  fn resolve_image_id_falls_back_to_synthetic_when_id_missing() {
+    let img = json!({ "name": "my-image" });
+    assert_eq!(resolve_image_id(&img, "base"), "dry-run-base");
+  }
+
+  /// csm-rs's dry-run path populates `id` with a `DRYRUN_<uuid>` value,
+  /// so resolve_image_id should pass that through rather than synthesise.
+  #[test]
+  fn resolve_image_id_passes_through_dryrun_uuid_from_csm_rs() {
+    let img = json!({ "id": "DRYRUN_a1b2", "name": "my-image" });
+    assert_eq!(resolve_image_id(&img, "base"), "DRYRUN_a1b2");
+  }
 }

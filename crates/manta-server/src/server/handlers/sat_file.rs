@@ -1,10 +1,32 @@
-//! POST /api/v1/sat-file.
+//! SAT-file HTTP handlers.
 //!
-//! Accepts a pre-rendered SAT YAML plus apply-time flags, forwards them
-//! to [`service::sat_file::apply_sat_file`], and returns the four lists
-//! of artifacts the backend produced as a [`PostSatFileResponse`]. The
-//! CLI deserialises that JSON into `serde_json::Value` and pretty-prints
-//! it, so any change to the field names here is user-visible.
+//! Four endpoints. The CLI's [`apply_sat_file`] plan builder produces
+//! a typed sequence of elements; its dispatcher walks the plan and
+//! POSTs each element to the section-specific endpoint here:
+//!
+//! - `POST /api/v1/sat-file/configurations` →
+//!   [`post_sat_configuration`] — one `configurations[]` entry per
+//!   call. Body: [`PostSatConfigurationRequest`]; response: a
+//!   `CfsConfigurationResponse` as JSON.
+//! - `POST /api/v1/sat-file/images` → [`post_sat_image`] — one
+//!   `images[]` entry per call, plus the CLI's accumulated
+//!   `ref_lookup`. Body: [`PostSatImageRequest`]; response: an
+//!   `Image` as JSON.
+//! - `POST /api/v1/sat-file/session-templates` →
+//!   [`post_sat_session_template`] — one `session_templates[]` entry
+//!   per call. Body: [`PostSatSessionTemplateRequest`]; response:
+//!   [`PostSatSessionTemplateResponse`].
+//! - `POST /api/v1/sat-file` → [`post_sat_file`] — legacy whole-file
+//!   path retained for SAT files with a `hardware:` section. Body:
+//!   [`PostSatFileRequest`]; response: [`PostSatFileResponse`].
+//!
+//! The CLI deserialises each response into `serde_json::Value` and
+//! pretty-prints the assembled four-list summary, so any rename of a
+//! field on either side of the wire is user-visible. The
+//! wire-format-lock tests at the bottom of this module catch that
+//! drift; mirror them when you add a new field.
+//!
+//! [`apply_sat_file`]: crate::service::sat_file
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::types::{
@@ -469,5 +491,121 @@ mod tests {
       err.to_string().contains("sat_file"),
       "error should mention the missing field, got: {err}"
     );
+  }
+
+  // ── per-element endpoints: wire-format locks ──
+
+  use super::{
+    PostSatConfigurationRequest, PostSatImageRequest,
+    PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+  };
+
+  /// Lock the shape of the CLI's POST /sat-file/configurations body.
+  /// Catches renames on either side of the wire.
+  #[test]
+  fn cli_configuration_body_deserialises() {
+    let cli_body = serde_json::json!({
+      "configuration": { "name": "cfg-v1", "layers": [] },
+      "overwrite": true,
+      "dry_run": false,
+    });
+    let req: PostSatConfigurationRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert_eq!(req.configuration["name"].as_str(), Some("cfg-v1"));
+    assert!(req.overwrite);
+    assert!(!req.dry_run);
+  }
+
+  /// Minimal configuration body — only `configuration` is required; the
+  /// two booleans default to `false`.
+  #[test]
+  fn cli_configuration_body_with_defaults_deserialises() {
+    let cli_body = serde_json::json!({
+      "configuration": { "name": "cfg-v1" },
+    });
+    let req: PostSatConfigurationRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert!(!req.overwrite);
+    assert!(!req.dry_run);
+  }
+
+  /// Lock the shape of the CLI's POST /sat-file/images body, including
+  /// the `ref_lookup` map the CLI accumulates.
+  #[test]
+  fn cli_image_body_deserialises() {
+    let cli_body = serde_json::json!({
+      "image": { "name": "img-v1", "ref_name": "base", "configuration": "cfg-v1" },
+      "ref_lookup": { "earlier-ref": "abc-123" },
+      "ansible_verbosity": 2,
+      "ansible_passthrough": "--check",
+      "watch_logs": true,
+      "timestamps": false,
+      "dry_run": false,
+    });
+    let req: PostSatImageRequest = serde_json::from_value(cli_body).unwrap();
+    assert_eq!(req.image["name"].as_str(), Some("img-v1"));
+    assert_eq!(req.ref_lookup.get("earlier-ref").map(String::as_str), Some("abc-123"));
+    assert_eq!(req.ansible_verbosity, Some(2));
+    assert_eq!(req.ansible_passthrough.as_deref(), Some("--check"));
+    assert!(req.watch_logs);
+    assert!(!req.timestamps);
+    assert!(!req.dry_run);
+  }
+
+  /// Empty `ref_lookup` is the common case (first image in the plan).
+  #[test]
+  fn cli_image_body_with_empty_ref_lookup_deserialises() {
+    let cli_body = serde_json::json!({
+      "image": { "name": "img-v1" },
+    });
+    let req: PostSatImageRequest = serde_json::from_value(cli_body).unwrap();
+    assert!(req.ref_lookup.is_empty());
+    assert_eq!(req.ansible_verbosity, None);
+    assert!(!req.watch_logs);
+    assert!(!req.dry_run);
+  }
+
+  /// Lock the shape of the CLI's POST /sat-file/session-templates body.
+  #[test]
+  fn cli_session_template_body_deserialises() {
+    let cli_body = serde_json::json!({
+      "session_template": { "name": "st-1", "image": { "image_ref": "base" }, "configuration": "cfg-v1" },
+      "ref_lookup": { "base": "image-xyz" },
+      "reboot": true,
+      "dry_run": false,
+    });
+    let req: PostSatSessionTemplateRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert_eq!(req.session_template["name"].as_str(), Some("st-1"));
+    assert_eq!(req.ref_lookup.get("base").map(String::as_str), Some("image-xyz"));
+    assert!(req.reboot);
+    assert!(!req.dry_run);
+  }
+
+  /// Lock the shape of the session_template response body —
+  /// `{ template, session? }`. The CLI's dispatcher reads these
+  /// two fields by name.
+  #[test]
+  fn session_template_response_serialises_with_template_and_optional_session() {
+    use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
+
+    let body = PostSatSessionTemplateResponse {
+      template: BosSessionTemplate {
+        name: Some("st-1".to_string()),
+        tenant: None,
+        description: None,
+        enable_cfs: Some(true),
+        cfs: None,
+        boot_sets: None,
+        links: None,
+      },
+      session: None,
+    };
+    let v: serde_json::Value = serde_json::to_value(&body).unwrap();
+    let obj = v.as_object().expect("object");
+    assert!(obj.contains_key("template"));
+    assert!(obj.contains_key("session"));
+    assert_eq!(obj["template"]["name"].as_str(), Some("st-1"));
+    assert!(obj["session"].is_null());
   }
 }
