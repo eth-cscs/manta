@@ -102,10 +102,18 @@ pub struct CliConfiguration {
 /// under `[server]` in `server.toml`.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ServerSettings {
-  /// TCP listen address (e.g. "0.0.0.0").
-  pub listen_address: String,
-  /// TCP port for the TLS server.
-  pub port: u16,
+  /// TCP listen address (e.g. "0.0.0.0"). When omitted from config
+  /// **and** no `--listen-address` flag is supplied, the server falls
+  /// back to `"0.0.0.0"`.
+  #[serde(default)]
+  pub listen_address: Option<String>,
+  /// TCP port. When omitted from config **and** no `--port` flag is
+  /// supplied, the effective default depends on whether TLS is
+  /// configured: `8443` if both `cert` and `key` are present (HTTPS),
+  /// otherwise `8080` (plain HTTP). See
+  /// [`ServerSettings::default_port`].
+  #[serde(default)]
+  pub port: Option<u16>,
   /// Path to the TLS certificate (PEM).
   pub cert: Option<String>,
   /// Path to the TLS private key (PEM).
@@ -129,6 +137,20 @@ pub struct ServerSettings {
   /// endpoints intact while giving power the headroom it needs.
   #[serde(default = "default_power_timeout_secs")]
   pub power_timeout_secs: u64,
+}
+
+impl ServerSettings {
+  /// Effective default listen address when neither config nor CLI flag
+  /// supplies one: bind on all interfaces.
+  pub const DEFAULT_LISTEN_ADDRESS: &'static str = "0.0.0.0";
+
+  /// Effective default port when neither config nor CLI flag supplies
+  /// one. `8443` for the HTTPS path (cert + key both present), `8080`
+  /// for plain HTTP — the latter is the typical dev / sidecar setup
+  /// where TLS is terminated upstream.
+  pub fn default_port(has_tls: bool) -> u16 {
+    if has_tls { 8443 } else { 8080 }
+  }
 }
 
 /// Default global request timeout — 60s. Matches the historical
@@ -268,8 +290,8 @@ mod tests {
       log: "info".to_string(),
       audit_file: "/var/log/manta/server-audit.log".to_string(),
       server: ServerSettings {
-        listen_address: "0.0.0.0".to_string(),
-        port: 8443,
+        listen_address: Some("0.0.0.0".to_string()),
+        port: Some(8443),
         cert: Some("/etc/manta/tls/server.crt".to_string()),
         key: Some("/etc/manta/tls/server.key".to_string()),
         console_inactivity_timeout_secs: 1800,
@@ -282,8 +304,8 @@ mod tests {
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: ServerConfiguration = toml::from_str(&toml_str).unwrap();
-    assert_eq!(parsed.server.port, 8443);
-    assert_eq!(parsed.server.listen_address, "0.0.0.0");
+    assert_eq!(parsed.server.port, Some(8443));
+    assert_eq!(parsed.server.listen_address.as_deref(), Some("0.0.0.0"));
     assert_eq!(parsed.server.console_inactivity_timeout_secs, 1800);
     assert_eq!(parsed.server.request_timeout_secs, 60);
     assert_eq!(parsed.server.power_timeout_secs, 600);
@@ -291,6 +313,29 @@ mod tests {
       parsed.server.cert.as_deref(),
       Some("/etc/manta/tls/server.crt")
     );
+  }
+
+  /// Default port helper: 8443 when TLS is configured, 8080
+  /// otherwise. Used by `manta-server::main` when no `port` is set
+  /// in config or on the CLI.
+  #[test]
+  fn server_settings_default_port_depends_on_tls() {
+    assert_eq!(ServerSettings::default_port(true), 8443);
+    assert_eq!(ServerSettings::default_port(false), 8080);
+  }
+
+  /// `[server]` block with neither `listen_address` nor `port`
+  /// supplied — both fields deserialise as `None`, leaving the
+  /// effective values to be filled in at startup time. Confirms the
+  /// schema-level back-compat for the new defaults.
+  #[test]
+  fn server_settings_listen_address_and_port_default_to_none() {
+    let toml_str = r#"
+      console_inactivity_timeout_secs = 1800
+    "#;
+    let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
+    assert!(parsed.listen_address.is_none());
+    assert!(parsed.port.is_none());
   }
 
   /// Existing server.toml files that pre-date the timeout fields must

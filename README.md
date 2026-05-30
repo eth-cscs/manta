@@ -238,8 +238,8 @@ log = "info"
 audit_file = "/var/log/manta/server-audit.log"
 
 [server]
-listen_address                  = "0.0.0.0"
-port                            = 8443
+listen_address                  = "0.0.0.0"   # optional; default 0.0.0.0
+port                            = 8443        # optional; default 8443 if cert+key set, else 8080
 cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800

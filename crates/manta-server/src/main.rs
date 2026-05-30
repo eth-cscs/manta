@@ -180,14 +180,8 @@ async fn run_server(
   log_ops::configure(configuration.log.clone(), true);
 
   // Resolution precedence for each setting: CLI flag > config file > fallback.
-  let port: u16 = cli
-    .get_one::<u16>("port")
-    .copied()
-    .unwrap_or(configuration.server.port);
-  let listen_addr: String = cli
-    .get_one::<String>("listen-address")
-    .cloned()
-    .unwrap_or_else(|| configuration.server.listen_address.clone());
+  // cert/key are resolved first so the port fallback can branch on whether
+  // TLS is configured.
   let cert_path: Option<String> = cli
     .get_one::<String>("cert")
     .cloned()
@@ -196,6 +190,22 @@ async fn run_server(
     .get_one::<String>("key")
     .cloned()
     .or_else(|| configuration.server.key.clone());
+  let has_tls = cert_path.is_some() && key_path.is_some();
+  let port: u16 = cli
+    .get_one::<u16>("port")
+    .copied()
+    .or(configuration.server.port)
+    .unwrap_or_else(|| {
+      manta_shared::common::config::types::ServerSettings::default_port(has_tls)
+    });
+  let listen_addr: String = cli
+    .get_one::<String>("listen-address")
+    .cloned()
+    .or_else(|| configuration.server.listen_address.clone())
+    .unwrap_or_else(|| {
+      manta_shared::common::config::types::ServerSettings::DEFAULT_LISTEN_ADDRESS
+        .to_string()
+    });
   let console_inactivity_timeout = std::time::Duration::from_secs(
     configuration.server.console_inactivity_timeout_secs,
   );

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
+- `[server].listen_address` and `[server].port` are now optional. When omitted (and no `--listen-address` / `--port` CLI flag is passed), the server falls back to `0.0.0.0` and to port `8443` if TLS (`cert` + `key`) is configured, else `8080`. Matches the common dev / sidecar setup where TLS is terminated upstream.
 - Configurable HTTP timeouts. New `[server].request_timeout_secs` (default 60, applies to every route) and `[server].power_timeout_secs` (default 600, per-route override for `POST /power`) in `server.toml`; new optional `request_timeout_secs` in `cli.toml` that the `manta power` command honours when constructing its HTTP client. Fixes false 408s on cluster-wide power transitions against large HSM groups.
 - `manta apply sat-file` builds an in-memory execution plan (configurations → images topologically sorted by `base.image_ref` → session_templates) and validates cross-references (no dangling `image_ref`, no cycles) client-side before any HTTP call.
 - The `--image-only` / `--sessiontemplate-only` filter logic moved into the plan builder; the old `apply_sat_file_filters` helper is removed from `manta-shared`.
