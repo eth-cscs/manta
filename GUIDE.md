@@ -111,17 +111,21 @@ manta delete group gpu-cluster
 
 The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to four top-level sections: `configurations`, `images`, `session_templates`, and an optional `hardware` block describing hardware patterns to apply.
 
-The CLI renders Jinja2, parses the SAT file into a structured value, and applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images by walking the value) before sending anything to the server. You'll see the **final filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--reboot` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
+The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--reboot` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
+
+The CLI then dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
 
 ```mermaid
 flowchart LR
   A[sat.yaml + values.yaml] --> B[render Jinja2]
   B --> C[parse to Value]
-  C --> D[filter Value<br/>per -i / -s flags]
+  C --> D[filter + build plan<br/>topo-sort images<br/>validate refs]
   D --> E{preview<br/>+ confirm}
-  E -->|yes| F[POST /sat-file<br/>sat_file: Value]
   E -->|no| X((cancel))
-  F --> G[server forwards<br/>backend applies]
+  E -->|yes| F[POST /sat-file/configurations<br/>× N, in SAT order]
+  F --> G[POST /sat-file/images<br/>× N, in dependency order]
+  G --> H[POST /sat-file/session-templates<br/>× N, in SAT order]
+  H --> I[4-list summary]
 ```
 
 **Full deployment** (build image, then apply to nodes):

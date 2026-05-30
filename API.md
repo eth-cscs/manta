@@ -1056,34 +1056,131 @@ Create an ephemeral CFS environment from an existing image.
 
 ## SAT files
 
-### POST /sat-file
+The SAT (Shasta Artifact Template) workflow is split across four endpoints. `manta apply sat-file` walks the parsed SAT file into an ordered execution plan on the **client** side and dispatches one element per HTTP call — `POST /sat-file/configurations`, `POST /sat-file/images`, `POST /sat-file/session-templates`. The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
 
-Apply a pre-rendered SAT (Shasta Artifact Template) file. Builds images, creates BOS session templates, and optionally reboots nodes.
+> All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
-> Requires per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
-
-**Client responsibility.** Jinja2 rendering, parsing the rendered YAML into a structured value, and the `image_only` / `session_template_only` filters (drop top-level sections + prune unreferenced configurations/images by walking the value) all run client-side (see `manta apply sat-file` in [CLI.md](CLI.md)). The server receives the post-processed SAT file as a structured value in `sat_file` and forwards it to the backend together with the caller's available HSM groups; the backend fetches its own Kubernetes secrets from Vault internally. The canonical SAT-file schema lives in csm-rs — neither the CLI nor the server embed it.
+**Client responsibility.** Jinja2 rendering, parsing the rendered YAML into a structured value, the `image_only` / `session_template_only` filters (drop top-level sections + prune unreferenced configurations/images), the topological sort of images by `base.image_ref`, and validation of in-file cross-references (no dangling `image_ref`, no cycles) all run client-side. The server accepts each SAT entry as a `serde_json::Value`, threads it through the backend's per-element `SatTrait` method, and returns the created wire artifact. The canonical SAT schema lives in csm-rs — neither the CLI nor the server embed it.
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant U as User
   participant CLI as manta apply sat-file
-  participant Srv as POST /sat-file
+  participant Srv as manta-server
   participant Vault
-  participant BE as Backend (CSM / OCHAMI)
+  participant BE as Backend (csm-rs)
 
-  U->>CLI: -t sat.yaml -f values.yaml [-i | -s]
-  CLI->>CLI: render Jinja2 + parse to Value + Value-walking filter
-  CLI-->>U: preview filtered YAML
-  U-->>CLI: confirm (and reboot confirm if applicable)
-  CLI->>Srv: POST { sat_file: <structured value>, flags }
-  Srv->>Vault: fetch gitea_token
-  Srv->>BE: apply_sat_file(sat_file, hsm_groups, flags)
-  BE->>Vault: fetch k8s secrets
-  BE-->>Srv: ok / error
-  Srv-->>CLI: 200 { configurations, images, session_templates, bos_sessions } or error
+  CLI->>CLI: render Jinja2 → parse to Value → filter → build plan (topo-sorted)
+  CLI-->>CLI: preview + confirm
+
+  loop per Configuration element
+    CLI->>Srv: POST /sat-file/configurations { configuration, flags }
+    Srv->>Vault: fetch gitea_token + k8s secrets
+    Srv->>BE: SatTrait::apply_configuration
+    Srv-->>CLI: 200 CfsConfigurationResponse
+  end
+
+  loop per Image element (in dependency order)
+    CLI->>Srv: POST /sat-file/images { image, ref_lookup, flags }
+    Srv->>BE: SatTrait::apply_image
+    Srv-->>CLI: 200 Image (id captured into CLI's ref_lookup)
+  end
+
+  loop per SessionTemplate element
+    CLI->>Srv: POST /sat-file/session-templates { session_template, ref_lookup, flags }
+    Srv->>BE: SatTrait::apply_session_template
+    Srv-->>CLI: 200 { template, session? }
+  end
+
+  CLI-->>CLI: assemble { configurations, images, session_templates, bos_sessions }
 ```
+
+### POST /sat-file/configurations
+
+Apply one entry from the SAT file's `configurations` section. csm-rs validates the entry against live CSM state, resolves any `product:` layer via the `cray-product-catalog` ConfigMap and any `branch:` via Gitea, posts the resulting `CfsConfigurationRequest`, and returns the created CFS configuration.
+
+**Request body**
+
+```json
+{
+  "configuration": { "name": "cfg-v1", "layers": [/* ... */] },
+  "overwrite": false,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `configuration` | object | **yes** | One SAT `configurations[]` entry. |
+| `overwrite` | bool | no | Replace an existing CFS configuration of the same name (default: `false`). |
+| `dry_run` | bool | no | Validate without creating; response carries a mock `CfsConfigurationResponse` with the name set (default: `false`). |
+
+**Response `200`** — the created `CfsConfigurationResponse`.
+
+### POST /sat-file/images
+
+Apply one entry from the SAT file's `images` section. The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains; the CLI inserts `image.ref_name.or(image.name) → image.id` into the map after each successful image POST.
+
+**Request body**
+
+```json
+{
+  "image": { "name": "img-v1", "ref_name": "base", "base": {/* ... */}, "configuration": "cfg-v1" },
+  "ref_lookup": { "earlier-ref": "<image-id>" },
+  "ansible_verbosity": 0,
+  "ansible_passthrough": null,
+  "watch_logs": false,
+  "timestamps": false,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image` | object | **yes** | One SAT `images[]` entry. |
+| `ref_lookup` | object | no | `ref_name → image_id` for images created earlier in the apply (default: empty). |
+| `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 for the CFS session that builds the image. |
+| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook`. |
+| `watch_logs` | bool | no | Stream CFS session logs while the image builds (default: `false`). |
+| `timestamps` | bool | no | Prefix streamed log lines with timestamps (default: `false`). |
+| `dry_run` | bool | no | Validate without building; response carries a mock `Image` with a `DRYRUN_<uuid>` id (default: `false`). |
+
+**Response `200`** — the created IMS `Image` (with `id`, `name`, `link.path`/`link.etag`/`link.type` for the S3 manifest).
+
+### POST /sat-file/session-templates
+
+Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_lookup` is used to resolve `image.image_ref`. If `reboot=true` (and not `dry_run`), a BOS session is also created to reboot the targeted nodes through the template.
+
+**Request body**
+
+```json
+{
+  "session_template": { "name": "st-1", "image": { "image_ref": "base" }, "configuration": "cfg-v1", "bos_parameters": {/* ... */} },
+  "ref_lookup": { "base": "<image-id>" },
+  "reboot": false,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `session_template` | object | **yes** | One SAT `session_templates[]` entry. |
+| `ref_lookup` | object | no | `ref_name → image_id` for images created earlier in the apply (default: empty). |
+| `reboot` | bool | no | After the template is created, trigger a BOS session to reboot the targeted nodes (default: `false`). |
+| `dry_run` | bool | no | Validate without creating; the response carries a mock template and `session: null` (default: `false`). |
+
+**Response `200`**
+
+```json
+{
+  "template": { /* BosSessionTemplate, ... */ },
+  "session":  { /* BosSession, ... */ } /* or null when reboot=false or dry_run=true */
+}
+```
+
+### POST /sat-file (legacy)
+
+Apply a whole pre-rendered SAT file in one call. Retained for SAT files with a `hardware:` section while the per-element flow only covers configurations, images, and session_templates. The CLI no longer invokes this endpoint; a follow-up will either move hardware to its own per-element endpoint and remove this one, or drop hardware support from `manta apply sat-file`.
 
 **Request body**
 
@@ -1092,7 +1189,8 @@ sequenceDiagram
   "sat_file": {
     "configurations": [{ "name": "cfg-v1", "layers": [/* ... */] }],
     "images":         [{ "name": "img-v1", "configuration": "cfg-v1", "ims": {/* ... */} }],
-    "session_templates": [/* ... */]
+    "session_templates": [/* ... */],
+    "hardware": [/* ... */]
   },
   "ansible_verbosity": 0,
   "ansible_passthrough": "",
@@ -1106,7 +1204,7 @@ sequenceDiagram
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `sat_file` | object | **yes** | Final SAT file as a structured value — Jinja2 already evaluated and `image_only` / `session_template_only` filters already applied client-side. The schema mirrors the SAT YAML spec (top-level keys `configurations`, `images`, `session_templates`, optionally `hardware`); the server forwards the value verbatim to the backend, which knows the schema. |
+| `sat_file` | object | **yes** | Whole SAT file as a structured value — Jinja2 already evaluated client-side. The schema mirrors the SAT YAML spec (top-level keys `configurations`, `images`, `session_templates`, optionally `hardware`); the server forwards the value verbatim to the backend, which knows the schema. |
 | `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 |
 | `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
 | `reboot` | bool | no | Reboot nodes after applying session templates (default: `false`) |
@@ -1115,7 +1213,7 @@ sequenceDiagram
 | `overwrite` | bool | no | Overwrite existing configurations and images (default: `false`) |
 | `dry_run` | bool | no | Validate without creating anything (default: `false`) |
 
-**Response `200`** — the four lists the backend produced (or would produce, in `dry_run` mode) while realising the SAT file. Empty arrays are returned for sections absent from `sat_file` (e.g. `bos_sessions: []` when `reboot=false`).
+**Response `200`** — the same four-list summary the per-element flow produces:
 
 ```json
 {
@@ -1125,13 +1223,6 @@ sequenceDiagram
   "bos_sessions":      [ /* BosSession, ... */ ]
 }
 ```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `configurations` | array | CFS configurations created from the SAT file's `configurations`. |
-| `images` | array | IMS images built from the SAT file's `images`. |
-| `session_templates` | array | BOS session templates created from `session_templates`. |
-| `bos_sessions` | array | BOS sessions triggered when `reboot=true`. |
 
 ---
 

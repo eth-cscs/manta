@@ -63,7 +63,7 @@ flowchart LR
   Service -.-> K8s[(Kubernetes API)]
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering, plus the `serde_json::Value`-walking filter that drops top-level sections and prunes unreferenced configurations / images) are used by the CLI; the server is a pass-through for the filtered SAT value. The canonical SAT-file schema lives in csm-rs — the CLI carries the SAT file as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering) are used by the CLI; SAT-file processing (the `serde_json::Value`-walking `image_only`/`session_template_only` filter, the topological sort by `base.image_ref`, and the dispatch loop that POSTs one element at a time to per-section endpoints) lives in `manta-cli`'s `apply_sat_file::plan` / `apply_sat_file::dispatch` modules. The server is a pass-through for each SAT entry. The canonical SAT-file schema lives in csm-rs — the CLI carries each SAT element as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
 
 ---
 
@@ -75,7 +75,7 @@ Each binary has its own `main.rs`:
 
 Startup runs in two phases:
 
-1. **Single-threaded phase** — parse CLI args, load `~/.config/manta/cli.toml` into a `CliConfiguration`. If the optional top-level `socks5_proxy` is set, export `SOCKS5` so `reqwest` picks it up for connections to manta-server.
+1. **Single-threaded phase** — parse CLI args, load `cli.toml` from the platform config directory (Linux: `~/.config/manta/cli.toml` or `$XDG_CONFIG_HOME/manta/cli.toml`; macOS: `~/Library/Application Support/local.cscs.manta/cli.toml`) into a `CliConfiguration`. If the optional top-level `socks5_proxy` is set, export `SOCKS5` so `reqwest` picks it up for connections to manta-server.
 2. **Multi-threaded phase** — start the tokio runtime, build an `AppContext` (site name, manta-server URL, settings, HSM filter, Kafka audit), and dispatch the requested CLI command. The CLI never instantiates `StaticBackendDispatcher` — every backend operation goes through `MantaClient` HTTPS calls to manta-server.
 
 ### `crates/manta-server/src/main.rs`
@@ -177,12 +177,15 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 
 ## Configuration files
 
-Manta reads two TOML files, one per binary:
+Manta reads two TOML files, one per binary. The config directory is platform-resolved (via the `directories` crate):
 
-| Binary | Default path | Env override |
+- **Linux:** `$XDG_CONFIG_HOME/manta/` if set, otherwise `~/.config/manta/`
+- **macOS:** `~/Library/Application Support/local.cscs.manta/`
+
+| Binary | File | Env override |
 |---|---|---|
-| `manta-cli` | `~/.config/manta/cli.toml` | `MANTA_CLI_CONFIG` |
-| `manta-server` | `~/.config/manta/server.toml` | `MANTA_SERVER_CONFIG` |
+| `manta-cli` | `cli.toml` | `MANTA_CLI_CONFIG` |
+| `manta-server` | `server.toml` | `MANTA_SERVER_CONFIG` |
 
 The two schemas are disjoint:
 
@@ -193,7 +196,7 @@ The two schemas are disjoint:
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 
-Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `MantaError::NotFound` if the file is missing; the error message includes a minimal sample and (if a legacy unified `~/.config/manta/config.toml` is detected on disk) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
+Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `MantaError::NotFound` if the file is missing; the error message includes a minimal sample and (if a legacy unified `config.toml` is detected in the same config directory) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
 
 ## Backend selection
 
@@ -243,7 +246,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 Three error types, partitioned by layer (the backend-dispatcher rule is enforced by CI):
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,manta_backend_dispatcher.rs}`).
-- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja renderer + Value-walking filter, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
+- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja renderer, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.

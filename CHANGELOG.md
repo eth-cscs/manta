@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Features
+
+- `manta apply sat-file` builds an in-memory execution plan (configurations → images topologically sorted by `base.image_ref` → session_templates) and validates cross-references (no dangling `image_ref`, no cycles) client-side before any HTTP call.
+- The `--image-only` / `--sessiontemplate-only` filter logic moved into the plan builder; the old `apply_sat_file_filters` helper is removed from `manta-shared`.
+- The CLI now dispatches the SAT plan one element at a time via three new server endpoints — `POST /sat-file/configurations`, `POST /sat-file/images`, `POST /sat-file/session-templates` — accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The user-visible four-list summary is unchanged.
+
+### Bug Fixes
+
+- `impl SatTrait for StaticBackendDispatcher` now forwards the three new per-element methods through the `dispatch!` macro; without this they would have fallen through to the trait's default "not implemented" impls at runtime.
+
+### Compatibility
+
+- `POST /sat-file` (whole-file) is retained for SAT files with a `hardware:` section while the per-element flow only covers configurations, images, and session_templates. A follow-up will either add a per-element hardware endpoint or drop hardware from `manta apply sat-file`.
+
 ## [2.0.0-beta.15] - 2026-05-27
 
 ### Bug Fixes
