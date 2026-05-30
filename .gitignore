@@ -22,3 +22,5 @@ Cargo.lock
 /crates/*/server.toml
 baseline.json
 lcov.info
+cli.toml.example
+server.toml.example
