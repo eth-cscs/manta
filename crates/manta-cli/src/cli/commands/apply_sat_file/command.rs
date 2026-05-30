@@ -23,7 +23,7 @@
 use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
 
-use crate::cli::commands::apply_sat_file::plan;
+use crate::cli::commands::apply_sat_file::{dispatch, plan};
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
@@ -153,19 +153,11 @@ pub async fn exec(
   // 7. Pre-hook -> server call -> post-hook.
   run_hook_if_present(opts.prehook_opt, "pre")?;
 
-  let result = MantaClient::new(server_url, ctx.site_name)?
-    .apply_sat_file(
-      token,
-      sat_file,
-      opts.ansible_verbosity_opt,
-      opts.ansible_passthrough_opt,
-      opts.reboot,
-      opts.watch_logs,
-      opts.timestamps,
-      opts.overwrite,
-      opts.dry_run,
-    )
-    .await?;
+  // 7a. Dispatch the plan element-by-element. The CLI accumulates
+  //     `ref_name → image_id` across calls and builds the same
+  //     four-list response the legacy endpoint used to return.
+  let client = MantaClient::new(server_url, ctx.site_name)?;
+  let result = dispatch::dispatch_plan(&client, token, plan, opts).await?;
 
   run_hook_if_present(opts.posthook_opt, "post")?;
 

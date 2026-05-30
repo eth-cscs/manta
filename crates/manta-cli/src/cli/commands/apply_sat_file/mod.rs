@@ -5,6 +5,7 @@
 //! `service::sat_file`, so they now live in `manta_shared::shared::sat_file`.
 
 pub mod command;
+pub mod dispatch;
 pub mod plan;
 // -- TESTS --
 #[cfg(test)]

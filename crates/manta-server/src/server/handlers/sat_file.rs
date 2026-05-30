@@ -140,6 +140,228 @@ pub async fn post_sat_file(
   }))
 }
 
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/configurations — Apply one SAT configuration entry
+// ---------------------------------------------------------------------------
+
+/// Request body for `POST /sat-file/configurations` — one entry from the
+/// SAT file's `configurations` section, plus per-call flags.
+#[derive(Deserialize, ToSchema)]
+pub struct PostSatConfigurationRequest {
+  /// One SAT `configurations[]` entry as a structured value.
+  #[schema(value_type = serde_json::Value)]
+  pub configuration: serde_json::Value,
+  /// Overwrite an existing CFS configuration of the same name.
+  #[serde(default)]
+  pub overwrite: bool,
+  /// Validate without creating; the response contains a mock
+  /// configuration.
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+#[utoipa::path(post, path = "/sat-file/configurations", tag = "sat-file",
+  params(SiteHeader),
+  request_body = PostSatConfigurationRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Configuration applied",       body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/configurations` — apply a single SAT
+/// configuration entry. Returns the created `CfsConfigurationResponse`.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_configuration(
+  ctx: RequestCtx,
+  Json(body): Json<PostSatConfigurationRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("post_sat_configuration dry_run={}", body.dry_run);
+  let infra = ctx.infra();
+
+  let vault_base_url = require_vault(infra.vault_base_url)?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
+
+  let gitea_token =
+    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
+      &ctx.token,
+      vault_base_url,
+      infra.site_name,
+    )
+    .await
+    .map_err(display_error)?;
+
+  let cfg = service::sat_file::apply_configuration(
+    &infra,
+    &ctx.token,
+    &gitea_token,
+    vault_base_url,
+    k8s_api_url,
+    body.configuration,
+    body.dry_run,
+    body.overwrite,
+  )
+  .await
+  .map_err(display_error)?;
+
+  Ok(Json(cfg))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/images — Apply one SAT image entry
+// ---------------------------------------------------------------------------
+
+/// Request body for `POST /sat-file/images` — one entry from the SAT
+/// file's `images` section, the CLI's accumulated ref_lookup, and
+/// per-call flags.
+#[derive(Deserialize, ToSchema)]
+pub struct PostSatImageRequest {
+  /// One SAT `images[]` entry as a structured value.
+  #[schema(value_type = serde_json::Value)]
+  pub image: serde_json::Value,
+  /// `ref_name.or(name) -> image_id` map for previously-created images;
+  /// the backend uses it to resolve `base.image_ref`.
+  #[serde(default)]
+  pub ref_lookup: std::collections::HashMap<String, String>,
+  /// Ansible verbosity level (0–4) for the CFS session that builds
+  /// the image.
+  pub ansible_verbosity: Option<u8>,
+  /// Extra arguments forwarded verbatim to `ansible-playbook`.
+  pub ansible_passthrough: Option<String>,
+  /// Stream CFS session logs while the image builds.
+  #[serde(default)]
+  pub watch_logs: bool,
+  /// Prefix streamed log lines with timestamps.
+  #[serde(default)]
+  pub timestamps: bool,
+  /// Validate without creating; the response contains a mock image.
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+#[utoipa::path(post, path = "/sat-file/images", tag = "sat-file",
+  params(SiteHeader),
+  request_body = PostSatImageRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Image applied",               body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/images` — apply a single SAT image entry.
+/// Returns the created `Image`.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_image(
+  ctx: RequestCtx,
+  Json(body): Json<PostSatImageRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("post_sat_image dry_run={}", body.dry_run);
+  let infra = ctx.infra();
+
+  let vault_base_url = require_vault(infra.vault_base_url)?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
+
+  let image = service::sat_file::apply_image(
+    &infra,
+    &ctx.token,
+    vault_base_url,
+    k8s_api_url,
+    body.image,
+    body.ref_lookup,
+    body.ansible_verbosity,
+    body.ansible_passthrough.as_deref(),
+    body.watch_logs,
+    body.timestamps,
+    body.dry_run,
+  )
+  .await
+  .map_err(display_error)?;
+
+  Ok(Json(image))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/session-templates — Apply one SAT session_template
+// ---------------------------------------------------------------------------
+
+/// Request body for `POST /sat-file/session-templates` — one entry
+/// from the SAT file's `session_templates` section, the CLI's
+/// accumulated ref_lookup, and per-call flags.
+#[derive(Deserialize, ToSchema)]
+pub struct PostSatSessionTemplateRequest {
+  /// One SAT `session_templates[]` entry as a structured value.
+  #[schema(value_type = serde_json::Value)]
+  pub session_template: serde_json::Value,
+  /// `ref_name.or(name) -> image_id` map for previously-created
+  /// images; the backend uses it to resolve `image.image_ref`.
+  #[serde(default)]
+  pub ref_lookup: std::collections::HashMap<String, String>,
+  /// After creating the template, trigger a BOS session to reboot
+  /// the targeted nodes through it.
+  #[serde(default)]
+  pub reboot: bool,
+  /// Validate without creating; the response contains a mock
+  /// template (and, if `reboot`, no session is returned).
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+/// Response body for `POST /sat-file/session-templates`. `session`
+/// is populated when `reboot` was true and a BOS session was created.
+#[derive(Serialize, ToSchema)]
+pub struct PostSatSessionTemplateResponse {
+  /// The created (or mock, in dry-run) BOS session template.
+  #[schema(value_type = serde_json::Value)]
+  pub template: BosSessionTemplate,
+  /// The BOS session created by the reboot, if any.
+  #[schema(value_type = Option<serde_json::Value>)]
+  pub session: Option<BosSession>,
+}
+
+#[utoipa::path(post, path = "/sat-file/session-templates", tag = "sat-file",
+  params(SiteHeader),
+  request_body = PostSatSessionTemplateRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Session template applied", body = PostSatSessionTemplateResponse),
+    (status = 401, description = "Unauthorized",             body = ErrorResponse),
+    (status = 500, description = "Internal error",           body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/session-templates` — apply a single SAT
+/// session_template entry. Returns the created BOS session template
+/// and (if `reboot` was set and we're not in dry-run) the BOS session
+/// that was kicked off to reboot the targeted nodes.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_session_template(
+  ctx: RequestCtx,
+  Json(body): Json<PostSatSessionTemplateRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!(
+    "post_sat_session_template dry_run={} reboot={}",
+    body.dry_run,
+    body.reboot
+  );
+  let infra = ctx.infra();
+
+  let (template, session) = service::sat_file::apply_session_template(
+    &infra,
+    &ctx.token,
+    body.session_template,
+    body.ref_lookup,
+    body.reboot,
+    body.dry_run,
+  )
+  .await
+  .map_err(display_error)?;
+
+  Ok(Json(PostSatSessionTemplateResponse { template, session }))
+}
+
 #[cfg(test)]
 mod tests {
   //! Locks the JSON wire format of `PostSatFileRequest` and
