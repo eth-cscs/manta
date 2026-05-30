@@ -1,95 +1,90 @@
-# manta-server configuration template.
-#
-# Copy to ~/.config/manta/server.toml (or set MANTA_SERVER_CONFIG to a
-# custom path) and fill in your values.
-#
-# The server hosts every configured site simultaneously; clients
-# select per-request via the `X-Manta-Site` header. There is no
-# notion of an "active site".
-
 log = "info"
 audit_file = "/var/log/manta/server-audit.log"
 
-# ---------------------------------------------------------------------
-# Server settings: TLS listener, console timeout, auth rate limit.
-# ---------------------------------------------------------------------
 [server]
 listen_address = "0.0.0.0"
 port = 8443
 cert = "/etc/manta/tls/server.crt"
 key = "/etc/manta/tls/server.key"
-# How long an idle WebSocket console session may stay open before the
-# server closes it. Protects against leaked Kubernetes pod attachments.
 console_inactivity_timeout_secs = 1800
-# Per-source-IP rate limit on /api/v1/auth/*, in requests per minute.
-# Omit to disable in-process rate limiting (and enforce at the reverse
-# proxy instead).
 auth_rate_limit_per_minute = 60
-
-# ---------------------------------------------------------------------
-# Site definitions.
-#
-# Each [sites.X] block adds a site reachable via the X-Manta-Site: X
-# header. The HashiCorp Vault URL used by sat-file, session, console,
-# and log-streaming endpoints is derived from
-# [sites.X.k8s.authentication.vault] base_url at startup; the vault
-# secret path is computed from a hard-coded prefix and the site name.
-# Neither is configured directly here.
-# ---------------------------------------------------------------------
 
 [sites.alps]
 backend = "csm"
-shasta_base_url = "https://api.cmn.alps.example.com/apis"
+# socks5 proxy for all backend traffic to this site
+# socks5_proxy = "socks5://127.0.0.1:1080"
+shasta_base_url = "https://api.cmn.alps.cscs.ch/apis"
 root_ca_cert_file = "alps_root_cert.pem"
-# Optional SOCKS5 proxy for all backend traffic to this site
-# (CSM/HSM/BSS/IMS/PCS plus k8s and vault).
-# socks5_proxy = "socks5h://127.0.0.1:1080"
 
-# Kubernetes API for this site. Required for the console and
-# log-streaming endpoints; omit the whole [sites.X.k8s] block if those
-# endpoints are unused for this site (they will return 501).
 [sites.alps.k8s]
-api_url = "https://10.0.0.10:6443"
+api_url = "https://148.187.109.96:6444"
 
-# How the server authenticates to the Kubernetes API. Pick one:
-#
-# (a) vault — credentials fetched at request time from HashiCorp Vault.
-#     The base_url here is ALSO the vault used by sat-file and session
-#     handlers to fetch the Gitea VCS token.
+# Some manta commands requires k8s or Gitea credentials. There are 2 ways to provide them:
+# - Native: credentials are provided in the config file
+# - Vault: credentials are fetched from Vault
+# Get both k8s and Gitea credentials from Vault
 [sites.alps.k8s.authentication.vault]
-base_url = "https://vault.example.com"
-#
-# (b) native — credentials embedded directly in this file (kubeconfig
-#     style). Mutually exclusive with the vault block above.
-# [sites.alps.k8s.authentication.native]
-# certificate_authority_data = "--REDACTED--"
+base_url = "https://vault.svc.cscs.ch"
+
+# Get both k8s and Gitea credentials in config file (same fashion as kubeconfig)
+# [sites.alps.k8s.authentication.Native]
+# certificate_authority_data = "--REDACTED"
 # client_certificate_data = "--REDACTED--"
 # client_key_data = "--REDACTED--"
 
 
-# Example second CSM site.
 [sites.prealps]
 backend = "csm"
-shasta_base_url = "https://api.cmn.prealps.example.com/apis"
+# socks5_proxy = "socks5h://127.0.0.1:1081"
+shasta_base_url = "https://api.cmn.prealps.cscs.ch/apis"
 root_ca_cert_file = "prealps_root_cert.pem"
 
 [sites.prealps.k8s]
-api_url = "https://10.0.0.20:6443"
-
+api_url = "https://148.187.29.232:6444"
 [sites.prealps.k8s.authentication.vault]
-base_url = "https://vault.example.com"
+base_url = "https://vault.svc.cscs.ch"
 
 
-# Example OpenCHAMI site. No [sites.X.k8s] block — sat-file, session,
-# console, and log-streaming endpoints will return 501 for this site.
+[sites.alpsb]
+backend = "csm"
+# socks5_proxy = "socks5h://127.0.0.1:1082"
+shasta_base_url = "https://api.cmn.alpsb.cscs.ch"
+root_ca_cert_file = "alpsb_root_cert.pem"
+
+[sites.alpsb.k8s]
+api_url = "https://148.187.9.133:6444"
+[sites.alpsb.k8s.authentication.vault]
+base_url = "https://vault.svc.cscs.ch"
+
+
+[sites.alpsm]
+backend = "csm"
+shasta_base_url = "https://api.cmn.alpsm.cscs.ch/apis"
+root_ca_cert_file = "alpsm_root_cert.pem"
+
+[sites.alpsm.k8s]
+api_url = "https://10.252.1.2:6442"
+[sites.alpsm.k8s.authentication.vault]
+base_url = "https://vault.svc.cscs.ch"
+
+
+[sites.alpse]
+backend = "csm"
+shasta_base_url = "https://api.cmn.alpse.cscs.ch/apis"
+root_ca_cert_file = "alpse_root_cert.pem"
+
+[sites.alpse.k8s]
+api_url = "https://10.252.1.2:6442"
+[sites.alpse.k8s.authentication.vault]
+base_url = "https://vault.svc.cscs.ch"
+
+
 [sites.ochami]
 backend = "ochami"
-shasta_base_url = "https://api.ochami.example.com:8443"
+shasta_base_url = "https://foobar.openchami.cluster:8443"
 root_ca_cert_file = "ochami_root_cert.pem"
 
 
-# Optional Kafka audit forwarder. Remove the whole block to disable
-# server-side audit emission.
 [auditor.kafka]
-brokers = ["kafka.example.com:9095"]
+brokers = ["kafka.o11y.cscs.ch:9095"]
 topic = "events.manta"
