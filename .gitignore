@@ -15,5 +15,10 @@
 .DS_Store
 Cargo.lock
 /crates/*/config.toml
+# Per-developer local copies of cli.toml / server.toml at the crate
+# roots (used for local testing without the platform config dir).
+# The real configs live under the OS config dir — see README.
+/crates/*/cli.toml
+/crates/*/server.toml
 baseline.json
 lcov.info
