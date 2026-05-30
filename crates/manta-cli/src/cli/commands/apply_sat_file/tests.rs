@@ -1,7 +1,7 @@
-use manta_shared::shared::sat_file::{
-  apply_sat_file_filters, render_jinja2_sat_file_yaml,
-};
+use manta_shared::shared::sat_file::render_jinja2_sat_file_yaml;
 use serde_yaml::Value;
+
+use crate::cli::commands::apply_sat_file::plan::{SatElement, build_plan};
 
 /// Render a SAT template + values file (with a CLI `--var` override) and
 /// confirm the rendered YAML string substitutes variables from all
@@ -238,7 +238,7 @@ app:
   let mut sat: serde_json::Value =
     serde_yaml::from_str(&rendered).expect("parse to Value");
 
-  apply_sat_file_filters(&mut sat, true, false).expect("filter image_only");
+  let plan = build_plan(&mut sat, true, false).expect("build_plan image_only");
 
   assert!(
     sat.get("session_templates").is_none(),
@@ -251,4 +251,9 @@ app:
   let configs = sat.get("configurations").unwrap().as_array().unwrap();
   assert_eq!(configs.len(), 1);
   assert_eq!(configs[0]["name"], "cfg-v1");
+
+  // Plan reflects the same: one configuration, one image, no session_template.
+  assert_eq!(plan.len(), 2);
+  assert!(matches!(plan[0], SatElement::Configuration(_)));
+  assert!(matches!(plan[1], SatElement::Image(_)));
 }

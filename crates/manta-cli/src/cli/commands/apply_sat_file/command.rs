@@ -23,13 +23,12 @@
 use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
 
+use crate::cli::commands::apply_sat_file::plan;
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
-use manta_shared::shared::sat_file::{
-  apply_sat_file_filters, render_jinja2_sat_file_yaml,
-};
+use manta_shared::shared::sat_file::render_jinja2_sat_file_yaml;
 
 /// Options for applying a SAT file.
 #[allow(clippy::struct_excessive_bools)]
@@ -101,15 +100,15 @@ pub async fn exec(
   let mut sat_file: serde_json::Value = serde_yaml::from_str(&rendered_yaml)
     .context("Rendered SAT template is not valid YAML")?;
 
-  // 3. Apply --image-only / --sessiontemplate-only by walking the Value
-  //    (drops top-level sections + prunes unreferenced configurations
-  //    /images — see `apply_sat_file_filters` for the exact rules).
-  apply_sat_file_filters(
+  // 3. Build the ordered execution plan from the parsed SAT file. This
+  //    also applies the --image-only / --sessiontemplate-only filters
+  //    in place (prunes `sat_file`), so the preview below shows the
+  //    same surviving sections that the plan will execute.
+  let plan = plan::build_plan(
     &mut sat_file,
     opts.image_only,
     opts.session_template_only,
-  )
-  .map_err(|e| anyhow::anyhow!("{e}"))?;
+  )?;
 
   // 4. Display the filtered SAT file as YAML and confirm.
   let preview = serde_yaml::to_string(&sat_file)
@@ -134,7 +133,24 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  // 6. Pre-hook -> server call -> post-hook.
+  // 6. Plan was built in step 3 (build_plan also pruned `sat_file`
+  //    according to the filter flags). Dispatch of the plan
+  //    element-by-element is the next refactor; for now we log its
+  //    shape and still ship the whole SAT to the server.
+  let (n_cfg, n_img, n_st) =
+    plan.iter().fold((0_usize, 0, 0), |(c, i, s), e| match e {
+      plan::SatElement::Configuration(_) => (c + 1, i, s),
+      plan::SatElement::Image(_) => (c, i + 1, s),
+      plan::SatElement::SessionTemplate(_) => (c, i, s + 1),
+    });
+  tracing::info!(
+    "Built execution plan: {} configurations, {} images, {} session_templates",
+    n_cfg,
+    n_img,
+    n_st,
+  );
+
+  // 7. Pre-hook -> server call -> post-hook.
   run_hook_if_present(opts.prehook_opt, "pre")?;
 
   let result = MantaClient::new(server_url, ctx.site_name)?

@@ -1,203 +1,24 @@
-//! Jinja2 rendering helpers for SAT (System Admin Toolkit) template files
-//! and a structure-aware filter that operates on the parsed
-//! [`serde_json::Value`].
+//! Jinja2 rendering helpers for SAT (System Admin Toolkit) template
+//! files.
 //!
 //! The canonical SAT-file schema lives in csm-rs (which parses the value
-//! into typed structs during apply). The CLI never carries the typed
-//! schema — it only needs to:
+//! into typed structs during apply). This module only handles the
+//! pre-parse step the CLI needs:
 //!
 //! 1. Render Jinja2 templates with a values file + `--var` overrides
 //!    (the renderer takes parsed YAML as Jinja context for the values
 //!    file but produces a string for the SAT file content).
-//! 2. Parse the rendered SAT string into a `serde_json::Value` so the
-//!    server can forward it verbatim.
-//! 3. Apply `--image-only` / `--sessiontemplate-only` filters by
-//!    walking the Value (drop top-level sections plus prune unreferenced
-//!    configurations/images) before sending.
+//! 2. After rendering, the CLI parses the result into a
+//!    `serde_json::Value` itself.
 //!
-//! Both `--image-only` and `--sessiontemplate-only` preserve the
-//! historical CLI semantics:
-//! - `--image-only`: drops `session_templates` + `hardware`; retains
-//!   only configurations referenced by the remaining images.
-//! - `--sessiontemplate-only`: drops `hardware`; retains images only
-//!   if named in a session_template; drops the `images` section
-//!   entirely if no image survives; retains only configurations
-//!   referenced by surviving images or session_templates.
-//!
-//! The walk navigates a small set of field names
-//! (`configurations`, `images`, `session_templates`, `hardware`,
-//! `name`, `configuration`, `image`, `image_ref`, `ims`) — no struct
-//! schema is embedded here.
+//! The `--image-only` / `--sessiontemplate-only` filters used to live
+//! here too but now sit inside `build_plan` in
+//! `manta-cli/src/cli/commands/apply_sat_file/plan.rs`, where they share
+//! the SAT-file walk that builds the execution plan.
 
-use std::collections::HashSet;
-
-use serde_json::Value as JsonValue;
 use serde_yaml::{Mapping, Value};
 
 use crate::common::error::MantaError as Error;
-
-/// Apply `--image-only` / `--sessiontemplate-only` filters to a parsed
-/// SAT file in-place.
-///
-/// Mirrors the prune-by-reference semantics historically implemented by
-/// the typed `SatFile::filter` method, but operates on
-/// [`serde_json::Value`] so the CLI does not need to embed the SAT
-/// schema. See the module-level docs for the exact filter rules.
-///
-/// # Errors
-///
-/// - [`Error::MissingField`] when `image_only` is set but no `images`
-///   section is present in the SAT file.
-/// - [`Error::MissingField`] when `session_template_only` is set but no
-///   `session_templates` section is present.
-pub fn apply_sat_file_filters(
-  sat_file: &mut JsonValue,
-  image_only: bool,
-  session_template_only: bool,
-) -> Result<(), Error> {
-  if image_only {
-    let obj = sat_file.as_object_mut().ok_or_else(|| {
-      Error::TemplateError(
-        "SAT file root is not a YAML/JSON mapping".to_string(),
-      )
-    })?;
-
-    if !obj.contains_key("images") {
-      return Err(Error::MissingField(
-        "'images' section missing in SAT file".to_string(),
-      ));
-    }
-
-    obj.remove("session_templates");
-    obj.remove("hardware");
-
-    let referenced: HashSet<String> = obj
-      .get("images")
-      .and_then(JsonValue::as_array)
-      .map(|imgs| {
-        imgs
-          .iter()
-          .filter_map(|img| {
-            img.get("configuration")?.as_str().map(str::to_string)
-          })
-          .collect()
-      })
-      .unwrap_or_default();
-
-    if let Some(configs) =
-      obj.get_mut("configurations").and_then(JsonValue::as_array_mut)
-    {
-      configs.retain(|cfg| {
-        cfg
-          .get("name")
-          .and_then(JsonValue::as_str)
-          .is_some_and(|n| referenced.contains(n))
-      });
-    }
-  }
-
-  if session_template_only {
-    let obj = sat_file.as_object_mut().ok_or_else(|| {
-      Error::TemplateError(
-        "SAT file root is not a YAML/JSON mapping".to_string(),
-      )
-    })?;
-
-    if !obj.contains_key("session_templates") {
-      return Err(Error::MissingField(
-        "'session_templates' section not defined in SAT file".to_string(),
-      ));
-    }
-
-    obj.remove("hardware");
-
-    // Names of images referenced by session_templates (either by
-    // `image_ref` or by `ims.name`).
-    let image_keep: HashSet<String> = obj
-      .get("session_templates")
-      .and_then(JsonValue::as_array)
-      .map(|sts| {
-        sts
-          .iter()
-          .filter_map(image_name_referenced_by_session_template)
-          .collect()
-      })
-      .unwrap_or_default();
-
-    // Retain images by name; drop the section if it ends up empty.
-    let images_empty = if let Some(imgs) =
-      obj.get_mut("images").and_then(JsonValue::as_array_mut)
-    {
-      imgs.retain(|img| {
-        img
-          .get("name")
-          .and_then(JsonValue::as_str)
-          .is_some_and(|n| image_keep.contains(n))
-      });
-      imgs.is_empty()
-    } else {
-      false
-    };
-    if images_empty {
-      obj.remove("images");
-    }
-
-    // Configurations to keep: referenced by surviving images OR by
-    // any session_template.
-    let mut config_keep: HashSet<String> = HashSet::new();
-    if let Some(imgs) = obj.get("images").and_then(JsonValue::as_array) {
-      for img in imgs {
-        if let Some(c) = img.get("configuration").and_then(JsonValue::as_str)
-        {
-          config_keep.insert(c.to_string());
-        }
-      }
-    }
-    if let Some(sts) =
-      obj.get("session_templates").and_then(JsonValue::as_array)
-    {
-      for st in sts {
-        if let Some(c) = st.get("configuration").and_then(JsonValue::as_str) {
-          config_keep.insert(c.to_string());
-        }
-      }
-    }
-
-    if let Some(configs) =
-      obj.get_mut("configurations").and_then(JsonValue::as_array_mut)
-    {
-      configs.retain(|cfg| {
-        cfg
-          .get("name")
-          .and_then(JsonValue::as_str)
-          .is_some_and(|n| config_keep.contains(n))
-      });
-    }
-  }
-
-  Ok(())
-}
-
-/// Extract the image name a session_template entry references, in either
-/// shape:
-/// - `image: { image_ref: "<name>" }`
-/// - `image: { ims: { name: "<name>" } }`
-///
-/// Returns `None` for `image: { ims: { id: "<id>" } }` (pre-built images
-/// referenced by ID — no name to filter on).
-fn image_name_referenced_by_session_template(
-  st: &JsonValue,
-) -> Option<String> {
-  let image = st.get("image")?;
-  if let Some(name) = image.get("image_ref").and_then(JsonValue::as_str) {
-    return Some(name.to_string());
-  }
-  image
-    .get("ims")
-    .and_then(|ims| ims.get("name"))
-    .and_then(JsonValue::as_str)
-    .map(str::to_string)
-}
 
 /// Merges two `serde_yaml::Value`s into a single `serde_yaml::Value`.
 /// `merge` values override `base` values when keys collide; sequences
