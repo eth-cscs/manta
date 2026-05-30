@@ -97,6 +97,7 @@ async fn run_cli(
     manta_server_url,
     settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
     kafka_audit_opt: audit_kafka_opt.as_ref(),
+    request_timeout_secs: configuration.request_timeout_secs,
     settings: &settings,
   };
 

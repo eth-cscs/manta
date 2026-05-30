@@ -137,6 +137,8 @@ impl TestFixture {
       console_inactivity_timeout: Duration::from_secs(1800),
       auditor: None,
       auth_rate_limit_per_minute: None,
+      request_timeout: Duration::from_secs(60),
+      power_timeout: Duration::from_secs(600),
     });
 
     let router = build_router(state);

@@ -43,11 +43,44 @@ pub struct MantaClient {
 
 impl MantaClient {
   /// Build a client pointing at `server_url` for the given `site_name`.
+  /// No per-request HTTP timeout is set; reqwest's default applies
+  /// (which is "no timeout"). For long-running commands that need a
+  /// configurable timeout, use [`MantaClient::from_app_ctx`].
   ///
   /// If `server_url` has no scheme, `http://` is prepended. This lets users
   /// write `manta_server_url = "localhost:8080"` in their config without
   /// triggering a "URL scheme is not allowed" error from reqwest.
   pub fn new(server_url: &str, site_name: &str) -> anyhow::Result<Self> {
+    Self::new_with_timeout(server_url, site_name, None)
+  }
+
+  /// Build a client that honours `cli.toml`'s `request_timeout_secs`
+  /// (if set) via the [`AppContext`] threaded through every CLI
+  /// command. Commands that hit endpoints which can legitimately take
+  /// minutes (e.g. `POST /power` against a large cluster) should
+  /// construct their client through this constructor so the operator
+  /// can lift the per-request timeout without rebuilding manta.
+  ///
+  /// [`AppContext`]: manta_shared::common::app_context::AppContext
+  pub fn from_app_ctx(
+    ctx: &manta_shared::common::app_context::AppContext<'_>,
+  ) -> anyhow::Result<Self> {
+    Self::new_with_timeout(
+      ctx.manta_server_url,
+      ctx.site_name,
+      ctx.request_timeout_secs,
+    )
+  }
+
+  /// Build a client with an explicit optional per-request timeout.
+  /// `None` keeps reqwest's default (no timeout); `Some(secs)`
+  /// configures the inner `reqwest::Client` with
+  /// `.timeout(Duration::from_secs(secs))`.
+  pub fn new_with_timeout(
+    server_url: &str,
+    site_name: &str,
+    timeout_secs: Option<u64>,
+  ) -> anyhow::Result<Self> {
     let normalized = if server_url.starts_with("http://")
       || server_url.starts_with("https://")
     {
@@ -56,9 +89,11 @@ impl MantaClient {
       format!("http://{server_url}")
     };
 
-    let client = reqwest::Client::builder()
-      .build()
-      .context("Failed to build HTTP client")?;
+    let mut builder = reqwest::Client::builder();
+    if let Some(secs) = timeout_secs {
+      builder = builder.timeout(std::time::Duration::from_secs(secs));
+    }
+    let client = builder.build().context("Failed to build HTTP client")?;
     Ok(Self {
       client,
       base_url: format!("{}/api/v1", normalized.trim_end_matches('/')),
@@ -597,5 +632,107 @@ mod tests {
         ("output_pretty", "true".to_string()),
       ]
     );
+  }
+
+  // ---- MantaClient timeout constructors ----
+
+  #[test]
+  fn new_with_timeout_none_builds_successfully() {
+    let c = MantaClient::new_with_timeout("http://stub.invalid", "alps", None);
+    assert!(c.is_ok());
+  }
+
+  #[test]
+  fn new_with_timeout_some_builds_successfully() {
+    let c = MantaClient::new_with_timeout("http://stub.invalid", "alps", Some(5));
+    assert!(c.is_ok());
+  }
+
+  /// Behavioural test: when a timeout is set, an outbound call against
+  /// a TCP listener that accepts but never responds must error within
+  /// roughly the configured window — far below the wall-clock cap.
+  /// Confirms `.timeout(...)` is actually wired into the reqwest
+  /// client.
+  #[tokio::test]
+  async fn new_with_timeout_some_fires_within_configured_window() {
+    use std::time::Duration;
+
+    // Accept-but-hang listener: takes the connection, then sleeps so
+    // the HTTP response never arrives.
+    let listener =
+      tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+      // Accept exactly one connection and hold it open for longer than
+      // the test cap so the timeout fires before we drop the socket.
+      if let Ok((_socket, _)) = listener.accept().await {
+        tokio::time::sleep(Duration::from_secs(5)).await;
+      }
+    });
+
+    let client = MantaClient::new_with_timeout(
+      &format!("http://{addr}"),
+      "test-site",
+      Some(1), // 1 second
+    )
+    .unwrap();
+
+    let start = std::time::Instant::now();
+    let result: anyhow::Result<serde_json::Value> = tokio::time::timeout(
+      Duration::from_secs(3),
+      client.post_json("test-token", "/health", &serde_json::json!({})),
+    )
+    .await
+    .expect("test cap (3s) exceeded — the inner timeout never fired");
+    let elapsed = start.elapsed();
+
+    assert!(result.is_err(), "the call should have errored on timeout");
+    assert!(
+      elapsed < Duration::from_secs(3),
+      "elapsed {elapsed:?} suggests the configured 1s timeout did not fire"
+    );
+
+    server.abort();
+  }
+
+  /// Back-compat check: a client built without a timeout (the default
+  /// for every non-power command today) does NOT time out at one
+  /// second — proves the new code path didn't silently leak a default
+  /// timeout into `MantaClient::new`.
+  #[tokio::test]
+  async fn new_without_timeout_does_not_fire_inside_one_second() {
+    use std::time::Duration;
+
+    let listener =
+      tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let server = tokio::spawn(async move {
+      if let Ok((_socket, _)) = listener.accept().await {
+        tokio::time::sleep(Duration::from_secs(5)).await;
+      }
+    });
+
+    let client =
+      MantaClient::new(&format!("http://{addr}"), "test-site").unwrap();
+
+    let result = tokio::time::timeout(
+      Duration::from_millis(1500),
+      client.post_json::<serde_json::Value>(
+        "test-token",
+        "/health",
+        &serde_json::json!({}),
+      ),
+    )
+    .await;
+
+    // The outer tokio::time::timeout MUST fire (Err) — meaning the
+    // inner reqwest call was still pending at 1.5s, which is what we
+    // want: no client-side timeout applied.
+    assert!(
+      result.is_err(),
+      "MantaClient::new should not apply a per-request timeout"
+    );
+
+    server.abort();
   }
 }

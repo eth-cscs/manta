@@ -6,9 +6,10 @@
 use std::sync::Arc;
 
 use axum::{
-  Extension, Router, middleware,
+  Extension, Router, http::StatusCode, middleware,
   routing::{delete, get, post},
 };
+use tower_http::timeout::TimeoutLayer;
 use utoipa::OpenApi as _;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -20,7 +21,27 @@ use super::auth_middleware::{
 use super::handlers;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
+///
+/// Timeouts are applied **here** rather than as a single outer layer in
+/// `start_server`. The reason: tower's `TimeoutLayer` is a hard timer,
+/// not an override — when stacked, the **shorter** timer always wins.
+/// If a global `request_timeout` layer wrapped the whole router, a
+/// per-route `power_timeout` layer inside `/power` would be useless
+/// (the global would cut /power off first). To make the per-route
+/// override actually win, the global timeout has to be applied only to
+/// the non-power sub-router; `/power` is built as its own sub-router
+/// with its own timeout and merged in unwrapped.
 pub fn build_router(state: Arc<ServerState>) -> Router {
+  // `/power` lives on its own sub-router with a (typically longer)
+  // per-route timeout. Cluster-wide power transitions — especially
+  // `reset` against many xnames — easily exceed the global default.
+  let power_router = Router::new()
+    .route("/power", post(handlers::post_power))
+    .layer(TimeoutLayer::with_status_code(
+      StatusCode::REQUEST_TIMEOUT,
+      state.power_timeout,
+    ));
+
   let api = Router::new()
     // --- GET endpoints ---
     .route("/sessions", get(handlers::get_sessions))
@@ -105,8 +126,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/migrate/restore", post(handlers::migrate_restore))
     // Ephemeral environment
     .route("/ephemeral-env", post(handlers::create_ephemeral_env))
-    // Power management
-    .route("/power", post(handlers::post_power))
+    // Power management — registered separately via `power_router`
+    // below so it can carry a longer per-route TimeoutLayer.
     // BOS session from template
     .route(
       "/templates/{name}/sessions",
@@ -139,7 +160,15 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       "/hardware-clusters/{target}/configuration",
       post(handlers::apply_hw_configuration),
     )
-    .merge(build_ws_routes());
+    .merge(build_ws_routes())
+    // Apply the global request timeout to every route added so far —
+    // i.e. everything except `/power`. The per-route timeout on
+    // `power_router` then merges in unwrapped, so it actually wins.
+    .layer(TimeoutLayer::with_status_code(
+      StatusCode::REQUEST_TIMEOUT,
+      state.request_timeout,
+    ))
+    .merge(power_router);
 
   // /api/v1/auth/* — credential-handling sub-router. No Bearer
   // extractor (chicken-and-egg). Two layered defences applied:

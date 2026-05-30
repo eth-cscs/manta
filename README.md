@@ -217,8 +217,9 @@ audit_file = "/var/log/manta/cli-audit.log"
 
 site             = "alps"                                # active site (X-Manta-Site header)
 parent_hsm_group = "nodes_free"
-manta_server_url = "https://manta-server.cscs.ch:8443"   # required
-socks5_proxy     = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
+manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
+socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
+request_timeout_secs = 600                                   # optional: caps long-running CLI HTTP calls (e.g. `manta power`); omit for no client-side timeout
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]
@@ -243,6 +244,8 @@ cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute      = 60      # per source IP for /api/v1/auth/*; omit to disable
+request_timeout_secs            = 60      # global per-route timeout (returns 408); default 60
+power_timeout_secs              = 600     # per-route override for POST /power (cluster reset can run for minutes); default 600
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]

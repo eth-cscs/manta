@@ -294,6 +294,21 @@ This means manta-server is a **single point of compromise** for everyone using i
 
 ---
 
+## Request timeouts
+
+Two `tower_http::timeout::TimeoutLayer` instances live in `crates/manta-server/src/server/routes.rs::build_router`:
+
+- A **global** layer applied to all routes except `/power`, configured from `[server].request_timeout_secs` (default 60s).
+- A **per-route** layer applied to `/power` only, configured from `[server].power_timeout_secs` (default 600s). Cluster-wide power transitions — especially `reset` against many xnames — easily exceed the global default, so the per-route override raises the ceiling without affecting other endpoints.
+
+When either timer fires, axum returns `408 REQUEST_TIMEOUT`.
+
+**Composition gotcha.** `TimeoutLayer` is a hard timer, not an override: stacked layers always defer to the **shorter** one. If a global timeout wrapped the whole router and `/power` carried its own longer per-route timeout inside, the global would silently cut `/power` off first and the override would be useless. The router avoids that by structuring `/power` as its own sub-router with its own layer, merging the **non-power** routes (already wrapped with the global layer) on top — the per-route layer is unwrapped from the global. The behavioural pin lives in `crates/manta-server/src/server/mod.rs::timeout_layer_tests` (`per_route_timeout_overrides_global_when_layered_before_merge` is the happy path; `layering_after_merge_lets_global_defeat_per_route_timeout` is the negative twin that documents the bug shape).
+
+**CLI side.** `MantaClient` honours the optional `request_timeout_secs` field in `cli.toml` via the `MantaClient::from_app_ctx(&AppContext<'_>)` constructor. Today only the `manta power` command path is wired through `from_app_ctx`; every other CLI command still uses the zero-timeout `MantaClient::new(...)`. Long-running commands can opt in by switching constructors when they need the same headroom.
+
+---
+
 ## Key external dependencies
 
 | Crate | Role |

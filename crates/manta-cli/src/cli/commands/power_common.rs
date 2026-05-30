@@ -67,7 +67,6 @@ pub async fn exec_nodes(
     PowerAction::Reset => "reset",
   };
 
-  let server_url = ctx.manta_server_url;
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {hosts_expression}");
@@ -75,7 +74,7 @@ pub async fn exec_nodes(
   {
     bail!("Operation cancelled by user");
   }
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .power(token, action_str, hosts_expression, "nodes", force)
     .await?;
   action_result::print_with_data(
@@ -103,7 +102,6 @@ pub async fn exec_cluster(
     PowerAction::Reset => "reset",
   };
 
-  let server_url = ctx.manta_server_url;
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Cluster: {hsm_group_name_arg}");
@@ -111,7 +109,7 @@ pub async fn exec_cluster(
   {
     bail!("Operation cancelled by user");
   }
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .power(token, action_str, hsm_group_name_arg, "cluster", force)
     .await?;
   action_result::print_with_data(

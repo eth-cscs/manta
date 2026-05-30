@@ -83,6 +83,16 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
+  /// Optional per-request HTTP timeout, in seconds. When set, the
+  /// reqwest client used to reach `manta_server_url` is built with
+  /// `.timeout(Duration::from_secs(n))`; when `None` (the default),
+  /// reqwest applies no per-request timeout — long-running calls
+  /// (e.g. `POST /power`) hang until the server responds or the
+  /// underlying connection drops. Set this to match the server's
+  /// longest legitimate response time when running through a SOCKS5
+  /// tunnel or proxy that silently drops idle connections.
+  #[serde(default)]
+  pub request_timeout_secs: Option<u64>,
   /// Optional Kafka audit forwarder. When `None`, the CLI emits no
   /// audit messages.
   pub auditor: Option<Auditor>,
@@ -107,6 +117,31 @@ pub struct ServerSettings {
   /// in requests per minute. `None` disables in-process rate limiting
   /// (operators are then expected to enforce it at the reverse proxy).
   pub auth_rate_limit_per_minute: Option<u32>,
+  /// Global request timeout applied to every HTTP route, in seconds.
+  /// When this elapses the server returns `408 REQUEST_TIMEOUT`. Long-
+  /// running endpoints (e.g. `/power`) override this with their own
+  /// per-route timeout.
+  #[serde(default = "default_request_timeout_secs")]
+  pub request_timeout_secs: u64,
+  /// Per-route timeout for `POST /power`, in seconds. Power operations
+  /// against large clusters (especially `reset`) often exceed the
+  /// global default; this knob keeps the safety net for other
+  /// endpoints intact while giving power the headroom it needs.
+  #[serde(default = "default_power_timeout_secs")]
+  pub power_timeout_secs: u64,
+}
+
+/// Default global request timeout — 60s. Matches the historical
+/// hardcoded value.
+fn default_request_timeout_secs() -> u64 {
+  60
+}
+
+/// Default per-route power timeout — 600s (10 minutes). Empirically
+/// sufficient for cluster-wide `reset` against a few hundred xnames
+/// without blowing past it under normal CSM load.
+fn default_power_timeout_secs() -> u64 {
+  600
 }
 
 /// Top-level configuration for the `manta-server` binary. Persisted as
@@ -185,6 +220,7 @@ mod tests {
       parent_hsm_group: "nodes_free".to_string(),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
+      request_timeout_secs: None,
       auditor: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
@@ -238,6 +274,8 @@ mod tests {
         key: Some("/etc/manta/tls/server.key".to_string()),
         console_inactivity_timeout_secs: 1800,
         auth_rate_limit_per_minute: Some(60),
+        request_timeout_secs: 60,
+        power_timeout_secs: 600,
       },
       sites,
       auditor: None,
@@ -247,10 +285,26 @@ mod tests {
     assert_eq!(parsed.server.port, 8443);
     assert_eq!(parsed.server.listen_address, "0.0.0.0");
     assert_eq!(parsed.server.console_inactivity_timeout_secs, 1800);
+    assert_eq!(parsed.server.request_timeout_secs, 60);
+    assert_eq!(parsed.server.power_timeout_secs, 600);
     assert_eq!(
       parsed.server.cert.as_deref(),
       Some("/etc/manta/tls/server.crt")
     );
+  }
+
+  /// Existing server.toml files that pre-date the timeout fields must
+  /// keep working — both fields fall back to their defaults.
+  #[test]
+  fn server_settings_timeout_fields_default_when_omitted() {
+    let toml_str = r#"
+      listen_address = "0.0.0.0"
+      port = 8443
+      console_inactivity_timeout_secs = 1800
+    "#;
+    let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
+    assert_eq!(parsed.request_timeout_secs, 60);
+    assert_eq!(parsed.power_timeout_secs, 600);
   }
 
   #[test]
