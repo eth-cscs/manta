@@ -2,26 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Features
-
-- `[server].listen_address` and `[server].port` are now optional. When omitted (and no `--listen-address` / `--port` CLI flag is passed), the server falls back to `0.0.0.0` and to port `8443` if TLS (`cert` + `key`) is configured, else `8080`. Matches the common dev / sidecar setup where TLS is terminated upstream.
-- `manta power on/off/reset` now drives the PCS-transition polling loop client-side. `POST /power` returns immediately with the transition id; the CLI polls the new `GET /power/transitions/{id}` snapshot endpoint until the transition reports `completed`, rendering progress on every poll. Eliminates the long-held server connections that used to risk hitting the request timeout on cluster-wide transitions. A new `--no-wait` flag on every `power` subcommand returns the transition id and exits immediately.
-- Configurable HTTP timeout. New `[server].request_timeout_secs` (default 60, applies to every route) in `server.toml`. The earlier `power_timeout_secs` knob is gone — with the client-side polling loop it's no longer needed.
-- `manta apply sat-file` builds an in-memory execution plan (configurations → images topologically sorted by `base.image_ref` → session_templates) and validates cross-references (no dangling `image_ref`, no cycles) client-side before any HTTP call.
-- The `--image-only` / `--sessiontemplate-only` filter logic moved into the plan builder; the old `apply_sat_file_filters` helper is removed from `manta-shared`.
-- The CLI now dispatches the SAT plan one element at a time via three new server endpoints — `POST /sat-file/configurations`, `POST /sat-file/images`, `POST /sat-file/session-templates` — accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The user-visible four-list summary is unchanged.
-
-### Bug Fixes
-
-- `impl SatTrait for StaticBackendDispatcher` now forwards the three new per-element methods through the `dispatch!` macro; without this they would have fallen through to the trait's default "not implemented" impls at runtime.
-
-### Compatibility
-
-- `POST /sat-file` (whole-file) is retained for SAT files with a `hardware:` section while the per-element flow only covers configurations, images, and session_templates. A follow-up will either add a per-element hardware endpoint or drop hardware from `manta apply sat-file`.
-
-## [2.0.0-beta.15] - 2026-05-27
+## [2.0.0-beta.16] - 2026-05-30
 
 ### Bug Fixes
 
@@ -47,6 +28,7 @@ All notable changes to this project will be documented in this file.
 - Document Cargo workspace split + scope CI fmt/grep paths
 - Finish Phase 1 of rustdoc — sat_file + config types + 4 doctests + CI
 - Refresh module headers + fn docstrings after Tier 3.2 renames
+- Refresh user docs, rustdoc, and pin pure helpers
 
 ### Features
 
@@ -68,6 +50,10 @@ All notable changes to this project will be documented in this file.
 - Introduce 'power on/off/reset group' (Tier 3.2 phase 4/N)
 - Rename /clusters and /hardware-clusters REST paths (Tier 3.2 phase A6)
 - Show timestamps in server log output
+- Build an ordered execution plan in `manta apply sat-file`
+- Dispatch the execution plan element-by-element
+- Configurable request and per-route /power timeouts
+- Move PCS-transition polling loop to the CLI
 
 ### Miscellaneous Tasks
 
@@ -116,6 +102,7 @@ All notable changes to this project will be documented in this file.
 ### Testing
 
 - Cover QueryBuilder and ws_base_url in http_client
+- Cover per-element flow and refresh module headers
 
 ### Fox
 
