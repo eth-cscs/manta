@@ -382,9 +382,12 @@ mod tests {
     let v: serde_json::Value = serde_json::to_value(&body).unwrap();
     let obj = v.as_object().expect("object");
     assert_eq!(obj.len(), 4);
-    for key in
-      ["configurations", "images", "session_templates", "bos_sessions"]
-    {
+    for key in [
+      "configurations",
+      "images",
+      "session_templates",
+      "bos_sessions",
+    ] {
       assert!(obj.contains_key(key), "missing key: {key}");
       assert!(obj[key].is_array(), "{key} should be an array");
       assert_eq!(obj[key].as_array().unwrap().len(), 0);
