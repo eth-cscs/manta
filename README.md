@@ -245,7 +245,6 @@ key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute      = 60      # per source IP for /api/v1/auth/*; omit to disable
 request_timeout_secs            = 60      # global per-route timeout (returns 408); default 60
-power_timeout_secs              = 600     # per-route override for POST /power (cluster reset can run for minutes); default 600
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]

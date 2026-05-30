@@ -1376,7 +1376,7 @@ If a request fails before reaching the service layer, you'll get one of the code
 | **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), token expired, or `/auth/token` credentials rejected by the backend. |
 | **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
 | **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
-| **408 Request Timeout** | The handler took longer than the server's per-route timeout. `POST /power` has its own ceiling (`[server].power_timeout_secs`, default 600); every other route falls back to `[server].request_timeout_secs` (default 60). Bump the relevant knob in `server.toml` for sites where legitimate operations exceed the default. |
+| **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default 60). Every endpoint is fast under normal load — `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so this should only fire when the backend is unhealthy. |
 | **429 Too Many Requests** | Per-source-IP rate limit on `/api/v1/auth/*`. Tune `[server].auth_rate_limit_per_minute` or wait one minute. |
 | **500 Internal Server Error** | Server-side failure (backend unreachable, bad config). Check `journalctl -u manta-server` (or wherever the server's stderr is logged) for the actual cause. |
 | **501 Not Implemented** | The endpoint needs Vault or Kubernetes settings that the active site does not provide — see [Server configuration requirements](#server-configuration-requirements). |

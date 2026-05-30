@@ -1,6 +1,17 @@
-//! POST /api/v1/power.
+//! Power endpoints.
+//!
+//! - `POST /api/v1/power` starts a PCS power transition and returns
+//!   immediately with `{ transition_id, operation }`. The CLI then
+//!   polls the next endpoint until the transition reports `completed`.
+//! - `GET /api/v1/power/transitions/{id}` returns the current snapshot
+//!   of the named transition (status + task counts + per-task detail).
 
-use axum::{Json, http::StatusCode, response::IntoResponse};
+use axum::{
+  Json,
+  extract::Path,
+  http::StatusCode,
+  response::IntoResponse,
+};
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use serde::Deserialize;
 use utoipa::ToSchema;
@@ -117,4 +128,34 @@ pub async fn post_power(
     .map_err(to_handler_error)?;
 
   Ok(Json(result))
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/v1/power/transitions/{id} — Snapshot a PCS transition
+// ---------------------------------------------------------------------------
+
+/// `GET /api/v1/power/transitions/{id}` — fetch the current snapshot
+/// of a PCS power transition (status, task counts, per-task detail).
+/// Called by the CLI's poll loop after `POST /power` returns the id.
+#[utoipa::path(get, path = "/power/transitions/{id}", tag = "power",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Transition snapshot",  body = serde_json::Value),
+    (status = 401, description = "Unauthorized",         body = ErrorResponse),
+    (status = 404, description = "Unknown transition id",body = ErrorResponse),
+    (status = 500, description = "Internal error",       body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_power_transition(
+  ctx: RequestCtx,
+  Path(id): Path<String>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::debug!("get_power_transition id={id}");
+  let infra = ctx.infra();
+  let snapshot = service::power::get_power_transition(&infra, &ctx.token, &id)
+    .await
+    .map_err(to_handler_error)?;
+  Ok(Json(snapshot))
 }

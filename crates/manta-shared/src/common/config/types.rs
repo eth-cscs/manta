@@ -126,17 +126,11 @@ pub struct ServerSettings {
   /// (operators are then expected to enforce it at the reverse proxy).
   pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route, in seconds.
-  /// When this elapses the server returns `408 REQUEST_TIMEOUT`. Long-
-  /// running endpoints (e.g. `/power`) override this with their own
-  /// per-route timeout.
+  /// When this elapses the server returns `408 REQUEST_TIMEOUT`. All
+  /// long-running work (e.g. power transitions) now runs CLI-side,
+  /// so no endpoint needs more than the default.
   #[serde(default = "default_request_timeout_secs")]
   pub request_timeout_secs: u64,
-  /// Per-route timeout for `POST /power`, in seconds. Power operations
-  /// against large clusters (especially `reset`) often exceed the
-  /// global default; this knob keeps the safety net for other
-  /// endpoints intact while giving power the headroom it needs.
-  #[serde(default = "default_power_timeout_secs")]
-  pub power_timeout_secs: u64,
 }
 
 impl ServerSettings {
@@ -157,13 +151,6 @@ impl ServerSettings {
 /// hardcoded value.
 fn default_request_timeout_secs() -> u64 {
   60
-}
-
-/// Default per-route power timeout — 600s (10 minutes). Empirically
-/// sufficient for cluster-wide `reset` against a few hundred xnames
-/// without blowing past it under normal CSM load.
-fn default_power_timeout_secs() -> u64 {
-  600
 }
 
 /// Top-level configuration for the `manta-server` binary. Persisted as
@@ -297,7 +284,6 @@ mod tests {
         console_inactivity_timeout_secs: 1800,
         auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 60,
-        power_timeout_secs: 600,
       },
       sites,
       auditor: None,
@@ -308,7 +294,6 @@ mod tests {
     assert_eq!(parsed.server.listen_address.as_deref(), Some("0.0.0.0"));
     assert_eq!(parsed.server.console_inactivity_timeout_secs, 1800);
     assert_eq!(parsed.server.request_timeout_secs, 60);
-    assert_eq!(parsed.server.power_timeout_secs, 600);
     assert_eq!(
       parsed.server.cert.as_deref(),
       Some("/etc/manta/tls/server.crt")
@@ -322,6 +307,20 @@ mod tests {
   fn server_settings_default_port_depends_on_tls() {
     assert_eq!(ServerSettings::default_port(true), 8443);
     assert_eq!(ServerSettings::default_port(false), 8080);
+  }
+
+  /// power_timeout_secs is gone — confirm the surrounding
+  /// timeout-related fields still default correctly when the only
+  /// remaining knob is absent.
+  #[test]
+  fn server_settings_request_timeout_secs_defaults_to_60() {
+    let toml_str = r#"
+      listen_address = "0.0.0.0"
+      port = 8443
+      console_inactivity_timeout_secs = 1800
+    "#;
+    let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
+    assert_eq!(parsed.request_timeout_secs, 60);
   }
 
   /// `[server]` block with neither `listen_address` nor `port`
@@ -338,10 +337,10 @@ mod tests {
     assert!(parsed.port.is_none());
   }
 
-  /// Existing server.toml files that pre-date the timeout fields must
-  /// keep working — both fields fall back to their defaults.
+  /// Existing server.toml files that pre-date the request_timeout
+  /// field must keep working — the field falls back to its default.
   #[test]
-  fn server_settings_timeout_fields_default_when_omitted() {
+  fn server_settings_request_timeout_field_defaults_when_omitted() {
     let toml_str = r#"
       listen_address = "0.0.0.0"
       port = 8443
@@ -349,7 +348,6 @@ mod tests {
     "#;
     let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
     assert_eq!(parsed.request_timeout_secs, 60);
-    assert_eq!(parsed.power_timeout_secs, 600);
   }
 
   #[test]

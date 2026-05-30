@@ -54,7 +54,6 @@ fn router() -> axum::Router {
     auditor: None,
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
-    power_timeout: std::time::Duration::from_secs(600),
   });
   build_router(state)
 }
@@ -84,7 +83,6 @@ fn router_with_vault() -> axum::Router {
     auditor: None,
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
-    power_timeout: std::time::Duration::from_secs(600),
   });
   build_router(state)
 }
@@ -426,7 +424,6 @@ async fn post_sat_file_without_k8s_config_returns_501() {
     auditor: None,
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
-    power_timeout: std::time::Duration::from_secs(600),
   });
   let resp = build_router(state)
     .oneshot(post_json(

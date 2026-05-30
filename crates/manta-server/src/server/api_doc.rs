@@ -51,6 +51,7 @@ use super::handlers;
     handlers::migrate_restore,
     handlers::create_ephemeral_env,
     handlers::post_power,
+    handlers::get_power_transition,
     handlers::post_template_session,
     handlers::get_session_logs,
     handlers::post_sat_file,

@@ -211,8 +211,6 @@ async fn run_server(
   );
   let request_timeout =
     std::time::Duration::from_secs(configuration.server.request_timeout_secs);
-  let power_timeout =
-    std::time::Duration::from_secs(configuration.server.power_timeout_secs);
 
   print_startup_summary(
     &configuration,
@@ -284,7 +282,6 @@ async fn run_server(
     auditor,
     auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
-    power_timeout,
   });
 
   server::start_server(

@@ -265,6 +265,10 @@ fn add_power_on_group_args(cmd: Command) -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(
+      arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["table", "json"])
         .default_value("table"),
@@ -287,6 +291,10 @@ fn add_power_off_group_args(cmd: Command) -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(
+      arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["table", "json"])
         .default_value("table"),
@@ -304,6 +312,10 @@ fn add_power_reset_group_args(cmd: Command) -> Command {
     )
     .arg(
       arg!(-y --"assume-yes" "Skip confirmation prompts")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
         .action(ArgAction::SetTrue),
     )
     .arg(
@@ -340,6 +352,10 @@ fn subcommand_power() -> Command {
                 .action(ArgAction::SetTrue),
             )
             .arg(
+              arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
                 .default_value("table"),
@@ -373,6 +389,10 @@ fn subcommand_power() -> Command {
                 .action(ArgAction::SetTrue),
             )
             .arg(
+              arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
               arg!(-o --output <FORMAT> "Output format")
                 .value_parser(["table", "json"])
                 .default_value("table"),
@@ -403,6 +423,10 @@ fn subcommand_power() -> Command {
             )
             .arg(
               arg!(-y --"assume-yes" "Skip confirmation prompts")
+                .action(ArgAction::SetTrue),
+            )
+            .arg(
+              arg!(--"no-wait" "Return as soon as the transition is queued; don't poll for completion")
                 .action(ArgAction::SetTrue),
             )
             .arg(

@@ -138,7 +138,6 @@ impl TestFixture {
       auditor: None,
       auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
-      power_timeout: Duration::from_secs(600),
     });
 
     let router = build_router(state);
@@ -921,17 +920,19 @@ async fn delete_session_unknown_session_returns_404() {
 
 // POST /api/v1/power (action=on, target_type=nodes)
 //
-// Call chain:
+// Call chain after the move-polling-to-CLI refactor:
 //   handlers::post_power
 //     → resolve_hosts_expression
 //         → backend.get_node_metadata_available
-//             → get_group_available             (GET /smd/hsm/v2/groups, for auth filtering)
-//             → get_all_nodes                   (GET /smd/hsm/v2/State/Components)
-//     → service::power::apply_power → backend.power_on_sync
-//         → POST /power-control/v1/transitions   (csm-rs transitions::http_client::post)
-//         → GET  /power-control/v1/transitions/{id}  (wait_to_complete loop;
-//             exits on first poll when transitionStatus == "completed", so
-//             the test never hits the 3-second sleep)
+//             → get_group_available    (GET /smd/hsm/v2/groups, auth filter)
+//             → get_all_nodes          (GET /smd/hsm/v2/State/Components)
+//     → service::power::apply_power → backend.pcs_transitions_post
+//         → POST /power-control/v1/transitions
+//             (one shot — returns transitionID, does NOT poll)
+//
+// The CLI is responsible for polling
+// `GET /api/v1/power/transitions/{id}` until completion; that endpoint
+// is exercised by `get_power_transition_happy_path` below.
 //
 // Field names below match the on-the-wire camelCase that csm-rs's
 // pcs::transitions::types declares via #[serde(rename = …)].
@@ -950,6 +951,34 @@ async fn post_power_on_nodes_happy_path() {
     .mount(&fx.mock_server)
     .await;
 
+  let resp = fx
+    .send(fx.auth_post_json(
+      "/api/v1/power",
+      json!({
+        "action": "on",
+        "targets_expression": "x3000c0s1b0n0",
+        "target_type": "nodes",
+        "force": false,
+      }),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(body["transitionID"], "abc-123");
+  // Server returns the transition start output verbatim. No
+  // transitionStatus / taskCounts here — those come from the polling
+  // endpoint covered by `get_power_transition_happy_path`.
+  assert!(body.get("transitionStatus").is_none());
+}
+
+// GET /api/v1/power/transitions/{id}
+//
+// The CLI polls this every few seconds after POST /power until the
+// snapshot reports transitionStatus == "completed".
+#[tokio::test]
+async fn get_power_transition_happy_path() {
+  let fx = TestFixture::setup().await;
+
   Mock::given(method("GET"))
     .and(path("/power-control/v1/transitions/abc-123"))
     .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -967,19 +996,10 @@ async fn post_power_on_nodes_happy_path() {
     .mount(&fx.mock_server)
     .await;
 
-  let resp = fx
-    .send(fx.auth_post_json(
-      "/api/v1/power",
-      json!({
-        "action": "on",
-        "targets_expression": "x3000c0s1b0n0",
-        "target_type": "nodes",
-        "force": false,
-      }),
-    ))
-    .await;
+  let resp = fx.send(fx.auth_get("/api/v1/power/transitions/abc-123")).await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body = TestFixture::body_json(resp).await;
   assert_eq!(body["transitionID"], "abc-123");
   assert_eq!(body["transitionStatus"], "completed");
+  assert_eq!(body["taskCounts"]["succeeded"], 1);
 }

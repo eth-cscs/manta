@@ -17,12 +17,14 @@ async fn dispatch_power_on_group(
 ) -> Result<(), Error> {
   let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
   let assume_yes: bool = m.get_flag("assume-yes");
+  let no_wait: bool = m.get_flag("no-wait");
   let output = m.req_str("output")?;
   power_common::exec_cluster(
     ctx,
     PowerAction::On,
     hsm_group_name_arg,
     false,
+    no_wait,
     assume_yes,
     output,
     token,
@@ -42,11 +44,13 @@ async fn dispatch_power_off_group(
     .context("The 'graceful' argument must have a value")?;
   let output = m.req_str("output")?;
   let assume_yes: bool = m.get_flag("assume-yes");
+  let no_wait: bool = m.get_flag("no-wait");
   power_common::exec_cluster(
     ctx,
     PowerAction::Off,
     hsm_group_name_arg,
     !graceful,
+    no_wait,
     assume_yes,
     output,
     token,
@@ -66,11 +70,13 @@ async fn dispatch_power_reset_group(
     .context("The 'graceful' argument must have a value")?;
   let output = m.req_str("output")?;
   let assume_yes: bool = m.get_flag("assume-yes");
+  let no_wait: bool = m.get_flag("no-wait");
   power_common::exec_cluster(
     ctx,
     PowerAction::Reset,
     hsm_group_name_arg,
     *force,
+    no_wait,
     assume_yes,
     output,
     token,
@@ -103,12 +109,14 @@ pub async fn handle_power(
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
         let assume_yes: bool = m.get_flag("assume-yes");
+        let no_wait: bool = m.get_flag("no-wait");
         let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::On,
           xname_requested,
           false,
+          no_wait,
           assume_yes,
           output,
           &token,
@@ -126,16 +134,19 @@ pub async fn handle_power(
       }
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
-        let force = m
+        let graceful = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
+        let force = !graceful;
         let assume_yes: bool = m.get_flag("assume-yes");
+        let no_wait: bool = m.get_flag("no-wait");
         let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::Off,
           xname_requested,
-          *force,
+          force,
+          no_wait,
           assume_yes,
           output,
           &token,
@@ -153,16 +164,19 @@ pub async fn handle_power(
       }
       Some(("nodes", m)) => {
         let xname_requested = m.req_str("VALUE")?;
-        let force = m
+        let graceful = m
           .get_one::<bool>("graceful")
           .context("The 'graceful' argument must have a value")?;
+        let force = !graceful;
         let assume_yes: bool = m.get_flag("assume-yes");
+        let no_wait: bool = m.get_flag("no-wait");
         let output = m.req_str("output")?;
         power_common::exec_nodes(
           ctx,
           PowerAction::Reset,
           xname_requested,
-          *force,
+          force,
+          no_wait,
           assume_yes,
           output,
           &token,

@@ -58,13 +58,10 @@ pub struct ServerState {
   /// `None` disables in-process rate limiting.
   pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route (router-level
-  /// `TimeoutLayer`). Routes that need longer (e.g. `/power`) stack
-  /// their own per-route override on top.
+  /// `TimeoutLayer`). All long-running work (power transitions, SAT
+  /// dispatch) runs CLI-side, so this is the only request-timeout
+  /// knob the server has.
   pub request_timeout: Duration,
-  /// Per-route timeout for `POST /power`. Applied via
-  /// `Router::route_layer` so it overrides the global one for this
-  /// route only.
-  pub power_timeout: Duration,
 }
 
 impl ServerState {
@@ -241,86 +238,4 @@ mod timeout_layer_tests {
     assert_eq!(resp.status(), StatusCode::OK);
   }
 
-  #[tokio::test]
-  async fn per_route_timeout_overrides_global_when_layered_before_merge() {
-    // Mirrors the wiring `routes::build_router` uses: the global
-    // TimeoutLayer is applied to the non-power routes *before* merging
-    // the power sub-router (which carries its own longer timeout).
-    // Tower's TimeoutLayer is a hard timer, not an override — the
-    // shorter stacked timeout always wins — so the order matters. If
-    // the global layer wrapped the whole merged router (layer AFTER
-    // merge), the per-route override would never kick in.
-    let power_sub = Router::new()
-      .route(
-        "/power",
-        get(|| async { sleep_handler(Duration::from_millis(200)).await }),
-      )
-      .layer(TimeoutLayer::with_status_code(
-        StatusCode::REQUEST_TIMEOUT,
-        Duration::from_secs(5),
-      ));
-
-    let app = Router::new()
-      .route(
-        "/other",
-        get(|| async { sleep_handler(Duration::from_millis(200)).await }),
-      )
-      .layer(TimeoutLayer::with_status_code(
-        StatusCode::REQUEST_TIMEOUT,
-        Duration::from_millis(50),
-      ))
-      .merge(power_sub);
-
-    // /power finishes (per-route timeout = 5s, handler = 200ms).
-    let resp = app.clone().oneshot(get_req("/power")).await.unwrap();
-    assert_eq!(
-      resp.status(),
-      StatusCode::OK,
-      "/power should finish under the per-route override"
-    );
-
-    // /other times out (only the global 50ms applies).
-    let resp = app.oneshot(get_req("/other")).await.unwrap();
-    assert_eq!(
-      resp.status(),
-      StatusCode::REQUEST_TIMEOUT,
-      "/other should hit the 50ms global timeout"
-    );
-  }
-
-  #[tokio::test]
-  async fn layering_after_merge_lets_global_defeat_per_route_timeout() {
-    // Negative twin of the previous test — pins the wrong-order
-    // composition so future refactors don't accidentally re-introduce
-    // the bug the per-route override was supposed to fix.
-    let power_sub = Router::new()
-      .route(
-        "/power",
-        get(|| async { sleep_handler(Duration::from_millis(200)).await }),
-      )
-      .layer(TimeoutLayer::with_status_code(
-        StatusCode::REQUEST_TIMEOUT,
-        Duration::from_secs(5),
-      ));
-
-    let app = Router::new()
-      .route(
-        "/other",
-        get(|| async { sleep_handler(Duration::from_millis(10)).await }),
-      )
-      .merge(power_sub)
-      // BUG SHAPE: applying the global timeout *after* the merge
-      // wraps /power too, so the global cuts /power off first.
-      .layer(TimeoutLayer::with_status_code(
-        StatusCode::REQUEST_TIMEOUT,
-        Duration::from_millis(50),
-      ));
-
-    let resp = app.oneshot(get_req("/power")).await.unwrap();
-    assert_eq!(
-      resp.status(),
-      StatusCode::REQUEST_TIMEOUT,
-      "with layer-after-merge the per-route override is silently defeated"
-    );
-  }
 }
