@@ -28,17 +28,29 @@ pub async fn apply_power(
   token: &str,
   params: &ApplyPowerParams,
 ) -> Result<TransitionStartOutput, Error> {
-  let operation = match (params.action, params.force) {
+  infra
+    .backend
+    .pcs_transitions_post(
+      token,
+      pcs_operation(params.action, params.force),
+      &params.xnames,
+    )
+    .await
+}
+
+/// Map the CLI's typed `(PowerAction, force)` pair to PCS's
+/// wire-level `operation` string. `force` is ignored for `On`
+/// (PCS doesn't model a forceful power-on); for `Off` and `Reset`
+/// it toggles between the graceful (`soft-…`) and forceful
+/// (`force-off` / `hard-restart`) variants.
+pub fn pcs_operation(action: PowerAction, force: bool) -> &'static str {
+  match (action, force) {
     (PowerAction::On, _) => "on",
     (PowerAction::Off, false) => "soft-off",
     (PowerAction::Off, true) => "force-off",
     (PowerAction::Reset, false) => "soft-restart",
     (PowerAction::Reset, true) => "hard-restart",
-  };
-  infra
-    .backend
-    .pcs_transitions_post(token, operation, &params.xnames)
-    .await
+  }
 }
 
 /// Fetch the current snapshot of a PCS power transition by id. The
@@ -50,4 +62,33 @@ pub async fn get_power_transition(
   transition_id: &str,
 ) -> Result<TransitionResponse, Error> {
   infra.backend.pcs_transitions_get(token, transition_id).await
+}
+
+#[cfg(test)]
+mod tests {
+  //! Wire-mapping lock for `(PowerAction, force) -> PCS operation
+  //! string`. PCS rejects anything outside its known set; renaming
+  //! one of these strings would break power for everyone.
+
+  use super::{PowerAction, pcs_operation};
+
+  #[test]
+  fn on_ignores_force_flag() {
+    // PCS doesn't model a forceful "on" — the bool should not change
+    // the wire string.
+    assert_eq!(pcs_operation(PowerAction::On, false), "on");
+    assert_eq!(pcs_operation(PowerAction::On, true), "on");
+  }
+
+  #[test]
+  fn off_distinguishes_soft_from_force() {
+    assert_eq!(pcs_operation(PowerAction::Off, false), "soft-off");
+    assert_eq!(pcs_operation(PowerAction::Off, true), "force-off");
+  }
+
+  #[test]
+  fn reset_distinguishes_soft_from_hard() {
+    assert_eq!(pcs_operation(PowerAction::Reset, false), "soft-restart");
+    assert_eq!(pcs_operation(PowerAction::Reset, true), "hard-restart");
+  }
 }

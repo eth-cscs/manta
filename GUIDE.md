@@ -330,6 +330,8 @@ manta add kernel-parameters "loglevel=7" --group compute --do-not-reboot
 
 ## 7. Power management
 
+Every `manta power` command POSTs to manta-server, which kicks off a PCS transition and returns the transition id immediately. The CLI then polls the snapshot endpoint every 3 seconds and prints a progress line on each poll — exits non-zero if any task in the transition failed. Pass `--no-wait` if you'd rather get the transition id back immediately and check on it later.
+
 **Power off a cluster gracefully:**
 
 ```bash
@@ -346,6 +348,13 @@ manta power on group compute --assume-yes
 
 ```bash
 manta power reset nodes x3000c0s1b0n[0-3] --graceful --assume-yes
+```
+
+**Kick off a big reset and walk away** — useful when the operator wants to do other work while the cluster transitions:
+
+```bash
+manta power reset group compute --no-wait
+# prints: "Power reset transition started: abc-123. …"
 ```
 
 **Check power status after the operation:**

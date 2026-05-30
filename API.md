@@ -717,9 +717,30 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
 
 ## Power management
 
+A power flow is split across two endpoints. `POST /power` kicks off a PCS transition and returns immediately with the transition id; the CLI then polls `GET /power/transitions/{id}` every few seconds until the snapshot reports `transitionStatus = "completed"`. Long cluster transitions therefore don't depend on any HTTP timeout — each call is a millisecond-scale round-trip.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant CLI as manta power …
+  participant Srv as manta-server
+  participant PCS
+
+  CLI->>Srv: POST /power { action, targets_expression, target_type, force }
+  Srv->>PCS: POST /power-control/v1/transitions
+  PCS-->>Srv: 200 { transitionID }
+  Srv-->>CLI: 200 { transitionID, operation }
+
+  loop until transitionStatus == "completed"
+    CLI->>Srv: GET /power/transitions/{id}
+    Srv->>PCS: GET /power-control/v1/transitions/{id}
+    Srv-->>CLI: 200 TransitionResponse
+  end
+```
+
 ### POST /power
 
-Power on, off, or reset nodes or an entire cluster.
+Start a PCS power transition (on, off, or reset) against nodes or an entire HSM group. Returns immediately with the transition id; **does not** block until the transition completes.
 
 **Request body**
 
@@ -739,7 +760,50 @@ Power on, off, or reset nodes or an entire cluster.
 | `target_type` | string | **yes** | `nodes` or `cluster` |
 | `force` | bool | no | Hard power off/reset without graceful shutdown (default: `false`) |
 
-**Response `200`** — PCS `TransitionResponse` object.
+The server maps `(action, force)` to the PCS wire-level operation: `on` (force ignored), `soft-off` / `force-off`, `soft-restart` / `hard-restart`.
+
+**Response `200`** — PCS `TransitionStartOutput`:
+
+```json
+{
+  "transitionID": "abc-123",
+  "operation": "Reset"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `transitionID` | string | The PCS transition id. Feed it into `GET /power/transitions/{id}` to track progress. |
+| `operation` | string | The resolved PCS operation (`On`, `SoftOff`, `ForceOff`, `SoftRestart`, `HardRestart`). |
+
+---
+
+### GET /power/transitions/{id}
+
+Snapshot an in-flight (or completed) PCS power transition by id. The CLI polls this every 3 seconds after `POST /power` returns the id, until `transitionStatus` is `"completed"`. Mirrors PCS's own `GET /power-control/v1/transitions/{id}` response shape — the server is a thin pass-through.
+
+**Path parameters:** `id` — the transition id returned by `POST /power`.
+
+**Response `200`** — PCS `TransitionResponse`:
+
+```json
+{
+  "transitionID": "abc-123",
+  "createTime": "2026-05-31T12:34:56Z",
+  "automaticExpirationTime": "2026-05-31T13:34:56Z",
+  "transitionStatus": "in-progress",
+  "operation": "Reset",
+  "taskCounts": {
+    "total": 16, "new": 0, "in-progress": 5,
+    "failed": 0, "succeeded": 11, "un-supported": 0
+  },
+  "tasks": [
+    { "xname": "x3000c0s1b0n0", "taskStatus": "succeeded", "taskStatusDescription": "Transition complete", "error": null }
+  ]
+}
+```
+
+**Response `404`** — unknown transition id (the body is whatever PCS returned).
 
 ---
 

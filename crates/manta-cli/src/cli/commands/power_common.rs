@@ -186,11 +186,7 @@ async fn dispatch_and_wait(
 
   let final_snapshot = poll_until_done(&client, token, &transition_id).await?;
 
-  let failed = final_snapshot
-    .get("taskCounts")
-    .and_then(|c| c.get("failed"))
-    .and_then(Value::as_u64)
-    .unwrap_or(0);
+  let failed = failed_count(&final_snapshot);
   let message = if failed > 0 {
     format!("Power {action_str} completed with {failed} failure(s).")
   } else {
@@ -215,33 +211,12 @@ async fn poll_until_done(
   let mut snapshot = client.power_transition(token, transition_id).await?;
 
   for attempt in 1..=MAX_POLL_ATTEMPTS {
-    let status = snapshot
-      .get("transitionStatus")
-      .and_then(Value::as_str)
-      .unwrap_or("unknown");
-    let operation = snapshot
-      .get("operation")
-      .and_then(Value::as_str)
-      .unwrap_or("?");
-    let counts = snapshot
-      .get("taskCounts")
-      .cloned()
-      .unwrap_or(Value::Null);
-    let count_u64 = |k: &str| counts.get(k).and_then(Value::as_u64).unwrap_or(0);
-
     tracing::info!(
-      "Power '{}' progress (attempt {}/{}) — status: {}, failed: {}, in-progress: {}, succeeded: {}, total: {}",
-      operation,
-      attempt,
-      MAX_POLL_ATTEMPTS,
-      status,
-      count_u64("failed"),
-      count_u64("in_progress"),
-      count_u64("succeeded"),
-      count_u64("total"),
+      "{}",
+      progress_summary(&snapshot, attempt, MAX_POLL_ATTEMPTS)
     );
 
-    if status == "completed" {
+    if is_complete(&snapshot) {
       return Ok(snapshot);
     }
 
@@ -254,4 +229,127 @@ async fn poll_until_done(
      (interval {:?}); re-run `manta power transition show {transition_id}` to check later",
     POLL_INTERVAL
   )
+}
+
+/// `true` when the PCS snapshot reports `transitionStatus =
+/// "completed"`. Termination predicate for the CLI poll loop.
+fn is_complete(snapshot: &Value) -> bool {
+  snapshot
+    .get("transitionStatus")
+    .and_then(Value::as_str)
+    .is_some_and(|s| s == "completed")
+}
+
+/// Number of failed sub-tasks in the snapshot. Drives the
+/// exit-code logic: any failure → non-zero exit.
+fn failed_count(snapshot: &Value) -> u64 {
+  snapshot
+    .get("taskCounts")
+    .and_then(|c| c.get("failed"))
+    .and_then(Value::as_u64)
+    .unwrap_or(0)
+}
+
+/// One-line progress summary rendered on every poll. Matches the
+/// wording csm-rs used to log so operator muscle-memory carries
+/// over. Field names are PCS-style (`in_progress` is the snake-case
+/// form the manta server re-serializes; csm-rs upstream uses
+/// `in-progress` but that's not what the CLI sees).
+fn progress_summary(
+  snapshot: &Value,
+  attempt: usize,
+  max_attempts: usize,
+) -> String {
+  let status = snapshot
+    .get("transitionStatus")
+    .and_then(Value::as_str)
+    .unwrap_or("unknown");
+  let operation =
+    snapshot.get("operation").and_then(Value::as_str).unwrap_or("?");
+  let counts = snapshot.get("taskCounts").cloned().unwrap_or(Value::Null);
+  let count_u64 = |k: &str| counts.get(k).and_then(Value::as_u64).unwrap_or(0);
+
+  format!(
+    "Power '{}' progress (attempt {}/{}) — status: {}, failed: {}, in-progress: {}, succeeded: {}, total: {}",
+    operation,
+    attempt,
+    max_attempts,
+    status,
+    count_u64("failed"),
+    count_u64("in_progress"),
+    count_u64("succeeded"),
+    count_u64("total"),
+  )
+}
+
+#[cfg(test)]
+mod tests {
+  //! Pure-logic locks for the JSON paths the poll loop reads.
+  //! Catches accidental rename of `transitionStatus` / `taskCounts.*`
+  //! either in the manta-backend-dispatcher wire types or in the
+  //! server's pass-through.
+
+  use super::{failed_count, is_complete, progress_summary};
+  use serde_json::json;
+
+  #[test]
+  fn is_complete_true_only_for_completed_status() {
+    assert!(is_complete(&json!({ "transitionStatus": "completed" })));
+    assert!(!is_complete(&json!({ "transitionStatus": "in-progress" })));
+    assert!(!is_complete(&json!({ "transitionStatus": "new" })));
+    assert!(!is_complete(&json!({})));
+    assert!(!is_complete(&json!({ "transitionStatus": 42 })));
+  }
+
+  #[test]
+  fn failed_count_extracts_task_counts_failed() {
+    let snap = json!({
+      "taskCounts": { "failed": 3, "succeeded": 10, "total": 13 }
+    });
+    assert_eq!(failed_count(&snap), 3);
+  }
+
+  #[test]
+  fn failed_count_defaults_to_zero_on_missing_fields() {
+    assert_eq!(failed_count(&json!({})), 0);
+    assert_eq!(failed_count(&json!({ "taskCounts": {} })), 0);
+    assert_eq!(
+      failed_count(&json!({ "taskCounts": { "failed": "not-a-number" } })),
+      0
+    );
+  }
+
+  #[test]
+  fn progress_summary_renders_pcs_fields() {
+    let snap = json!({
+      "transitionStatus": "in-progress",
+      "operation": "Reset",
+      "taskCounts": {
+        "total": 17, "failed": 0, "in_progress": 5, "succeeded": 12,
+      }
+    });
+    let line = progress_summary(&snap, 7, 300);
+    assert!(line.contains("Reset"), "operation missing: {line}");
+    assert!(line.contains("attempt 7/300"), "attempt missing: {line}");
+    assert!(line.contains("status: in-progress"), "status missing: {line}");
+    assert!(line.contains("failed: 0"), "failed missing: {line}");
+    assert!(line.contains("in-progress: 5"), "in-progress missing: {line}");
+    assert!(line.contains("succeeded: 12"), "succeeded missing: {line}");
+    assert!(line.contains("total: 17"), "total missing: {line}");
+  }
+
+  /// Defensive: a snapshot with no `taskCounts` shouldn't panic the
+  /// renderer; it should fall back to zeros (which is what an
+  /// operator sees on a fresh transition).
+  #[test]
+  fn progress_summary_tolerates_missing_task_counts() {
+    let snap = json!({
+      "transitionStatus": "new",
+      "operation": "On",
+    });
+    let line = progress_summary(&snap, 1, 300);
+    assert!(line.contains("status: new"));
+    assert!(line.contains("failed: 0"));
+    assert!(line.contains("total: 0"));
+  }
 }

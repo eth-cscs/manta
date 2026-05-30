@@ -60,13 +60,22 @@ pub struct PowerRequest {
   pub force: bool,
 }
 
-/// `POST /api/v1/power` — power on, off, or reset nodes or all members of a cluster.
+/// `POST /api/v1/power` — start a PCS power transition (on / off /
+/// reset) against nodes or all members of a cluster and return the
+/// transition id **immediately**. Does not block until the
+/// transition completes — the CLI is responsible for polling
+/// `GET /power/transitions/{id}` until the snapshot reports
+/// `transitionStatus = "completed"`.
+///
+/// Returns a `TransitionStartOutput` (`{ transitionID, operation }`)
+/// as JSON. Callers can hand the `transitionID` to
+/// [`get_power_transition`].
 #[utoipa::path(post, path = "/power", tag = "power",
   params(SiteHeader),
   request_body = PowerRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Power operation result", body = serde_json::Value),
+    (status = 200, description = "PCS transition started; returns TransitionStartOutput", body = serde_json::Value),
     (status = 400, description = "Bad request",            body = ErrorResponse),
     (status = 401, description = "Unauthorized",           body = ErrorResponse),
     (status = 500, description = "Internal error",         body = ErrorResponse),

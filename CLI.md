@@ -835,6 +835,8 @@ Restore a virtual cluster from backup files.
 
 Manage node power state.
 
+Every `power on/off/reset` invocation first POSTs to the manta server, which kicks off a PCS transition and returns the transition id immediately. The CLI then polls the snapshot endpoint every 3 seconds (up to 15 minutes) and prints a one-line progress summary on each poll (`status: …, failed: …, in-progress: …, succeeded: …, total: …`). The command exits non-zero if any task in the transition failed. Pass `--no-wait` to skip the polling — the transition id is printed and the command exits 0.
+
 ### power on group \<GROUP_NAME\>
 
 Power on all nodes in an HSM group.
@@ -848,6 +850,7 @@ Power on all nodes in an HSM group.
 | `GROUP_NAME` | string | — | HSM group name |
 | `-R/--reason` | string | — | Reason for the power action |
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
+| `--no-wait` | flag | — | Return the transition id immediately; don't poll for completion |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
 ### power on nodes \<VALUE\>
@@ -858,6 +861,7 @@ Power on specific nodes.
 |----------|------|---------|-------------|
 | `VALUE` | string | — | Xnames/nids or hostlist expression |
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
+| `--no-wait` | flag | — | Return the transition id immediately; don't poll for completion |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
 ### power off group \<GROUP_NAME\> / power off nodes \<VALUE\>
@@ -869,6 +873,7 @@ Power off nodes.
 | `-g/--graceful` | flag | Graceful shutdown |
 | `-R/--reason` | string | Reason for power-off (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
+| `--no-wait` | flag | Return the transition id immediately; don't poll for completion |
 | `-o/--output` | string | Output format: `table`, `json` |
 
 ### power reset group \<GROUP_NAME\> / power reset nodes \<VALUE\>
@@ -880,12 +885,16 @@ Power-cycle nodes.
 | `-g/--graceful` | flag | Graceful reset |
 | `-r/--reason` | string | Reason (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
+| `--no-wait` | flag | Return the transition id immediately; don't poll for completion |
 | `-o/--output` | string | Output format: `table`, `json` |
 
 ```
 manta power off group compute --graceful --assume-yes
 manta power on group compute
 manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful
+# Fire-and-forget — useful when the operator wants to do other work
+# while the cluster transitions and check back later:
+manta power reset group compute --no-wait
 ```
 
 ---

@@ -54,12 +54,14 @@ impl MantaClient {
     Self::new_with_timeout(server_url, site_name, None)
   }
 
-  /// Build a client that honours `cli.toml`'s `request_timeout_secs`
-  /// (if set) via the [`AppContext`] threaded through every CLI
-  /// command. Commands that hit endpoints which can legitimately take
-  /// minutes (e.g. `POST /power` against a large cluster) should
-  /// construct their client through this constructor so the operator
-  /// can lift the per-request timeout without rebuilding manta.
+  /// Build a client that honours `cli.toml`'s optional
+  /// `request_timeout_secs` via the [`AppContext`] threaded through
+  /// every CLI command. No call site currently uses this — every
+  /// outbound `MantaClient` call is now a fast round-trip
+  /// (server-side polling loops have been moved to the CLI). Kept as
+  /// the opt-in for any future long-running per-request call that
+  /// runs through a SOCKS5 tunnel or proxy where the operator wants
+  /// to fail fast rather than hang indefinitely.
   ///
   /// [`AppContext`]: manta_shared::common::app_context::AppContext
   pub fn from_app_ctx(
