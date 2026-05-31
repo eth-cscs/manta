@@ -26,9 +26,9 @@ Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends
 | `shared` | both bins | Wire types (`params/`, `dto`) and `cluster_status` helpers |
 | `common` | both bins | Config loader, JWT ops, Kafka audit producer, `MantaError`, logging, `AppContext` |
 
-The backend bridge (`StaticBackendDispatcher` enum and the 18 trait-impl files routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/`, `manta_backend_dispatcher.rs`, `server/common/authorization.rs`). The CLI never reaches them.
+The backend bridge (`StaticBackendDispatcher` enum and the 18 trait-impl files routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/`, `manta_backend_dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
 
-`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `authentication`, `hooks`, `user_interaction`); `manta-server` keeps its server-only common under `crates/manta-server/src/server/common/` (e.g. `node_ops`, `vault`, `boot_parameters`, `authorization`).
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `authentication`, `hooks`, `user_interaction`); `manta-server` keeps the small set of cross-tier helpers (`app_context::InfraContext`, `vault`) under `crates/manta-server/src/server/common/`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
 
 ---
 
@@ -141,7 +141,7 @@ Shared utilities used by both CLI and server:
 | `app_context` | `AppContext` (CLI-only, flat 5-field struct) |
 | `audit` | Audit trait + log writer |
 
-CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`authorization`, `node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`, `app_context`) live under `crates/manta-server/src/server/common/` — `InfraContext` is one of them. Both crates explicitly import `manta_shared::common::*` or `crate::{cli,server}::common::*`; there is no `crate::common::*` re-export shim.
+CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. The server side keeps a narrow `crates/manta-server/src/server/common/` for the two genuinely cross-tier items — `app_context::InfraContext` (the per-request infra bundle handlers + services both touch) and `vault` (handler-scoped credential fetching). Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers. Both crates explicitly import `manta_shared::common::*` or `crate::{cli,server,service}::*`; there is no `crate::common::*` re-export shim.
 
 ### `crates/manta-server/src/server/`
 
