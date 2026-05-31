@@ -70,6 +70,13 @@ jobs:
           echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
           exit 1
         fi
+    # Fail on known RustSec advisories against Cargo.lock. Cheap
+    # insurance against landing a CVE-flagged dep. Ignored advisories
+    # are documented in `.cargo/audit.toml`.
+    - name: Install cargo-audit
+      run: cargo install cargo-audit --locked
+    - name: Run cargo audit
+      run: cargo audit
     # Verify that the checked-in man pages and shell-completion scripts
     # are in sync with the current clap definition. `build.rs` only
     # regenerates them when MANTA_REGENERATE_DOCS=1 is set, so a clap

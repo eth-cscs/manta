@@ -1,0 +1,32 @@
+# `cargo audit` configuration. Read by the `cargo audit` CI step in
+# `.github/workflows/ci.yml`. See https://docs.rs/cargo-audit for the
+# full schema.
+#
+# Every entry below is a knowingly accepted transitive advisory we
+# cannot fix from this workspace. Re-evaluate periodically — once the
+# upstream maintainer cuts a release that drops the vulnerable
+# dependency, remove the corresponding line here and the audit step
+# will go green on its own.
+
+[advisories]
+ignore = [
+  # rustls-webpki 0.101.7 is pulled in by the AWS SDK chain
+  # (csm-rs -> aws-config -> aws-smithy-http-client -> hyper-rustls
+  # 0.24.2 -> rustls 0.21.12 -> rustls-webpki 0.101.7). Our own
+  # TLS surface (axum-server, reqwest, the rustls dep in
+  # crates/manta-server/Cargo.toml) is on rustls 0.23.40 and is NOT
+  # affected. The vulnerable code path is reachable only when the
+  # server makes outbound calls to AWS S3 via csm-rs. Fix has to land
+  # in aws-smithy-http-client; no newer version is on crates.io yet.
+  "RUSTSEC-2026-0098", # Name constraints for URI names incorrectly accepted
+  "RUSTSEC-2026-0099", # Name constraints accepted for wildcard certs
+  "RUSTSEC-2026-0104", # Reachable panic in CRL parsing
+
+  # paste 1.0.15 is unmaintained. Pulled in by utoipa-axum 0.2.0
+  # (currently the latest published version). Not a vulnerability,
+  # just a maintenance warning; cargo-audit reports it as a warning
+  # and the build does not fail on it today. Listed here for
+  # documentation — drop when utoipa-axum cuts a release that no
+  # longer depends on paste.
+  "RUSTSEC-2024-0436",
+]
