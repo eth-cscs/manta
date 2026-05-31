@@ -40,6 +40,8 @@ Authorization: Bearer <shasta-token>
 https://<host>:8443/api/v1
 ```
 
+Every endpoint section below includes a ready-to-paste `curl` invocation that uses the `MANTA_HOST`, `MANTA_SITE`, and `MANTA_TOKEN` shell variables defined in [Reusable shell vars](#reusable-shell-vars). Set those once and every example below works without further substitution.
+
 ## Error responses
 
 All errors return JSON with an `error` field:
@@ -80,6 +82,12 @@ List CFS sessions, optionally filtered.
 | `limit` | u8 | no | Maximum number of results |
 
 **Response `200`** — array of CFS session objects.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/sessions?hsm_group=compute&limit=5" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -124,6 +132,18 @@ Create a CFS configuration and session from one or more git repositories.
 }
 ```
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sessions" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "repo_names": ["csm-config"],
+    "repo_last_commit_ids": ["abc123def456"],
+    "hsm_group": "compute"
+  }'
+```
+
 ---
 
 ### DELETE /sessions/{name}
@@ -139,6 +159,12 @@ Delete and cancel a CFS session.
 | `dry_run` | bool | no | If `true`, return what would be deleted without deleting (default: `false`) |
 
 **Response `200`** — on dry run: deletion context object. On delete: `{ "deleted": "<name>" }`.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/sessions/my-session" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -158,12 +184,13 @@ Stream CFS session logs as [Server-Sent Events](https://developer.mozilla.org/en
 
 **Response `200`** — `Content-Type: text/event-stream`. Each log line is delivered as an SSE `data:` event.
 
+```bash
+curl -kN "$MANTA_HOST/api/v1/sessions/my-session/logs?timestamps=true" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
 ```
-curl --no-buffer \
-  -H "X-Manta-Site: $SITE" \
-  -H "Authorization: Bearer $TOKEN" \
-  https://host:8443/api/v1/sessions/my-session/logs
-```
+
+`-N` (also `--no-buffer`) disables curl's output buffering so SSE events appear as they arrive.
 
 ---
 
@@ -183,6 +210,12 @@ List CFS configurations, optionally filtered.
 | `limit` | u8 | no | Maximum number of results |
 
 **Response `200`** — array of CFS configuration objects.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/configurations?pattern=compute-*" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -208,6 +241,12 @@ Delete CFS configurations and their dependent images and session templates.
 }
 ```
 
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/configurations?pattern=old-*&dry_run=true" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ## Nodes
@@ -225,6 +264,12 @@ Get details for one or more nodes.
 | `status` | string | no | Filter by power status |
 
 **Response `200`** — array of node objects.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/nodes?xname=x3000c0s1b0n0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -252,6 +297,14 @@ Register a new node.
 
 **Response `201`** — `{ "id": "<xname>" }`.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/nodes" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"id":"x3000c0s1b0n0","group":"compute","enabled":true}'
+```
+
 ---
 
 ### DELETE /nodes/{id}
@@ -261,6 +314,12 @@ Delete a node by xname.
 **Path parameters:** `id` — node xname.
 
 **Response `204`** — no content.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/nodes/x3000c0s1b0n0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -278,6 +337,12 @@ List HSM groups.
 
 **Response `200`** — array of HSM group objects.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/groups?name=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### GET /groups/available
@@ -290,6 +355,12 @@ List the names of HSM groups the authenticated token is allowed to act on. Retur
 ["compute", "gpu-cluster"]
 ```
 
+```bash
+curl -k "$MANTA_HOST/api/v1/groups/available" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### GET /groups/all
@@ -297,6 +368,12 @@ List the names of HSM groups the authenticated token is allowed to act on. Retur
 List every HSM group on the backend (no authorization filtering). Useful for site operators and read-only dashboards.
 
 **Response `200`** — array of HSM group objects (same shape as `GET /groups`).
+
+```bash
+curl -k "$MANTA_HOST/api/v1/groups/all" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -316,6 +393,18 @@ Create a new HSM group.
 
 **Response `201`** — `{ "created": true }`.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/groups" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "label": "my-group",
+    "description": "smoke test",
+    "members": { "ids": ["x3000c0s1b0n0"] }
+  }'
+```
+
 ---
 
 ### DELETE /groups/{label}
@@ -331,6 +420,12 @@ Delete an HSM group.
 | `force` | bool | no | Skip orphan-node check (default: `false`) |
 
 **Response `204`** — no content.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/groups/my-group?force=true" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -353,6 +448,14 @@ Add nodes to an HSM group.
   "added": ["x3000c0s1b0n0", "x3000c0s2b0n0"],
   "removed": []
 }
+```
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/groups/compute/members" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"hosts_expression":"x3000c0s[1-4]b0n0"}'
 ```
 
 ---
@@ -379,6 +482,14 @@ Remove nodes from an HSM group.
 
 **Response `204`** — no content.
 
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/groups/compute/members" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"xnames_expression":"x3000c0s1b0n0","dry_run":true}'
+```
+
 ---
 
 ## Templates (BOS)
@@ -396,6 +507,12 @@ List BOS session templates.
 | `limit` | u8 | no | Maximum number of results |
 
 **Response `200`** — array of BOS session template objects.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/templates?hsm_group=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -427,6 +544,14 @@ Create a BOS session from a named template.
 
 **Response `201`** (or `200` on dry run) — BOS session object.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/templates/my-template/sessions" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"operation":"reboot","limit":"compute"}'
+```
+
 ---
 
 ## Images
@@ -456,6 +581,12 @@ List IMS images.
 ]
 ```
 
+```bash
+curl -k "$MANTA_HOST/api/v1/images?hsm_group=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### DELETE /images
@@ -475,6 +606,12 @@ Delete one or more IMS images.
 { "deleted": ["uuid-1", "uuid-2"] }
 ```
 
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/images?ids=uuid-1,uuid-2&dry_run=true" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ## Boot parameters
@@ -492,6 +629,12 @@ Get BSS boot parameters.
 
 **Response `200`** — boot parameters object.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/boot-parameters?nodes=x3000c0s1b0n0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### POST /boot-parameters
@@ -501,6 +644,19 @@ Add boot parameters.
 **Request body** — BSS BootParameters object.
 
 **Response `201`** — `{ "created": true }`.
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/boot-parameters" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "hosts": ["x3000c0s1b0n0"],
+    "params": "console=ttyS0,115200n8 quiet",
+    "kernel": "s3://boot-images/kernel",
+    "initrd": "s3://boot-images/initrd"
+  }'
+```
 
 ---
 
@@ -530,6 +686,19 @@ Update boot parameters for specified nodes.
 
 **Response `204`** — no content.
 
+```bash
+curl -k -X PUT "$MANTA_HOST/api/v1/boot-parameters" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "hosts": ["x3000c0s1b0n0"],
+    "params": "console=ttyS0,115200n8 quiet",
+    "kernel": "s3://boot-images/kernel",
+    "initrd": "s3://boot-images/initrd"
+  }'
+```
+
 ---
 
 ### DELETE /boot-parameters
@@ -543,6 +712,14 @@ Delete boot parameters for a set of nodes.
 ```
 
 **Response `204`** — no content.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/boot-parameters" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"hosts":["x3000c0s1b0n0"]}'
+```
 
 ---
 
@@ -560,6 +737,12 @@ Get kernel parameters for nodes.
 | `nodes` | string | no | Comma-separated xnames |
 
 **Response `200`** — kernel parameters object.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/kernel-parameters?nodes=x3000c0s1b0n0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -597,6 +780,18 @@ Append kernel parameters to a set of nodes without replacing existing ones.
   "has_changes": true,
   "xnames_to_reboot": ["x3000c0s1b0n0"]
 }
+```
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/kernel-parameters/add" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "params": "console=ttyS0,115200n8",
+    "hsm_group": "compute",
+    "dry_run": true
+  }'
 ```
 
 ---
@@ -639,6 +834,19 @@ Add, replace, or delete kernel parameters for a set of nodes.
 }
 ```
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/kernel-parameters/apply" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "operation": "add",
+    "params": "console=ttyS0,115200n8",
+    "hsm_group": "compute",
+    "dry_run": true
+  }'
+```
+
 ---
 
 ### DELETE /kernel-parameters
@@ -671,6 +879,18 @@ Remove specific kernel parameters from a set of nodes.
   "has_changes": true,
   "xnames_to_reboot": ["x3000c0s1b0n0"]
 }
+```
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/kernel-parameters" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "params": "console=ttyS0,115200n8",
+    "hsm_group": "compute",
+    "dry_run": true
+  }'
 ```
 
 ---
@@ -711,6 +931,19 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
   "nodes": ["x3000c0s1b0n0"],
   "need_restart": false
 }
+```
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/boot-config" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "hosts_expression": "compute",
+    "boot_image_id": "ims-image-uuid",
+    "kernel_parameters": "console=ttyS0",
+    "dry_run": true
+  }'
 ```
 
 ---
@@ -776,6 +1009,19 @@ The server maps `(action, force)` to the PCS wire-level operation: `on` (force i
 | `transitionID` | string | The PCS transition id. Feed it into `GET /power/transitions/{id}` to track progress. |
 | `operation` | string | The resolved PCS operation (`On`, `SoftOff`, `ForceOff`, `SoftRestart`, `HardRestart`). |
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/power" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "action": "reset",
+    "targets_expression": "x3000c0s1b0n0",
+    "target_type": "nodes",
+    "force": false
+  }'
+```
+
 ---
 
 ### GET /power/transitions/{id}
@@ -805,6 +1051,12 @@ Snapshot an in-flight (or completed) PCS power transition by id. The CLI polls t
 
 **Response `404`** — unknown transition id (the body is whatever PCS returned).
 
+```bash
+curl -k "$MANTA_HOST/api/v1/power/transitions/abc-123" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ## Redfish endpoints
@@ -825,6 +1077,12 @@ List Redfish endpoints.
 
 **Response `200`** — array of Redfish endpoint objects.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/redfish-endpoints?id=x3000c0s1b0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### POST /redfish-endpoints
@@ -834,6 +1092,21 @@ Add a Redfish endpoint.
 **Request body** — Redfish endpoint parameters object.
 
 **Response `201`** — `{ "created": true }`.
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/redfish-endpoints" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "ID": "x3000c0s1b0",
+    "FQDN": "x3000c0s1b0",
+    "Hostname": "x3000c0s1b0",
+    "Enabled": true,
+    "User": "root",
+    "Password": "***"
+  }'
+```
 
 ---
 
@@ -845,6 +1118,17 @@ Update a Redfish endpoint.
 
 **Response `204`** — no content.
 
+```bash
+curl -k -X PUT "$MANTA_HOST/api/v1/redfish-endpoints" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "ID": "x3000c0s1b0",
+    "Enabled": false
+  }'
+```
+
 ---
 
 ### DELETE /redfish-endpoints/{id}
@@ -854,6 +1138,12 @@ Delete a Redfish endpoint.
 **Path parameters:** `id` — endpoint ID.
 
 **Response `204`** — no content.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/redfish-endpoints/x3000c0s1b0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -872,6 +1162,12 @@ Get node details for an HSM group with optional power-status filtering.
 
 **Response `200`** — array of node-detail objects.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/groups/nodes?hsm_group=compute&status=ON" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### GET /groups/hardware
@@ -886,17 +1182,35 @@ Get a hardware component summary per node for an HSM group.
 
 **Response `200`** — object with `hsm_group_name` and `node_summaries`.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/groups/hardware?hsm_group=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### GET /clusters *(deprecated)*
 
 Old alias for `GET /groups/nodes`. Same query parameters, same response. Continues to work for one release; the server logs a warning on every request. Drop in the next major release.
 
+```bash
+curl -k "$MANTA_HOST/api/v1/clusters?hsm_group=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
 ---
 
 ### GET /hardware-clusters *(deprecated)*
 
 Old alias for `GET /groups/hardware`. Same query parameters, same response. Continues to work for one release; the server logs a warning on every request. Drop in the next major release.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/hardware-clusters?hsm_group=compute" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -911,6 +1225,12 @@ Get hardware component details for specific nodes.
 | `xnames` | string | **yes** | Comma-separated xnames |
 
 **Response `200`** — object with a `node_summaries` array.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/hardware-nodes-list?xnames=x3000c0s1b0n0,x3000c0s2b0n0" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
 
 ---
 
@@ -960,6 +1280,18 @@ Add hardware components (nodes) to a target cluster, sourcing them from a parent
 }
 ```
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/members" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "parent_cluster": "nodes_free",
+    "pattern": "Memory=512:Processors=2",
+    "dry_run": true
+  }'
+```
+
 ---
 
 ### DELETE /hardware-clusters/{target}/members
@@ -987,6 +1319,18 @@ Remove hardware components from a target cluster and return them to a parent clu
 | `dry_run` | bool | no | Preview without moving nodes (default: `false`) |
 
 **Response `200`** — same shape as `POST /hardware-clusters/{target}/members`.
+
+```bash
+curl -k -X DELETE "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/members" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "parent_cluster": "nodes_free",
+    "pattern": "Memory=512:Processors=2",
+    "dry_run": true
+  }'
+```
 
 ---
 
@@ -1030,6 +1374,19 @@ Pin or unpin a hardware cluster configuration by moving nodes between the target
 }
 ```
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/configuration" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "parent_cluster": "nodes_free",
+    "pattern": "Memory=512:Processors=2",
+    "mode": "pin",
+    "dry_run": true
+  }'
+```
+
 ---
 
 ## Migration
@@ -1060,6 +1417,19 @@ Move nodes between HSM groups (vClusters).
 
 **Response `200`** — migration results object.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/migrate/nodes" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "target_hsm_names": ["target-cluster"],
+    "parent_hsm_names": ["parent-cluster"],
+    "hosts_expression": "x3000c0s[1-4]b0n0",
+    "dry_run": true
+  }'
+```
+
 ---
 
 ### POST /migrate/backup
@@ -1076,6 +1446,14 @@ Back up vCluster configuration to files.
 ```
 
 **Response `200`** — `{ "completed": true }`.
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/migrate/backup" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"bos":"my-cluster","destination":"/backups/cluster"}'
+```
 
 ---
 
@@ -1100,6 +1478,18 @@ All fields optional. `overwrite` defaults to `false`.
 
 **Response `200`** — `{ "completed": true }`.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/migrate/restore" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "bos_file": "/backups/bos.yaml",
+    "cfs_file": "/backups/cfs.yaml",
+    "hsm_file": "/backups/hsm.yaml"
+  }'
+```
+
 ---
 
 ## Ephemeral environments
@@ -1115,6 +1505,14 @@ Create an ephemeral CFS environment from an existing image.
 ```
 
 **Response `201`** — `{ "hostname": "<allocated-hostname>" }`.
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/ephemeral-env" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"image_id":"ims-image-uuid"}'
+```
 
 ---
 
@@ -1181,6 +1579,17 @@ Apply one entry from the SAT file's `configurations` section. csm-rs validates t
 
 **Response `200`** — the created `CfsConfigurationResponse`.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/configurations" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "configuration": { "name": "cfg-v1", "layers": [] },
+    "dry_run": true
+  }'
+```
+
 ### POST /sat-file/images
 
 Apply one entry from the SAT file's `images` section. The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains; the CLI inserts `image.ref_name.or(image.name) → image.id` into the map after each successful image POST.
@@ -1211,6 +1620,18 @@ Apply one entry from the SAT file's `images` section. The body includes the CLI'
 
 **Response `200`** — the created IMS `Image` (with `id`, `name`, `link.path`/`link.etag`/`link.type` for the S3 manifest).
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "image": { "name": "img-v1", "configuration": "cfg-v1" },
+    "ref_lookup": {},
+    "dry_run": true
+  }'
+```
+
 ### POST /sat-file/session-templates
 
 Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_lookup` is used to resolve `image.image_ref`. If `reboot=true` (and not `dry_run`), a BOS session is also created to reboot the targeted nodes through the template.
@@ -1240,6 +1661,19 @@ Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_
   "template": { /* BosSessionTemplate, ... */ },
   "session":  { /* BosSession, ... */ } /* or null when reboot=false or dry_run=true */
 }
+```
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/session-templates" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "session_template": { "name": "st-1", "configuration": "cfg-v1" },
+    "ref_lookup": {},
+    "reboot": false,
+    "dry_run": true
+  }'
 ```
 
 ### POST /sat-file (legacy)
@@ -1288,6 +1722,19 @@ Apply a whole pre-rendered SAT file in one call. Retained for SAT files with a `
 }
 ```
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "sat_file": {
+      "configurations": [{ "name": "cfg-v1", "layers": [] }]
+    },
+    "dry_run": true
+  }'
+```
+
 ---
 
 ## Authentication
@@ -1312,6 +1759,13 @@ Exchange username + password for a backend bearer token.
 
 **Response `401`** — `{ "error": "invalid credentials" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/auth/token" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"alice","password":"..."}'
+```
+
 ---
 
 ### POST /auth/validate
@@ -1328,6 +1782,13 @@ Check whether a bearer token is still accepted by the backend.
 
 **Response `401`** — `{ "error": "invalid credentials" }`. The token is missing, malformed, or rejected by the backend.
 
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/auth/validate" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H 'Content-Type: application/json' \
+  -d "{\"token\":\"$MANTA_TOKEN\"}"
+```
+
 ---
 
 ## Interactive consoles (WebSocket)
@@ -1339,10 +1800,13 @@ Once connected, the WebSocket carries raw terminal I/O:
 - **Binary frames sent by the server** are stdout from the console.
 - **Text frames matching `{"type":"resize","cols":N,"rows":N}`** are consumed silently (dynamic resize is not yet supported by the backend trait).
 
-```
-wscat -H "Authorization: Bearer $TOKEN" \
-  -H "X-Manta-Site: $SITE" \
-  --connect wss://host:8443/api/v1/nodes/x3000c0s1b0n0/console
+`curl` cannot upgrade to a WebSocket; use [`websocat`](https://github.com/vi/websocat) or `wscat`. The WSS host is the same as `$MANTA_HOST` with the `https://` scheme swapped for `wss://`.
+
+```bash
+websocat -k \
+  --header "X-Manta-Site: $MANTA_SITE" \
+  --header "Authorization: Bearer $MANTA_TOKEN" \
+  "${MANTA_HOST/https:/wss:}/api/v1/nodes/x3000c0s1b0n0/console"
 ```
 
 ---
@@ -1364,6 +1828,13 @@ Open an interactive console to a node.
 
 **Upgrade response `101`** — WebSocket connection established.
 
+```bash
+websocat -k \
+  --header "X-Manta-Site: $MANTA_SITE" \
+  --header "Authorization: Bearer $MANTA_TOKEN" \
+  "${MANTA_HOST/https:/wss:}/api/v1/nodes/x3000c0s1b0n0/console?cols=160&rows=48"
+```
+
 ---
 
 ### WS /sessions/{name}/console
@@ -1383,6 +1854,13 @@ Open an interactive console to the Ansible container of a running image-type CFS
 
 **Upgrade response `101`** — WebSocket connection established.
 
+```bash
+websocat -k \
+  --header "X-Manta-Site: $MANTA_SITE" \
+  --header "Authorization: Bearer $MANTA_TOKEN" \
+  "${MANTA_HOST/https:/wss:}/api/v1/sessions/my-session/console"
+```
+
 ---
 
 ## Health check
@@ -1392,6 +1870,10 @@ Open an interactive console to the Ansible container of a running image-type CFS
 Returns server health. Does not require authentication.
 
 **Response `200`** — `{ "status": "ok" }`.
+
+```bash
+curl -k "$MANTA_HOST/health"
+```
 
 ---
 
@@ -1403,11 +1885,20 @@ Returns the OpenAPI 3.0 specification for the manta API as JSON. Does not requir
 
 **Response `200`** — OpenAPI 3.0 document.
 
+```bash
+curl -k "$MANTA_HOST/openapi.json" | jq .info
+```
+
 ---
 
 ### GET /docs
 
 Serves the Swagger UI, pre-configured to load the spec from `/openapi.json`. Does not require authentication. Open in a browser to browse and try out all endpoints interactively.
+
+```bash
+# Verify the docs page is reachable; open $MANTA_HOST/docs in a browser to use it.
+curl -kI "$MANTA_HOST/docs"
+```
 
 ---
 
