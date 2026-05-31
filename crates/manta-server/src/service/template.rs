@@ -10,7 +10,7 @@ use manta_backend_dispatcher::types::bos::session::Operation;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::server::common::app_context::InfraContext;
-use crate::server::common::authorization::{
+use crate::service::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
 use crate::service::node_ops::validate_xname_format;

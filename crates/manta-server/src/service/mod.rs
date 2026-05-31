@@ -2,6 +2,7 @@
 //! for every resource type exposed by the CLI and HTTP server.
 
 pub mod auth;
+pub mod authorization;
 pub mod boot_parameters;
 pub mod cluster;
 pub mod configuration;

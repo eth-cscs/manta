@@ -293,7 +293,7 @@ pub fn validate_xname_format(xname: &str) -> bool {
 ///    [`resolve_hosts_expression`].
 /// 2. `hsm_group_name_arg_opt` — the CLI `--hsm-group`
 ///    argument; validated for access via
-///    [`crate::server::common::authorization::get_groups_names_available`],
+///    [`crate::service::authorization::get_groups_names_available`],
 ///    then expanded to member xnames.
 /// 3. `settings_hsm_group_name_opt` — the group configured in
 ///    the environment or config file; same treatment as (2).
@@ -312,7 +312,7 @@ pub async fn resolve_target_nodes(
     || settings_hsm_group_name_opt.is_some()
   {
     let hsm_group_name_vec =
-      crate::server::common::authorization::get_groups_names_available(
+      crate::service::authorization::get_groups_names_available(
         backend,
         shasta_token,
         hsm_group_name_arg_opt,

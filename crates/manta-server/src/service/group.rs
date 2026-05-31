@@ -6,7 +6,7 @@ use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-use crate::server::common::authorization::get_groups_names_available;
+use crate::service::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::group::GetGroupParams;
 
 /// Return the list of HSM group names this token can access.

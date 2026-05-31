@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-use crate::server::common::authorization::validate_target_hsm_members;
+use crate::service::authorization::validate_target_hsm_members;
 use crate::server::common::ims_ops::get_image_vec_related_cfs_configuration_name;
 pub use manta_shared::shared::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
