@@ -136,6 +136,7 @@ pub async fn start_server(
         );
         eprintln!("HTTPS server ready, accepting requests on https://{addr}");
       });
+      install_shutdown_handler(handle.clone());
       axum_server::bind_rustls(addr, tls_config)
         .handle(handle)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -152,6 +153,7 @@ pub async fn start_server(
         );
         eprintln!("HTTP server ready, accepting requests on http://{addr}");
       });
+      install_shutdown_handler(handle.clone());
       axum_server::bind(addr)
         .handle(handle)
         .serve(app.into_make_service_with_connect_info::<SocketAddr>())
@@ -165,6 +167,44 @@ pub async fn start_server(
   }
 
   Ok(())
+}
+
+/// Maximum time `axum_server` waits for in-flight requests to finish
+/// after a shutdown signal arrives. Matches the standard k8s
+/// `terminationGracePeriodSeconds` default; pods that hit this without
+/// finishing get SIGKILL'd by the kubelet.
+const SHUTDOWN_GRACE_PERIOD: Duration = Duration::from_secs(30);
+
+/// Spawn a task that waits for SIGTERM or Ctrl+C and triggers
+/// `axum_server`'s graceful shutdown with a bounded drain window.
+/// Without this, the runtime drops in-flight requests when Tokio is
+/// shut down by the OS — `docker stop` / k8s pod termination would
+/// abandon clients mid-call.
+fn install_shutdown_handler(handle: axum_server::Handle<SocketAddr>) {
+  tokio::spawn(async move {
+    let mut sigterm = match tokio::signal::unix::signal(
+      tokio::signal::unix::SignalKind::terminate(),
+    ) {
+      Ok(s) => s,
+      Err(e) => {
+        tracing::warn!(
+          "failed to install SIGTERM handler; falling back to Ctrl+C only: {e}"
+        );
+        let _ = tokio::signal::ctrl_c().await;
+        handle.graceful_shutdown(Some(SHUTDOWN_GRACE_PERIOD));
+        return;
+      }
+    };
+    tokio::select! {
+      _ = sigterm.recv() => {
+        tracing::info!("SIGTERM received; draining for up to 30s");
+      }
+      _ = tokio::signal::ctrl_c() => {
+        tracing::info!("Ctrl+C received; draining for up to 30s");
+      }
+    }
+    handle.graceful_shutdown(Some(SHUTDOWN_GRACE_PERIOD));
+  });
 }
 
 #[cfg(test)]
