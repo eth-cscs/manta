@@ -1,4 +1,4 @@
-use manta_shared::shared::sat_file::render_jinja2_sat_file_yaml;
+use manta_shared::common::sat_file::render_jinja2_sat_file_yaml;
 use serde_yaml::Value;
 
 use crate::cli::commands::apply_sat_file::plan::{SatElement, build_plan};

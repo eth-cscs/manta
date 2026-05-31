@@ -23,7 +23,7 @@ Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends
 
 | Module | Used by | Contents |
 |--------|---------|----------|
-| `shared` | both bins | Wire types (`params/`, `dto`) and pure helpers (`cluster_status`, `sat_file`, …) |
+| `shared` | both bins | Wire types (`params/`, `dto`) and `cluster_status` helpers |
 | `common` | both bins | Config loader, JWT ops, Kafka audit producer, `MantaError`, logging, `AppContext` |
 
 The backend bridge (`StaticBackendDispatcher` enum and the 18 trait-impl files routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/`, `manta_backend_dispatcher.rs`, `server/common/authorization.rs`). The CLI never reaches them.

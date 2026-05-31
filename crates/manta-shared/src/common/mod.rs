@@ -11,3 +11,4 @@ pub mod error;
 pub mod jwt_ops;
 pub mod kafka;
 pub mod log_ops;
+pub mod sat_file;
