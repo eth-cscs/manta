@@ -2,27 +2,40 @@
 .el .ds Aq '
 .TH manta-delete-hardware 1  "hardware " 
 .SH NAME
-manta\-delete\-hardware \- [experimental] Remove hardware components from a cluster
+manta\-delete\-hardware \- [experimental] Remove hardware components from a group
 .SH SYNOPSIS
-\fBmanta delete hardware\fR [\fB\-P\fR|\fB\-\-pattern\fR] [\fB\-t\fR|\fB\-\-target\-cluster\fR] [\fB\-p\fR|\fB\-\-parent\-cluster\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-D\fR|\fB\-\-delete\-hsm\-group\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBmanta delete hardware\fR [\fB\-P\fR|\fB\-\-pattern\fR] [\fB\-t\fR|\fB\-\-target\-group\fR] [\fB\-p\fR|\fB\-\-parent\-group\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-D\fR|\fB\-\-delete\-group\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-[experimental] Remove hardware components from a cluster
+[experimental] Remove hardware components from a group
 .SH OPTIONS
 .TP
 \fB\-P\fR, \fB\-\-pattern\fR \fI<PATTERN>\fR
 Hardware component pattern
 .TP
-\fB\-t\fR, \fB\-\-target\-cluster\fR \fI<TARGET_CLUSTER_NAME>\fR
-Cluster to remove components from
+\fB\-t\fR, \fB\-\-target\-group\fR \fI<TARGET_GROUP_NAME>\fR
+Group to remove components from
 .TP
-\fB\-p\fR, \fB\-\-parent\-cluster\fR \fI<PARENT_CLUSTER_NAME>\fR
-Cluster that receives the freed components
+\fB\-p\fR, \fB\-\-parent\-group\fR \fI<PARENT_GROUP_NAME>\fR
+Group that receives the freed components
 .TP
 \fB\-d\fR, \fB\-\-dry\-run\fR
 Simulate the operation without making changes
 .TP
-\fB\-D\fR, \fB\-\-delete\-hsm\-group\fR
+\fB\-D\fR, \fB\-\-delete\-group\fR
 Delete the group if empty after this operation
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

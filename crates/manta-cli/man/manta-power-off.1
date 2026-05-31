@@ -2,19 +2,22 @@
 .el .ds Aq '
 .TH manta-power-off 1  "off " 
 .SH NAME
-manta\-power\-off \- Power off nodes or a cluster
+manta\-power\-off \- Power off nodes or a group
 .SH SYNOPSIS
 \fBmanta power off\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-Power off nodes or a cluster
+Power off nodes or a group
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .SH SUBCOMMANDS
 .TP
+manta\-power\-off\-group(1)
+Power off all nodes in a group
+.TP
 manta\-power\-off\-cluster(1)
-Power off all nodes in a cluster
+[DEPRECATED] Use \*(Aqmanta power off group\*(Aq instead
 .TP
 manta\-power\-off\-nodes(1)
 Power off a set of nodes

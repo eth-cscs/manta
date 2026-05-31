@@ -4,13 +4,26 @@
 .SH NAME
 manta\-delete\-images \- [experimental] Delete images
 .SH SYNOPSIS
-\fBmanta delete images\fR [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIIMAGE_IDS\fR> 
+\fBmanta delete images\fR [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIIMAGE_IDS\fR> 
 .SH DESCRIPTION
 [experimental] Delete images
 .SH OPTIONS
 .TP
 \fB\-d\fR, \fB\-\-dry\-run\fR
 Simulate the operation without making changes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

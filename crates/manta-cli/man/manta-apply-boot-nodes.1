@@ -4,7 +4,7 @@
 .SH NAME
 manta\-apply\-boot\-nodes \- Update boot parameters for a set of nodes
 .SH SYNOPSIS
-\fBmanta apply boot nodes\fR [\fB\-i\fR|\fB\-\-boot\-image\fR] [\fB\-b\fR|\fB\-\-boot\-image\-configuration\fR] [\fB\-r\fR|\fB\-\-runtime\-configuration\fR] [\fB\-k\fR|\fB\-\-kernel\-parameters\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-do\-not\-reboot\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINODES\fR> 
+\fBmanta apply boot nodes\fR [\fB\-i\fR|\fB\-\-boot\-image\fR] [\fB\-b\fR|\fB\-\-boot\-image\-configuration\fR] [\fB\-r\fR|\fB\-\-runtime\-configuration\fR] [\fB\-k\fR|\fB\-\-kernel\-parameters\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-do\-not\-reboot\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINODES\fR> 
 .SH DESCRIPTION
 Update the boot parameters (image, runtime configuration, and kernel parameters) for a set of nodes.
 .PP
@@ -36,6 +36,19 @@ Suppress the automatic reboot after updating boot parameters
 .TP
 \fB\-d\fR, \fB\-\-dry\-run\fR
 Simulate the operation without making changes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)

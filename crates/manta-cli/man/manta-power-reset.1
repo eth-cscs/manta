@@ -2,19 +2,22 @@
 .el .ds Aq '
 .TH manta-power-reset 1  "reset " 
 .SH NAME
-manta\-power\-reset \- Reset (reboot) nodes or a cluster
+manta\-power\-reset \- Reset (reboot) nodes or a group
 .SH SYNOPSIS
 \fBmanta power reset\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-Reset (reboot) nodes or a cluster
+Reset (reboot) nodes or a group
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .SH SUBCOMMANDS
 .TP
+manta\-power\-reset\-group(1)
+Reset all nodes in a group
+.TP
 manta\-power\-reset\-cluster(1)
-Reset all nodes in a cluster
+[DEPRECATED] Use \*(Aqmanta power reset group\*(Aq instead
 .TP
 manta\-power\-reset\-nodes(1)
 Reset a set of nodes

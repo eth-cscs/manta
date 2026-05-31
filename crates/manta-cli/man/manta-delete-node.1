@@ -4,10 +4,23 @@
 .SH NAME
 manta\-delete\-node \- Remove a node from the system
 .SH SYNOPSIS
-\fBmanta delete node\fR [\fB\-h\fR|\fB\-\-help\fR] <\fIXNAME\fR> 
+\fBmanta delete node\fR [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIXNAME\fR> 
 .SH DESCRIPTION
 Remove a node from the system
 .SH OPTIONS
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

@@ -70,6 +70,19 @@ jobs:
           echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
           exit 1
         fi
+    # Verify that the checked-in man pages and shell-completion scripts
+    # are in sync with the current clap definition. `build.rs` only
+    # regenerates them when MANTA_REGENERATE_DOCS=1 is set, so a clap
+    # change that the contributor forgot to regenerate would otherwise
+    # ship stale docs. Run the regen, then fail if git sees any diff.
+    - name: Check generated docs are up to date
+      run: |
+        MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli
+        if ! git diff --exit-code -- crates/manta-cli/man crates/manta-cli/autocomplete_shell_scripts; then
+          echo "ERROR: man pages or shell completions are out of date."
+          echo "Run 'MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli' and commit the diff."
+          exit 1
+        fi
 
   # Validate that both Dockerfiles still build and produce a runnable
   # binary. Runs in parallel with the cargo `build` job above (no

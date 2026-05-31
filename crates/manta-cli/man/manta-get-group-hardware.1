@@ -1,0 +1,33 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-get-group-hardware 1  "group-hardware " 
+.SH NAME
+manta\-get\-group\-hardware \- Show hardware inventory for a group
+.SH SYNOPSIS
+\fBmanta get group\-hardware\fR [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
+.SH DESCRIPTION
+Show hardware inventory for a group
+.SH OPTIONS
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: summary]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+json
+.IP \(bu 2
+summary
+.IP \(bu 2
+details
+.IP \(bu 2
+pattern
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fICLUSTER_NAME\fR>
+Group name

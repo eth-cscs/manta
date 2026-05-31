@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-power-reset-cluster 1  "cluster " 
 .SH NAME
-manta\-power\-reset\-cluster \- Reset all nodes in a cluster
+manta\-power\-reset\-cluster \- [DEPRECATED] Use \*(Aqmanta power reset group\*(Aq instead
 .SH SYNOPSIS
-\fBmanta power reset cluster\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-r\fR|\fB\-\-reason\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
+\fBmanta power reset cluster\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-no\-wait\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-r\fR|\fB\-\-reason\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
 .SH DESCRIPTION
-Reset all nodes in a cluster
+[DEPRECATED] Use \*(Aqmanta power reset group\*(Aq instead
 .SH OPTIONS
 .TP
 \fB\-g\fR, \fB\-\-graceful\fR
@@ -14,6 +14,9 @@ Perform a graceful reboot
 .TP
 \fB\-y\fR, \fB\-\-assume\-yes\fR
 Skip confirmation prompts
+.TP
+\fB\-\-no\-wait\fR
+Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 \fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
 Output format
@@ -35,4 +38,4 @@ Reason for the power operation
 Print help
 .TP
 <\fICLUSTER_NAME\fR>
-Cluster name
+Group name

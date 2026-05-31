@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-get-cluster 1  "cluster " 
 .SH NAME
-manta\-get\-cluster \- Show cluster node details and status
+manta\-get\-cluster \- [DEPRECATED] Use \*(Aqmanta get group\-nodes\*(Aq instead
 .SH SYNOPSIS
-\fBmanta get cluster\fR [\fB\-n\fR|\fB\-\-nids\-only\-one\-line\fR] [\fB\-x\fR|\fB\-\-xnames\-only\-one\-line\fR] [\fB\-s\fR|\fB\-\-status\fR] [\fB\-T\fR|\fB\-\-summary\-status\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
+\fBmanta get cluster\fR [\fB\-n\fR|\fB\-\-nids\-only\-one\-line\fR] [\fB\-x\fR|\fB\-\-xnames\-only\-one\-line\fR] [\fB\-s\fR|\fB\-\-status\fR] [\fB\-T\fR|\fB\-\-summary\-status\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIGROUP_NAME\fR> 
 .SH DESCRIPTION
-Show cluster node details and status
+[DEPRECATED] Use \*(Aqmanta get group\-nodes\*(Aq instead
 .SH OPTIONS
 .TP
 \fB\-n\fR, \fB\-\-nids\-only\-one\-line\fR
@@ -39,7 +39,7 @@ CONFIGURED
 .RE
 .TP
 \fB\-T\fR, \fB\-\-summary\-status\fR
-Show a cluster status summary:
+Show a group status summary:
 OK          — all nodes booted and configured
 OFF         — at least one node is OFF
 ON          — no nodes OFF, at least one is ON
@@ -67,5 +67,5 @@ summary
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .TP
-<\fICLUSTER_NAME\fR>
-Cluster name
+<\fIGROUP_NAME\fR>
+Group name

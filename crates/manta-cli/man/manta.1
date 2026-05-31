@@ -1,6 +1,6 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH manta 1  "manta 2.0.0-beta.7" 
+.TH manta 1  "manta 2.0.0-beta.16" 
 .SH NAME
 manta
 .SH SYNOPSIS
@@ -39,8 +39,17 @@ Delete system resources
 manta\-migrate(1)
 Move nodes or clusters between groups
 .TP
+manta\-backup(1)
+Back up cluster state
+.TP
+manta\-restore(1)
+Restore cluster state from a backup
+.TP
+manta\-run(1)
+Create and run jobs (configuration sessions, etc.)
+.TP
 manta\-power(1)
-Manage node and cluster power state
+Manage node and group power state
 .TP
 manta\-log(1)
 Stream configuration session logs
@@ -49,9 +58,9 @@ manta\-console(1)
 Open an interactive console to a node or configuration session
 .TP
 manta\-add\-nodes\-to\-groups(1)
-Add nodes to one or more groups
+[DEPRECATED] Use \*(Aqmanta add nodes\*(Aq instead
 .TP
 manta\-remove\-nodes\-from\-groups(1)
-Remove nodes from one or more groups
+[DEPRECATED] Use \*(Aqmanta delete nodes\*(Aq instead
 .SH VERSION
-v2.0.0\-beta.7
+v2.0.0\-beta.16

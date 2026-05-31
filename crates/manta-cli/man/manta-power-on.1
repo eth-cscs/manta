@@ -2,19 +2,22 @@
 .el .ds Aq '
 .TH manta-power-on 1  "on " 
 .SH NAME
-manta\-power\-on \- Power on nodes or a cluster
+manta\-power\-on \- Power on nodes or a group
 .SH SYNOPSIS
 \fBmanta power on\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-Power on nodes or a cluster
+Power on nodes or a group
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .SH SUBCOMMANDS
 .TP
+manta\-power\-on\-group(1)
+Power on all nodes in a group
+.TP
 manta\-power\-on\-cluster(1)
-Power on all nodes in a cluster
+[DEPRECATED] Use \*(Aqmanta power on group\*(Aq instead
 .TP
 manta\-power\-on\-nodes(1)
 Power on a set of nodes

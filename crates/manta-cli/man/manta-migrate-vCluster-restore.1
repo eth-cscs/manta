@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-migrate-vCluster-restore 1  "restore " 
 .SH NAME
-manta\-migrate\-vCluster\-restore \- Restore a cluster from a backup
+manta\-migrate\-vCluster\-restore \- [DEPRECATED] Use \*(Aqmanta restore vcluster\*(Aq instead. The old path keeps working for one release.
 .SH SYNOPSIS
-\fBmanta migrate vCluster restore\fR [\fB\-b\fR|\fB\-\-bos\-file\fR] [\fB\-c\fR|\fB\-\-cfs\-file\fR] [\fB\-j\fR|\fB\-\-hsm\-file\fR] [\fB\-m\fR|\fB\-\-ims\-file\fR] [\fB\-i\fR|\fB\-\-image\-dir\fR] [\fB\-p\fR|\fB\-\-pre\-hook\fR] [\fB\-a\fR|\fB\-\-post\-hook\fR] [\fB\-o\fR|\fB\-\-overwrite\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBmanta migrate vCluster restore\fR [\fB\-b\fR|\fB\-\-bos\-file\fR] [\fB\-c\fR|\fB\-\-cfs\-file\fR] [\fB\-j\fR|\fB\-\-hsm\-file\fR] [\fB\-m\fR|\fB\-\-ims\-file\fR] [\fB\-i\fR|\fB\-\-image\-dir\fR] [\fB\-p\fR|\fB\-\-pre\-hook\fR] [\fB\-a\fR|\fB\-\-post\-hook\fR] [\fB\-o\fR|\fB\-\-overwrite\fR] [\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Restore a cluster from a backup
+[DEPRECATED] Use \*(Aqmanta restore vcluster\*(Aq instead. The old path keeps working for one release.
 .SH OPTIONS
 .TP
 \fB\-b\fR, \fB\-\-bos\-file\fR \fI<FILE>\fR
@@ -34,6 +34,19 @@ eg: \-\-post\-hook "echo hello"
 .TP
 \fB\-o\fR, \fB\-\-overwrite\fR
 Overwrite existing data
+.TP
+\fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

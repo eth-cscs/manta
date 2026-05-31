@@ -2,13 +2,15 @@
 .el .ds Aq '
 .TH manta-migrate-vCluster-backup 1  "backup " 
 .SH NAME
-manta\-migrate\-vCluster\-backup \- Back up a cluster\*(Aqs configuration
+manta\-migrate\-vCluster\-backup \- [DEPRECATED] Use \*(Aqmanta backup vcluster\*(Aq instead
 .SH SYNOPSIS
-\fBmanta migrate vCluster backup\fR [\fB\-b\fR|\fB\-\-bos\fR] [\fB\-d\fR|\fB\-\-destination\fR] [\fB\-p\fR|\fB\-\-pre\-hook\fR] [\fB\-a\fR|\fB\-\-post\-hook\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBmanta migrate vCluster backup\fR [\fB\-b\fR|\fB\-\-bos\fR] [\fB\-d\fR|\fB\-\-destination\fR] [\fB\-p\fR|\fB\-\-pre\-hook\fR] [\fB\-a\fR|\fB\-\-post\-hook\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
 Back up a cluster\*(Aqs configuration: images, boot settings, and group membership.
 .PP
 The backup is derived from the specified session template.
+.PP
+DEPRECATED: this command has moved to the top\-level verb tree as `manta backup vcluster`. The old path keeps working for one release.
 .SH OPTIONS
 .TP
 \fB\-b\fR, \fB\-\-bos\fR \fI<SESSIONTEMPLATE>\fR
@@ -24,6 +26,19 @@ eg: \-\-pre\-hook "echo hello"
 \fB\-a\fR, \fB\-\-post\-hook\fR \fI<SCRIPT>\fR
 Command to run after a successful backup.
 eg: \-\-post\-hook "echo hello"
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)

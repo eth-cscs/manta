@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-power-off-cluster 1  "cluster " 
 .SH NAME
-manta\-power\-off\-cluster \- Power off all nodes in a cluster
+manta\-power\-off\-cluster \- [DEPRECATED] Use \*(Aqmanta power off group\*(Aq instead
 .SH SYNOPSIS
-\fBmanta power off cluster\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-R\fR|\fB\-\-reason\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
+\fBmanta power off cluster\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-R\fR|\fB\-\-reason\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-no\-wait\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fICLUSTER_NAME\fR> 
 .SH DESCRIPTION
-Power off all nodes in a cluster
+[DEPRECATED] Use \*(Aqmanta power off group\*(Aq instead
 .SH OPTIONS
 .TP
 \fB\-g\fR, \fB\-\-graceful\fR
@@ -17,6 +17,9 @@ Reason for the power operation
 .TP
 \fB\-y\fR, \fB\-\-assume\-yes\fR
 Skip confirmation prompts
+.TP
+\fB\-\-no\-wait\fR
+Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 \fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
 Output format
@@ -35,4 +38,4 @@ json
 Print help
 .TP
 <\fICLUSTER_NAME\fR>
-Cluster name
+Group name

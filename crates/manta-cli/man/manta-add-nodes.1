@@ -1,0 +1,39 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-add-nodes 1  "nodes " 
+.SH NAME
+manta\-add\-nodes \- Add existing nodes to a group
+.SH SYNOPSIS
+\fBmanta add nodes\fR <\fB\-g\fR|\fB\-\-group\fR> <\fB\-n\fR|\fB\-\-nodes\fR> [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Add existing nodes to a group\*(Aqs membership.
+.PP
+Differs from `manta add node` (singular), which registers a brand\-new node in the inventory; this command operates on nodes that already exist and just changes which group(s) they belong to.
+.SH OPTIONS
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Group to add the nodes to
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+\fB\-d\fR, \fB\-\-dry\-run\fR
+Simulate the operation without making changes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

@@ -4,7 +4,7 @@
 .SH NAME
 manta\-migrate\-nodes \- Move nodes between clusters
 .SH SYNOPSIS
-\fBmanta migrate nodes\fR [\fB\-f\fR|\fB\-\-from\fR] <\fB\-t\fR|\fB\-\-to\fR> [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIXNAMES\fR> 
+\fBmanta migrate nodes\fR [\fB\-f\fR|\fB\-\-from\fR] <\fB\-t\fR|\fB\-\-to\fR> [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIXNAMES\fR> 
 .SH DESCRIPTION
 Move nodes between clusters
 .SH OPTIONS
@@ -17,6 +17,19 @@ Destination cluster to move nodes to
 .TP
 \fB\-d\fR, \fB\-\-dry\-run\fR
 Simulate the operation without making changes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

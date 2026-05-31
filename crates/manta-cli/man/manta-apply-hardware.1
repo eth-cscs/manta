@@ -2,16 +2,19 @@
 .el .ds Aq '
 .TH manta-apply-hardware 1  "hardware " 
 .SH NAME
-manta\-apply\-hardware \- [experimental] Rescale a cluster\*(Aqs hardware allocation
+manta\-apply\-hardware \- [experimental] Rescale a group\*(Aqs hardware allocation
 .SH SYNOPSIS
 \fBmanta apply hardware\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-[experimental] Rescale a cluster\*(Aqs hardware allocation
+[experimental] Rescale a group\*(Aqs hardware allocation
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help
 .SH SUBCOMMANDS
 .TP
+manta\-apply\-hardware\-group(1)
+[experimental] Rescale a group\*(Aqs hardware allocation
+.TP
 manta\-apply\-hardware\-cluster(1)
-[experimental] Rescale a cluster\*(Aqs hardware allocation
+[DEPRECATED] Use \*(Aqmanta apply hardware group\*(Aq instead

@@ -4,7 +4,7 @@
 .SH NAME
 manta\-power\-off\-nodes \- Power off a set of nodes
 .SH SYNOPSIS
-\fBmanta power off nodes\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINODES\fR> 
+\fBmanta power off nodes\fR [\fB\-g\fR|\fB\-\-graceful\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-no\-wait\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fINODES\fR> 
 .SH DESCRIPTION
 Power off a set of nodes
 .SH OPTIONS
@@ -14,6 +14,9 @@ Perform a graceful shutdown
 .TP
 \fB\-y\fR, \fB\-\-assume\-yes\fR
 Skip confirmation prompts
+.TP
+\fB\-\-no\-wait\fR
+Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 \fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
 Output format

@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-remove-nodes-from-groups 1  "remove-nodes-from-groups " 
 .SH NAME
-manta\-remove\-nodes\-from\-groups \- Remove nodes from one or more groups
+manta\-remove\-nodes\-from\-groups \- [DEPRECATED] Use \*(Aqmanta delete nodes\*(Aq instead
 .SH SYNOPSIS
-\fBmanta remove\-nodes\-from\-groups\fR [\fB\-g\fR|\fB\-\-group\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBmanta remove\-nodes\-from\-groups\fR [\fB\-g\fR|\fB\-\-group\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Remove nodes from one or more groups
+[DEPRECATED] Use \*(Aqmanta delete nodes\*(Aq instead
 .SH OPTIONS
 .TP
 \fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
@@ -19,6 +19,19 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 .TP
 \fB\-d\fR, \fB\-\-dry\-run\fR
 Simulate the operation without making changes
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

@@ -4,7 +4,7 @@
 .SH NAME
 manta\-delete\-group \- Delete a node group
 .SH SYNOPSIS
-\fBmanta delete group\fR [\fB\-f\fR|\fB\-\-force\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIGROUP_NAME\fR> 
+\fBmanta delete group\fR [\fB\-f\fR|\fB\-\-force\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIGROUP_NAME\fR> 
 .SH DESCRIPTION
 Delete a node group.
 .PP
@@ -13,6 +13,19 @@ The group must be empty before deletion. Move its members to another group with 
 .TP
 \fB\-f\fR, \fB\-\-force\fR
 Force deletion
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help (see a summary with \*(Aq\-h\*(Aq)
