@@ -77,6 +77,14 @@ jobs:
       run: cargo install cargo-audit --locked
     - name: Run cargo audit
       run: cargo audit
+    # Fail if any crate's Cargo.toml declares a dependency it never
+    # uses. Catches dep-rot when source is removed but the manifest
+    # entry survives. The workspace is currently clean; any addition
+    # is a regression.
+    - name: Install cargo-machete
+      run: cargo install cargo-machete --version 0.9.2 --locked
+    - name: Run cargo machete
+      run: cargo machete
     # Verify that the checked-in man pages and shell-completion scripts
     # are in sync with the current clap definition. `build.rs` only
     # regenerates them when MANTA_REGENERATE_DOCS=1 is set, so a clap

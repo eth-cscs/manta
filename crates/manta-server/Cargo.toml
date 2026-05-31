@@ -28,36 +28,27 @@ axum              = { version = "0.8", default-features = false, features = ["js
 axum-server       = { version = "0.8", features = ["tls-rustls"] }
 tower-http        = { version = "0.6", features = ["trace", "cors", "timeout"] }
 tokio             = { workspace = true }
-tokio-tungstenite = { workspace = true }
 tokio-util        = { workspace = true }
 futures           = { workspace = true }
 
 # OpenAPI + Swagger UI
 utoipa            = { workspace = true }
-utoipa-axum       = "0.2"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 
 # TLS bootstrap
 rustls         = { version = "0.23", default-features = false, features = ["ring"] }
 
 # Server-side helpers used by service/* and server/common/*
-anyhow             = { workspace = true }
-base64             = { workspace = true }
 chrono             = { workspace = true }
 comfy-table        = "7.2.2"
 config             = { workspace = true }
-git2               = { version = "0.21", default-features = false, features = ["vendored-openssl"] }
 hostlist-parser    = "0.1.6"
-nodeset            = "0.5.0"
-minijinja          = { workspace = true }
 regex              = { workspace = true }
 reqwest            = { workspace = true }
 serde              = { workspace = true }
 serde_json         = { workspace = true }
 serde_yaml         = { workspace = true }
 tracing            = { workspace = true }
-tracing-subscriber = { workspace = true }
-uuid               = { workspace = true }
 
 # Minimal arg parsing for --port / --cert / --key / --listen-address.
 clap = { version = "4.5.60", features = ["wrap_help"] }
