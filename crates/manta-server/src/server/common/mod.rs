@@ -2,5 +2,4 @@
 
 pub mod app_context;
 pub mod hw_inventory_utils;
-pub mod ims_ops;
 pub mod vault;

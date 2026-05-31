@@ -11,6 +11,7 @@ pub mod group;
 pub mod hardware;
 pub mod hw_cluster;
 pub mod image;
+pub mod ims_ops;
 pub mod kernel_parameters;
 pub mod migrate;
 pub mod node;
