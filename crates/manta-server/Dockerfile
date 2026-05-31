@@ -8,7 +8,7 @@
 # Run with a mounted config + TLS material; expose the listen port:
 #
 #     docker run --rm -p 8443:8443 \
-#       -v $HOME/.config/manta:/root/.config/manta:ro \
+#       -v $HOME/.config/manta:/home/manta/.config/manta:ro \
 #       -v /etc/manta/tls:/etc/manta/tls:ro \
 #       manta-server
 #
@@ -44,6 +44,17 @@ RUN apt-get update \
         ca-certificates libcurl4 librdkafka1 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/bin/manta-server /usr/local/bin/manta-server
+# Run as a non-root user. Production Kubernetes deployments routinely
+# enforce `runAsNonRoot: true` and would refuse a root-only image.
+# UID 1000 matches the conventional first-user UID on most distros, so
+# bind-mounted config files written by a developer's host user can be
+# read inside the container without extra chmod.
+RUN useradd --uid 1000 --user-group --create-home --shell /usr/sbin/nologin manta
+USER manta
+# Make explicit the signal the runtime expects on shutdown. `docker
+# stop` and k8s pod termination both send SIGTERM; the binary's
+# graceful-shutdown handler drains in-flight requests for up to 30s.
+STOPSIGNAL SIGTERM
 # Default port per the server.toml.example template. Operators that
 # override the port in their mounted server.toml should `-p` the new
 # port instead.

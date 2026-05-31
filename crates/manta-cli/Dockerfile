@@ -8,7 +8,7 @@
 # Run with a mounted config and an ACCESS_TOKEN:
 #
 #     docker run --rm -it --network=host \
-#       -v $HOME/.config/manta:/root/.config/manta \
+#       -v $HOME/.config/manta:/home/manta/.config/manta \
 #       -e MANTA_CSM_TOKEN \
 #       manta-cli get redfish-endpoints
 #
@@ -43,4 +43,9 @@ RUN apt-get update \
         ca-certificates libcurl4 librdkafka1 \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /usr/local/bin/manta /usr/local/bin/manta
+# Run as a non-root user — see the server Dockerfile for the rationale.
+# UID 1000 matches the conventional first-user UID so host-owned config
+# bind-mounts are readable inside the container without chmod.
+RUN useradd --uid 1000 --user-group --create-home --shell /bin/bash manta
+USER manta
 ENTRYPOINT ["manta"]
