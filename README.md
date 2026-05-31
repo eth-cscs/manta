@@ -41,7 +41,6 @@ cp server.toml.example "$CONFIG_DIR/server.toml"   # edit
 | [API.md](API.md) | REST + WebSocket endpoints, schemas, status codes |
 | [MIGRATING.md](MIGRATING.md) | upgrading from manta v1 to v2 |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | crate layout, module boundaries, security model |
-| [docs.rs/manta-shared](https://docs.rs/manta-shared) | rustdoc for the shared library crate |
 | [eth-cscs.github.io/manta](https://eth-cscs.github.io/manta/) | rustdoc for the whole workspace (rebuilt on every push to `main`) |
 
 ## Repository layout
