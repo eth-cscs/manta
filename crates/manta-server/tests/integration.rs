@@ -549,7 +549,7 @@ async fn get_images_happy_path() {
 //
 // Call chain:
 //   service::boot_parameters::get_boot_parameters
-//     → common::node_ops::resolve_target_nodes(hsm_group=Some("compute"))
+//     → service::node_ops::resolve_target_nodes(hsm_group=Some("compute"))
 //         → get_groups_names_available            (GET /smd/hsm/v2/groups)
 //         → backend.get_member_vec_from_group_name_vec
 //                                                 (GET /smd/hsm/v2/groups?group=compute)

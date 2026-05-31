@@ -406,14 +406,14 @@ async fn resolve_xnames_from_request(
   if let Some(expr) = xnames_expression
     && !expr.is_empty()
   {
-    return crate::server::common::node_ops::resolve_hosts_expression(
+    return crate::service::node_ops::resolve_hosts_expression(
       backend, token, expr, false,
     )
     .await
     .map_err(display_error);
   }
   if let Some(group) = hsm_group {
-    return crate::server::common::node_ops::resolve_target_nodes(
+    return crate::service::node_ops::resolve_target_nodes(
       backend,
       token,
       None,

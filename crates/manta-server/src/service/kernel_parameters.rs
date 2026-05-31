@@ -7,8 +7,8 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
 use std::collections::HashMap;
 
-use crate::server::common;
 use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
 pub use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
 
 /// Fetch kernel boot parameters for the specified nodes.
@@ -20,7 +20,7 @@ pub async fn get_kernel_parameters(
   token: &str,
   params: &GetKernelParametersParams,
 ) -> Result<Vec<BootParameters>, Error> {
-  let xname_vec = common::node_ops::resolve_target_nodes(
+  let xname_vec = node_ops::resolve_target_nodes(
     infra.backend,
     token,
     params.nodes.as_deref(),

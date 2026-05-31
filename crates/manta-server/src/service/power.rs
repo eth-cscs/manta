@@ -13,8 +13,8 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
   TransitionResponse, TransitionStartOutput,
 };
 
-use crate::server::common;
 use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
 pub use manta_shared::shared::params::power::{
   ApplyPowerParams, PowerAction, PowerTargetType,
 };
@@ -42,7 +42,7 @@ pub async fn resolve_target_xnames(
         .await?
     }
     PowerTargetType::Nodes => {
-      common::node_ops::resolve_hosts_expression(
+      node_ops::resolve_hosts_expression(
         infra.backend,
         token,
         targets_expression,

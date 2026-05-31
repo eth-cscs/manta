@@ -8,7 +8,8 @@ use manta_backend_dispatcher::interfaces::{
   migrate_restore::MigrateRestoreTrait,
 };
 
-use crate::server::common::{app_context::InfraContext, node_ops};
+use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
 
 /// Execute a migrate-backup operation against the backend.
 pub async fn migrate_backup(

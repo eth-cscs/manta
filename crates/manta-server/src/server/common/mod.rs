@@ -5,5 +5,4 @@ pub mod authorization;
 pub mod boot_parameters;
 pub mod hw_inventory_utils;
 pub mod ims_ops;
-pub mod node_ops;
 pub mod vault;

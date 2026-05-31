@@ -71,7 +71,7 @@ pub async fn get_sessions(
   let infra = ctx.infra();
 
   let xnames = match q.xnames {
-    Some(expr) => crate::server::common::node_ops::resolve_hosts_expression(
+    Some(expr) => crate::service::node_ops::resolve_hosts_expression(
       infra.backend,
       &ctx.token,
       &expr,

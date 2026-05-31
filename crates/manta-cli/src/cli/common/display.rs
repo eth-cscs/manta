@@ -2,7 +2,7 @@
 //!
 //! Anything here is consumed by `crate::cli::output::*` table renderers
 //! and has no business logic. The full xname/nid resolution lives in
-//! `crate::server::common::node_ops` (server-side).
+//! `crate::service::node_ops` (server-side).
 
 /// Render a list of node identifiers (xnames, NIDs, group members…)
 /// as a comma-separated string, wrapping after every `num_columns`

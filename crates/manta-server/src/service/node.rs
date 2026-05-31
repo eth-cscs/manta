@@ -10,8 +10,8 @@ use manta_backend_dispatcher::types::{
 };
 use std::{fs::File, io::BufReader, path::PathBuf};
 
-use crate::server::common;
 use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
 pub use manta_shared::shared::params::node::GetNodesParams;
 
 /// Fetch node details for the given xname expression.
@@ -20,7 +20,7 @@ pub async fn get_nodes(
   token: &str,
   params: &GetNodesParams,
 ) -> Result<Vec<NodeDetails>, Error> {
-  let node_list = common::node_ops::resolve_hosts_expression(
+  let node_list = node_ops::resolve_hosts_expression(
     infra.backend,
     token,
     &params.xname,

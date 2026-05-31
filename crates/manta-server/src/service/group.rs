@@ -4,8 +4,8 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
-use crate::server::common;
 use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
 use crate::server::common::authorization::get_groups_names_available;
 pub use manta_shared::shared::params::group::GetGroupParams;
 
@@ -147,7 +147,7 @@ pub async fn delete_group_members(
   xnames_expression: &str,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let xnames = common::node_ops::resolve_hosts_expression(
+  let xnames = node_ops::resolve_hosts_expression(
     infra.backend,
     token,
     xnames_expression,
@@ -179,7 +179,7 @@ pub async fn add_nodes_to_group(
   target_hsm_name: &str,
   hosts_expression: &str,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
-  let xname_to_move_vec = common::node_ops::resolve_hosts_expression(
+  let xname_to_move_vec = node_ops::resolve_hosts_expression(
     infra.backend,
     token,
     hosts_expression,

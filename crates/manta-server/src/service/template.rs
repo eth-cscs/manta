@@ -13,7 +13,7 @@ use crate::server::common::app_context::InfraContext;
 use crate::server::common::authorization::{
   get_groups_names_available, validate_target_hsm_members,
 };
-use crate::server::common::node_ops::validate_xname_format;
+use crate::service::node_ops::validate_xname_format;
 pub use manta_shared::shared::params::template::{
   ApplyTemplateParams, GetTemplateParams,
 };
