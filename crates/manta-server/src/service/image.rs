@@ -11,7 +11,7 @@ use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::get_groups_names_available;
-use crate::server::common::boot_parameters::get_restricted_boot_parameters;
+use crate::service::boot_parameters::get_restricted_boot_parameters;
 pub use manta_shared::shared::params::image::GetImagesParams;
 
 /// Fetch images and their associated details from the backend.
