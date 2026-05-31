@@ -22,9 +22,8 @@ pub struct AppContext<'a> {
   /// Optional per-request HTTP timeout (seconds) for outbound
   /// `MantaClient` calls — read from `cli.toml`'s
   /// `request_timeout_secs`. Honoured by commands that build their
-  /// `MantaClient` via `MantaClient::from_app_ctx` (today: the power
-  /// command, which can run minutes against large clusters). Other
-  /// commands keep the default no-timeout behaviour.
+  /// `MantaClient` via `MantaClient::new_with_timeout`. Other commands
+  /// keep the default no-timeout behaviour.
   pub request_timeout_secs: Option<u64>,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)

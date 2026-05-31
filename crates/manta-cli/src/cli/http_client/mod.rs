@@ -44,34 +44,14 @@ pub struct MantaClient {
 impl MantaClient {
   /// Build a client pointing at `server_url` for the given `site_name`.
   /// No per-request HTTP timeout is set; reqwest's default applies
-  /// (which is "no timeout"). For long-running commands that need a
-  /// configurable timeout, use [`MantaClient::from_app_ctx`].
+  /// (which is "no timeout"). For a configurable timeout, use
+  /// [`MantaClient::new_with_timeout`].
   ///
   /// If `server_url` has no scheme, `http://` is prepended. This lets users
   /// write `manta_server_url = "localhost:8080"` in their config without
   /// triggering a "URL scheme is not allowed" error from reqwest.
   pub fn new(server_url: &str, site_name: &str) -> anyhow::Result<Self> {
     Self::new_with_timeout(server_url, site_name, None)
-  }
-
-  /// Build a client that honours `cli.toml`'s optional
-  /// `request_timeout_secs` via the [`AppContext`] threaded through
-  /// every CLI command. No call site currently uses this — every
-  /// outbound `MantaClient` call is now a fast round-trip
-  /// (server-side polling loops have been moved to the CLI). Kept as
-  /// the opt-in for any future long-running per-request call that
-  /// runs through a SOCKS5 tunnel or proxy where the operator wants
-  /// to fail fast rather than hang indefinitely.
-  ///
-  /// [`AppContext`]: manta_shared::common::app_context::AppContext
-  pub fn from_app_ctx(
-    ctx: &manta_shared::common::app_context::AppContext<'_>,
-  ) -> anyhow::Result<Self> {
-    Self::new_with_timeout(
-      ctx.manta_server_url,
-      ctx.site_name,
-      ctx.request_timeout_secs,
-    )
   }
 
   /// Build a client with an explicit optional per-request timeout.

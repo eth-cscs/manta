@@ -125,7 +125,7 @@ pub async fn post_sat_file(
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
   let gitea_token =
-    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
+    crate::server::common::vault::http_client::get_shasta_vcs_token(
       &ctx.token,
       vault_base_url,
       infra.site_name,
@@ -207,7 +207,7 @@ pub async fn post_sat_configuration(
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
   let gitea_token =
-    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
+    crate::server::common::vault::http_client::get_shasta_vcs_token(
       &ctx.token,
       vault_base_url,
       infra.site_name,
@@ -416,10 +416,10 @@ mod tests {
     }
   }
 
-  /// Wire-boundary test: a request body shaped exactly the way the CLI
-  /// builds it (in `MantaClient::apply_sat_file`) must deserialise into
-  /// `PostSatFileRequest`. Catches accidental renames of `sat_file` or
-  /// any of the flag fields on either side of the wire.
+  /// Wire-boundary test: a request body matching the documented
+  /// `POST /sat-file` schema must deserialise into `PostSatFileRequest`.
+  /// Catches accidental renames of `sat_file` or any of the flag fields
+  /// on either side of the wire.
   #[test]
   fn cli_request_body_deserialises_into_post_sat_file_request() {
     let cli_body = serde_json::json!({

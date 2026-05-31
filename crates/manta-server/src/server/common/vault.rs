@@ -58,8 +58,8 @@ pub mod http_client {
     Ok(client_token.to_string())
   }
 
-  /// Fetch a secret from Vault's KV store at `secret_path`.
-  pub async fn fetch_secret(
+  /// Get a secret from Vault's KV store at `secret_path`.
+  pub async fn get_secret(
     vault_auth_token: &str,
     vault_base_url: &str,
     secret_path: &str,
@@ -82,7 +82,7 @@ pub mod http_client {
   }
 
   /// Retrieve the Gitea VCS token from Vault.
-  pub async fn fetch_shasta_vcs_token(
+  pub async fn get_shasta_vcs_token(
     shasta_token: &str,
     vault_base_url: &str,
     site_name: &str,
@@ -92,7 +92,7 @@ pub mod http_client {
 
     let vault_secret_path = format!("{VAULT_SECRET_PATH_PREFIX}/{site_name}");
 
-    let vault_secret = fetch_secret(
+    let vault_secret = get_secret(
       &vault_token,
       vault_base_url,
       &format!("{VAULT_API_PREFIX}/{vault_secret_path}/vcs"),
@@ -109,27 +109,5 @@ pub mod http_client {
     })?;
 
     Ok(vcs_token.to_string())
-  }
-
-  /// Retrieve Kubernetes secrets (API URL, token, CA cert)
-  /// from Vault.
-  pub async fn fetch_shasta_k8s_secrets_from_vault(
-    vault_base_url: &str,
-    site_name: &str,
-    shasta_token: &str,
-  ) -> Result<Value, Error> {
-    let vault_token =
-      auth_oidc_jwt(vault_base_url, shasta_token, site_name).await?;
-
-    let vault_secret_path = format!("{VAULT_SECRET_PATH_PREFIX}/{site_name}");
-
-    let secret = fetch_secret(
-      &vault_token,
-      vault_base_url,
-      &format!("{VAULT_API_PREFIX}/{vault_secret_path}/k8s"),
-    )
-    .await?;
-
-    Ok(secret["data"].clone())
   }
 }

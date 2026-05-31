@@ -225,7 +225,7 @@ pub async fn create_session(
   let vault_base_url = require_vault(infra.vault_base_url)?;
 
   let gitea_token =
-    crate::server::common::vault::http_client::fetch_shasta_vcs_token(
+    crate::server::common::vault::http_client::get_shasta_vcs_token(
       &ctx.token,
       vault_base_url,
       infra.site_name,
