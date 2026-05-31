@@ -3,10 +3,13 @@
 //! Top-level modules:
 //!
 //! - [`shared`] — wire-shaped data (request `*Params`, response DTOs,
-//!   cluster-status helpers).
-//! - [`common`] — config loader / TOML schema, audit + Kafka producer,
-//!   JWT helpers, `AppContext`/`InfraContext`, tracing setup, and the
-//!   SAT-file Jinja2 renderer.
+//!   cluster-status helpers). Genuinely used by both binaries.
+//! - [`common`] — behavioural helpers. Mixed audience: the
+//!   `config` loader, `error`, and JWT helpers are bi-binary by use;
+//!   `app_context`, `log_ops`, and `sat_file` are CLI-only;
+//!   `audit` and `kafka` are server-only after the CLI lost its
+//!   audit emission. The single-binary entries live here until a
+//!   per-binary split happens.
 //!
 //! The backend bridge (`StaticBackendDispatcher`, the CSM/OCHAMI trait
 //! impls, and `authorization` helpers that take a `&StaticBackendDispatcher`)
