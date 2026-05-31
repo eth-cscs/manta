@@ -619,15 +619,28 @@ mod tests {
   // ---- MantaClient timeout constructors ----
 
   #[test]
-  fn new_with_timeout_none_builds_successfully() {
-    let c = MantaClient::new_with_timeout("http://stub.invalid", "alps", None);
-    assert!(c.is_ok());
+  fn new_with_timeout_none_pins_url_and_site() {
+    let c =
+      MantaClient::new_with_timeout("http://stub.invalid", "alps", None)
+        .expect("construction with timeout=None must succeed");
+    assert_eq!(c.base_url(), "http://stub.invalid/api/v1");
+    assert_eq!(c.site_name(), "alps");
   }
 
   #[test]
-  fn new_with_timeout_some_builds_successfully() {
-    let c = MantaClient::new_with_timeout("http://stub.invalid", "alps", Some(5));
-    assert!(c.is_ok());
+  fn new_with_timeout_some_pins_url_and_site() {
+    let c =
+      MantaClient::new_with_timeout("http://stub.invalid", "alps", Some(5))
+        .expect("construction with timeout=Some(5) must succeed");
+    assert_eq!(c.base_url(), "http://stub.invalid/api/v1");
+    assert_eq!(c.site_name(), "alps");
+  }
+
+  #[test]
+  fn new_with_timeout_prepends_http_scheme_when_missing() {
+    let c = MantaClient::new_with_timeout("stub.invalid:8080", "alps", None)
+      .expect("scheme-less host must succeed");
+    assert_eq!(c.base_url(), "http://stub.invalid:8080/api/v1");
   }
 
   /// Behavioural test: when a timeout is set, an outbound call against

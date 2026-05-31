@@ -35,7 +35,11 @@ impl GroupTrait for StaticBackendDispatcher {
     dispatch!(self, add_group, auth_token, hsm_group)
   }
 
-  // FIXME: rename function to 'get_hsm_group_members'
+  // Function name (and the `get_member_vec_from_group_name_vec`
+  // trait method it dispatches to) come from the external
+  // `manta-backend-dispatcher` crate's `GroupTrait`. Can't be
+  // renamed locally; a cleaner name like `get_hsm_group_members`
+  // would have to land upstream first.
   async fn get_member_vec_from_group_name_vec(
     &self,
     auth_token: &str,

@@ -85,7 +85,7 @@ pub fn calculate_target_hsm_pin(
       parent_hsm_node_hw_component_count_vec,
     )
     .ok_or_else(|| {
-      Error::InsufficientResources("No best candidate found.".to_string())
+      Error::InsufficientResources("No best candidate found".to_string())
     })?;
 
   let mut work_to_do = scoring::keep_iterating_final_hsm(
@@ -199,7 +199,7 @@ pub fn calculate_target_hsm_pin(
         parent_hsm_node_hw_component_count_vec,
       )
       .ok_or_else(|| {
-        Error::InsufficientResources("No best candidate found.".to_string())
+        Error::InsufficientResources("No best candidate found".to_string())
       })?;
 
     work_to_do = scoring::keep_iterating_final_hsm(
@@ -266,7 +266,7 @@ pub fn calculate_target_hsm_unpin(
       combination_target_parent_hsm_node_hw_component_count_vec,
     )
     .ok_or_else(|| {
-      Error::InsufficientResources("No best candidate found.".to_string())
+      Error::InsufficientResources("No best candidate found".to_string())
     })?;
 
   let mut work_to_do = scoring::keep_iterating_final_hsm(
@@ -336,7 +336,7 @@ pub fn calculate_target_hsm_unpin(
         combination_target_parent_hsm_node_hw_component_count_vec,
       )
       .ok_or_else(|| {
-        Error::InsufficientResources("No best candidate found.".to_string())
+        Error::InsufficientResources("No best candidate found".to_string())
       })?;
 
     work_to_do = scoring::keep_iterating_final_hsm(
