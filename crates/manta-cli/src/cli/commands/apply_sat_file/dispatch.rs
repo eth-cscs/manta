@@ -85,10 +85,10 @@ pub async fn dispatch_plan(
         if let Some(tpl) = obj.remove("template") {
           session_templates.push(tpl);
         }
-        if let Some(Value::Object(_)) = obj.get("session") {
-          if let Some(s) = obj.remove("session") {
-            bos_sessions.push(s);
-          }
+        if let Some(Value::Object(_)) = obj.get("session")
+          && let Some(s) = obj.remove("session")
+        {
+          bos_sessions.push(s);
         }
       }
     }
