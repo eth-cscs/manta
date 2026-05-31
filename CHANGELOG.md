@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Breaking changes
+
+- The CLI no longer emits Kafka audit events. The `[auditor.kafka]` block in `cli.toml` is no longer read (silently ignored if present, since `CliConfiguration` does not derive `deny_unknown_fields`). Server-side audit coverage — every request via `log_requests` middleware + per-`/auth/*` events via `send_auth_audit` — supersedes the previous CLI-emitted stream since every CLI action goes through HTTP and is therefore already recorded server-side. `common::audit::maybe_send_audit` is gone; `common::kafka::Kafka` is no longer constructed by the CLI; the `kafka_audit_opt` field on `AppContext` and the `auditor` field on `CliConfiguration` are removed.
+
 ## [2.0.0-beta.16] - 2026-05-30
 
 ### Bug Fixes

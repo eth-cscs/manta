@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::{app_context::AppContext, audit};
+use manta_shared::common::app_context::AppContext;
 
 /// Move nodes between HSM groups with validation.
 #[allow(clippy::too_many_arguments)]
@@ -35,20 +35,6 @@ pub async fn exec(
     "Nodes migrated."
   };
   action_result::print_with_data(message, &result, output_opt)?;
-
-  audit::maybe_send_audit(
-    ctx.kafka_audit_opt,
-    token,
-    format!(
-      "Migrate nodes from {parent_hsm_name_vec:?} to {target_hsm_name_vec:?}"
-    ),
-    None,
-    Some(serde_json::json!(vec![
-      parent_hsm_name_vec,
-      target_hsm_name_vec
-    ])),
-  )
-  .await;
 
   Ok(())
 }

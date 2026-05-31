@@ -33,7 +33,6 @@ pub async fn handle_add(
         target_hsm_name,
         hosts_expression,
         dryrun,
-        ctx.kafka_audit_opt,
         output_opt,
       )
       .await?;

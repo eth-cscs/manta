@@ -10,7 +10,6 @@ use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use manta_shared::common::app_context::AppContext;
-use manta_shared::common::audit;
 
 /// Gitea repository name prefix used by CFS.
 const GITEA_REPO_NAME_PREFIX: &str = "cray/";
@@ -83,7 +82,6 @@ async fn apply_session(
   output_opt: Option<&str>,
 ) -> Result<(String, String), Error> {
   let server_url = ctx.manta_server_url;
-  let kafka_audit_opt = ctx.kafka_audit_opt;
 
   // Check local repos (user interaction: confirm dialogs)
   let (repo_name_vec, repo_last_commit_id_vec) =
@@ -132,16 +130,6 @@ async fn apply_session(
       }
     }
   }
-
-  // Audit
-  audit::maybe_send_audit(
-    kafka_audit_opt,
-    shasta_token,
-    "Apply session",
-    Some(serde_json::json!(ansible_limit_opt)),
-    Some(serde_json::json!(vec![hsm_group_opt])),
-  )
-  .await;
 
   // Final result. In `--watch-logs` mode the streamed log lines above
   // have already gone to stdout; this summary appears after them. In

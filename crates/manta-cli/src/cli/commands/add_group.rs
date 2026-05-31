@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::{app_context::AppContext, audit};
+use manta_shared::common::app_context::AppContext;
 use manta_shared::shared::dto::Group;
 
 /// CLI adapter for `manta add group`.
@@ -52,23 +52,11 @@ pub async fn exec(
   let client = MantaClient::new(server_url, ctx.site_name)?;
   client.create_group(auth_token, grp).await?;
 
-  let mut added = vec![];
   if let Some(expr) = hosts_expression_opt {
-    let (members, _) =
-      client.add_nodes_to_group(auth_token, label, expr).await?;
-    added = members;
+    client.add_nodes_to_group(auth_token, label, expr).await?;
   }
 
   action_result::print(&format!("Group '{label}' created"), output_opt)?;
-
-  audit::maybe_send_audit(
-    ctx.kafka_audit_opt,
-    auth_token,
-    format!("Create Group '{label}'"),
-    Some(serde_json::json!(added)),
-    Some(serde_json::json!(label)),
-  )
-  .await;
 
   Ok(())
 }

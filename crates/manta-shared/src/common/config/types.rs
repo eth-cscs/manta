@@ -93,9 +93,6 @@ pub struct CliConfiguration {
   /// tunnel or proxy that silently drops idle connections.
   #[serde(default)]
   pub request_timeout_secs: Option<u64>,
-  /// Optional Kafka audit forwarder. When `None`, the CLI emits no
-  /// audit messages.
-  pub auditor: Option<Auditor>,
 }
 
 /// Server-only settings — TLS, listen address, console behaviour. Lives
@@ -230,7 +227,6 @@ mod tests {
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
       request_timeout_secs: None,
-      auditor: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();

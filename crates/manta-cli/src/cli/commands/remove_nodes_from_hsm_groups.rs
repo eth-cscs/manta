@@ -6,17 +6,15 @@ use anyhow::{Error, bail};
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::{app_context::AppContext, audit, kafka::Kafka};
+use manta_shared::common::app_context::AppContext;
 
 /// Remove/unassign a list of xnames to a list of HSM groups
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
   target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
-  kafka_audit_opt: Option<&Kafka>,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
@@ -50,15 +48,6 @@ pub async fn exec(
     ),
     output_opt,
   )?;
-
-  audit::maybe_send_audit(
-    kafka_audit_opt,
-    token,
-    format!("Remove nodes from group '{target_hsm_name}'"),
-    Some(serde_json::json!(hosts_expression)),
-    Some(serde_json::json!(vec![target_hsm_name])),
-  )
-  .await;
 
   Ok(())
 }

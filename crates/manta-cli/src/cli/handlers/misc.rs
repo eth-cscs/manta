@@ -37,7 +37,6 @@ pub async fn handle_misc(
         target_hsm_name,
         hosts_expression,
         dryrun,
-        ctx.kafka_audit_opt,
         output_opt,
       )
       .await?;
@@ -57,7 +56,6 @@ pub async fn handle_misc(
         target_hsm_name,
         nodes,
         dryrun,
-        ctx.kafka_audit_opt,
         output_opt,
       )
       .await?;

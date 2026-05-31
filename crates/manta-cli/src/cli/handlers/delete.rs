@@ -28,15 +28,7 @@ pub async fn handle_delete(
         .get_one("force")
         .context("'force' argument must have a value")?;
       let output_opt = m.opt_str("output");
-      delete_group::exec(
-        ctx,
-        &token,
-        label,
-        force,
-        ctx.kafka_audit_opt,
-        output_opt,
-      )
-      .await?;
+      delete_group::exec(ctx, &token, label, force, output_opt).await?;
     }
     Some(("node", m)) => {
       let id = m.req_str("VALUE")?;
@@ -54,7 +46,6 @@ pub async fn handle_delete(
         target_hsm_name,
         hosts_expression,
         dryrun,
-        ctx.kafka_audit_opt,
         output_opt,
       )
       .await?;

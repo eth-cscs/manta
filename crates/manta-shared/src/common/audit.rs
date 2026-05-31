@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{error::MantaError, jwt_ops, kafka::Kafka};
+use super::{error::MantaError, kafka::Kafka};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.
@@ -38,77 +38,6 @@ async fn send_audit_message(kafka: &Kafka, msg_json: serde_json::Value) {
 
   if let Err(e) = kafka.produce_message(msg_data.as_bytes()).await {
     tracing::warn!("Failed producing audit message: {}", e);
-  }
-}
-
-/// Build the JSON payload that [`send_audit`] sends to Kafka.
-///
-/// Split out as a pure function so unit tests can pin the wire
-/// shape (key names, optional-field inclusion, JWT fallback) without
-/// needing a Kafka broker.
-pub(crate) fn build_audit_message(
-  token: &str,
-  message: impl Into<String>,
-  host: Option<serde_json::Value>,
-  group: Option<serde_json::Value>,
-) -> serde_json::Value {
-  let username = jwt_ops::get_name(token).unwrap_or_else(|e| {
-    tracing::warn!("Failed to extract user name from JWT for audit: {}", e);
-    String::new()
-  });
-  let user_id = jwt_ops::get_preferred_username(token).unwrap_or_else(|e| {
-    tracing::warn!("Failed to extract user ID from JWT for audit: {}", e);
-    String::new()
-  });
-
-  let mut msg = serde_json::json!({
-    "user": {"id": user_id, "name": username},
-    "message": message.into(),
-  });
-
-  if let Some(h) = host {
-    msg["host"] = serde_json::json!({"hostname": h});
-  }
-  if let Some(g) = group {
-    msg["group"] = g;
-  }
-
-  msg
-}
-
-/// Build and send an audit message to Kafka.
-///
-/// Extracts user identity from the JWT token (falling
-/// back to empty strings on parse failure) and
-/// constructs a JSON message with the provided fields.
-///
-/// Both `host` and `group` are optional — they are only
-/// included in the JSON if `Some`.
-pub async fn send_audit(
-  kafka: &Kafka,
-  token: &str,
-  message: impl Into<String>,
-  host: Option<serde_json::Value>,
-  group: Option<serde_json::Value>,
-) {
-  send_audit_message(kafka, build_audit_message(token, message, host, group))
-    .await;
-}
-
-/// Send an audit message if a Kafka instance is configured.
-///
-/// This is a convenience wrapper around [`send_audit`] that
-/// handles the common `if let Some(kafka) = kafka_opt { ... }`
-/// pattern found at every audit call site.
-pub async fn maybe_send_audit(
-  kafka_opt: Option<&Kafka>,
-  token: &str,
-  message: impl Into<String>,
-  host: Option<serde_json::Value>,
-  group: Option<serde_json::Value>,
-) {
-  if let Some(kafka) = kafka_opt {
-    send_audit(kafka, token, message, host, group).await;
   }
 }
 
@@ -157,93 +86,6 @@ pub async fn send_auth_audit(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use serde_json::json;
-
-  /// Build a minimal JWT whose `name` and `preferred_username` claims
-  /// can be extracted by `jwt_ops::get_name` / `get_preferred_username`.
-  fn jwt_with(name: &str, preferred_username: &str) -> String {
-    use base64::prelude::*;
-    let header = BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
-    let body = BASE64_URL_SAFE_NO_PAD.encode(
-      json!({"name": name, "preferred_username": preferred_username})
-        .to_string(),
-    );
-    format!("{header}.{body}.sig")
-  }
-
-  // ---- build_audit_message ----
-
-  #[test]
-  fn audit_includes_user_message_keys_unconditionally() {
-    let msg = build_audit_message(
-      &jwt_with("Alice", "alice"),
-      "deleted node",
-      None,
-      None,
-    );
-    assert_eq!(msg["user"]["name"], "Alice");
-    assert_eq!(msg["user"]["id"], "alice");
-    assert_eq!(msg["message"], "deleted node");
-    // No `host` or `group` keys when both are None.
-    assert!(msg.get("host").is_none(), "host must be omitted when None");
-    assert!(
-      msg.get("group").is_none(),
-      "group must be omitted when None"
-    );
-  }
-
-  #[test]
-  fn audit_wraps_host_in_hostname_object() {
-    // Host is wrapped as `{"hostname": <provided>}` — a "simplification"
-    // that flattened this to `"host": <provided>` would break log
-    // ingestion downstream. Pin the structure.
-    let msg = build_audit_message(
-      &jwt_with("a", "a"),
-      "m",
-      Some(json!("x3000c0s1b0n0")),
-      None,
-    );
-    assert_eq!(msg["host"], json!({"hostname": "x3000c0s1b0n0"}));
-  }
-
-  #[test]
-  fn audit_inserts_group_value_as_is() {
-    // Group is passed through verbatim — caller is responsible for
-    // pre-shaping it. Pin so a future "wrap it like host" doesn't
-    // silently change the wire shape.
-    let group = json!({"name": "compute", "members": ["x1", "x2"]});
-    let msg =
-      build_audit_message(&jwt_with("a", "a"), "m", None, Some(group.clone()));
-    assert_eq!(msg["group"], group);
-  }
-
-  #[test]
-  fn audit_falls_back_to_empty_strings_on_malformed_jwt() {
-    // "nodots" can't be parsed; both jwt_ops calls return Err. The
-    // audit fallback turns those into empty strings rather than
-    // dropping the audit event entirely or panicking.
-    let msg = build_audit_message("nodots", "m", None, None);
-    assert_eq!(msg["user"]["name"], "");
-    assert_eq!(msg["user"]["id"], "");
-    assert_eq!(msg["message"], "m");
-  }
-
-  #[test]
-  fn audit_does_not_leak_the_token_into_the_payload() {
-    // Belt-and-braces: a refactor that accidentally embedded the
-    // whole token in the audit payload would be a security incident.
-    // Search the serialized JSON for the JWT body marker.
-    let token = jwt_with("Alice", "alice");
-    let msg = build_audit_message(&token, "deleted node", None, None);
-    let json = serde_json::to_string(&msg).unwrap();
-    assert!(
-      !json.contains(&token),
-      "audit payload must not contain the raw JWT"
-    );
-    // The base64-encoded JWT body contains "alic" (from "alice") — a
-    // bare substring check would false-positive on the username, so
-    // we check the full token string instead.
-  }
 
   // ---- build_auth_audit_message ----
 

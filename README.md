@@ -205,7 +205,7 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `parent_hsm_group`, `manta_server_url`, optional `socks5_proxy`, optional `[auditor.kafka]`) — it has **no `[sites.*]` block**. Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit).
+The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `parent_hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream.
 
 **`cli.toml`**
 
@@ -220,11 +220,9 @@ parent_hsm_group = "nodes_free"
 manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
 request_timeout_secs = 600                                   # optional: caps long-running CLI HTTP calls (e.g. `manta power`); omit for no client-side timeout
-
-[auditor.kafka]
-brokers = ["kafka.cscs.ch:9095"]
-topic   = "manta-cli-audit"
 ```
+
+Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which records every request in `server-audit.log` and emits per-`/auth/*` events to its own `[auditor.kafka]` stream.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details

@@ -371,7 +371,7 @@ let client = match socks5_proxy {
 
 ## Audit trail
 
-Both binaries can emit Kafka audit events. Configuration lives under `[auditor]` in their respective config files (`cli.toml` for CLI-originated events, `server.toml` for server-side events such as `/api/v1/auth/*`). The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
+Only `manta-server` emits Kafka audit events. Configuration lives under `[auditor.kafka]` in `server.toml` and currently covers `/api/v1/auth/*` attempts via `send_auth_audit`. Every CLI command goes through HTTP to the server, so the server-side request log + auth-audit stream together cover what the CLI used to record locally. The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
 
 ## Hooks
 

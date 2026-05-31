@@ -6,7 +6,7 @@
 mod cli;
 
 use manta_shared::common::{
-  app_context::AppContext, config::types::CliConfiguration, kafka::Kafka,
+  app_context::AppContext, config::types::CliConfiguration,
 };
 
 use clap::ArgMatches;
@@ -81,14 +81,6 @@ async fn run_cli(
     }
   }
 
-  let audit_kafka_opt: Option<Kafka> =
-    if let Some(auditor) = &configuration.auditor {
-      Some(auditor.kafka.clone())
-    } else {
-      tracing::warn!("config - Auditor not defined");
-      None
-    };
-
   let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
   let manta_server_url = configuration.manta_server_url.as_str();
 
@@ -96,7 +88,6 @@ async fn run_cli(
     site_name: &site_name,
     manta_server_url,
     settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
-    kafka_audit_opt: audit_kafka_opt.as_ref(),
     request_timeout_secs: configuration.request_timeout_secs,
     settings: &settings,
   };

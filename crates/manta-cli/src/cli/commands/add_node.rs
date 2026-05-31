@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::{app_context::AppContext, audit};
+use manta_shared::common::app_context::AppContext;
 
 /// CLI adapter for `manta add node`.
 #[allow(clippy::too_many_arguments)]
@@ -23,16 +23,6 @@ pub async fn exec(
   MantaClient::new(server_url, ctx.site_name)?
     .add_node(token, id, group, enabled, arch_opt)
     .await?;
-
-  // Audit
-  audit::maybe_send_audit(
-    ctx.kafka_audit_opt,
-    token,
-    "add node",
-    Some(serde_json::json!(id)),
-    Some(serde_json::json!([])),
-  )
-  .await;
 
   action_result::print(
     &format!("Node '{id}' created and added to group '{group}'"),

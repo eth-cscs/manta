@@ -6,7 +6,7 @@ use anyhow::{Error, bail};
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::{app_context::AppContext, audit, kafka::Kafka};
+use manta_shared::common::app_context::AppContext;
 
 /// Add/assign a list of xnames to an HSM group.
 #[allow(clippy::too_many_arguments)]
@@ -16,7 +16,6 @@ pub async fn exec(
   target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
-  kafka_audit_opt: Option<&Kafka>,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
@@ -40,7 +39,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let (added, updated_members) = MantaClient::new(server_url, ctx.site_name)?
+  let (_added, updated_members) = MantaClient::new(server_url, ctx.site_name)?
     .add_nodes_to_group(token, target_hsm_name, hosts_expression)
     .await?;
 
@@ -49,15 +48,6 @@ pub async fn exec(
     &updated_members,
     output_opt,
   )?;
-
-  audit::maybe_send_audit(
-    kafka_audit_opt,
-    token,
-    format!("add nodes to group: {target_hsm_name}"),
-    Some(serde_json::json!(added)),
-    Some(serde_json::json!(vec![target_hsm_name])),
-  )
-  .await;
 
   Ok(())
 }
