@@ -5,13 +5,6 @@
 //! API base URLs, TLS cert, optional vault/k8s URLs, SOCKS proxy.
 //! It depends on `StaticBackendDispatcher`, which is server-only —
 //! the CLI never instantiates this.
-//!
-//! `AppContext` is re-exported from `manta-shared` so handlers /
-//! services that want the CLI shape can keep using
-//! `crate::server::common::app_context::AppContext`.
-
-#[allow(unused_imports)]
-pub use manta_shared::common::app_context::AppContext;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 

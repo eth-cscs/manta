@@ -6,7 +6,6 @@ pub const DATETIME_FORMAT: &str = "%d/%m/%Y %H:%M:%S";
 
 pub mod app_context;
 pub mod audit;
-pub mod check_network_connectivity;
 pub mod config;
 pub mod error;
 pub mod jwt_ops;

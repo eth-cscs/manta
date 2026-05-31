@@ -140,7 +140,6 @@ Shared utilities used by both CLI and server:
 | `log_ops` | Logger initialisation |
 | `app_context` | `AppContext` (CLI-only, flat 5-field struct) |
 | `audit` | Audit trait + log writer |
-| `check_network_connectivity` | 3-second TCP reachability probe to the backend base URL |
 
 CLI-only modules (`authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`) live under `crates/manta-cli/src/cli/common/`. Server-only modules (`authorization`, `node_ops`, `vault`, `boot_parameters`, `hw_inventory_utils`, `ims_ops`, `app_context`) live under `crates/manta-server/src/server/common/` — `InfraContext` is one of them. Both crates explicitly import `manta_shared::common::*` or `crate::{cli,server}::common::*`; there is no `crate::common::*` re-export shim.
 
@@ -246,7 +245,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 Three error types, partitioned by layer (the backend-dispatcher rule is enforced by CI):
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,manta_backend_dispatcher.rs}`).
-- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja renderer, network probe). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
+- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja renderer). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.

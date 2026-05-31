@@ -11,7 +11,7 @@ This project uses two error types:
 
 Handlers under `crates/manta-server/src/server/handlers/` **must only call functions in `crates/manta-server/src/service/`** (or shared helpers in `manta-shared`), never CLI functions. The service layer uses `manta_backend_dispatcher::error::Error` throughout; handlers convert these to HTTP responses via `to_handler_error`.
 
-`manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja2 renderer, network probe) return `manta_shared::common::error::MantaError`; server code maps these to `BackendError` at call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
+`manta-shared`'s pure helpers (audit, jwt_ops, kafka, config loader, sat-file Jinja2 renderer) return `manta_shared::common::error::MantaError`; server code maps these to `BackendError` at call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
 
 Functions called exclusively from CLI entrypoints may use `anyhow::Error`.
 

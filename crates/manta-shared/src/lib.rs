@@ -5,8 +5,7 @@
 //! - [`shared`] — wire-shaped data (request `*Params`, response DTOs, SAT
 //!   YAML parser, cluster-status helpers).
 //! - [`common`] — config loader / TOML schema, audit + Kafka producer,
-//!   JWT helpers, `AppContext`/`InfraContext`, tracing setup, and the
-//!   network-reachability probe.
+//!   JWT helpers, `AppContext`/`InfraContext`, and tracing setup.
 //!
 //! The backend bridge (`StaticBackendDispatcher`, the CSM/OCHAMI trait
 //! impls, and `authorization` helpers that take a `&StaticBackendDispatcher`)
