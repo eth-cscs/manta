@@ -15,10 +15,10 @@ use serde_json::Value;
 use tokio::sync::Semaphore;
 
 use super::{
-  HW_COMPONENT_CONCURRENCY_LIMIT, HwClusterMode, NodeHwCountVec, pin_unpin,
+  HW_COMPONENT_CONCURRENCY_LIMIT, HwClusterMode, NodeHwCountVec,
+  hw_inventory_utils, pin_unpin,
 };
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
-use crate::server::common;
 
 /// Compute a scarcity score for each hardware component type across all nodes.
 //
@@ -162,13 +162,13 @@ fn get_node_hw_properties_from_value(
   hw_component_pattern_list: &[String],
 ) -> (Vec<String>, Vec<u64>) {
   let processor_vec =
-    common::hw_inventory_utils::get_list_processor_model_from_hw_inventory_value(
+    hw_inventory_utils::get_list_processor_model_from_hw_inventory_value(
       node_hw_inventory_value,
     )
     .unwrap_or_default();
 
   let accelerator_vec =
-    common::hw_inventory_utils::get_list_accelerator_model_from_hw_inventory_value(
+    hw_inventory_utils::get_list_accelerator_model_from_hw_inventory_value(
       node_hw_inventory_value,
     )
     .unwrap_or_default();
@@ -193,7 +193,7 @@ fn get_node_hw_properties_from_value(
   }
 
   let memory_vec =
-    common::hw_inventory_utils::get_list_memory_capacity_from_hw_inventory_value(
+    hw_inventory_utils::get_list_memory_capacity_from_hw_inventory_value(
       node_hw_inventory_value,
     )
     .unwrap_or_default();

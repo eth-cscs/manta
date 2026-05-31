@@ -23,6 +23,7 @@
 use std::collections::HashMap;
 
 mod apply;
+mod hw_inventory_utils;
 mod pin_unpin;
 mod scoring;
 
