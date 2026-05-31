@@ -7,13 +7,57 @@
 //! `get_power_transition`) every few seconds until it completes.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::pcs::transitions::types::{
   TransitionResponse, TransitionStartOutput,
 };
 
+use crate::server::common;
 use crate::server::common::app_context::InfraContext;
-pub use manta_shared::shared::params::power::{ApplyPowerParams, PowerAction};
+pub use manta_shared::shared::params::power::{
+  ApplyPowerParams, PowerAction, PowerTargetType,
+};
+
+/// Resolve the caller's `targets_expression` into the concrete xname
+/// list to pass to `apply_power`. For `Cluster` targets the expression
+/// is a single HSM group name and we fetch its members; for `Nodes`
+/// it's a hosts expression. Returns `Error::BadRequest` when the
+/// resolution yields an empty list (the caller would otherwise hit
+/// PCS with no work to do).
+pub async fn resolve_target_xnames(
+  infra: &InfraContext<'_>,
+  token: &str,
+  target_type: PowerTargetType,
+  targets_expression: &str,
+) -> Result<Vec<String>, Error> {
+  let xnames = match target_type {
+    PowerTargetType::Cluster => {
+      infra
+        .backend
+        .get_member_vec_from_group_name_vec(
+          token,
+          std::slice::from_ref(&targets_expression.to_string()),
+        )
+        .await?
+    }
+    PowerTargetType::Nodes => {
+      common::node_ops::resolve_hosts_expression(
+        infra.backend,
+        token,
+        targets_expression,
+        false,
+      )
+      .await?
+    }
+  };
+
+  if xnames.is_empty() {
+    return Err(Error::BadRequest("No nodes to operate on".into()));
+  }
+
+  Ok(xnames)
+}
 
 /// Start a PCS power transition (`on`, `soft-off`, `force-off`,
 /// `soft-restart`, `hard-restart`) against `params.xnames` and return

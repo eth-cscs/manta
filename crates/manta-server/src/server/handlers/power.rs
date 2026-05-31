@@ -12,7 +12,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use serde::Deserialize;
 use utoipa::ToSchema;
 
@@ -93,35 +92,18 @@ pub async fn post_power(
   );
   let infra = ctx.infra();
 
-  let xnames: Vec<String> = match body.target_type {
-    PowerTargetType::Cluster => infra
-      .backend
-      .get_member_vec_from_group_name_vec(
-        &ctx.token,
-        std::slice::from_ref(&body.targets_expression),
-      )
-      .await
-      .map_err(to_handler_error)?,
-    PowerTargetType::Nodes => {
-      crate::server::common::node_ops::resolve_hosts_expression(
-        infra.backend,
-        &ctx.token,
-        &body.targets_expression,
-        false,
-      )
-      .await
-      .map_err(to_handler_error)?
-    }
+  let target_type = match body.target_type {
+    PowerTargetType::Cluster => service::power::PowerTargetType::Cluster,
+    PowerTargetType::Nodes => service::power::PowerTargetType::Nodes,
   };
-
-  if xnames.is_empty() {
-    return Err((
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: "No nodes to operate on".into(),
-      }),
-    ));
-  }
+  let xnames = service::power::resolve_target_xnames(
+    &infra,
+    &ctx.token,
+    target_type,
+    &body.targets_expression,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   let params = service::power::ApplyPowerParams {
     action: match body.action {

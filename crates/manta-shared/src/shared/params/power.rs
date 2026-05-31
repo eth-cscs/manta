@@ -12,6 +12,17 @@ pub enum PowerAction {
   Reset,
 }
 
+/// Whether the caller's `targets_expression` is a hosts expression
+/// (xnames / nids / hostlist) or a single HSM group name whose
+/// members should be targeted.
+#[derive(Debug, Clone, Copy)]
+pub enum PowerTargetType {
+  /// `targets_expression` is a hosts expression.
+  Nodes,
+  /// `targets_expression` is a single HSM group name.
+  Cluster,
+}
+
 /// Typed parameters for the power-action service call.
 pub struct ApplyPowerParams {
   /// Power operation to perform on every entry in `xnames`.
