@@ -36,7 +36,7 @@ pub async fn get_kernel_parameters(
 }
 
 /// Describes which kernel parameter mutation to apply.
-pub enum KernelParamOperation<'a> {
+pub(crate) enum KernelParamOperation<'a> {
   /// Add kernel parameters, optionally overwriting existing values.
   Add {
     /// Space-separated `key=value` pairs to add.
@@ -98,7 +98,7 @@ pub struct KernelParamsChangeset {
 /// Fetch boot parameters, apply mutations, and return a changeset.
 ///
 /// Does NOT persist anything — the caller decides whether to proceed.
-pub async fn prepare_kernel_params_changes(
+pub(crate) async fn prepare_kernel_params_changes(
   infra: &InfraContext<'_>,
   token: &str,
   xname_vec: &[String],

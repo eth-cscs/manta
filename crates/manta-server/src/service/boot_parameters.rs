@@ -103,7 +103,7 @@ pub async fn update_boot_parameters(
 
 /// Result of preparing boot configuration changes.
 #[derive(serde::Serialize)]
-pub struct BootConfigChangeset {
+pub(crate) struct BootConfigChangeset {
   /// Resolved target xnames.
   pub xname_vec: Vec<String>,
   /// Updated BSS boot parameter records, ready to persist.
@@ -115,7 +115,7 @@ pub struct BootConfigChangeset {
 }
 
 /// Prepare boot configuration changes (no side effects).
-pub async fn prepare_boot_config(
+pub(crate) async fn prepare_boot_config(
   infra: &InfraContext<'_>,
   token: &str,
   hosts_expression: &str,
@@ -184,7 +184,7 @@ pub async fn prepare_boot_config(
 }
 
 /// Persist boot configuration changes.
-pub async fn persist_boot_config(
+pub(crate) async fn persist_boot_config(
   infra: &InfraContext<'_>,
   token: &str,
   changeset: &BootConfigChangeset,

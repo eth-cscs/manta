@@ -87,7 +87,7 @@ pub async fn apply_power(
 /// (PCS doesn't model a forceful power-on); for `Off` and `Reset`
 /// it toggles between the graceful (`soft-…`) and forceful
 /// (`force-off` / `hard-restart`) variants.
-pub fn pcs_operation(action: PowerAction, force: bool) -> &'static str {
+pub(crate) fn pcs_operation(action: PowerAction, force: bool) -> &'static str {
   match (action, force) {
     (PowerAction::On, _) => "on",
     (PowerAction::Off, false) => "soft-off",

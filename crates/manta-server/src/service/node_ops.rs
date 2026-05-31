@@ -277,7 +277,7 @@ fn validate_xname_format_vec(node_vec: &[String]) -> bool {
 }
 
 /// Return `true` if `xname` matches the HPE Cray xname regex.
-pub fn validate_xname_format(xname: &str) -> bool {
+pub(crate) fn validate_xname_format(xname: &str) -> bool {
   XNAME_RE.is_match(xname)
 }
 

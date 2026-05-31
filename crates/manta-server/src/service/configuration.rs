@@ -48,7 +48,7 @@ pub async fn get_configurations(
 
 /// Data gathered for deletion review and execution.
 #[derive(serde::Serialize)]
-pub struct DeletionCandidates {
+pub(crate) struct DeletionCandidates {
   /// CFS sessions whose desired-config matches a candidate configuration.
   pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
   /// BOS session templates to delete: `(name, cfs_config, description)`.
@@ -64,7 +64,7 @@ pub struct DeletionCandidates {
 }
 
 /// Fetch deletion candidates (no side effects).
-pub async fn get_deletion_candidates(
+pub(crate) async fn get_deletion_candidates(
   infra: &InfraContext<'_>,
   token: &str,
   settings_hsm_group_name_opt: Option<&str>,
@@ -136,7 +136,7 @@ pub fn validate_date_range(
 }
 
 /// Execute the deletion of configurations and derivatives.
-pub async fn delete_configurations_and_derivatives(
+pub(crate) async fn delete_configurations_and_derivatives(
   infra: &InfraContext<'_>,
   token: &str,
   candidates: &DeletionCandidates,

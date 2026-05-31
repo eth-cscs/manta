@@ -1,7 +1,7 @@
 //! Application entry point: parses CLI args, loads configuration, and
-//! launches the CLI command handler. After Phase 7 the CLI never talks
-//! to CSM/OCHAMI directly — every operation is forwarded to the manta
-//! HTTPS server named by `cli.toml`'s `manta_server_url`.
+//! launches the CLI command handler. The CLI never talks to CSM /
+//! OCHAMI directly — every operation is forwarded to the manta HTTPS
+//! server named by `cli.toml`'s `manta_server_url`.
 
 mod cli;
 

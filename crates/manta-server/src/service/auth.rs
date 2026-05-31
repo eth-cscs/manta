@@ -4,8 +4,9 @@
 //! The CLI never talks to Keycloak directly; it POSTs username+password
 //! to `manta-server /api/v1/auth/token`, which calls
 //! `backend.get_api_token` on the user's behalf and returns the CSM
-//! bearer token. `validate_api_token` mirrors the CLI's pre-Phase-6
-//! token-still-valid check.
+//! bearer token. `validate_api_token` exposes a lightweight
+//! "is-this-token-still-valid" probe the CLI can call before sending
+//! a long-running request that would otherwise fail mid-flight.
 
 use std::time::Instant;
 
