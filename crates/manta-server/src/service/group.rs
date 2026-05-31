@@ -136,6 +136,39 @@ pub async fn create_group(
   infra.backend.add_group(token, group).await.map(|_| ())
 }
 
+/// Resolve `xnames_expression` and remove the resolved nodes from
+/// `group_name`. With `dry_run = true`, only the resolution runs —
+/// no backend mutation. Errors from the per-node deletion abort
+/// the loop and surface to the handler.
+pub async fn delete_group_members(
+  infra: &InfraContext<'_>,
+  token: &str,
+  group_name: &str,
+  xnames_expression: &str,
+  dry_run: bool,
+) -> Result<(), Error> {
+  let xnames = common::node_ops::resolve_hosts_expression(
+    infra.backend,
+    token,
+    xnames_expression,
+    false,
+  )
+  .await?;
+
+  if dry_run {
+    return Ok(());
+  }
+
+  for xname in &xnames {
+    infra
+      .backend
+      .delete_member_from_group(token, group_name, xname)
+      .await?;
+  }
+
+  Ok(())
+}
+
 /// Resolve hosts expression, validate target group exists,
 /// and add nodes to the HSM group.
 ///

@@ -6,7 +6,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use serde::{Deserialize, Serialize};
 use utoipa::{IntoParams, ToSchema};
 
@@ -272,24 +271,15 @@ pub async fn delete_group_members(
   );
   let infra = ctx.infra();
 
-  let xnames = crate::server::common::node_ops::resolve_hosts_expression(
-    infra.backend,
+  service::group::delete_group_members(
+    &infra,
     &ctx.token,
+    &name,
     &body.xnames_expression,
-    false,
+    body.dry_run,
   )
   .await
   .map_err(to_handler_error)?;
-
-  if !body.dry_run {
-    for xname in &xnames {
-      infra
-        .backend
-        .delete_member_from_group(&ctx.token, &name, xname)
-        .await
-        .map_err(to_handler_error)?;
-    }
-  }
 
   Ok(StatusCode::NO_CONTENT)
 }
