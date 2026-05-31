@@ -1,7 +1,7 @@
-//! Behavioural helpers. Bi-binary by use: `config`, `error`,
-//! `jwt_ops`. CLI-only by use: `app_context`, `log_ops`, `sat_file`.
-//! Server-only by use: `audit`, `kafka`. The single-binary entries
-//! live here pending a per-binary split.
+//! Behavioural helpers. Bi-binary by use: `config`, `error`.
+//! CLI-only by use: `app_context`, `log_ops`, `sat_file`.
+//! Server-only by use: `audit`, `kafka`, `jwt_ops`. The single-binary
+//! entries live here pending a per-binary split.
 
 /// Date-time format string used for displaying timestamps
 /// throughout the application (e.g. "04/03/2026 14:30:00").
