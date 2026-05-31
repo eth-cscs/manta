@@ -224,40 +224,48 @@ impl TestFixture {
 //   - CFS v2 responses are flat JSON arrays (no pagination envelope).
 // ---------------------------------------------------------------------------
 
-async fn mock_hsm_groups(srv: &MockServer) {
+/// Wire-mock builder for `GET <url_path>` → `200 <body>`. Each named
+/// `mock_*` helper documents one wire endpoint by name; the shared
+/// builder removes the per-helper boilerplate.
+async fn mock_get(srv: &MockServer, url_path: &str, body: Value) {
   Mock::given(method("GET"))
-    .and(path("/smd/hsm/v2/groups"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-      {
-        "label": "compute",
-        "members": { "ids": ["x3000c0s1b0n0"] }
-      }
-    ])))
+    .and(path(url_path))
+    .respond_with(ResponseTemplate::new(200).set_body_json(body))
     .mount(srv)
     .await;
+}
+
+async fn mock_hsm_groups(srv: &MockServer) {
+  mock_get(
+    srv,
+    "/smd/hsm/v2/groups",
+    json!([
+      { "label": "compute", "members": { "ids": ["x3000c0s1b0n0"] } }
+    ]),
+  )
+  .await;
 }
 
 // CFS v2 configurations — flat array, camelCase field names.
 // Config name contains "compute" so it passes the name-contains-hsm-group
 // filter inside cfs::configuration::utils::filter.
 async fn mock_cfs_v2_configurations(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/cfs/v2/configurations"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+  mock_get(
+    srv,
+    "/cfs/v2/configurations",
+    json!([
       {
         "name": "compute-config",
         "lastUpdated": "2024-01-01T00:00:00",
-        "layers": [
-          {
-            "name": "layer1",
-            "cloneUrl": "https://vcs.example.com/vcs/cray/cfg.git",
-            "playbook": "site.yml"
-          }
-        ]
+        "layers": [{
+          "name": "layer1",
+          "cloneUrl": "https://vcs.example.com/vcs/cray/cfg.git",
+          "playbook": "site.yml"
+        }]
       }
-    ])))
-    .mount(srv)
-    .await;
+    ]),
+  )
+  .await;
 }
 
 // CFS v2 sessions — flat array.
@@ -266,9 +274,10 @@ async fn mock_cfs_v2_configurations(srv: &MockServer) {
 // Required for get_sessions (filter errors on empty result) and
 // used as a side input by get_configurations and get_images.
 async fn mock_cfs_v2_sessions(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/cfs/v2/sessions"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+  mock_get(
+    srv,
+    "/cfs/v2/sessions",
+    json!([
       {
         "name": "my-session",
         "debug_on_failure": false,
@@ -278,15 +287,16 @@ async fn mock_cfs_v2_sessions(srv: &MockServer) {
           "image_map": []
         }
       }
-    ])))
-    .mount(srv)
-    .await;
+    ]),
+  )
+  .await;
 }
 
 async fn mock_bos_v2_templates(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/bos/v2/sessiontemplates"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+  mock_get(
+    srv,
+    "/bos/v2/sessiontemplates",
+    json!([
       {
         "name": "my-template",
         "enable_cfs": true,
@@ -297,48 +307,42 @@ async fn mock_bos_v2_templates(srv: &MockServer) {
           }
         }
       }
-    ])))
-    .mount(srv)
-    .await;
+    ]),
+  )
+  .await;
 }
 
 // CFS v2 components — flat array; empty is valid since it only contributes
 // desired_config names to the configuration filter.
 async fn mock_cfs_v2_components(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/cfs/v2/components"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
-    .mount(srv)
-    .await;
+  mock_get(srv, "/cfs/v2/components", json!([])).await;
 }
 
 async fn mock_bss_bootparameters(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/bss/boot/v1/bootparameters"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+  mock_get(
+    srv,
+    "/bss/boot/v1/bootparameters",
+    json!([
       {
         "hosts": ["x3000c0s1b0n0"],
         "params": "quiet",
         "kernel": "s3://boot-images/abc123/kernel",
         "initrd": "s3://boot-images/abc123/initrd"
       }
-    ])))
-    .mount(srv)
-    .await;
+    ]),
+  )
+  .await;
 }
 
 async fn mock_ims_images(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/ims/v3/images"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!([
-      {
-        "id": "abc123",
-        "name": "compute-my-image",
-        "created": "2024-01-01T00:00:00"
-      }
-    ])))
-    .mount(srv)
-    .await;
+  mock_get(
+    srv,
+    "/ims/v3/images",
+    json!([
+      { "id": "abc123", "name": "compute-my-image", "created": "2024-01-01T00:00:00" }
+    ]),
+  )
+  .await;
 }
 
 // Used by get_boot_parameters via resolve_hosts_expression →
@@ -346,25 +350,24 @@ async fn mock_ims_images(srv: &MockServer) {
 // Component ID must match the HSM group member so the xname passes
 // the availability filter inside get_node_metadata_available.
 async fn mock_hsm_components(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/smd/hsm/v2/State/Components"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-      "Components": [
-        {
-          "ID": "x3000c0s1b0n0",
-          "Type": "Node",
-          "State": "Ready",
-          "Enabled": true,
-          "Role": "Compute",
-          "NID": 1,
-          "NetType": "Sling",
-          "Arch": "X86",
-          "Class": "Mountain"
-        }
-      ]
-    })))
-    .mount(srv)
-    .await;
+  mock_get(
+    srv,
+    "/smd/hsm/v2/State/Components",
+    json!({
+      "Components": [{
+        "ID": "x3000c0s1b0n0",
+        "Type": "Node",
+        "State": "Ready",
+        "Enabled": true,
+        "Role": "Compute",
+        "NID": 1,
+        "NetType": "Sling",
+        "Arch": "X86",
+        "Class": "Mountain"
+      }]
+    }),
+  )
+  .await;
 }
 
 // ---------------------------------------------------------------------------
@@ -585,40 +588,33 @@ async fn get_boot_parameters_happy_path() {
 // ---------------------------------------------------------------------------
 
 async fn mock_redfish_endpoints(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/smd/hsm/v2/Inventory/RedfishEndpoints"))
-    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-      "RedfishEndpoints": [
-        {
-          "ID": "x3000c0s1b0",
-          "Type": "NodeBMC",
-          "Hostname": "x3000c0s1b0",
-          "Domain": "",
-          "FQDN": "x3000c0s1b0",
-          "Enabled": true,
-          "UUID": "abc-123",
-          "User": "root",
-          "Password": "***",
-          "UseSSDP": false,
-          "MACRequired": false,
-          "RediscoverOnUpdate": true
-        }
-      ]
-    })))
-    .mount(srv)
-    .await;
+  mock_get(
+    srv,
+    "/smd/hsm/v2/Inventory/RedfishEndpoints",
+    json!({
+      "RedfishEndpoints": [{
+        "ID": "x3000c0s1b0",
+        "Type": "NodeBMC",
+        "Hostname": "x3000c0s1b0",
+        "Domain": "",
+        "FQDN": "x3000c0s1b0",
+        "Enabled": true,
+        "UUID": "abc-123",
+        "User": "root",
+        "Password": "***",
+        "UseSSDP": false,
+        "MACRequired": false,
+        "RediscoverOnUpdate": true
+      }]
+    }),
+  )
+  .await;
 }
 
 // CFS v3 components — used by prepare_session_deletion via get_cfs_components.
 // Response envelope: {"components": [...]}.
 async fn mock_cfs_v3_components(srv: &MockServer) {
-  Mock::given(method("GET"))
-    .and(path("/cfs/v3/components"))
-    .respond_with(
-      ResponseTemplate::new(200).set_body_json(json!({"components": []})),
-    )
-    .mount(srv)
-    .await;
+  mock_get(srv, "/cfs/v3/components", json!({"components": []})).await;
 }
 
 // ---------------------------------------------------------------------------
