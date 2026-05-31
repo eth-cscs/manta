@@ -2,52 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
-
-### Breaking changes
-
-- The CLI no longer emits Kafka audit events. The `[auditor.kafka]` block in `cli.toml` is no longer read (silently ignored if present, since `CliConfiguration` does not derive `deny_unknown_fields`). Server-side audit coverage — every request via `log_requests` middleware + per-`/auth/*` events via `send_auth_audit` — supersedes the previous CLI-emitted stream since every CLI action goes through HTTP and is therefore already recorded server-side. `common::audit::maybe_send_audit` is gone; `common::kafka::Kafka` is no longer constructed by the CLI; the `kafka_audit_opt` field on `AppContext` and the `auditor` field on `CliConfiguration` are removed.
-
-### Bug Fixes
-
-- Collapse nested if-let in `apply_sat_file` dispatch (clears `clippy::collapsible_if` lint introduced by Rust 1.92).
-
-### Refactor
-
-- Drop dead deps and methods (`MantaClient::from_app_ctx`, `MantaClient::apply_sat_file`); rename `vault::fetch_*` to `vault::get_*`; delete unused `fetch_shasta_k8s_secrets_from_vault`.
-- Move `delete_group_members` business logic from the handler into `service::group`.
-- Move `post_power` xname resolution from the handler into `service::power::resolve_target_xnames`.
-- Move SAT-file Jinja2 renderer from `manta_shared::shared::sat_file` to `manta_shared::common::sat_file` (behavioural, not wire-shaped).
-- Relocate `node_ops` from `server::common` to `service` (service-tier orchestration).
-- Relocate `authorization` from `server::common` to `service` (resource-level access control, sibling of `service::auth`).
-- Fold `boot_parameters::get_restricted_boot_parameters` into `service::boot_parameters`; delete the empty `server::common::boot_parameters` shell.
-- Relocate `ims_ops` from `server::common` to `service`.
-- Nest `hw_inventory_utils` under `service::hw_cluster` (its single consumer) with private visibility.
-- Delete unused `common::check_network_connectivity` module and the dead `pub use AppContext` re-export.
-- Tighten visibility on 5 service-internal `pub` items (`BootConfigChangeset`, `DeletionCandidates`, `pcs_operation`, `validate_xname_format`, `KernelParamOperation`) to `pub(crate)`.
-
-### Documentation
-
-- Clarify per-module audience in `manta-shared::lib.rs` and `common/mod.rs` (which entries are bi-binary vs CLI-only vs server-only).
-- Correct stale `jwt_ops` audience claim (server-only, not bi-binary).
-- Replace stale internal "Phase N" references in `service::auth` and `cli::main` doc-comment headers with timeline-agnostic wording.
-- Replace stale FIXME in `backend_dispatcher::group` with a comment documenting the upstream rename blocker.
-- Regenerate man pages and shell completions; enforce drift via CI.
-
-### Chore / CI
-
-- Wire `cargo audit` as a CI step with documented waivers in `.cargo/audit.toml` for 4 transitive RustSec advisories (3 × rustls-webpki via AWS SDK chain; `paste` unmaintained via utoipa-axum).
-- Wire `cargo machete` as a CI step.
-- Remove 23 dead Cargo.toml dependency declarations across the three crates.
-- Strengthen 3 weak `.is_ok()`-only tests in `cli/http_client/mod.rs` to pin `base_url`, `site_name`, and URL-scheme normalisation; new test covers scheme-prepend behaviour.
-- Drop trailing periods on the 4 occurrences of `"No best candidate found."` for consistency with the rest of `service/*`.
-
-## [2.0.0-beta.16] - 2026-05-30
+## [2.0.0-beta.17] - 2026-05-31
 
 ### Bug Fixes
 
 - `add node -d/--disabled` actually disables the node
 - Update cli_tests.rs after the manta-cli -> manta binary rename
+- Collapse nested if-let in apply_sat_file dispatch
 
 ### Build
 
@@ -101,6 +62,10 @@ All notable changes to this project will be documented in this file.
 - Add LICENSE file to creates
 - Update Cargo.toml
 - Bump csm-rs to 1.0.0-beta.2
+- Regenerate man pages + shell completions; enforce in CI
+- Code-quality polish — stale FIXME, weak tests, trailing periods
+- Code-quality polish — visibility + stale phase refs
+- Run as non-root user; explicit STOPSIGNAL on server
 
 ### Refactor
 
@@ -132,6 +97,10 @@ All notable changes to this project will be documented in this file.
 - Rename cluster-named command modules (Tier 3.2 phase 5/N)
 - [**breaking**] Move render + filter + preview to CLI
 - Pipe parsed Value through trait; delete manta-shared SatFile
+- [**breaking**] Drop Kafka audit emission from manta-cli
+- Drop dead deps and methods, rename vault fetch_* to get_*
+- Move sat_file Jinja2 renderer from shared/ to common/
+- Relocate node_ops from server::common to service
 
 ### Styling
 
