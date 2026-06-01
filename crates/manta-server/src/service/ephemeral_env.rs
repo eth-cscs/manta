@@ -34,11 +34,15 @@ pub async fn exec(
     Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
   })?;
 
-  let user_public_ssh_id_value = if let Ok(Some(user_public_ssh_value)) = shasta
+  let user_public_ssh_id = if let Ok(Some(user_public_ssh_key)) = shasta
     .ims_public_keys_v3_get_single(token, &user_public_key_name)
     .await
   {
-    user_public_ssh_value["id"].clone()
+    user_public_ssh_key.id.ok_or_else(|| {
+      Error::MissingField(
+        "IMS public-key response missing server-generated 'id'".to_string(),
+      )
+    })?
   } else {
     return Err(Error::NotFound(format!(
       "User '{user_public_key_name}' does not have an SSH public key in Alps. \
@@ -46,7 +50,7 @@ pub async fn exec(
     )));
   };
 
-  tracing::info!("SSH key found with ID {}", user_public_ssh_id_value);
+  tracing::info!("SSH key found with ID {}", user_public_ssh_id);
   tracing::info!(
     "Creating ephemeral environment based on image ID {}",
     image_id
@@ -57,9 +61,7 @@ pub async fn exec(
       token,
       EPHEMERAL_IMAGE_NAME,
       image_id,
-      user_public_ssh_id_value.as_str().ok_or_else(|| {
-        Error::MissingField("SSH key ID is not a string".to_string())
-      })?,
+      &user_public_ssh_id,
     )
     .await
     .map_err(|e| {

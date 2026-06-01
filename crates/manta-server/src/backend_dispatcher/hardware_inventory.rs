@@ -2,12 +2,12 @@
 
 use manta_backend_dispatcher::{
   error::Error, interfaces::hsm::hardware_inventory::HardwareInventory,
-  types::HWInventoryByLocationList,
+  types::{
+    HWInventory, HWInventoryByLocationList, HsmActionResponse, NodeSummary,
+  },
 };
 
 use StaticBackendDispatcher::*;
-
-use serde_json::Value;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -16,7 +16,7 @@ impl HardwareInventory for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     xname: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<NodeSummary, Error> {
     dispatch!(self, get_inventory_hardware, auth_token, xname)
   }
 
@@ -29,7 +29,7 @@ impl HardwareInventory for StaticBackendDispatcher {
     parents: Option<bool>,
     partition: Option<&str>,
     format: Option<&str>,
-  ) -> Result<Value, Error> {
+  ) -> Result<HWInventory, Error> {
     dispatch!(
       self,
       get_inventory_hardware_query,
@@ -47,7 +47,7 @@ impl HardwareInventory for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     hardware: HWInventoryByLocationList,
-  ) -> Result<Value, Error> {
+  ) -> Result<HsmActionResponse, Error> {
     dispatch!(self, post_inventory_hardware, auth_token, hardware)
   }
 }

@@ -208,7 +208,7 @@ async fn get_node_hw_component_count(
   hsm_member: &str,
   user_defined_hw_profile_vec: Vec<String>,
 ) -> (String, Vec<String>, Vec<u64>) {
-  let node_hw_inventory_value = match backend
+  let hw_inventory_typed = match backend
     .get_inventory_hardware_query(
       &shasta_token,
       hsm_member,
@@ -227,6 +227,11 @@ async fn get_node_hw_component_count(
     }
   };
 
+  // `get_node_hw_properties_from_value` parses JSON paths out of a
+  // Value; re-serialize the typed `HWInventory` here. Future work could
+  // refactor that helper to take `&HWInventory` directly.
+  let node_hw_inventory_value =
+    serde_json::to_value(&hw_inventory_typed).unwrap_or_default();
   let node_hw_profile = get_node_hw_properties_from_value(
     &node_hw_inventory_value,
     &user_defined_hw_profile_vec,

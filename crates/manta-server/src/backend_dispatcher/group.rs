@@ -3,12 +3,12 @@
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
+  error::Error,
+  interfaces::hsm::group::GroupTrait,
+  types::{Group, HsmActionResponse},
 };
 
 use StaticBackendDispatcher::*;
-
-use serde_json::Value;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -106,7 +106,7 @@ impl GroupTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     hsm_group_label: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<HsmActionResponse, Error> {
     dispatch!(self, delete_group, auth_token, hsm_group_label)
   }
 
@@ -128,7 +128,7 @@ impl GroupTrait for StaticBackendDispatcher {
     auth_token: &str,
     group_label: &str,
     xname: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<HsmActionResponse, Error> {
     dispatch!(self, post_member, auth_token, group_label, xname)
   }
 

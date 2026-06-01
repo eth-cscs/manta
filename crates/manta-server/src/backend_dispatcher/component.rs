@@ -3,12 +3,12 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::hsm::component::ComponentTrait,
-  types::{Component, ComponentArrayPostArray, NodeMetadataArray},
+  types::{
+    Component, ComponentArrayPostArray, HsmActionResponse, NodeMetadataArray,
+  },
 };
 
 use StaticBackendDispatcher::*;
-
-use serde_json::Value;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 
@@ -91,7 +91,7 @@ impl ComponentTrait for StaticBackendDispatcher {
     &self,
     auth_token: &str,
     id: &str,
-  ) -> Result<Value, Error> {
+  ) -> Result<HsmActionResponse, Error> {
     dispatch!(self, delete_node, auth_token, id)
   }
 

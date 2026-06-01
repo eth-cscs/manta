@@ -59,14 +59,20 @@ async fn fetch_node_summaries(
 
     tasks.spawn(async move {
       let _permit = permit;
-      let hw_inventory_value = backend_cp
+      let hw_inventory_typed = backend_cp
         .get_inventory_hardware_query(
           &token_str, &xname_str, None, None, None, None, None,
         )
         .await;
 
-      let node_hw_opt = match hw_inventory_value {
-        Ok(value) => value.pointer("/Nodes/0").cloned(),
+      // `NodeSummary::from_csm_value` still parses out of a JSON Value;
+      // re-serialize the typed `HWInventory` and pluck `/Nodes/0` like
+      // before. A future cleanup can replace this round-trip with a
+      // typed constructor that takes `&HWInventory` directly.
+      let node_hw_opt = match hw_inventory_typed {
+        Ok(hw_inv) => serde_json::to_value(&hw_inv)
+          .ok()
+          .and_then(|v| v.pointer("/Nodes/0").cloned()),
         Err(e) => {
           tracing::error!(
             "Failed to get HW inventory for '{}': {}",
