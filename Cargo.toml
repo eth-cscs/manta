@@ -2,17 +2,6 @@
 resolver = "3"
 members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server"]
 
-# Local-dev sibling-repo overrides. Cargo's `[patch.crates-io]` is the
-# only mechanism that applies to transitive deps too: it makes csm-rs
-# and ochami-rs (which themselves depend on manta-backend-dispatcher
-# via crates.io) resolve to the same local copy as manta-server's
-# direct dep, so the resulting graph has ONE version of every patched
-# crate. Comment out before publishing or before pushing CI commits.
-[patch.crates-io]
-manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-csm-rs                   = { path = "../csm-rs" }
-ochami-rs                = { path = "../ochami-rs" }
-
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
 version      = "2.0.0-beta.18"
