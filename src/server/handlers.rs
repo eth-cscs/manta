@@ -1,12 +1,15 @@
 //! Axum handler functions for every HTTP and WebSocket endpoint, plus shared
 //! request/response types and the bearer-token extractor.
 
-use std::sync::Arc;
 use std::convert::Infallible;
+use std::sync::Arc;
 
 use axum::{
   Json,
-  extract::{FromRequestParts, Path, Query, State, ws::{Message, WebSocket, WebSocketUpgrade}},
+  extract::{
+    FromRequestParts, Path, Query, State,
+    ws::{Message, WebSocket, WebSocketUpgrade},
+  },
   http::{StatusCode, header, request::Parts},
   response::{
     IntoResponse,
@@ -17,15 +20,12 @@ use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::{
   error::Error as BackendError,
   interfaces::{
-    cfs::CfsTrait,
-    console::ConsoleTrait,
-    hsm::group::GroupTrait,
-    pcs::PCSTrait,
+    cfs::CfsTrait, console::ConsoleTrait, hsm::group::GroupTrait, pcs::PCSTrait,
   },
   types::{K8sAuth, K8sDetails},
 };
-use tokio::io::AsyncWriteExt;
 use serde::{Deserialize, Serialize};
+use tokio::io::AsyncWriteExt;
 
 use super::ServerState;
 use crate::service;
@@ -74,7 +74,9 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
 }
 
 /// Convert a `BackendError` into the best-fitting HTTP error response.
-pub(crate) fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
+pub(crate) fn to_handler_error(
+  e: BackendError,
+) -> (StatusCode, Json<ErrorResponse>) {
   let status = match &e {
     BackendError::NotFound(_)
     | BackendError::SessionNotFound
@@ -95,28 +97,58 @@ pub(crate) fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorRespon
   } else {
     tracing::debug!("Service error {}: {}", status, e);
   }
-  (status, Json(ErrorResponse { error: e.to_string() }))
+  (
+    status,
+    Json(ErrorResponse {
+      error: e.to_string(),
+    }),
+  )
 }
 
 /// Convert any `Display` error (e.g. anyhow) into an HTTP error response.
-fn display_error<E: std::fmt::Display>(e: E) -> (StatusCode, Json<ErrorResponse>) {
+fn display_error<E: std::fmt::Display>(
+  e: E,
+) -> (StatusCode, Json<ErrorResponse>) {
   to_handler_error(BackendError::Message(e.to_string()))
 }
 
-fn serialize_or_500<T: Serialize>(v: &T) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
+fn serialize_or_500<T: Serialize>(
+  v: &T,
+) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
   serde_json::to_value(v).map_err(|e| {
     let msg = format!("Failed to serialize: {}", e);
     tracing::error!("{}", msg);
-    (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse { error: msg }))
+    (
+      StatusCode::INTERNAL_SERVER_ERROR,
+      Json(ErrorResponse { error: msg }),
+    )
   })
 }
 
-fn require_vault(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
-  url.ok_or_else(|| (StatusCode::NOT_IMPLEMENTED, Json(ErrorResponse { error: "vault_base_url not configured on this server".into() })))
+fn require_vault(
+  url: Option<&str>,
+) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
+  url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "vault_base_url not configured on this server".into(),
+      }),
+    )
+  })
 }
 
-fn require_k8s_url(url: Option<&str>) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
-  url.ok_or_else(|| (StatusCode::NOT_IMPLEMENTED, Json(ErrorResponse { error: "k8s_api_url not configured on this server".into() })))
+fn require_k8s_url(
+  url: Option<&str>,
+) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
+  url.ok_or_else(|| {
+    (
+      StatusCode::NOT_IMPLEMENTED,
+      Json(ErrorResponse {
+        error: "k8s_api_url not configured on this server".into(),
+      }),
+    )
+  })
 }
 
 fn validate_repo_list_lengths(
@@ -142,14 +174,16 @@ fn parse_iso_datetime(
   field: &str,
   value: &str,
 ) -> Result<chrono::NaiveDateTime, (StatusCode, Json<ErrorResponse>)> {
-  chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S").map_err(|e| {
-    (
-      StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: format!("Invalid '{}' datetime '{}': {}", field, value, e),
-      }),
-    )
-  })
+  chrono::NaiveDateTime::parse_from_str(value, "%Y-%m-%dT%H:%M:%S").map_err(
+    |e| {
+      (
+        StatusCode::BAD_REQUEST,
+        Json(ErrorResponse {
+          error: format!("Invalid '{}' datetime '{}': {}", field, value, e),
+        }),
+      )
+    },
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -366,18 +400,20 @@ pub async fn get_images(
     .await
     .map_err(to_handler_error)?;
 
-  let mut entries = Vec::with_capacity(images.len());
-  for (img, config_name, image_id, linked) in images {
-    let image = serialize_or_500(&img)?;
-    entries.push(ImageEntry {
-      image,
-      configuration_name: config_name,
-      image_id,
-      is_linked: linked,
-    });
-  }
+  Ok(Json(images))
 
-  Ok(Json(entries))
+  // let mut entries = Vec::with_capacity(images.len());
+  // for img in images {
+  //   let image = serialize_or_500(&img)?;
+  //   entries.push(ImageEntry {
+  //     image,
+  //     configuration_name: config_name,
+  //     image_id,
+  //     is_linked: linked,
+  //   });
+  // }
+
+  // Ok(Json(entries))
 }
 
 // ---------------------------------------------------------------------------
@@ -685,7 +721,10 @@ pub async fn add_node(
   .await
   .map_err(to_handler_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "id": body.id }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "id": body.id })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -736,7 +775,10 @@ pub async fn create_group(
     .await
     .map_err(to_handler_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "created": true })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -771,10 +813,14 @@ pub async fn add_nodes_to_group(
   );
   let infra = state.infra_context();
 
-  let (added, removed) =
-    service::group::add_nodes_to_group(&infra, &token, &name, &body.hosts_expression)
-      .await
-      .map_err(to_handler_error)?;
+  let (added, removed) = service::group::add_nodes_to_group(
+    &infra,
+    &token,
+    &name,
+    &body.hosts_expression,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json(AddNodesToGroupResponse { added, removed }))
 }
@@ -823,7 +869,9 @@ pub async fn delete_boot_parameters(
 pub async fn add_boot_parameters(
   State(state): State<Arc<ServerState>>,
   BearerToken(token): BearerToken,
-  Json(boot_params): Json<::manta_backend_dispatcher::types::bss::BootParameters>,
+  Json(boot_params): Json<
+    ::manta_backend_dispatcher::types::bss::BootParameters,
+  >,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_boot_parameters");
   let infra = state.infra_context();
@@ -832,7 +880,10 @@ pub async fn add_boot_parameters(
     .await
     .map_err(to_handler_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "created": true })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -895,7 +946,10 @@ pub async fn add_redfish_endpoint(
     .await
     .map_err(to_handler_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "created": true })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -951,9 +1005,14 @@ pub async fn delete_session(
     return Ok((StatusCode::OK, Json(serialize_or_500(&deletion_ctx)?)));
   }
 
-  service::session::execute_session_deletion(&infra, &token, &deletion_ctx, false)
-    .await
-    .map_err(to_handler_error)?;
+  service::session::execute_session_deletion(
+    &infra,
+    &token,
+    &deletion_ctx,
+    false,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": name }))))
 }
@@ -982,21 +1041,28 @@ pub async fn delete_images(
   tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
   let infra = state.infra_context();
 
-  let id_strings: Vec<String> = q.ids.split(',').map(|s| s.trim().to_string()).collect();
+  let id_strings: Vec<String> =
+    q.ids.split(',').map(|s| s.trim().to_string()).collect();
   let id_refs: Vec<&str> = id_strings.iter().map(|s| s.as_str()).collect();
 
   if q.dry_run {
     service::image::validate_image_deletion(&infra, &token, &id_refs, None)
       .await
       .map_err(to_handler_error)?;
-    return Ok((StatusCode::OK, Json(serde_json::json!({ "validated_ids": id_strings }))));
+    return Ok((
+      StatusCode::OK,
+      Json(serde_json::json!({ "validated_ids": id_strings })),
+    ));
   }
 
   let deleted = service::image::delete_images(&infra, &token, &id_refs, None)
     .await
     .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({ "deleted": deleted }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({ "deleted": deleted })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1027,8 +1093,16 @@ pub async fn delete_configurations(
   tracing::info!("delete_configurations dry_run={}", q.dry_run);
   let infra = state.infra_context();
 
-  let since = q.since.as_deref().map(|s| parse_iso_datetime("since", s)).transpose()?;
-  let until = q.until.as_deref().map(|s| parse_iso_datetime("until", s)).transpose()?;
+  let since = q
+    .since
+    .as_deref()
+    .map(|s| parse_iso_datetime("since", s))
+    .transpose()?;
+  let until = q
+    .until
+    .as_deref()
+    .map(|s| parse_iso_datetime("until", s))
+    .transpose()?;
 
   let candidates = service::configuration::get_deletion_candidates(
     &infra,
@@ -1045,14 +1119,21 @@ pub async fn delete_configurations(
     return Ok((StatusCode::OK, Json(serialize_or_500(&candidates)?)));
   }
 
-  service::configuration::delete_configurations_and_derivatives(&infra, &token, &candidates)
-    .await
-    .map_err(to_handler_error)?;
+  service::configuration::delete_configurations_and_derivatives(
+    &infra,
+    &token,
+    &candidates,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({
-    "deleted_configurations": candidates.configuration_names,
-    "deleted_images": candidates.image_ids,
-  }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({
+      "deleted_configurations": candidates.configuration_names,
+      "deleted_images": candidates.image_ids,
+    })),
+  ))
 }
 
 // ===========================================================================
@@ -1097,13 +1178,21 @@ pub async fn create_session(
 
   let vault_base_url = require_vault(state.vault_base_url.as_deref())?;
 
-  let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
-      .await
-      .map_err(to_handler_error)?;
+  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    &token,
+    vault_base_url,
+    &state.site_name,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
-  let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
-  let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
+  let repo_name_refs: Vec<&str> =
+    body.repo_names.iter().map(|s| s.as_str()).collect();
+  let repo_commit_refs: Vec<&str> = body
+    .repo_last_commit_ids
+    .iter()
+    .map(|s| s.as_str())
+    .collect();
 
   let (session_name, config_name) = service::session::create_cfs_session(
     &infra,
@@ -1190,11 +1279,14 @@ pub async fn apply_boot_config(
   .await
   .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({
-    "applied": true,
-    "nodes": changeset.xname_vec,
-    "need_restart": changeset.need_restart,
-  }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({
+      "applied": true,
+      "nodes": changeset.xname_vec,
+      "need_restart": changeset.need_restart,
+    })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1261,39 +1353,59 @@ pub async fn apply_kernel_parameters(
   let infra = state.infra_context();
 
   let operation = match body.operation {
-    KernelParamOp::Add => service::kernel_parameters::KernelParamOperation::Add {
-      params: &body.params,
-      overwrite: body.overwrite,
-    },
-    KernelParamOp::Apply => service::kernel_parameters::KernelParamOperation::Apply {
-      params: &body.params,
-    },
-    KernelParamOp::Delete => service::kernel_parameters::KernelParamOperation::Delete {
-      params: &body.params,
-    },
+    KernelParamOp::Add => {
+      service::kernel_parameters::KernelParamOperation::Add {
+        params: &body.params,
+        overwrite: body.overwrite,
+      }
+    }
+    KernelParamOp::Apply => {
+      service::kernel_parameters::KernelParamOperation::Apply {
+        params: &body.params,
+      }
+    }
+    KernelParamOp::Delete => {
+      service::kernel_parameters::KernelParamOperation::Delete {
+        params: &body.params,
+      }
+    }
   };
 
-  let changeset =
-    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &body.xnames, &operation)
-      .await
-      .map_err(to_handler_error)?;
+  let changeset = service::kernel_parameters::prepare_kernel_params_changes(
+    &infra,
+    &token,
+    &body.xnames,
+    &operation,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
-  let images_to_project =
-    service::kernel_parameters::build_images_to_project(&changeset, body.project_sbps);
+  let images_to_project = service::kernel_parameters::build_images_to_project(
+    &changeset,
+    body.project_sbps,
+  );
 
-  service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
-    .await
-    .map_err(to_handler_error)?;
+  service::kernel_parameters::apply_kernel_params_changes(
+    &infra,
+    &token,
+    &changeset,
+    &images_to_project,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({
-    "applied": true,
-    "has_changes": changeset.has_changes,
-    "xnames_to_reboot": changeset.xnames_to_reboot,
-  }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({
+      "applied": true,
+      "has_changes": changeset.has_changes,
+      "xnames_to_reboot": changeset.xnames_to_reboot,
+    })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1458,7 +1570,10 @@ pub async fn create_ephemeral_env(
   .await
   .map_err(display_error)?;
 
-  Ok((StatusCode::CREATED, Json(serde_json::json!({ "created": true }))))
+  Ok((
+    StatusCode::CREATED,
+    Json(serde_json::json!({ "created": true })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1588,8 +1703,18 @@ pub async fn post_power(
 
   let result = match body.action {
     PowerAction::On => infra.backend.power_on_sync(&token, &xnames).await,
-    PowerAction::Off => infra.backend.power_off_sync(&token, &xnames, body.force).await,
-    PowerAction::Reset => infra.backend.power_reset_sync(&token, &xnames, body.force).await,
+    PowerAction::Off => {
+      infra
+        .backend
+        .power_off_sync(&token, &xnames, body.force)
+        .await
+    }
+    PowerAction::Reset => {
+      infra
+        .backend
+        .power_reset_sync(&token, &xnames, body.force)
+        .await
+    }
   }
   .map_err(to_handler_error)?;
 
@@ -1664,9 +1789,11 @@ pub async fn post_template_session(
   };
 
   let (bos_session, _) =
-    service::template::validate_and_prepare_template_session(&infra, &token, &params)
-      .await
-      .map_err(to_handler_error)?;
+    service::template::validate_and_prepare_template_session(
+      &infra, &token, &params,
+    )
+    .await
+    .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&bos_session)?)));
@@ -1722,9 +1849,9 @@ pub async fn get_session_logs(
     .map_err(to_handler_error)?;
 
   let sse_stream = logs_stream.lines().map(|result| {
-    Ok::<Event, Infallible>(Event::default().data(
-      result.unwrap_or_else(|e| format!("error: {}", e)),
-    ))
+    Ok::<Event, Infallible>(
+      Event::default().data(result.unwrap_or_else(|e| format!("error: {}", e))),
+    )
   });
 
   Ok(Sse::new(sse_stream).keep_alive(KeepAlive::default()))
@@ -1783,14 +1910,13 @@ pub async fn post_sat_file(
   let vault_base_url = require_vault(infra.vault_base_url)?;
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
-  let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(
-      &token,
-      vault_base_url,
-      infra.site_name,
-    )
-    .await
-    .map_err(display_error)?;
+  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    &token,
+    vault_base_url,
+    infra.site_name,
+  )
+  .await
+  .map_err(display_error)?;
 
   service::sat_file::apply_sat_file(
     &infra,
@@ -1858,7 +1984,11 @@ pub async fn add_kernel_parameters(
   )
   .await?;
 
-  tracing::info!("add_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  tracing::info!(
+    "add_kernel_parameters xnames={:?} dry_run={}",
+    xnames,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
   let operation = service::kernel_parameters::KernelParamOperation::Add {
@@ -1866,27 +1996,38 @@ pub async fn add_kernel_parameters(
     overwrite: body.overwrite,
   };
 
-  let changeset =
-    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
-      .await
-      .map_err(to_handler_error)?;
+  let changeset = service::kernel_parameters::prepare_kernel_params_changes(
+    &infra, &token, &xnames, &operation,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
   }
 
-  let images_to_project =
-    service::kernel_parameters::build_images_to_project(&changeset, body.project_sbps);
+  let images_to_project = service::kernel_parameters::build_images_to_project(
+    &changeset,
+    body.project_sbps,
+  );
 
-  service::kernel_parameters::apply_kernel_params_changes(&infra, &token, &changeset, &images_to_project)
-    .await
-    .map_err(to_handler_error)?;
+  service::kernel_parameters::apply_kernel_params_changes(
+    &infra,
+    &token,
+    &changeset,
+    &images_to_project,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({
-    "applied": true,
-    "has_changes": changeset.has_changes,
-    "xnames_to_reboot": changeset.xnames_to_reboot,
-  }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({
+      "applied": true,
+      "has_changes": changeset.has_changes,
+      "xnames_to_reboot": changeset.xnames_to_reboot,
+    })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1922,17 +2063,22 @@ pub async fn delete_kernel_parameters(
   )
   .await?;
 
-  tracing::info!("delete_kernel_parameters xnames={:?} dry_run={}", xnames, body.dry_run);
+  tracing::info!(
+    "delete_kernel_parameters xnames={:?} dry_run={}",
+    xnames,
+    body.dry_run
+  );
   let infra = state.infra_context();
 
   let operation = service::kernel_parameters::KernelParamOperation::Delete {
     params: &body.params,
   };
 
-  let changeset =
-    service::kernel_parameters::prepare_kernel_params_changes(&infra, &token, &xnames, &operation)
-      .await
-      .map_err(to_handler_error)?;
+  let changeset = service::kernel_parameters::prepare_kernel_params_changes(
+    &infra, &token, &xnames, &operation,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));
@@ -1947,11 +2093,14 @@ pub async fn delete_kernel_parameters(
   .await
   .map_err(to_handler_error)?;
 
-  Ok((StatusCode::OK, Json(serde_json::json!({
-    "applied": true,
-    "has_changes": changeset.has_changes,
-    "xnames_to_reboot": changeset.xnames_to_reboot,
-  }))))
+  Ok((
+    StatusCode::OK,
+    Json(serde_json::json!({
+      "applied": true,
+      "has_changes": changeset.has_changes,
+      "xnames_to_reboot": changeset.xnames_to_reboot,
+    })),
+  ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1981,20 +2130,24 @@ pub async fn add_hw_component(
   Path(target): Path<String>,
   Json(body): Json<AddHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!("add_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!(
+    "add_hw_component target={} parent={} dry_run={}",
+    target,
+    body.parent_cluster,
+    body.dry_run
+  );
 
-  let result =
-    crate::cli::commands::add_hw_component_cluster::run(
-      &state.backend,
-      &token,
-      &target,
-      &body.parent_cluster,
-      &body.pattern,
-      body.dry_run,
-      body.create_hsm_group,
-    )
-    .await
-    .map_err(display_error)?;
+  let result = crate::cli::commands::add_hw_component_cluster::run(
+    &state.backend,
+    &token,
+    &target,
+    &body.parent_cluster,
+    &body.pattern,
+    body.dry_run,
+    body.create_hsm_group,
+  )
+  .await
+  .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -2033,20 +2186,24 @@ pub async fn delete_hw_component(
   Path(target): Path<String>,
   Json(body): Json<DeleteHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!("delete_hw_component target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!(
+    "delete_hw_component target={} parent={} dry_run={}",
+    target,
+    body.parent_cluster,
+    body.dry_run
+  );
 
-  let result =
-    crate::cli::commands::delete_hw_component_cluster::run(
-      &state.backend,
-      &token,
-      &target,
-      &body.parent_cluster,
-      &body.pattern,
-      body.dry_run,
-      body.delete_hsm_group,
-    )
-    .await
-    .map_err(display_error)?;
+  let result = crate::cli::commands::delete_hw_component_cluster::run(
+    &state.backend,
+    &token,
+    &target,
+    &body.parent_cluster,
+    &body.pattern,
+    body.dry_run,
+    body.delete_hsm_group,
+  )
+  .await
+  .map_err(display_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -2102,11 +2259,20 @@ pub async fn apply_hw_configuration(
   Path(target): Path<String>,
   Json(body): Json<ApplyHwConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!("apply_hw_configuration target={} parent={} dry_run={}", target, body.parent_cluster, body.dry_run);
+  tracing::info!(
+    "apply_hw_configuration target={} parent={} dry_run={}",
+    target,
+    body.parent_cluster,
+    body.dry_run
+  );
 
   let mode = match body.mode {
-    HwClusterMode::Pin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Pin,
-    HwClusterMode::Unpin => crate::cli::commands::hw_cluster_common::command::HwClusterMode::Unpin,
+    HwClusterMode::Pin => {
+      crate::cli::commands::hw_cluster_common::command::HwClusterMode::Pin
+    }
+    HwClusterMode::Unpin => {
+      crate::cli::commands::hw_cluster_common::command::HwClusterMode::Unpin
+    }
   };
 
   let result =
@@ -2176,18 +2342,30 @@ pub async fn apply_session(
       .split(',')
       .map(|s| s.trim().to_string())
       .collect();
-    crate::common::authorization::validate_target_hsm_members(infra.backend, &token, &xnames)
-      .await
-      .map_err(display_error)?;
+    crate::common::authorization::validate_target_hsm_members(
+      infra.backend,
+      &token,
+      &xnames,
+    )
+    .await
+    .map_err(display_error)?;
   }
 
-  let gitea_token =
-    crate::common::vault::http_client::fetch_shasta_vcs_token(&token, vault_base_url, &state.site_name)
-      .await
-      .map_err(to_handler_error)?;
+  let gitea_token = crate::common::vault::http_client::fetch_shasta_vcs_token(
+    &token,
+    vault_base_url,
+    &state.site_name,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
-  let repo_name_refs: Vec<&str> = body.repo_names.iter().map(|s| s.as_str()).collect();
-  let repo_commit_refs: Vec<&str> = body.repo_last_commit_ids.iter().map(|s| s.as_str()).collect();
+  let repo_name_refs: Vec<&str> =
+    body.repo_names.iter().map(|s| s.as_str()).collect();
+  let repo_commit_refs: Vec<&str> = body
+    .repo_last_commit_ids
+    .iter()
+    .map(|s| s.as_str())
+    .collect();
 
   let (session_name, config_name) = service::session::create_cfs_session(
     &infra,
@@ -2229,8 +2407,12 @@ pub struct ConsoleQuery {
   pub rows: u16,
 }
 
-fn default_cols() -> u16 { 80 }
-fn default_rows() -> u16 { 24 }
+fn default_cols() -> u16 {
+  80
+}
+fn default_rows() -> u16 {
+  24
+}
 
 /// `WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[tracing::instrument(skip_all, fields(xname = %xname))]
@@ -2254,8 +2436,16 @@ pub async fn console_node_ws(
   let timeout = state.console_inactivity_timeout;
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
-    match state.backend
-      .attach_to_node_console(&token, &state.site_name, &xname, q.cols, q.rows, &k8s)
+    match state
+      .backend
+      .attach_to_node_console(
+        &token,
+        &state.site_name,
+        &xname,
+        q.cols,
+        q.rows,
+        &k8s,
+      )
       .await
     {
       Ok((console_in, console_out)) => {
@@ -2301,8 +2491,16 @@ pub async fn console_session_ws(
   let timeout = state.console_inactivity_timeout;
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
-    match state.backend
-      .attach_to_session_console(&token, &state.site_name, &name, q.cols, q.rows, &k8s)
+    match state
+      .backend
+      .attach_to_session_console(
+        &token,
+        &state.site_name,
+        &name,
+        q.cols,
+        q.rows,
+        &k8s,
+      )
       .await
     {
       Ok((console_in, console_out)) => {
@@ -2404,8 +2602,8 @@ async fn resolve_xnames_from_request(
   Err((
     StatusCode::BAD_REQUEST,
     Json(ErrorResponse {
-      error: "At least one of 'xnames' or 'hsm_group' must be provided".to_string(),
+      error: "At least one of 'xnames' or 'hsm_group' must be provided"
+        .to_string(),
     }),
   ))
 }
-

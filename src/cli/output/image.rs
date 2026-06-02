@@ -6,22 +6,15 @@ use comfy_table::{ContentArrangement, Table};
 use manta_backend_dispatcher::types::ims::Image;
 
 /// Print image details as a formatted table.
-pub fn print(image_detail_vec: &[(Image, String, String, bool)]) {
+pub fn print(image_detail_vec: &[Image]) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
 
-  table.set_header(vec![
-    "Image ID",
-    "Name",
-    "Creation time",
-    "CFS config",
-    "HSM groups",
-    "Tags",
-  ]);
+  table.set_header(vec!["Image ID", "Name", "Creation time", "Tags"]);
 
   for image_details in image_detail_vec {
     let unknown = String::from("unknown");
-    let creation_date = image_details.0.created.as_ref().unwrap_or(&unknown);
+    let creation_date = image_details.created.as_ref().unwrap_or(&unknown);
 
     // NOTE: CSM can have different date formats, so we need to try to parse it in different
     // ways
@@ -34,18 +27,10 @@ pub fn print(image_detail_vec: &[(Image, String, String, bool)]) {
     };
 
     table.add_row(vec![
-      image_details.0.id.as_deref().unwrap_or("unknown"),
-      &image_details.0.name,
+      image_details.id.as_deref().unwrap_or("unknown"),
+      &image_details.name,
       &creation_date,
-      &image_details.1,
       &image_details
-        .2
-        .split(',')
-        .map(|v| v.trim())
-        .collect::<Vec<_>>()
-        .join("\n"),
-      &image_details
-        .0
         .metadata
         .clone()
         .unwrap_or_default()
