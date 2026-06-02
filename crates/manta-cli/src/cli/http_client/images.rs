@@ -1,6 +1,6 @@
 //! IMS image endpoints: list, bulk-delete.
 
-use anyhow::Context;
+use regex::Regex;
 use serde_json::Value;
 
 use manta_shared::shared::dto::Image;
@@ -22,21 +22,25 @@ impl MantaClient {
     &self,
     token: &str,
     params: &GetImagesParams,
-  ) -> anyhow::Result<Vec<(Image, String, String, bool)>> {
+  ) -> anyhow::Result<Vec<Image>> {
     let q = QueryBuilder::new()
       .opt("id", &params.id)
-      .opt("hsm_group", &params.hsm_group)
+      .opt("pattern", &params.pattern)
       .opt_display("limit", &params.limit)
       .build();
-    let entries: Vec<ImageEntry> = self.get_json(token, "/images", &q).await?;
-    entries
-      .into_iter()
-      .map(|e| {
-        let img: Image = serde_json::from_value(e.image)
-          .context("Failed to deserialize image")?;
-        Ok((img, e.configuration_name, e.image_id, e.is_linked))
-      })
-      .collect()
+
+    let mut image_vec: Vec<Image> = self.get_json(token, "/images", &q).await?;
+
+    if let Some(pattern) = &params.pattern {
+      let re = Regex::new(&pattern)?;
+      image_vec.retain(|image| re.is_match(&image.name));
+    };
+
+    if let Some(limit) = params.limit {
+      image_vec.truncate(limit as usize);
+    }
+
+    Ok(image_vec)
   }
 
   pub async fn delete_images(

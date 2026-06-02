@@ -21,7 +21,7 @@ fn parse_images_params(
 
   GetImagesParams {
     id: cli_args.opt_string("id"),
-    hsm_group: cli_args.opt_string("group"),
+    pattern: cli_args.opt_string("pattern"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     limit,
   }

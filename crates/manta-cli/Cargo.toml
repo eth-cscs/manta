@@ -41,6 +41,7 @@ manta-shared = { workspace = true }
 
 # --- END MANTA DEPENDENCIES ---
 
+regex              = { workspace = true }
 nodeset = "0.5.0"
 chrono = { version = "0.4.41", default-features = false }
 anyhow = { version = "1.0.44", default-features = false }

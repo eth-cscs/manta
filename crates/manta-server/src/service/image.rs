@@ -3,7 +3,6 @@
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use manta_backend_dispatcher::interfaces::ims::GetImagesAndDetailsTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
@@ -32,6 +31,8 @@ pub async fn get_images(
   if let Some(limit) = limit_ref {
     image_vec.truncate(*limit as usize);
   }
+
+  image_vec.sort_by_key(|image| image.clone().created);
 
   Ok(image_vec)
 

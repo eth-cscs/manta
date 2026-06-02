@@ -18,8 +18,8 @@ use crate::service;
 pub struct ImageQuery {
   /// Exact IMS image ID; returns just that image when set.
   pub id: Option<String>,
-  /// HSM group whose associated images should be returned.
-  pub hsm_group: Option<String>,
+  /// Reges to filter images by name
+  pub pattern: Option<String>,
   /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,
 }
@@ -58,7 +58,7 @@ pub async fn get_images(
 
   let params = service::image::GetImagesParams {
     id: q.id,
-    hsm_group: q.hsm_group,
+    pattern: q.pattern,
     settings_hsm_group_name: None,
     limit: q.limit,
   };
@@ -67,18 +67,7 @@ pub async fn get_images(
     .await
     .map_err(to_handler_error)?;
 
-  let mut entries = Vec::with_capacity(images.len());
-  for (img, config_name, image_id, linked) in images {
-    let image = serialize_or_500(&img)?;
-    entries.push(ImageEntry {
-      image,
-      configuration_name: config_name,
-      image_id,
-      is_linked: linked,
-    });
-  }
-
-  Ok(Json(entries))
+  Ok(Json(images))
 }
 
 // ---------------------------------------------------------------------------
