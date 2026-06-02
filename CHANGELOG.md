@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.66.0] - 2026-06-02
+## [1.67.0] - 2026-06-02
 
 ### Bug Fixes
 
@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - Release manta-cli version 1.65.0
 - Update Cargo.toml
+- Release manta-cli version 1.66.0
 
 ## [1.64.3] - 2026-05-08
 
