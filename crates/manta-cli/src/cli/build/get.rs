@@ -206,7 +206,7 @@ pub fn subcommand_get_images() -> Command {
   Command::new("images")
     .about("List images")
     .arg(arg!(-i --id <IMAGE_ID> "Image ID"))
-    .arg(arg!(-p --pattern <PATTERN> "Glob pattern to filter by name"))
+    .arg(arg!(-p --pattern <PATTERN> "Regex to filter by name"))
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")
