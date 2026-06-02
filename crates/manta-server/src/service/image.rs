@@ -21,30 +21,41 @@ pub async fn get_images(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetImagesParams,
-) -> Result<Vec<(Image, String, String, bool)>, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra.backend,
-    token,
-    params.hsm_group.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
-
+) -> Result<Vec<Image>, Error> {
   let limit_ref = params.limit.as_ref();
 
-  let image_detail_vec = infra
+  let mut image_vec = infra
     .backend
-    .get_images_and_details(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      &target_hsm_group_vec,
-      params.id.as_deref(),
-      limit_ref,
-    )
+    .get_images(token, params.id.as_deref())
     .await?;
 
-  Ok(image_detail_vec)
+  if let Some(limit) = limit_ref {
+    image_vec.truncate(*limit as usize);
+  }
+
+  Ok(image_vec)
+
+  // let target_hsm_group_vec = get_groups_names_available(
+  //   infra.backend,
+  //   token,
+  //   params.hsm_group.as_deref(),
+  //   params.settings_hsm_group_name.as_deref(),
+  // )
+  // .await?;
+
+  // let image_detail_vec = infra
+  //   .backend
+  //   .get_images_and_details(
+  //     token,
+  //     infra.shasta_base_url,
+  //     infra.shasta_root_cert,
+  //     &target_hsm_group_vec,
+  //     params.id.as_deref(),
+  //     limit_ref,
+  //   )
+  //   .await?;
+  //
+  // Ok(image_detail_vec)
 }
 
 /// Validate that images can be deleted (not used by boot nodes,
