@@ -1,6 +1,6 @@
 //! Clap command tree definition for the manta CLI.
 
-use clap::{arg, value_parser, ArgAction, ArgGroup, Command, ValueHint};
+use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use manta_backend_dispatcher::types::ArtifactType;
 use strum::IntoEnumIterator;
 
@@ -356,12 +356,12 @@ fn subcommand_get_images() -> Command {
   Command::new("images")
     .about("Get image information")
     .arg(arg!(-i --id <VALUE> "Image ID"))
+    .arg(arg!(-p --pattern <VALUE> "Regex to filter images by name"))
     .arg(arg!(-m --"most-recent" "Only shows the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Filter records to the <VALUE> most common number of images created")
         .value_parser(value_parser!(u8).range(1..)),
     )
-    .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group name"))
 }
 
 fn subcommand_get_boot_parameters() -> Command {

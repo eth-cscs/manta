@@ -367,7 +367,7 @@ pub async fn get_groups(
 #[derive(Deserialize)]
 pub struct ImageQuery {
   pub id: Option<String>,
-  pub hsm_group: Option<String>,
+  pub pattern: Option<String>,
   pub limit: Option<u8>,
 }
 
@@ -391,7 +391,7 @@ pub async fn get_images(
 
   let params = service::image::GetImagesParams {
     id: q.id,
-    hsm_group: q.hsm_group,
+    pattern: q.pattern,
     settings_hsm_group_name: None,
     limit: q.limit,
   };
@@ -401,19 +401,6 @@ pub async fn get_images(
     .map_err(to_handler_error)?;
 
   Ok(Json(images))
-
-  // let mut entries = Vec::with_capacity(images.len());
-  // for img in images {
-  //   let image = serialize_or_500(&img)?;
-  //   entries.push(ImageEntry {
-  //     image,
-  //     configuration_name: config_name,
-  //     image_id,
-  //     is_linked: linked,
-  //   });
-  // }
-
-  // Ok(Json(entries))
 }
 
 // ---------------------------------------------------------------------------

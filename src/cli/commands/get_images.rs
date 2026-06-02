@@ -19,11 +19,7 @@ fn parse_images_params(
 
   GetImagesParams {
     id: cli_args.get_one::<String>("id").cloned(),
-    hsm_group: cli_args
-      .try_get_one::<String>("hsm-group")
-      .ok()
-      .flatten()
-      .cloned(),
+    pattern: cli_args.get_one::<String>("pattern").cloned(),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     limit,
   }
@@ -57,7 +53,7 @@ mod tests {
   fn images_cmd() -> clap::Command {
     clap::Command::new("images")
       .arg(arg!(--id <ID> "image id"))
-      .arg(arg!(-H --"hsm-group" <HSM_GROUP_NAME> "hsm group"))
+      .arg(arg!(-p --pattern <PATTERN> "regex"))
       .arg(arg!(-m --"most-recent" "most recent"))
       .arg(
         arg!(-l --limit <VALUE> "limit")
@@ -70,7 +66,7 @@ mod tests {
     let matches = images_cmd().get_matches_from(["images"]);
     let params = parse_images_params(&matches, None);
     assert!(params.id.is_none());
-    assert!(params.hsm_group.is_none());
+    assert!(params.pattern.is_none());
     assert!(params.limit.is_none());
   }
 

@@ -3,11 +3,11 @@
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use manta_backend_dispatcher::interfaces::ims::GetImagesAndDetailsTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
+use regex::Regex;
 
 use crate::common::app_context::InfraContext;
 use crate::common::authorization::get_groups_names_available;
@@ -16,14 +16,13 @@ use crate::common::boot_parameters::get_restricted_boot_parameters;
 /// Typed parameters for fetching IMS images.
 pub struct GetImagesParams {
   pub id: Option<String>,
-  pub hsm_group: Option<String>,
+  pub pattern: Option<String>,
   pub settings_hsm_group_name: Option<String>,
   pub limit: Option<u8>,
 }
 
-/// Fetch images and their associated details from the backend.
-///
-/// Returns tuples of (Image, CFS config name, HSM groups string, bool).
+/// Fetch images from the backend, optionally filtering by name regex,
+/// sorted by creation time and capped at `limit`.
 pub async fn get_images(
   infra: &InfraContext<'_>,
   token: &str,
@@ -36,6 +35,13 @@ pub async fn get_images(
     .get_images(token, params.id.as_deref())
     .await?;
 
+  if let Some(pattern) = &params.pattern {
+    let re = Regex::new(pattern).map_err(|e| {
+      Error::InvalidPattern(format!("invalid regex '{pattern}': {e}"))
+    })?;
+    image_vec.retain(|image| re.is_match(&image.name));
+  }
+
   image_vec.sort_by_key(|image| image.created.clone());
 
   if let Some(limit) = limit_ref {
@@ -43,28 +49,6 @@ pub async fn get_images(
   }
 
   Ok(image_vec)
-
-  // let target_hsm_group_vec = get_groups_names_available(
-  //   infra.backend,
-  //   token,
-  //   params.hsm_group.as_deref(),
-  //   params.settings_hsm_group_name.as_deref(),
-  // )
-  // .await?;
-
-  // let image_detail_vec = infra
-  //   .backend
-  //   .get_images_and_details(
-  //     token,
-  //     infra.shasta_base_url,
-  //     infra.shasta_root_cert,
-  //     &target_hsm_group_vec,
-  //     params.id.as_deref(),
-  //     limit_ref,
-  //   )
-  //   .await?;
-
-  // Ok(image_detail_vec)
 }
 
 /// Validate that images can be deleted (not used by boot nodes,
