@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.65.0] - 2026-06-02
+
+### Bug Fixes
+
+- No extra logic under command 'get images' which means all users will see all images
+
 ## [1.64.3] - 2026-05-08
 
 ### Features
@@ -13,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Release manta-cli version 1.64.1
 - Release manta-cli version 1.64.2
 - Update Cargo.toml
+- Release manta-cli version 1.64.3
 
 ## [1.64.0] - 2026-05-08
 
