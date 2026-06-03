@@ -117,8 +117,6 @@ fn default_request_timeout_secs() -> u64 {
 pub struct ServerConfiguration {
   /// `EnvFilter` directive for the tracing subscriber.
   pub log: String,
-  /// Path to the local file the server appends audit lines to.
-  pub audit_file: String,
   /// Network / TLS / console / rate-limit knobs for the HTTPS server.
   pub server: ServerSettings,
   /// Per-site backend connection details, keyed by site name. The
@@ -182,7 +180,6 @@ mod tests {
     sites.insert("alps".to_string(), make_minimal_site());
     let cfg = ServerConfiguration {
       log: "info".to_string(),
-      audit_file: "/var/log/manta/server-audit.log".to_string(),
       server: ServerSettings {
         listen_address: Some("0.0.0.0".to_string()),
         port: Some(8443),
@@ -261,7 +258,6 @@ mod tests {
   fn server_configuration_deserialize_missing_server_section_fails() {
     let bad_toml = r#"
       log = "info"
-      audit_file = "/tmp/server.log"
       [sites]
     "#;
     let result = toml::from_str::<ServerConfiguration>(bad_toml);

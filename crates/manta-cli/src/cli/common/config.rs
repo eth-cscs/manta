@@ -16,8 +16,6 @@ pub struct CliConfiguration {
   /// `EnvFilter` directive string for the tracing subscriber
   /// (e.g. `"info"`, `"manta=debug,hyper=warn"`).
   pub log: String,
-  /// Path to the local file the CLI appends audit lines to.
-  pub audit_file: String,
   /// Active site name, sent as the `X-Manta-Site` header on every
   /// request to manta-server. Overridable per-invocation with `--site`.
   /// The server validates that the name matches one of its configured
@@ -53,7 +51,6 @@ mod tests {
   fn cli_configuration_roundtrip_toml_minimal() {
     let cfg = CliConfiguration {
       log: "info".to_string(),
-      audit_file: "/tmp/cli-audit.log".to_string(),
       site: "alps".to_string(),
       parent_hsm_group: "nodes_free".to_string(),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
@@ -75,7 +72,6 @@ mod tests {
   fn cli_configuration_socks5_proxy_optional() {
     let toml_str = r#"
       log = "info"
-      audit_file = "/tmp/cli-audit.log"
       site = "alps"
       parent_hsm_group = ""
       manta_server_url = "https://manta-server.cscs.ch:8443"
@@ -88,7 +84,6 @@ mod tests {
   fn cli_configuration_missing_manta_server_url_fails() {
     let bad_toml = r#"
       log = "info"
-      audit_file = "/tmp/cli-audit.log"
       site = "alps"
       parent_hsm_group = ""
       # missing manta_server_url

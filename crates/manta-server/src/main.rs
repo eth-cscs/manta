@@ -71,10 +71,6 @@ fn print_startup_summary(
       .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
   );
   println!("  log_filter:                       {}", configuration.log);
-  println!(
-    "  audit_file:                       {}",
-    configuration.audit_file
-  );
   println!();
   println!("[auditor]");
   match configuration.auditor.as_ref() {

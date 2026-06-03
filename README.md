@@ -111,7 +111,6 @@ log = "info"
 
 site = "ochami"
 parent_hsm_group = "nodes_free"
-audit_file = "/tmp/manta_audit.log"
 manta_server_url = "https://manta-server.example.com:8443"   # required
 EOF
 ```
@@ -212,7 +211,6 @@ The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side
 
 ```toml
 log = "info"
-audit_file = "/var/log/manta/cli-audit.log"
 
 site             = "alps"                                # active site (X-Manta-Site header)
 parent_hsm_group = "nodes_free"
@@ -221,7 +219,7 @@ socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches
 request_timeout_secs = 600                                   # optional: caps long-running CLI HTTP calls (e.g. `manta power`); omit for no client-side timeout
 ```
 
-Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which records every request in `server-audit.log` and emits per-`/auth/*` events to its own `[auditor.kafka]` stream.
+Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which emits per-`/auth/*` events to its configured `[auditor.kafka]` stream.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
@@ -232,7 +230,6 @@ in `server.toml`.
 
 ```toml
 log = "info"
-audit_file = "/var/log/manta/server-audit.log"
 
 [server]
 listen_address                  = "0.0.0.0"   # optional; default 0.0.0.0

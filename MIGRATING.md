@@ -74,10 +74,11 @@ the migration mapping when first run with no `cli.toml` present. The
 mapping is:
 
 ```
-copy these fields verbatim:        log, audit_file, site, parent_hsm_group,
-                                   auditor
+copy these fields verbatim:        log, site, parent_hsm_group, auditor
 add CLI-only (now required):       manta_server_url = "https://..."
                                    (CLI talks only to the manta server)
+drop (no longer recognised):       audit_file (audit emission is
+                                   server-side only)
 do not copy (server-only fields):  [sites.*] (every backend connection
                                    bundle lives in server.toml now), the
                                    [server] section, and the old
@@ -88,7 +89,6 @@ Minimal v2 `cli.toml`:
 
 ```toml
 log = "info"
-audit_file = "/tmp/manta-cli-audit.log"
 site = "alps"
 parent_hsm_group = ""
 manta_server_url = "https://manta-server.example.com:8443"
@@ -219,7 +219,6 @@ Minimal `server.toml`:
 
 ```toml
 log = "info"
-audit_file = "/var/log/manta/server-audit.log"
 
 [server]
 listen_address = "0.0.0.0"
@@ -245,11 +244,13 @@ If you had a v1 `config.toml` with all the backend fields on the same
 host, the migration mapping is:
 
 ```
-copy these fields verbatim:        log, audit_file, auditor, sites
+copy these fields verbatim:        log, auditor, sites
 add new [server] section:          listen_address, port, cert, key,
                                    console_inactivity_timeout_secs
 drop (CLI-only):                   site, parent_hsm_group, hsm_group,
                                    manta_server_url
+drop (no longer recognised):       audit_file (audit emission is
+                                   Kafka-only via [auditor.kafka])
 drop (no longer recognised):       sites.<X>.manta_server_url
 ```
 

@@ -161,7 +161,6 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
 
 /// Minimal CLI config sample shown in the NotFound error.
 const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
-audit_file = "/tmp/manta-cli-audit.log"
 site = "<site_name>"
 parent_hsm_group = ""
 manta_server_url = "https://manta-server.example.com:8443"
@@ -175,17 +174,16 @@ root_ca_cert_file = "alps_root_cert.pem"
 /// Migration mapping shown when a legacy `config.toml` is detected.
 const CLI_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
-  copy these fields verbatim:        log, audit_file, site, parent_hsm_group,
+  copy these fields verbatim:        log, site, parent_hsm_group,
                                      auditor, sites
   add CLI-only (now required):       manta_server_url = \"https://...\"
                                      (CLI talks only to the manta server)
-  drop (no longer recognised):       sites.<X>.manta_server_url
+  drop (no longer recognised):       sites.<X>.manta_server_url, audit_file
   do not copy (server-only fields):  the [server] section belongs in
                                      server.toml, not cli.toml";
 
 /// Minimal server config sample shown in the NotFound error.
 const SERVER_CONFIG_SAMPLE: &str = r#"log = "info"
-audit_file = "/var/log/manta/server-audit.log"
 
 [server]
 listen_address = "0.0.0.0"
@@ -204,12 +202,12 @@ root_ca_cert_file = "/path/to/alps_root_cert.pem"
 /// Migration mapping shown when a legacy `config.toml` is detected.
 const SERVER_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
-  copy these fields verbatim:        log, audit_file, auditor, sites
+  copy these fields verbatim:        log, auditor, sites
   add new [server] section:          listen_address, port, cert, key,
                                      console_inactivity_timeout_secs
   drop (CLI-only):                   site, parent_hsm_group, hsm_group,
                                      manta_server_url
-  drop (no longer recognised):       sites.<X>.manta_server_url";
+  drop (no longer recognised):       sites.<X>.manta_server_url, audit_file";
 
 fn missing_config_message(
   binary: &str,
@@ -405,7 +403,6 @@ mod tests {
     let _g = ENV_LOCK.lock().unwrap();
     let good = write_tmp_toml(
       r#"log = "info"
-audit_file = "/tmp/x.log"
 site = "alps"
 parent_hsm_group = ""
 manta_server_url = "https://example:8443"
@@ -454,7 +451,6 @@ manta_server_url = "https://example:8443"
     let _g = ENV_LOCK.lock().unwrap();
     let good = write_tmp_toml(
       r#"log = "info"
-audit_file = "/tmp/y.log"
 
 [server]
 listen_address = "0.0.0.0"

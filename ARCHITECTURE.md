@@ -190,8 +190,8 @@ The two schemas are disjoint:
 
 | Schema | Fields |
 |---|---|
-| `CliConfiguration` | `log`, `audit_file`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, optional top-level `socks5_proxy`, `auditor`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. |
-| `ServerConfiguration` | `log`, `audit_file`, `[server]` (TLS, listen, console timeout, auth rate limit), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional SOCKS5 proxy, optional `[sites.X.k8s]` block). |
+| `CliConfiguration` | `log`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, optional top-level `socks5_proxy`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. |
+| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, auth rate limit), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional SOCKS5 proxy, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 
