@@ -27,11 +27,9 @@ minijinja    = { workspace = true }
 tracing      = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# common/* helpers: kafka, config loader, structured error type.
-rdkafka            = { workspace = true }
+# common/* helpers: config loader, structured error type.
 config             = { workspace = true }
 directories        = { workspace = true }
-toml               = { workspace = true }
 toml_edit          = { workspace = true }
 reqwest            = { workspace = true }
 thiserror          = { workspace = true }

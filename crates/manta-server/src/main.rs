@@ -8,12 +8,9 @@
 
 use ::manta_backend_dispatcher::types::K8sAuth;
 use clap::{Arg, Command};
-use manta_shared::common::{
-  config as manta_config,
-  config::types::{BackendTechnology, ServerConfiguration},
-  log_ops,
-};
+use manta_shared::common::{config as manta_config, log_ops};
 
+use manta_server::config::{BackendTechnology, ServerConfiguration};
 use manta_server::manta_backend_dispatcher::StaticBackendDispatcher;
 use manta_server::server;
 
@@ -196,14 +193,14 @@ async fn run_server(
     .copied()
     .or(configuration.server.port)
     .unwrap_or_else(|| {
-      manta_shared::common::config::types::ServerSettings::default_port(has_tls)
+      manta_server::config::ServerSettings::default_port(has_tls)
     });
   let listen_addr: String = cli
     .get_one::<String>("listen-address")
     .cloned()
     .or_else(|| configuration.server.listen_address.clone())
     .unwrap_or_else(|| {
-      manta_shared::common::config::types::ServerSettings::DEFAULT_LISTEN_ADDRESS
+      manta_server::config::ServerSettings::DEFAULT_LISTEN_ADDRESS
         .to_string()
     });
   let console_inactivity_timeout = std::time::Duration::from_secs(

@@ -15,7 +15,7 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use manta_shared::common::audit;
+use crate::server::common::audit;
 use manta_shared::shared::auth::{
   AuthTokenRequest, AuthTokenResponse, ValidateTokenRequest,
 };

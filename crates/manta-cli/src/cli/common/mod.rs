@@ -2,6 +2,7 @@
 
 pub mod app_context;
 pub mod authentication;
+pub mod config;
 pub mod clap_ext;
 pub mod display;
 pub mod hooks;

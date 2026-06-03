@@ -11,6 +11,7 @@
 #![warn(missing_docs)]
 
 pub mod backend_dispatcher;
+pub mod config;
 pub mod manta_backend_dispatcher;
 pub mod server;
 pub mod service;

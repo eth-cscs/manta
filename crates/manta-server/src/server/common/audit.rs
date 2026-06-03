@@ -1,8 +1,9 @@
 //! Audit trail helpers: build and send structured JSON messages to Kafka.
 
+use manta_shared::common::error::MantaError;
 use serde::{Deserialize, Serialize};
 
-use super::{error::MantaError, kafka::Kafka};
+use crate::server::common::kafka::Kafka;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 /// Wraps a [`Kafka`] instance for sending audit messages.

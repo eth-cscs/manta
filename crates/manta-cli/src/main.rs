@@ -6,7 +6,7 @@
 mod cli;
 
 use crate::cli::common::app_context::AppContext;
-use manta_shared::common::config::types::CliConfiguration;
+use crate::cli::common::config::CliConfiguration;
 
 use clap::ArgMatches;
 

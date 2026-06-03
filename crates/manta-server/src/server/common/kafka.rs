@@ -8,13 +8,14 @@
 
 use std::{fmt, sync::OnceLock, time::Duration};
 
+use manta_shared::common::error::MantaError;
 use rdkafka::{
   ClientConfig,
   producer::{FutureProducer, FutureRecord},
 };
 use serde::{Deserialize, Serialize};
 
-use super::{audit::Audit, error::MantaError};
+use crate::server::common::audit::Audit;
 
 /// Kafka message delivery timeout in milliseconds.
 const KAFKA_MESSAGE_TIMEOUT_MS: &str = "5000";
@@ -74,19 +75,6 @@ impl Kafka {
   /// The actual `FutureProducer` is built lazily on the first
   /// `produce_message` call, so this constructor is cheap and
   /// infallible.
-  ///
-  /// # Examples
-  ///
-  /// ```
-  /// use manta_shared::common::kafka::Kafka;
-  ///
-  /// let k = Kafka::new(
-  ///   vec!["kafka1.example.com:9092".into(), "kafka2.example.com:9092".into()],
-  ///   "manta-audit".into(),
-  /// );
-  /// assert_eq!(k.topic, "manta-audit");
-  /// assert_eq!(k.brokers.len(), 2);
-  /// ```
   pub fn new(brokers: Vec<String>, topic: String) -> Self {
     Self {
       brokers,

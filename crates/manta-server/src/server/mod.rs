@@ -17,7 +17,7 @@ use std::time::Duration;
 
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
-use manta_shared::common::kafka::Kafka;
+use crate::server::common::kafka::Kafka;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///
