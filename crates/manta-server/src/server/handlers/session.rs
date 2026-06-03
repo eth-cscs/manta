@@ -209,14 +209,10 @@ pub async fn create_session(
   // Authorization: every xname in ansible_limit must belong to a group
   // the token can access.
   if let Some(ref ansible_limit) = body.ansible_limit {
-    let xnames: Vec<String> = ansible_limit
-      .split(',')
-      .map(|s| s.trim().to_string())
-      .collect();
-    crate::service::authorization::validate_target_hsm_members(
+    service::authorization::validate_ansible_limit_membership(
       &infra,
       &ctx.token,
-      &xnames,
+      ansible_limit,
     )
     .await
     .map_err(to_handler_error)?;

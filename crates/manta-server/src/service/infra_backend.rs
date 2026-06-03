@@ -51,7 +51,29 @@ use manta_shared::shared::params::sat_file::ApplySatFileParams;
 
 use crate::server::common::app_context::InfraContext;
 
+/// Data gathered for deletion review and execution.
+#[derive(serde::Serialize)]
+pub struct DeletionCandidates {
+  /// CFS sessions whose desired-config matches a candidate configuration.
+  pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
+  /// BOS session templates to delete: `(name, cfs_config, description)`.
+  pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
+  /// IMS image IDs to delete (built by the matching sessions).
+  pub image_ids: Vec<String>,
+  /// Names of the configurations selected for deletion.
+  pub configuration_names: Vec<String>,
+  /// CFS sessions summary tuples: `(name, config_name, status)`.
+  pub cfs_session_tuples: Vec<(String, String, String)>,
+  /// Full configuration objects selected for deletion.
+  pub configurations: Vec<CfsConfigurationResponse>,
+}
+
 impl InfraContext<'_> {
+  /// Stable label for the active backend (`csm`, `ochami`, ...).
+  pub fn backend_kind(&self) -> &'static str {
+    self.backend.backend_kind()
+  }
+
   /// List IMS images, optionally restricted to a single id.
   pub async fn get_images(
     &self,
@@ -188,6 +210,11 @@ impl InfraContext<'_> {
   }
 
   /// Restore a vCluster from backup files.
+  ///
+  /// The backend trait exposes four independent overwrite flags
+  /// (group/configuration/image/template). The HTTP/CLI APIs expose a
+  /// single `overwrite` knob that fans out here. Expose them
+  /// individually if callers need per-resource control in the future.
   #[allow(clippy::too_many_arguments)]
   pub async fn migrate_restore(
     &self,
@@ -197,10 +224,7 @@ impl InfraContext<'_> {
     hsm_file: Option<&str>,
     ims_file: Option<&str>,
     image_dir: Option<&str>,
-    overwrite_group: bool,
-    overwrite_configuration: bool,
-    overwrite_image: bool,
-    overwrite_template: bool,
+    overwrite: bool,
   ) -> Result<(), Error> {
     self
       .backend
@@ -211,10 +235,10 @@ impl InfraContext<'_> {
         hsm_file,
         ims_file,
         image_dir,
-        overwrite_group,
-        overwrite_configuration,
-        overwrite_image,
-        overwrite_template,
+        overwrite,
+        overwrite,
+        overwrite,
+        overwrite,
       )
       .await
   }
@@ -276,7 +300,6 @@ impl InfraContext<'_> {
   }
 
   /// Collect every artefact that would be deleted when removing matching configurations.
-  #[allow(clippy::type_complexity)]
   pub async fn get_data_to_delete(
     &self,
     token: &str,
@@ -284,18 +307,15 @@ impl InfraContext<'_> {
     configuration_name_pattern_opt: Option<&str>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
-  ) -> Result<
-    (
-      Vec<CfsSessionGetResponse>,
-      Vec<(String, String, String)>,
-      Vec<String>,
-      Vec<String>,
-      Vec<(String, String, String)>,
-      Vec<CfsConfigurationResponse>,
-    ),
-    Error,
-  > {
-    self
+  ) -> Result<DeletionCandidates, Error> {
+    let (
+      cfs_sessions_to_delete,
+      bos_sessiontemplate_tuples,
+      image_ids,
+      configuration_names,
+      cfs_session_tuples,
+      configurations,
+    ) = self
       .backend
       .get_data_to_delete(
         token,
@@ -304,7 +324,15 @@ impl InfraContext<'_> {
         since_opt,
         until_opt,
       )
-      .await
+      .await?;
+    Ok(DeletionCandidates {
+      cfs_sessions_to_delete,
+      bos_sessiontemplate_tuples,
+      image_ids,
+      configuration_names,
+      cfs_session_tuples,
+      configurations,
+    })
   }
 
   /// Delete CFS configurations along with their dependent images, sessions, and templates.

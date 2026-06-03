@@ -41,6 +41,21 @@ pub async fn get_groups_names_available(
   }
 }
 
+/// Validate that every xname in a comma-separated `ansible_limit`-style
+/// string belongs to a group the token has access to.
+pub async fn validate_ansible_limit_membership(
+  infra: &InfraContext<'_>,
+  token: &str,
+  ansible_limit_csv: &str,
+) -> Result<(), Error> {
+  let xnames: Vec<String> = ansible_limit_csv
+    .split(',')
+    .map(|s| s.trim().to_string())
+    .collect();
+  validate_target_hsm_members(infra, token, &xnames).await?;
+  Ok(())
+}
+
 /// Validate that every requested xname belongs to a group the token has access to.
 pub async fn validate_target_hsm_members(
   infra: &InfraContext<'_>,

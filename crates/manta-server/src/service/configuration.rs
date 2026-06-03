@@ -4,10 +4,10 @@
 use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
-use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::get_groups_names_available;
+use crate::service::infra_backend::DeletionCandidates;
 pub use manta_shared::shared::params::configuration::GetConfigurationParams;
 
 /// Fetch and filter CFS configurations from the backend.
@@ -41,23 +41,6 @@ pub async fn get_configurations(
   Ok(cfs_configuration_vec)
 }
 
-/// Data gathered for deletion review and execution.
-#[derive(serde::Serialize)]
-pub(crate) struct DeletionCandidates {
-  /// CFS sessions whose desired-config matches a candidate configuration.
-  pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
-  /// BOS session templates to delete: `(name, cfs_config, description)`.
-  pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
-  /// IMS image IDs to delete (built by the matching sessions).
-  pub image_ids: Vec<String>,
-  /// Names of the configurations selected for deletion.
-  pub configuration_names: Vec<String>,
-  /// CFS sessions summary tuples: `(name, config_name, status)`.
-  pub cfs_session_tuples: Vec<(String, String, String)>,
-  /// Full configuration objects selected for deletion.
-  pub configurations: Vec<CfsConfigurationResponse>,
-}
-
 /// Fetch deletion candidates (no side effects).
 pub(crate) async fn get_deletion_candidates(
   infra: &InfraContext<'_>,
@@ -76,14 +59,7 @@ pub(crate) async fn get_deletion_candidates(
       get_groups_names_available(infra, token, None, None).await?
     };
 
-  let (
-    cfs_sessions_to_delete,
-    bos_sessiontemplate_tuples,
-    image_ids,
-    configuration_names,
-    cfs_session_tuples,
-    configurations,
-  ) = infra
+  infra
     .get_data_to_delete(
       token,
       &target_hsm_group_vec,
@@ -91,16 +67,7 @@ pub(crate) async fn get_deletion_candidates(
       since,
       until,
     )
-    .await?;
-
-  Ok(DeletionCandidates {
-    cfs_sessions_to_delete,
-    bos_sessiontemplate_tuples,
-    image_ids,
-    configuration_names,
-    cfs_session_tuples,
-    configurations,
-  })
+    .await
 }
 
 /// Validate that a `(since, until)` date range is well-ordered.

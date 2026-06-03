@@ -20,7 +20,7 @@ use crate::server::common::app_context::InfraContext;
   skip_all,
   fields(
     site = %infra.site_name,
-    backend = %infra.backend.backend_kind(),
+    backend = %infra.backend_kind(),
     backend_url = %infra.shasta_base_url,
   )
 )]
@@ -56,7 +56,7 @@ pub async fn get_api_token(
   skip_all,
   fields(
     site = %infra.site_name,
-    backend = %infra.backend.backend_kind(),
+    backend = %infra.backend_kind(),
     backend_url = %infra.shasta_base_url,
   )
 )]
