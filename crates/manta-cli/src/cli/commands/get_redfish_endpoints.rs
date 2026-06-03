@@ -5,7 +5,7 @@ use anyhow::Error;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 use manta_shared::shared::params::redfish_endpoints::GetRedfishEndpointsParams;
 
 /// Parse CLI arguments into typed [`GetRedfishEndpointsParams`].

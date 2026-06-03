@@ -7,7 +7,7 @@ use clap::ArgMatches;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 use manta_shared::shared::params::hw_cluster::HwClusterMode;
 
 /// Apply a hardware cluster configuration (pin or unpin).

@@ -5,9 +5,8 @@
 
 mod cli;
 
-use manta_shared::common::{
-  app_context::AppContext, config::types::CliConfiguration,
-};
+use crate::cli::common::app_context::AppContext;
+use manta_shared::common::config::types::CliConfiguration;
 
 use clap::ArgMatches;
 

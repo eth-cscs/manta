@@ -8,7 +8,7 @@ use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch `manta migrate` subcommands (nodes, vCluster backup/restore).
 pub async fn handle_migrate(

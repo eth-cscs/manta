@@ -5,7 +5,7 @@ use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch `manta update` subcommands (boot-parameters,
 /// redfish-endpoint).

@@ -6,7 +6,7 @@ use anyhow::{Error, bail};
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Remove/unassign a list of xnames to a list of HSM groups
 pub async fn exec(

@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Move nodes between HSM groups with validation.
 #[allow(clippy::too_many_arguments)]

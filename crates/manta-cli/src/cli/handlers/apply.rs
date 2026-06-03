@@ -5,7 +5,7 @@ use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::{commands, http_client::MantaClient};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch `manta apply` subcommands (hardware, session,
 /// sat-file, boot, template, ephemeral-env,

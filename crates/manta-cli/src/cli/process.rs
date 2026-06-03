@@ -2,7 +2,7 @@
 
 use anyhow::Error;
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 use crate::cli::handlers::{
   add, apply, backup, config, console, delete, get, log, migrate, misc, power,

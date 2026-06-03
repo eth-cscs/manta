@@ -5,7 +5,7 @@ use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch `manta restore` subcommands.
 pub async fn handle_restore(

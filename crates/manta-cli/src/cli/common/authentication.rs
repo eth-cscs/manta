@@ -9,7 +9,7 @@ use crate::cli::http_client::MantaClient;
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 use manta_shared::common::config::get_default_cache_path;
 use std::{
   fs::{File, create_dir_all},

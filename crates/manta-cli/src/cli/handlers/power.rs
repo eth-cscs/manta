@@ -5,7 +5,7 @@ use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch a single `power on group/cluster` invocation. Shared
 /// between the canonical `group` arm and the deprecated `cluster`

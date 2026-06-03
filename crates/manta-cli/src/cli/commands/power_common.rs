@@ -17,7 +17,7 @@ use serde_json::Value;
 use crate::cli::common;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// How long the CLI sleeps between snapshot polls. Matches the
 /// historical csm-rs `pcs_transitions_wait_to_complete` interval.

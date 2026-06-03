@@ -3,7 +3,7 @@
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use anyhow::Error;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.

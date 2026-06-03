@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// CLI adapter for `manta add boot-parameters`.
 pub async fn exec(

@@ -4,7 +4,7 @@ use crate::cli::commands::apply_session;
 use crate::cli::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Dispatch `manta run` subcommands.
 pub async fn handle_run(

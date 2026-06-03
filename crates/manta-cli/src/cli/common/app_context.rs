@@ -24,6 +24,7 @@ pub struct AppContext<'a> {
   /// `request_timeout_secs`. Honoured by commands that build their
   /// `MantaClient` via `MantaClient::new_with_timeout`. Other commands
   /// keep the default no-timeout behaviour.
+  #[allow(dead_code)]
   pub request_timeout_secs: Option<u64>,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)

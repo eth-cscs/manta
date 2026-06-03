@@ -9,7 +9,7 @@ use crate::cli::common::clap_ext::ArgMatchesExt;
 use crate::cli::common::{local_git_repo, user_interaction};
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Gitea repository name prefix used by CFS.
 const GITEA_REPO_NAME_PREFIX: &str = "cray/";

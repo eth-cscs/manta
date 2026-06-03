@@ -3,7 +3,7 @@
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use anyhow::Error;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Deletes the specified kernel parameters from a set of nodes.
 /// Reboots the nodes whose kernel params have changed.

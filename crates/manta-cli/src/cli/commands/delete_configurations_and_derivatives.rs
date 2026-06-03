@@ -3,7 +3,7 @@
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use chrono::NaiveDateTime;
-use manta_shared::common::app_context::AppContext;
+use crate::cli::common::app_context::AppContext;
 
 /// Delete CFS configurations and their derived artifacts.
 #[allow(clippy::too_many_arguments)]
