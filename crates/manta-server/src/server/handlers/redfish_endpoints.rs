@@ -10,7 +10,9 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
-use crate::service;
+use manta_shared::shared::params::redfish_endpoints::{
+  GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
+};
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/redfish-endpoints
@@ -48,7 +50,7 @@ pub async fn get_redfish_endpoints(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
 
-  let params = service::redfish_endpoints::GetRedfishEndpointsParams {
+  let params = GetRedfishEndpointsParams {
     id: q.id,
     fqdn: q.fqdn,
     uuid: q.uuid,
@@ -56,11 +58,10 @@ pub async fn get_redfish_endpoints(
     ipaddress: q.ipaddress,
   };
 
-  let endpoints = service::redfish_endpoints::get_redfish_endpoints(
-    &infra, &ctx.token, &params,
-  )
-  .await
-  .map_err(to_handler_error)?;
+  let endpoints = infra
+    .get_redfish_endpoints(&ctx.token, &params)
+    .await
+    .map_err(to_handler_error)?;
 
   Ok(Json(endpoints))
 }
@@ -88,7 +89,8 @@ pub async fn delete_redfish_endpoint(
   tracing::info!("delete_redfish_endpoint id={}", id);
   let infra = ctx.infra();
 
-  service::redfish_endpoints::delete_redfish_endpoint(&infra, &ctx.token, &id)
+  infra
+    .delete_redfish_endpoint(&ctx.token, &id)
     .await
     .map_err(to_handler_error)?;
 
@@ -102,7 +104,7 @@ pub async fn delete_redfish_endpoint(
 /// POST /redfish-endpoints — register a new Redfish endpoint in HSM.
 #[utoipa::path(post, path = "/redfish-endpoints", tag = "redfish-endpoints",
   params(SiteHeader),
-  request_body = crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
+  request_body = UpdateRedfishEndpointParams,
   security(("bearerAuth" = [])),
   responses(
     (status = 201, description = "Endpoint registered",  body = serde_json::Value),
@@ -113,12 +115,13 @@ pub async fn delete_redfish_endpoint(
 #[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
   ctx: RequestCtx,
-  Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
+  Json(params): Json<UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("add_redfish_endpoint");
   let infra = ctx.infra();
 
-  service::redfish_endpoints::add_redfish_endpoint(&infra, &ctx.token, params)
+  infra
+    .add_redfish_endpoint(&ctx.token, params)
     .await
     .map_err(to_handler_error)?;
 
@@ -135,7 +138,7 @@ pub async fn add_redfish_endpoint(
 /// PUT /redfish-endpoints — update an existing Redfish endpoint's properties.
 #[utoipa::path(put, path = "/redfish-endpoints", tag = "redfish-endpoints",
   params(SiteHeader),
-  request_body = crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
+  request_body = UpdateRedfishEndpointParams,
   security(("bearerAuth" = [])),
   responses(
     (status = 204, description = "Endpoint updated"),
@@ -146,16 +149,15 @@ pub async fn add_redfish_endpoint(
 #[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
   ctx: RequestCtx,
-  Json(params): Json<service::redfish_endpoints::UpdateRedfishEndpointParams>,
+  Json(params): Json<UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("update_redfish_endpoint");
   let infra = ctx.infra();
 
-  service::redfish_endpoints::update_redfish_endpoint(
-    &infra, &ctx.token, params,
-  )
-  .await
-  .map_err(to_handler_error)?;
+  infra
+    .update_redfish_endpoint(&ctx.token, params)
+    .await
+    .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }

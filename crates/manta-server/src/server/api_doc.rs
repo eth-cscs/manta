@@ -100,7 +100,7 @@ use super::handlers;
     manta_shared::shared::auth::AuthTokenResponse,
     manta_shared::shared::auth::ValidateTokenRequest,
     crate::service::boot_parameters::UpdateBootParametersParams,
-    crate::service::redfish_endpoints::UpdateRedfishEndpointParams,
+    manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams,
     manta_backend_dispatcher::types::Group,
     manta_backend_dispatcher::types::Member,
     manta_backend_dispatcher::types::XnameId,
