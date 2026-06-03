@@ -48,7 +48,7 @@ use wiremock::{
   matchers::{method, path},
 };
 
-use manta_server::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 
 // ---------------------------------------------------------------------------

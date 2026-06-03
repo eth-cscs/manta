@@ -66,7 +66,7 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
   TransitionResponse, TransitionStartOutput,
 };
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::dispatcher::StaticBackendDispatcher;
 use StaticBackendDispatcher::*;
 
 /// Dispatches a method call to the underlying backend variant.

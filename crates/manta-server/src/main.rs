@@ -11,7 +11,7 @@ use clap::{Arg, Command};
 use manta_shared::common::{config as manta_config, log_ops};
 
 use manta_server::config::{BackendTechnology, ServerConfiguration};
-use manta_server::manta_backend_dispatcher::StaticBackendDispatcher;
+use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server;
 
 /// URL path suffix for the CSM API endpoint.

@@ -12,7 +12,7 @@
 
 pub mod backend_dispatcher;
 pub mod config;
-pub mod manta_backend_dispatcher;
+pub mod dispatcher;
 pub mod server;
 pub mod service;
 pub mod wire_conv;

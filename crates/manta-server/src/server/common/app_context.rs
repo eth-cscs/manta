@@ -6,7 +6,7 @@
 //! It depends on `StaticBackendDispatcher`, which is server-only —
 //! the CLI never instantiates this.
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::dispatcher::StaticBackendDispatcher;
 
 /// Infrastructure context needed by the service layer: backend
 /// dispatcher, API endpoints, and TLS certificates.

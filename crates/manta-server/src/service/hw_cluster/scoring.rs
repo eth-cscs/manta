@@ -18,7 +18,7 @@ use super::{
   HW_COMPONENT_CONCURRENCY_LIMIT, HwClusterMode, NodeHwCountVec,
   hw_inventory_utils, pin_unpin,
 };
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
 
 /// Compute a scarcity score for each hardware component type across all nodes.

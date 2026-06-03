@@ -15,7 +15,7 @@ use axum_server::tls_rustls::RustlsConfig;
 use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
 use crate::server::common::kafka::Kafka;
 
