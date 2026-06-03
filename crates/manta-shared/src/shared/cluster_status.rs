@@ -382,7 +382,7 @@ mod tests {
     let got = get_cluster_hw_pattern(vec![node]);
     assert_eq!(got.get("AMDEPYC7763"), Some(&1));
     assert!(
-      got.get("AMD EPYC 7763").is_none(),
+      !got.contains_key("AMD EPYC 7763"),
       "whitespace-bearing key must NOT be present"
     );
   }

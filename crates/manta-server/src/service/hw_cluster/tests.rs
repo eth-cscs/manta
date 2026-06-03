@@ -548,7 +548,7 @@ pub async fn test_hsm_hw_management_pin_1() {
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {
-    if target_hsm_hw_summary.get(&hw_component).is_none()
+    if !target_hsm_hw_summary.contains_key(&hw_component)
       || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
     {
       success = false;
@@ -723,7 +723,7 @@ pub async fn test_hsm_hw_management_pin_2() {
 
   let mut success = true;
   for (hw_component, qty) in &user_request_hw_summary {
-    if target_hsm_hw_summary.get(hw_component).is_none()
+    if !target_hsm_hw_summary.contains_key(hw_component)
       || *qty > *target_hsm_hw_summary.get(hw_component).unwrap()
     {
       success = false;
@@ -982,7 +982,7 @@ pub async fn test_hsm_hw_management_unpin_1() {
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {
-    if target_hsm_hw_summary.get(&hw_component).is_none()
+    if !target_hsm_hw_summary.contains_key(&hw_component)
       || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
     {
       success = false;
@@ -1157,7 +1157,7 @@ pub async fn test_hsm_hw_management_unpin_2() {
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {
-    if target_hsm_hw_summary.get(&hw_component).is_none()
+    if !target_hsm_hw_summary.contains_key(&hw_component)
       || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
     {
       success = false;

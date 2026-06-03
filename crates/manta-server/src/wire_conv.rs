@@ -43,6 +43,7 @@ mod tests {
   // pins the variant name AND the payload preservation, so a mistyped
   // arm (NotFound → BadRequest, say) would surface immediately.
   #[test]
+  #[allow(clippy::type_complexity)]
   fn string_variants_preserve_payload_and_variant() {
     let cases: &[(MantaError, fn(&BackendError) -> bool)] = &[
       (

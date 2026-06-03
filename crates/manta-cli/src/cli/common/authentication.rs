@@ -281,6 +281,6 @@ mod tests {
 
   #[test]
   fn max_login_attempts_is_reasonable() {
-    assert!(MAX_LOGIN_ATTEMPTS >= 1 && MAX_LOGIN_ATTEMPTS <= 10);
+    const { assert!(MAX_LOGIN_ATTEMPTS >= 1 && MAX_LOGIN_ATTEMPTS <= 10) };
   }
 }
