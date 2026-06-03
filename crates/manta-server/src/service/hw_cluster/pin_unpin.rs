@@ -5,11 +5,11 @@
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
+  error::Error, types::Group,
 };
 
 use super::{NodeHwCountVec, scoring};
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 // ── Pin algorithm ────────────────────────────────────────────────────────────
 
@@ -422,13 +422,13 @@ pub fn parse_hw_pattern_usize(
 
 /// Ensure the target HSM group exists, creating it if `create_target_hsm_group` is set.
 pub async fn ensure_target_group_exists(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   dryrun: bool,
   create_target_hsm_group: bool,
 ) -> Result<(), Error> {
-  match backend.get_group(shasta_token, target_hsm_group_name).await {
+  match infra.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
       tracing::debug!(
         "Target HSM group '{}' exists, good.",
@@ -464,7 +464,7 @@ pub async fn ensure_target_group_exists(
         members: None,
         exclusive_group: Some("false".to_string()),
       };
-      let _ = backend.add_group(shasta_token, group).await.map_err(|e| {
+      let _ = infra.add_group(shasta_token, group).await.map_err(|e| {
         Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
       })?;
       Ok(())
@@ -506,7 +506,7 @@ pub fn validate_resource_sufficiency(
 /// Apply group membership updates to both target and parent HSM groups.
 #[allow(clippy::too_many_arguments)]
 pub async fn apply_group_updates(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_group: &str,
   parent_group: &str,
@@ -524,7 +524,7 @@ pub async fn apply_group_updates(
        HSM groups on the system."
     );
   } else {
-    backend
+    infra
       .update_group_members(
         shasta_token,
         target_group,
@@ -554,7 +554,7 @@ pub async fn apply_group_updates(
   } else {
     let parent_will_be_empty =
       old_target_members.len() == old_parent_members.len();
-    backend
+    infra
       .update_group_members(
         shasta_token,
         parent_group,
@@ -581,7 +581,7 @@ pub async fn apply_group_updates(
          been selected, removing it.",
         parent_group
       );
-      match backend.delete_group(shasta_token, parent_group).await {
+      match infra.delete_group(shasta_token, parent_group).await {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. \

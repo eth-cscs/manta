@@ -13,25 +13,14 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
   async fn get_template(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos_session_template_id_opt: Option<&str>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
-    dispatch!(
-      self,
-      get_template,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      bos_session_template_id_opt
-    )
+    dispatch!(self, get_template, shasta_token, bos_session_template_id_opt)
   }
 
   async fn get_and_filter_templates(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hsm_group_name_vec: &[String],
     hsm_member_vec: &[String],
     bos_sessiontemplate_name_opt: Option<&str>,
@@ -41,8 +30,6 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
       self,
       get_and_filter_templates,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       hsm_group_name_vec,
       hsm_member_vec,
       bos_sessiontemplate_name_opt,
@@ -53,23 +40,13 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
   async fn get_all_templates(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
   ) -> Result<Vec<BosSessionTemplate>, Error> {
-    dispatch!(
-      self,
-      get_all_templates,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert
-    )
+    dispatch!(self, get_all_templates, shasta_token)
   }
 
   async fn put_template(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos_template: &BosSessionTemplate,
     bos_template_name: &str,
   ) -> Result<BosSessionTemplate, Error> {
@@ -77,8 +54,6 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
       self,
       put_template,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       bos_template,
       bos_template_name
     )
@@ -87,17 +62,8 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
   async fn delete_template(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos_template_id: &str,
   ) -> Result<(), Error> {
-    dispatch!(
-      self,
-      delete_template,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      bos_template_id
-    )
+    dispatch!(self, delete_template, shasta_token, bos_template_id)
   }
 }

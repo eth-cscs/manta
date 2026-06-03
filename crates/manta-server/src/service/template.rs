@@ -1,10 +1,6 @@
 //! BOS session template queries and BOS session creation with access validation.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::bos::{
-  ClusterSessionTrait, ClusterTemplateTrait,
-};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::bos::session::BosSession;
 use manta_backend_dispatcher::types::bos::session::Operation;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
@@ -25,7 +21,7 @@ pub async fn get_templates(
   params: &GetTemplateParams,
 ) -> Result<Vec<BosSessionTemplate>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    infra.backend,
+    infra,
     token,
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
@@ -33,7 +29,6 @@ pub async fn get_templates(
   .await?;
 
   let hsm_member_vec = infra
-    .backend
     .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
     .await?;
 
@@ -45,11 +40,8 @@ pub async fn get_templates(
   );
 
   let mut bos_sessiontemplate_vec = infra
-    .backend
     .get_and_filter_templates(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       &target_hsm_group_vec,
       &hsm_member_vec,
       params.name.as_deref(),
@@ -71,14 +63,10 @@ pub async fn validate_and_prepare_template_session(
   token: &str,
   params: &ApplyTemplateParams,
 ) -> Result<(BosSession, Vec<String>), Error> {
-  let backend = infra.backend;
-
   // Fetch BOS sessiontemplate
-  let bos_sessiontemplate_vec = backend
+  let bos_sessiontemplate_vec = infra
     .get_and_filter_templates(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       &[],
       &[],
       Some(&params.bos_sessiontemplate_name),
@@ -103,7 +91,7 @@ pub async fn validate_and_prepare_template_session(
   );
   let target_hsm_vec = bos_sessiontemplate.get_target_hsm();
   let target_xname_vec: Vec<String> = if !target_hsm_vec.is_empty() {
-    backend
+    infra
       .get_member_vec_from_group_name_vec(token, &target_hsm_vec)
       .await
       .unwrap_or_default()
@@ -111,7 +99,7 @@ pub async fn validate_and_prepare_template_session(
     bos_sessiontemplate.get_target_xname()
   };
 
-  validate_target_hsm_members(backend, token, &target_xname_vec).await?;
+  validate_target_hsm_members(infra, token, &target_xname_vec).await?;
 
   // Validate user has access to xnames in `limit` argument
   tracing::info!("Validate user has access to xnames in BOS sessiontemplate");
@@ -126,7 +114,7 @@ pub async fn validate_and_prepare_template_session(
       tracing::info!("limit value '{}' is an xname", limit_value);
       xnames_to_validate_access_vec.push(limit_value.to_string());
     } else {
-      let hsm_members_vec_rslt = backend
+      let hsm_members_vec_rslt = infra
         .get_member_vec_from_group_name_vec(
           token,
           std::slice::from_ref(limit_value),
@@ -149,7 +137,7 @@ pub async fn validate_and_prepare_template_session(
   }
 
   tracing::info!("Validate list of xnames translated from 'limit argument'");
-  validate_target_hsm_members(backend, token, &xnames_to_validate_access_vec)
+  validate_target_hsm_members(infra, token, &xnames_to_validate_access_vec)
     .await?;
 
   tracing::info!("Access to '{}' granted. Continue.", params.limit);
@@ -183,13 +171,5 @@ pub async fn create_bos_session(
   token: &str,
   bos_session: BosSession,
 ) -> Result<BosSession, Error> {
-  infra
-    .backend
-    .post_template_session(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      bos_session,
-    )
-    .await
+  infra.post_template_session(token, bos_session).await
 }

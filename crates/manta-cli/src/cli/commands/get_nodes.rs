@@ -86,21 +86,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn nodes_cmd() -> clap::Command {
-    clap::Command::new("nodes")
-      .arg(arg!(<VALUE> "xname"))
-      .arg(arg!(-s --status <STATUS> "status filter"))
-      .arg(arg!(--"include-siblings" "include siblings"))
-      .arg(arg!(--"nids-only-one-line" "nids only"))
-      .arg(arg!(--"summary-status" "summary status"))
-      .arg(arg!(-o --output <FORMAT> "output format").value_parser([
-        "json",
-        "table",
-        "table-wide",
-        "summary",
-      ]))
+    crate::cli::build::get::subcommand_get_node_details()
   }
 
   #[test]

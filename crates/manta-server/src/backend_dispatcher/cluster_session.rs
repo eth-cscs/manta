@@ -14,17 +14,8 @@ impl ClusterSessionTrait for StaticBackendDispatcher {
   async fn post_template_session(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos_session: types::bos::session::BosSession,
   ) -> Result<BosSession, Error> {
-    dispatch!(
-      self,
-      post_template_session,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      bos_session
-    )
+    dispatch!(self, post_template_session, shasta_token, bos_session)
   }
 }

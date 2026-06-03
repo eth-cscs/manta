@@ -72,7 +72,7 @@ pub async fn get_sessions(
 
   let xnames = match q.xnames {
     Some(expr) => crate::service::node_ops::resolve_hosts_expression(
-      infra.backend,
+      &infra,
       &ctx.token,
       &expr,
       false,
@@ -214,7 +214,7 @@ pub async fn create_session(
       .map(|s| s.trim().to_string())
       .collect();
     crate::service::authorization::validate_target_hsm_members(
-      infra.backend,
+      &infra,
       &ctx.token,
       &xnames,
     )

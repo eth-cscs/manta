@@ -45,20 +45,21 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn boot_params_cmd() -> clap::Command {
-    clap::Command::new("boot-parameters")
-      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
-      .arg(arg!(-n --nodes <NODES> "nodes"))
+    crate::cli::build::get::subcommand_get_boot_parameters()
   }
 
   #[test]
-  fn parse_no_args() {
-    let matches = boot_params_cmd().get_matches_from(["boot-parameters"]);
+  fn parse_nodes_only_leaves_group_unset() {
+    let matches = boot_params_cmd().get_matches_from([
+      "boot-parameters",
+      "--nodes",
+      "x1000c0s0b0n0",
+    ]);
     let params = parse_boot_parameters_params(&matches, None);
     assert!(params.hsm_group.is_none());
-    assert!(params.nodes.is_none());
+    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
     assert!(params.settings_hsm_group_name.is_none());
   }
 
@@ -74,19 +75,12 @@ mod tests {
   }
 
   #[test]
-  fn parse_nodes() {
+  fn parse_settings_hsm_group_preserved_alongside_nodes() {
     let matches = boot_params_cmd().get_matches_from([
       "boot-parameters",
       "--nodes",
       "x1000c0s0b0n0",
     ]);
-    let params = parse_boot_parameters_params(&matches, None);
-    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
-  }
-
-  #[test]
-  fn parse_settings_hsm_group() {
-    let matches = boot_params_cmd().get_matches_from(["boot-parameters"]);
     let params = parse_boot_parameters_params(&matches, Some("default-group"));
     assert_eq!(
       params.settings_hsm_group_name.as_deref(),

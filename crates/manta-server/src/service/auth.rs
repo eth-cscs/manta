@@ -10,9 +10,7 @@
 
 use std::time::Instant;
 
-use manta_backend_dispatcher::{
-  error::Error, interfaces::authentication::AuthenticationTrait,
-};
+use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
 
@@ -33,22 +31,24 @@ pub async fn get_api_token(
 ) -> Result<String, Error> {
   tracing::info!(user = %username, "backend: requesting token");
   let started = Instant::now();
-  let result = infra.backend.get_api_token(username, password).await;
-  let elapsed_ms = started.elapsed().as_millis() as u64;
-  match &result {
-    Ok(_) => tracing::debug!(
-      user = %username,
-      elapsed_ms,
-      "backend: token issued"
-    ),
-    Err(e) => tracing::warn!(
-      user = %username,
-      elapsed_ms,
-      error = %e,
-      "backend: token request rejected"
-    ),
-  }
-  result
+  infra
+    .get_api_token(username, password)
+    .await
+    .inspect(|_| {
+      tracing::debug!(
+        user = %username,
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        "backend: token issued"
+      );
+    })
+    .inspect_err(|e| {
+      tracing::warn!(
+        user = %username,
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        error = %e,
+        "backend: token request rejected"
+      );
+    })
 }
 
 /// Verify that `token` is still accepted by the site's backend.
@@ -66,15 +66,20 @@ pub async fn validate_api_token(
 ) -> Result<(), Error> {
   tracing::info!("backend: validating token");
   let started = Instant::now();
-  let result = infra.backend.validate_api_token(token).await;
-  let elapsed_ms = started.elapsed().as_millis() as u64;
-  match &result {
-    Ok(()) => tracing::debug!(elapsed_ms, "backend: token accepted"),
-    Err(e) => tracing::warn!(
-      elapsed_ms,
-      error = %e,
-      "backend: token validation rejected"
-    ),
-  }
-  result
+  infra
+    .validate_api_token(token)
+    .await
+    .inspect(|()| {
+      tracing::debug!(
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        "backend: token accepted"
+      );
+    })
+    .inspect_err(|e| {
+      tracing::warn!(
+        elapsed_ms = started.elapsed().as_millis() as u64,
+        error = %e,
+        "backend: token validation rejected"
+      );
+    })
 }

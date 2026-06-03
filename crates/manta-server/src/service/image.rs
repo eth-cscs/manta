@@ -1,9 +1,6 @@
 //! IMS image queries and safety-checked deletion (rejects images that boot live nodes).
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
@@ -13,50 +10,25 @@ use crate::service::authorization::get_groups_names_available;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
 pub use manta_shared::shared::params::image::GetImagesParams;
 
-/// Fetch images and their associated details from the backend.
+/// Fetch IMS images from the backend, sorted by creation time.
 ///
-/// Returns tuples of (Image, CFS config name, HSM groups string, bool).
+/// Honors `params.id` and `params.limit`. The `pattern` regex is applied
+/// by the CLI client after the response is received; the service does
+/// not filter on name here.
 pub async fn get_images(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetImagesParams,
 ) -> Result<Vec<Image>, Error> {
-  let limit_ref = params.limit.as_ref();
+  let mut image_vec = infra.get_images(token, params.id.as_deref()).await?;
 
-  let mut image_vec = infra
-    .backend
-    .get_images(token, params.id.as_deref())
-    .await?;
-
-  if let Some(limit) = limit_ref {
-    image_vec.truncate(*limit as usize);
+  if let Some(limit) = params.limit {
+    image_vec.truncate(limit as usize);
   }
 
-  image_vec.sort_by_key(|image| image.clone().created);
+  image_vec.sort_by_key(|image| image.created.clone());
 
   Ok(image_vec)
-
-  // let target_hsm_group_vec = get_groups_names_available(
-  //   infra.backend,
-  //   token,
-  //   params.hsm_group.as_deref(),
-  //   params.settings_hsm_group_name.as_deref(),
-  // )
-  // .await?;
-
-  // let image_detail_vec = infra
-  //   .backend
-  //   .get_images_and_details(
-  //     token,
-  //     infra.shasta_base_url,
-  //     infra.shasta_root_cert,
-  //     &target_hsm_group_vec,
-  //     params.id.as_deref(),
-  //     limit_ref,
-  //   )
-  //   .await?;
-  //
-  // Ok(image_detail_vec)
 }
 
 /// Validate that images can be deleted (not used by boot nodes,
@@ -67,14 +39,12 @@ pub async fn validate_image_deletion(
   image_id_vec: &[&str],
   settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<(), Error> {
-  let backend = infra.backend;
-
-  get_groups_names_available(backend, token, None, settings_hsm_group_name_opt)
+  get_groups_names_available(infra, token, None, settings_hsm_group_name_opt)
     .await?;
 
   let (group_available_vec, boot_parameter_vec) = tokio::try_join!(
-    backend.get_group_available(token),
-    backend.get_all_bootparameters(token),
+    infra.get_group_available(token),
+    infra.get_all_bootparameters(token),
   )?;
 
   // Check if any requested image is used to boot nodes
@@ -145,28 +115,16 @@ pub async fn delete_images(
 
   let mut deleted = Vec::new();
   for image_id in image_id_vec {
-    let del_rslt = infra
-      .backend
-      .delete_image(
-        token,
-        infra.shasta_base_url,
-        infra.shasta_root_cert,
-        image_id,
-      )
-      .await;
-
-    match del_rslt {
+    match infra.delete_image(token, image_id).await {
       Ok(_) => {
         tracing::info!("Image {} deleted successfully", image_id);
-        deleted.push(image_id.to_string());
+        deleted.push((*image_id).to_string());
       }
-      Err(e) => {
-        tracing::error!(
-          "Failed to delete image {}: {}. Continuing",
-          image_id,
-          e
-        );
-      }
+      Err(e) => tracing::error!(
+        "Failed to delete image {}: {}. Continuing",
+        image_id,
+        e
+      ),
     }
   }
 

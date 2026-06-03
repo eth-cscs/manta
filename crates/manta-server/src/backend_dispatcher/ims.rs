@@ -22,16 +22,8 @@ impl ImsTrait for StaticBackendDispatcher {
   async fn get_all_images(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
   ) -> Result<Vec<Image>, Error> {
-    dispatch!(
-      self,
-      get_all_images,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert
-    )
+    dispatch!(self, get_all_images, shasta_token)
   }
 
   fn filter_images(&self, image_vec: &mut Vec<Image>) -> Result<(), Error> {
@@ -50,18 +42,9 @@ impl ImsTrait for StaticBackendDispatcher {
   async fn delete_image(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     image_id: &str,
   ) -> Result<(), Error> {
-    dispatch!(
-      self,
-      delete_image,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      image_id
-    )
+    dispatch!(self, delete_image, shasta_token, image_id)
   }
 }
 
@@ -69,8 +52,6 @@ impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
   async fn get_images_and_details(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hsm_group_name_vec: &[String],
     id_opt: Option<&str>,
     limit_number: Option<&u8>,
@@ -79,8 +60,6 @@ impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
       self,
       get_images_and_details,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       hsm_group_name_vec,
       id_opt,
       limit_number

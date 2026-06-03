@@ -70,25 +70,14 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn post_session(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     session: &CfsSessionPostRequest,
   ) -> Result<CfsSessionGetResponse, Error> {
-    dispatch!(
-      self,
-      post_session,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      session
-    )
+    dispatch!(self, post_session, shasta_token, session)
   }
 
   async fn get_sessions(
     &self,
     auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
     session_name_opt: Option<&String>,
     limit_opt: Option<u8>,
     after_id_opt: Option<String>,
@@ -103,8 +92,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       get_sessions,
       auth_token,
-      base_url,
-      root_cert,
       session_name_opt,
       limit_opt,
       after_id_opt,
@@ -120,8 +107,6 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn get_and_filter_sessions(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     hsm_group_name_vec: Vec<String>,
     xname_vec: Vec<&str>,
     min_age_opt: Option<&String>,
@@ -136,8 +121,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       get_and_filter_sessions,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       hsm_group_name_vec,
       xname_vec,
       min_age_opt,
@@ -153,8 +136,6 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn delete_and_cancel_session(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     group_available_vec: &[Group],
     cfs_session: &CfsSessionGetResponse,
     cfs_component_vec: &[CfsComponent],
@@ -165,8 +146,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       delete_and_cancel_session,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       group_available_vec,
       cfs_session,
       cfs_component_vec,
@@ -179,7 +158,6 @@ impl CfsTrait for StaticBackendDispatcher {
     &self,
     gitea_token: &str,
     gitea_base_url: &str,
-    shasta_root_cert: &[u8],
     repo_name_vec: &[&str],
     local_git_commit_vec: &[&str],
     playbook_file_name_opt: Option<&str>,
@@ -189,7 +167,6 @@ impl CfsTrait for StaticBackendDispatcher {
       create_configuration_from_repos,
       gitea_token,
       gitea_base_url,
-      shasta_root_cert,
       repo_name_vec,
       local_git_commit_vec,
       playbook_file_name_opt
@@ -199,25 +176,14 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn get_configuration(
     &self,
     auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
     cfs_configuration_name_opt: Option<&String>,
   ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-    dispatch!(
-      self,
-      get_configuration,
-      auth_token,
-      base_url,
-      root_cert,
-      cfs_configuration_name_opt
-    )
+    dispatch!(self, get_configuration, auth_token, cfs_configuration_name_opt)
   }
 
   async fn get_and_filter_configuration(
     &self,
     auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
     configuration_name: Option<&str>,
     configuration_name_pattern: Option<&str>,
     hsm_group_name_vec: &[String],
@@ -229,8 +195,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       get_and_filter_configuration,
       auth_token,
-      base_url,
-      root_cert,
       configuration_name,
       configuration_name_pattern,
       hsm_group_name_vec,
@@ -242,7 +206,6 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn get_configuration_layer_details(
     &self,
-    shasta_root_cert: &[u8],
     gitea_base_url: &str,
     gitea_token: &str,
     layer: Layer,
@@ -251,7 +214,6 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       get_configuration_layer_details,
-      shasta_root_cert,
       gitea_base_url,
       gitea_token,
       layer,
@@ -262,8 +224,6 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn update_runtime_configuration(
     &self,
     auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
     xnames: &[String],
     desired_configuration: &str,
     enabled: bool,
@@ -272,8 +232,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       update_runtime_configuration,
       auth_token,
-      base_url,
-      root_cert,
       xnames,
       desired_configuration,
       enabled
@@ -283,8 +241,6 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn put_configuration(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     configuration: &CfsConfigurationRequest,
     configuration_name: &str,
     overwrite: bool,
@@ -293,8 +249,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       put_configuration,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       configuration,
       configuration_name,
       overwrite
@@ -306,8 +260,6 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn get_derivatives(
     &self,
     auth_token: &str,
-    base_url: &str,
-    root_cert: &[u8],
     configuration_name: &str,
   ) -> Result<
     (
@@ -317,21 +269,12 @@ impl CfsTrait for StaticBackendDispatcher {
     ),
     Error,
   > {
-    dispatch!(
-      self,
-      get_derivatives,
-      auth_token,
-      base_url,
-      root_cert,
-      configuration_name
-    )
+    dispatch!(self, get_derivatives, auth_token, configuration_name)
   }
 
   async fn get_cfs_components(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     configuration_name: Option<&str>,
     components_ids: Option<&str>,
     status: Option<&str>,
@@ -343,8 +286,6 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       get_cfs_components,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       configuration_name,
       components_ids,
       status

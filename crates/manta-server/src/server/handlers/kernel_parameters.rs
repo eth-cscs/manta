@@ -114,7 +114,7 @@ pub async fn apply_kernel_parameters(
   let infra = ctx.infra();
 
   let xnames = resolve_xnames_from_request(
-    infra.backend,
+    &infra,
     &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
@@ -224,7 +224,7 @@ pub async fn add_kernel_parameters(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
-    infra.backend,
+    &infra,
     &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),
@@ -313,7 +313,7 @@ pub async fn delete_kernel_parameters(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
-    infra.backend,
+    &infra,
     &ctx.token,
     body.xnames_expression.as_deref(),
     body.hsm_group.as_deref(),

@@ -56,16 +56,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn group_cmd() -> clap::Command {
-    clap::Command::new("groups")
-      .arg(arg!([VALUE] "group name"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .default_value("table")
-          .value_parser(["json", "table"]),
-      )
+    crate::cli::build::get::subcommand_get_group()
   }
 
   #[test]

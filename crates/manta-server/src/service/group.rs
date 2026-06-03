@@ -1,7 +1,6 @@
 //! HSM group CRUD operations and membership management.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::app_context::InfraContext;
@@ -17,7 +16,7 @@ pub async fn get_available_group_names(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<String>, Error> {
-  infra.backend.get_group_name_available(token).await
+  infra.get_group_name_available(token).await
 }
 
 /// Return every HSM group in the system, regardless of access.
@@ -29,7 +28,7 @@ pub async fn get_all_groups(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<Group>, Error> {
-  infra.backend.get_all_groups(token).await
+  infra.get_all_groups(token).await
 }
 
 /// Validate that `group_name` is in the set this token can access.
@@ -43,7 +42,7 @@ pub async fn validate_hsm_group_access(
   token: &str,
   group_name: &str,
 ) -> Result<(), Error> {
-  let accessible = infra.backend.get_group_name_available(token).await?;
+  let accessible = infra.get_group_name_available(token).await?;
   if !accessible.iter().any(|name| name == group_name) {
     let mut accessible = accessible;
     accessible.sort();
@@ -63,17 +62,14 @@ pub async fn get_groups(
   params: &GetGroupParams,
 ) -> Result<Vec<Group>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    infra.backend,
+    infra,
     token,
     params.group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
   .await?;
 
-  infra
-    .backend
-    .get_groups(token, Some(&target_hsm_group_vec))
-    .await
+  infra.get_groups(token, Some(&target_hsm_group_vec)).await
 }
 
 /// Validate that deleting a group will not orphan any nodes.
@@ -83,14 +79,12 @@ pub async fn validate_group_deletion(
   label: &str,
 ) -> Result<(), Error> {
   let xname_vec = infra
-    .backend
     .get_member_vec_from_group_name_vec(token, &[label.to_string()])
     .await?;
 
   let xname_vec: Vec<&str> = xname_vec.iter().map(String::as_str).collect();
 
   let mut xname_map = infra
-    .backend
     .get_group_map_and_filter_by_group_vec(token, &xname_vec)
     .await?;
 
@@ -124,7 +118,7 @@ pub async fn delete_group(
   if !force {
     validate_group_deletion(infra, token, label).await?;
   }
-  infra.backend.delete_group(token, label).await.map(|_| ())
+  infra.delete_group(token, label).await.map(|_| ())
 }
 
 /// Create an HSM group via the backend.
@@ -133,7 +127,7 @@ pub async fn create_group(
   token: &str,
   group: Group,
 ) -> Result<(), Error> {
-  infra.backend.add_group(token, group).await.map(|_| ())
+  infra.add_group(token, group).await.map(|_| ())
 }
 
 /// Resolve `xnames_expression` and remove the resolved nodes from
@@ -148,7 +142,7 @@ pub async fn delete_group_members(
   dry_run: bool,
 ) -> Result<(), Error> {
   let xnames = node_ops::resolve_hosts_expression(
-    infra.backend,
+    infra,
     token,
     xnames_expression,
     false,
@@ -161,7 +155,6 @@ pub async fn delete_group_members(
 
   for xname in &xnames {
     infra
-      .backend
       .delete_member_from_group(token, group_name, xname)
       .await?;
   }
@@ -180,7 +173,7 @@ pub async fn add_nodes_to_group(
   hosts_expression: &str,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
   let xname_to_move_vec = node_ops::resolve_hosts_expression(
-    infra.backend,
+    infra,
     token,
     hosts_expression,
     false,
@@ -193,12 +186,7 @@ pub async fn add_nodes_to_group(
     ));
   }
 
-  if infra
-    .backend
-    .get_group(token, target_hsm_name)
-    .await
-    .is_err()
-  {
+  if infra.get_group(token, target_hsm_name).await.is_err() {
     return Err(Error::NotFound(format!(
       "Target HSM group '{target_hsm_name}' does not exist"
     )));
@@ -208,7 +196,6 @@ pub async fn add_nodes_to_group(
     xname_to_move_vec.iter().map(String::as_str).collect();
 
   let mut updated_members = infra
-    .backend
     .add_members_to_group(token, target_hsm_name, &xnames_to_move)
     .await?;
 

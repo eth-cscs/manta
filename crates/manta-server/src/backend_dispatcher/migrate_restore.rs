@@ -12,8 +12,6 @@ impl MigrateRestoreTrait for StaticBackendDispatcher {
   async fn migrate_restore(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos_file: Option<&str>,
     cfs_file: Option<&str>,
     hsm_file: Option<&str>,
@@ -28,8 +26,6 @@ impl MigrateRestoreTrait for StaticBackendDispatcher {
       self,
       migrate_restore,
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       bos_file,
       cfs_file,
       hsm_file,

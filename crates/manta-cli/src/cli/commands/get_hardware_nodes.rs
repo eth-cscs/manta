@@ -41,16 +41,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn hw_nodes_cmd() -> clap::Command {
-    clap::Command::new("nodes")
-      .arg(arg!(<VALUE> "xnames expression"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .value_parser(["table", "json"])
-          .default_value("table"),
-      )
+    crate::cli::build::get::subcommand_get_hardware_nodes()
   }
 
   #[test]

@@ -43,36 +43,24 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn hw_cluster_cmd() -> clap::Command {
-    clap::Command::new("cluster")
-      .arg(arg!([CLUSTER_NAME] "cluster name"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .value_parser(["json", "summary", "details", "pattern"])
-          .default_value("summary"),
-      )
+    crate::cli::build::get::subcommand_get_group_hardware()
   }
 
   #[test]
-  fn parse_no_args() {
-    let matches = hw_cluster_cmd().get_matches_from(["cluster"]);
+  fn parse_positional_only_leaves_settings_unset() {
+    let matches =
+      hw_cluster_cmd().get_matches_from(["group-hardware", "compute"]);
     let params = parse_hardware_cluster_params(&matches, None);
-    assert!(params.hsm_group_name.is_none());
+    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
     assert!(params.settings_hsm_group_name.is_none());
   }
 
   #[test]
-  fn parse_cluster_name() {
-    let matches = hw_cluster_cmd().get_matches_from(["cluster", "compute"]);
-    let params = parse_hardware_cluster_params(&matches, None);
-    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
-  }
-
-  #[test]
-  fn parse_settings_hsm_group() {
-    let matches = hw_cluster_cmd().get_matches_from(["cluster"]);
+  fn parse_settings_hsm_group_preserved_alongside_positional() {
+    let matches =
+      hw_cluster_cmd().get_matches_from(["group-hardware", "compute"]);
     let params = parse_hardware_cluster_params(&matches, Some("default"));
     assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default"));
   }

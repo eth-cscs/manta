@@ -285,14 +285,14 @@ manta get nodes nid001313,nid001314 -o json
 
 ### get images
 
-List IMS images.
+List IMS images, sorted by creation time.
 
 | Flag | Type | Description |
 |------|------|-------------|
 | `-i/--id` | string | Specific image ID |
+| `-p/--pattern` | string | Regex matched against image name |
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return last N images |
-| `-H/--group` | string | HSM group name |
 
 ### get boot-parameters
 

@@ -2,9 +2,6 @@
 
 use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList,
 };
@@ -21,7 +18,7 @@ pub async fn get_nodes(
   params: &GetNodesParams,
 ) -> Result<Vec<NodeDetails>, Error> {
   let node_list = node_ops::resolve_hosts_expression(
-    infra.backend,
+    infra,
     token,
     &params.xname,
     params.include_siblings,
@@ -66,7 +63,7 @@ pub async fn delete_node(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
-  infra.backend.delete_node(token, id).await.map(|_| ())
+  infra.delete_node(token, id).await
 }
 
 /// Register a new node, optionally add hardware inventory,
@@ -82,8 +79,6 @@ pub async fn add_node(
   arch_opt: Option<String>,
   hardware_file_path: Option<&PathBuf>,
 ) -> Result<(), Error> {
-  let backend = infra.backend;
-
   // Create node
   let component = ComponentCreate {
     id: id.to_string(),
@@ -105,7 +100,7 @@ pub async fn add_node(
     force: Some(true),
   };
 
-  backend.post_nodes(token, components).await?;
+  infra.post_nodes(token, components).await?;
 
   tracing::info!("Node saved '{}'", id);
 
@@ -115,7 +110,7 @@ pub async fn add_node(
       let file = match File::open(hardware_file) {
         Ok(f) => f,
         Err(e) => {
-          rollback_node(backend, token, id).await;
+          rollback_node(infra, token, id).await;
           return Err(e.into());
         }
       };
@@ -124,7 +119,7 @@ pub async fn add_node(
         match serde_json::from_reader(reader) {
           Ok(v) => v,
           Err(e) => {
-            rollback_node(backend, token, id).await;
+            rollback_node(infra, token, id).await;
             return Err(e.into());
           }
         };
@@ -134,7 +129,7 @@ pub async fn add_node(
         ) {
           Ok(v) => v,
           Err(e) => {
-            rollback_node(backend, token, id).await;
+            rollback_node(infra, token, id).await;
             return Err(e.into());
           }
         },
@@ -146,16 +141,16 @@ pub async fn add_node(
   if let Some(hw_inventory) = hw_inventory_opt {
     tracing::info!("Adding hardware inventory for '{}'", id);
     if let Err(error) =
-      backend.post_inventory_hardware(token, hw_inventory).await
+      infra.post_inventory_hardware(token, hw_inventory).await
     {
-      rollback_node(backend, token, id).await;
+      rollback_node(infra, token, id).await;
       return Err(error);
     }
   }
 
   // Add node to group
-  if let Err(error) = backend.post_member(token, group, id).await {
-    rollback_node(backend, token, id).await;
+  if let Err(error) = infra.post_member(token, group, id).await {
+    rollback_node(infra, token, id).await;
     return Err(error);
   }
 
@@ -163,13 +158,9 @@ pub async fn add_node(
 }
 
 /// Rollback helper: attempt to delete a node that was partially created.
-async fn rollback_node(
-  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
-  token: &str,
-  id: &str,
-) {
+async fn rollback_node(infra: &InfraContext<'_>, token: &str, id: &str) {
   tracing::warn!("Rolling back: attempting to delete node '{}'", id);
-  let delete_node_rslt = backend.delete_node(token, id).await;
+  let delete_node_rslt = infra.delete_node(token, id).await;
   if delete_node_rslt.is_ok() {
     tracing::info!("Rollback: node '{}' deleted", id);
   }

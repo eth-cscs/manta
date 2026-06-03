@@ -1,8 +1,6 @@
 //! Kernel boot parameter mutations (add, apply, delete) with SBPS iSCSI image projection.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
-use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
 use std::collections::HashMap;
@@ -21,7 +19,7 @@ pub async fn get_kernel_parameters(
   params: &GetKernelParametersParams,
 ) -> Result<Vec<BootParameters>, Error> {
   let xname_vec = node_ops::resolve_target_nodes(
-    infra.backend,
+    infra,
     token,
     params.nodes.as_deref(),
     params.hsm_group.as_deref(),
@@ -30,7 +28,7 @@ pub async fn get_kernel_parameters(
   .await?;
 
   let boot_parameter_vec =
-    infra.backend.get_bootparameters(token, &xname_vec).await?;
+    infra.get_bootparameters(token, &xname_vec).await?;
 
   Ok(boot_parameter_vec)
 }
@@ -105,7 +103,7 @@ pub(crate) async fn prepare_kernel_params_changes(
   operation: &KernelParamOperation<'_>,
 ) -> Result<KernelParamsChangeset, Error> {
   let mut boot_params: Vec<BootParameters> =
-    infra.backend.get_bootparameters(token, xname_vec).await?;
+    infra.get_bootparameters(token, xname_vec).await?;
 
   let mut has_changes = false;
   let mut xnames_to_reboot: Vec<String> = Vec::new();
@@ -127,7 +125,6 @@ pub(crate) async fn prepare_kernel_params_changes(
       seen_images.insert(image_id.clone(), true);
 
       let image: Image = infra
-        .backend
         .get_images(token, Some(&image_id))
         .await?
         .first()
@@ -159,13 +156,12 @@ pub async fn apply_kernel_params_changes(
 ) -> Result<(), Error> {
   // Update boot parameters
   for bp in &changeset.boot_params {
-    infra.backend.update_bootparameters(token, bp).await?;
+    infra.update_bootparameters(token, bp).await?;
   }
 
   // Update images projected through SBPS
   for image in images_to_project.values() {
     infra
-      .backend
       .update_image(
         token,
         image

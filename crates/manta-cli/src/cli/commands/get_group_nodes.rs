@@ -103,48 +103,34 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn cluster_cmd() -> clap::Command {
-    clap::Command::new("cluster")
-      .arg(arg!([HSM_GROUP_NAME] "hsm group name"))
-      .arg(arg!(-s --status <STATUS> "status filter"))
-      .arg(arg!(--"nids-only-one-line" "nids only"))
-      .arg(arg!(--"xnames-only-one-line" "xnames only"))
-      .arg(arg!(--"summary-status" "summary status"))
-      .arg(arg!(-o --output <FORMAT> "output format").value_parser([
-        "json",
-        "table",
-        "table-wide",
-        "summary",
-      ]))
+    crate::cli::build::get::subcommand_get_group_nodes()
   }
 
   #[test]
-  fn parse_no_args() {
-    let matches = cluster_cmd().get_matches_from(["cluster"]);
+  fn parse_positional_only_leaves_status_filter_unset() {
+    let matches = cluster_cmd().get_matches_from(["group-nodes", "compute"]);
     let params = parse_cluster_params(&matches, None);
-    assert!(params.hsm_group_name.is_none());
+    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
     assert!(params.status_filter.is_none());
   }
 
   #[test]
-  fn parse_hsm_group() {
-    let matches = cluster_cmd().get_matches_from(["cluster", "compute"]);
-    let params = parse_cluster_params(&matches, None);
-    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
-  }
-
-  #[test]
   fn parse_status_filter() {
-    let matches = cluster_cmd().get_matches_from(["cluster", "--status", "ON"]);
+    let matches = cluster_cmd().get_matches_from([
+      "group-nodes",
+      "compute",
+      "--status",
+      "ON",
+    ]);
     let params = parse_cluster_params(&matches, None);
     assert_eq!(params.status_filter.as_deref(), Some("ON"));
   }
 
   #[test]
-  fn parse_settings_hsm_group() {
-    let matches = cluster_cmd().get_matches_from(["cluster"]);
+  fn parse_settings_hsm_group_preserved_alongside_positional() {
+    let matches = cluster_cmd().get_matches_from(["group-nodes", "compute"]);
     let params = parse_cluster_params(&matches, Some("default-group"));
     assert_eq!(
       params.settings_hsm_group_name.as_deref(),

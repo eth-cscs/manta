@@ -565,24 +565,29 @@ List IMS images.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `id` | string | no | Exact image ID |
-| `hsm_group` | string | no | Filter by associated HSM group |
+| `pattern` | string | no | Regex matched against image name |
 | `limit` | u8 | no | Maximum number of results |
 
-**Response `200`** — array of objects:
+**Response `200`** — array of IMS `Image` objects, sorted by creation time:
 
 ```json
 [
   {
-    "image": { ... },
-    "configuration_name": "csm-config-1.0",
-    "image_id": "uuid-here",
-    "is_linked": true
+    "id": "93b4ea2a-1234-5678-abcd-ef0123456789",
+    "name": "csm-image-1.0",
+    "created": "2026-01-15T14:32:11Z",
+    "link": {
+      "path": "s3://boot-images/93b4ea2a-.../manifest.json",
+      "etag": "abc123",
+      "type": "s3"
+    },
+    "arch": "x86_64"
   }
 ]
 ```
 
 ```bash
-curl -k "$MANTA_HOST/api/v1/images?hsm_group=compute" \
+curl -k "$MANTA_HOST/api/v1/images?pattern=^csm-image-.*" \
   -H "X-Manta-Site: $MANTA_SITE" \
   -H "Authorization: Bearer $MANTA_TOKEN"
 ```

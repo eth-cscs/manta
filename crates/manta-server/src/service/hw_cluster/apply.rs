@@ -4,20 +4,18 @@
 
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
-};
+use manta_backend_dispatcher::{error::Error, types::Group};
 
 use super::{
   AddHwResult, ApplyHwResult, DeleteHwResult, HwClusterMode,
   MEMORY_CAPACITY_LCM, pin_unpin, scoring,
 };
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 /// Core logic for hardware cluster pin/unpin — no terminal interaction.
 #[allow(clippy::too_many_arguments)]
 pub async fn apply_hw_configuration(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   mode: HwClusterMode,
   shasta_token: &str,
   target_hsm_group_name: &str,
@@ -31,7 +29,7 @@ pub async fn apply_hw_configuration(
     pin_unpin::parse_hw_pattern_usize(target_hsm_group_name, pattern)?;
 
   pin_unpin::ensure_target_group_exists(
-    backend,
+    infra,
     shasta_token,
     target_hsm_group_name,
     dryrun,
@@ -44,7 +42,7 @@ pub async fn apply_hw_configuration(
     target_hsm_node_hw_component_count_vec,
     target_hsm_hw_component_summary,
   ) = scoring::fetch_hsm_hw_inventory(
-    backend,
+    infra,
     shasta_token,
     &user_defined_hw_component_vec,
     target_hsm_group_name,
@@ -63,7 +61,7 @@ pub async fn apply_hw_configuration(
     parent_hsm_node_hw_component_count_vec,
     _parent_summary,
   ) = scoring::fetch_hsm_hw_inventory(
-    backend,
+    infra,
     shasta_token,
     &user_defined_hw_component_vec,
     parent_hsm_group_name,
@@ -99,7 +97,7 @@ pub async fn apply_hw_configuration(
     .collect();
 
   pin_unpin::apply_group_updates(
-    backend,
+    infra,
     shasta_token,
     target_hsm_group_name,
     parent_hsm_group_name,
@@ -122,13 +120,13 @@ pub async fn apply_hw_configuration(
 
 /// Ensure the target HSM group exists for add-hw-component, creating it if needed.
 async fn ensure_add_target_group_exists(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   dryrun: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
-  match backend.get_group(shasta_token, target_hsm_group_name).await {
+  match infra.get_group(shasta_token, target_hsm_group_name).await {
     Ok(_) => {
       tracing::debug!("The group '{}' exists, good.", target_hsm_group_name);
       Ok(())
@@ -161,7 +159,7 @@ async fn ensure_add_target_group_exists(
         members: None,
         exclusive_group: Some("false".to_string()),
       };
-      backend.add_group(shasta_token, group).await?;
+      infra.add_group(shasta_token, group).await?;
       Ok(())
     }
   }
@@ -195,7 +193,7 @@ fn compute_final_parent_summary(
 /// Core logic for adding hardware components to a cluster group.
 /// No terminal interaction — suitable for both CLI and HTTP callers.
 pub async fn add_hw_component(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
@@ -204,7 +202,7 @@ pub async fn add_hw_component(
   create_hsm_group: bool,
 ) -> Result<AddHwResult, Error> {
   ensure_add_target_group_exists(
-    backend,
+    infra,
     shasta_token,
     target_hsm_group_name,
     dryrun,
@@ -228,7 +226,7 @@ pub async fn add_hw_component(
     mut parent_hsm_node_hw_component_count_vec,
     parent_hsm_hw_component_summary,
   ) = scoring::fetch_hsm_hw_inventory(
-    backend,
+    infra,
     shasta_token,
     &user_defined_delta_hw_component_vec,
     parent_hsm_group_name,
@@ -262,7 +260,7 @@ pub async fn add_hw_component(
     .map(|(xname, _)| xname.clone())
     .collect();
 
-  let mut target_hsm_node_vec: Vec<String> = backend
+  let mut target_hsm_node_vec: Vec<String> = infra
     .get_member_vec_from_group_name_vec(
       shasta_token,
       &[target_name.to_string()],
@@ -274,11 +272,11 @@ pub async fn add_hw_component(
 
   if !dryrun {
     for xname in &nodes_to_move {
-      backend
+      infra
         .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
         .await?;
 
-      let _ = backend
+      let _ = infra
         .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
         .await?;
     }
@@ -300,7 +298,7 @@ pub async fn add_hw_component(
 
 /// Handle the case when target HSM group is already empty.
 async fn handle_empty_target(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_hsm_group_name: &str,
   dryrun: bool,
@@ -325,7 +323,7 @@ async fn handle_empty_target(
     "The option to delete empty groups has been \
      selected, removing it."
   );
-  match backend
+  match infra
     .delete_group(shasta_token, target_hsm_group_name)
     .await
   {
@@ -367,7 +365,7 @@ fn compute_delete_final_summary(
 
 /// Move nodes between HSM groups: delete from target, add to parent.
 async fn apply_node_moves(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   target_group: &str,
   parent_group: &str,
@@ -376,11 +374,11 @@ async fn apply_node_moves(
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
   for xname in nodes {
-    backend
+    infra
       .delete_member_from_group(shasta_token, target_group, xname.as_str())
       .await?;
 
-    backend
+    infra
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
       .await?;
   }
@@ -393,7 +391,7 @@ async fn apply_node_moves(
          removing it.",
         target_group
       );
-      match backend.delete_group(shasta_token, target_group).await {
+      match infra.delete_group(shasta_token, target_group).await {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. This always \
@@ -417,7 +415,7 @@ async fn apply_node_moves(
 /// Core logic for removing hardware components from a cluster group.
 /// No terminal interaction — suitable for both CLI and HTTP callers.
 pub async fn delete_hw_component(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   token: &str,
   target_hsm_group_name: &str,
   parent_hsm_group_name: &str,
@@ -425,7 +423,7 @@ pub async fn delete_hw_component(
   dryrun: bool,
   delete_hsm_group: bool,
 ) -> Result<DeleteHwResult, Error> {
-  match backend.get_group(token, target_hsm_group_name).await {
+  match infra.get_group(token, target_hsm_group_name).await {
     Ok(_) => {}
     Err(_) => {
       return Err(Error::NotFound(format!(
@@ -450,7 +448,7 @@ pub async fn delete_hw_component(
     mut target_hsm_node_hw_component_count_vec,
     target_hsm_hw_component_summary,
   ) = scoring::fetch_hsm_hw_inventory(
-    backend,
+    infra,
     token,
     &user_defined_delta_hw_component_vec,
     target_name,
@@ -459,7 +457,7 @@ pub async fn delete_hw_component(
   .await?;
 
   if target_hsm_node_hw_component_count_vec.is_empty() {
-    handle_empty_target(backend, token, target_name, dryrun, delete_hsm_group)
+    handle_empty_target(infra, token, target_name, dryrun, delete_hsm_group)
       .await?;
     return Ok(DeleteHwResult {
       nodes_moved: vec![],
@@ -473,7 +471,7 @@ pub async fn delete_hw_component(
     parent_hsm_node_hw_component_count_vec,
     _parent_summary,
   ) = scoring::fetch_hsm_hw_inventory(
-    backend,
+    infra,
     token,
     &user_defined_delta_hw_component_vec,
     parent_hsm_group_name,
@@ -520,7 +518,7 @@ pub async fn delete_hw_component(
 
   if !dryrun {
     apply_node_moves(
-      backend,
+      infra,
       token,
       target_name,
       parent_hsm_group_name,

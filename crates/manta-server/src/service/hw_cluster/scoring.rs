@@ -19,6 +19,7 @@ use super::{
   hw_inventory_utils, pin_unpin,
 };
 use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 /// Compute a scarcity score for each hardware component type across all nodes.
 //
@@ -327,7 +328,7 @@ pub fn print_score_table(
 
 /// Fetch hardware inventory for HSM group members and return per-node component counters.
 pub async fn get_hsm_node_hw_component_counter(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   user_defined_hw_component_vec: &[String],
   hsm_group_member_vec: &[String],
@@ -345,7 +346,11 @@ pub async fn get_hsm_node_hw_component_counter(
     let shasta_token_string = shasta_token.to_string();
     let user_defined_hw_component_vec =
       user_defined_hw_component_vec.to_owned();
-    let backend_clone = backend.clone();
+    // Owned clone needed for `tokio::spawn` below: the spawned future
+    // must be `'static`, but `InfraContext<'a>` is borrowed. Cloning
+    // the dispatcher (cheap — it's an `Arc` under the hood) yields an
+    // owned `StaticBackendDispatcher` that can cross the lifetime.
+    let backend_clone = infra.backend.clone();
     let hsm_member = hsm_member.clone();
 
     let permit = Arc::clone(&sem).acquire_owned().await;
@@ -582,15 +587,13 @@ pub fn parse_hw_pattern(
 /// Fetch HSM group members, compute per-node hw component counts, and return
 /// the member list, per-node counts, and group summary.
 pub async fn fetch_hsm_hw_inventory(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   hw_components: &[String],
   group_name: &str,
   mem_lcm: u64,
 ) -> Result<(Vec<String>, NodeHwCountVec, HashMap<String, usize>), Error> {
-  use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
-
-  let member_vec: Vec<String> = backend
+  let member_vec: Vec<String> = infra
     .get_member_vec_from_group_name_vec(shasta_token, &[group_name.to_string()])
     .await
     .map_err(|e| {
@@ -600,7 +603,7 @@ pub async fn fetch_hsm_hw_inventory(
     })?;
 
   let mut node_hw_count_vec = get_hsm_node_hw_component_counter(
-    backend,
+    infra,
     shasta_token,
     hw_components,
     &member_vec,

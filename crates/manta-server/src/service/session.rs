@@ -1,10 +1,6 @@
 //! CFS session queries, creation, deletion, and console-readiness validation.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
-use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
-use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::cfs::component::Component;
@@ -24,11 +20,8 @@ pub async fn get_sessions(
   tracing::info!("Get CFS sessions");
 
   infra
-    .backend
     .get_and_filter_sessions(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       params
         .hsm_group
         .as_ref()
@@ -69,7 +62,7 @@ pub async fn prepare_session_deletion(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<SessionDeletionContext, Error> {
   let group_available_names = get_groups_names_available(
-    infra.backend,
+    infra,
     token,
     None,
     settings_hsm_group_name_opt,
@@ -85,11 +78,9 @@ pub async fn prepare_session_deletion(
     cfs_component_vec,
     bss_bootparameters_vec,
   ) = tokio::try_join!(
-    infra.backend.get_group_available(token),
-    infra.backend.get_and_filter_sessions(
+    infra.get_group_available(token),
+    infra.get_and_filter_sessions(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       group_available_names,
       Vec::new(),
       None,
@@ -100,15 +91,8 @@ pub async fn prepare_session_deletion(
       None,
       None,
     ),
-    infra.backend.get_cfs_components(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      None,
-      None,
-      None,
-    ),
-    infra.backend.get_all_bootparameters(token),
+    infra.get_cfs_components(token, None, None, None),
+    infra.get_all_bootparameters(token),
   )?;
 
   tracing::info!(
@@ -140,11 +124,8 @@ pub async fn execute_session_deletion(
   dry_run: bool,
 ) -> Result<(), Error> {
   infra
-    .backend
     .delete_and_cancel_session(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       &deletion_ctx.group_available_vec,
       &deletion_ctx.session,
       &deletion_ctx.cfs_component_vec,
@@ -171,28 +152,19 @@ pub async fn create_cfs_session(
   ansible_verbosity: Option<&str>,
   ansible_passthrough: Option<&str>,
 ) -> Result<(String, String), Error> {
-  let backend = infra.backend;
-
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
-    let xname_vec = node_ops::resolve_hosts_expression(
-      backend,
-      token,
-      ansible_limit,
-      false,
-    )
-    .await?;
+    let xname_vec =
+      node_ops::resolve_hosts_expression(infra, token, ansible_limit, false)
+        .await?;
     Some(xname_vec.join(","))
   } else {
     None
   };
 
-  backend
+  infra
     .apply_session(
       gitea_token,
-      infra.gitea_base_url,
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       cfs_conf_sess_name,
       playbook_yaml_file_name_opt,
       hsm_group_opt,
@@ -216,11 +188,8 @@ pub async fn validate_console_session(
   name: &str,
 ) -> Result<(), Error> {
   let sessions = infra
-    .backend
     .get_and_filter_sessions(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       Vec::new(),
       Vec::new(),
       None,

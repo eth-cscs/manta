@@ -12,19 +12,9 @@ impl MigrateBackupTrait for StaticBackendDispatcher {
   async fn migrate_backup(
     &self,
     shasta_token: &str,
-    shasta_base_url: &str,
-    shasta_root_cert: &[u8],
     bos: Option<&str>,
     destination: Option<&str>,
   ) -> Result<(), Error> {
-    dispatch!(
-      self,
-      migrate_backup,
-      shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
-      bos,
-      destination
-    )
+    dispatch!(self, migrate_backup, shasta_token, bos, destination)
   }
 }

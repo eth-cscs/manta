@@ -35,14 +35,10 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # registry", so the path form broke `cargo metadata` in any
 # environment without the sibling layout.
 #
-# For inner-loop dev against unreleased sibling-repo commits, add a
-# per-user `.cargo/config.toml` (gitignored) with a `[patch.crates-io]`
-# block:
-#
-#   [patch.crates-io]
-#   manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-#   csm-rs                   = { path = "../csm-rs" }
-#   ochami-rs                = { path = "../ochami-rs" }
+# For inner-loop dev against unreleased sibling-repo commits, the
+# `[patch.crates-io]` block at the bottom of this file redirects the
+# three sibling crates to local checkouts. Comment it out (or move it
+# to a per-user `.cargo/config.toml` if you don't want it in-tree).
 manta-backend-dispatcher = "1.0.0-beta.4"
 csm-rs                   = "1.0.0-beta.5"
 ochami-rs                = "1.0.0-beta.4"
@@ -81,3 +77,12 @@ debug     = 1
 [profile.dist]
 inherits = "release"
 lto      = "thin"
+
+# Redirect the three sibling crates to local checkouts so trait edits
+# in `../manta-backend-dispatcher` propagate to `../csm-rs` /
+# `../ochami-rs` impls during inner-loop development. Drop this block
+# (or move it to a per-user `.cargo/config.toml`) before publishing.
+[patch.crates-io]
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+csm-rs                   = { path = "../csm-rs" }
+ochami-rs                = { path = "../ochami-rs" }

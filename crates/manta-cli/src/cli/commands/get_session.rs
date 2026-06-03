@@ -61,37 +61,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::{ArgGroup, arg, value_parser};
 
-  /// Build a minimal clap Command matching the real `get sessions`
-  /// subcommand definition, so we can create valid `ArgMatches`
-  /// for testing.
   fn sessions_cmd() -> clap::Command {
-    clap::Command::new("sessions")
-      .arg(arg!(-n --name <SESSION_NAME> "session name"))
-      .arg(arg!(-a --"min-age" <VALUE> "min age"))
-      .arg(arg!(-A --"max-age" <VALUE> "max age"))
-      .arg(
-        arg!(-t --type <VALUE> "session type")
-          .value_parser(["image", "runtime"]),
-      )
-      .arg(
-        arg!(-s --status <VALUE> "status")
-          .value_parser(["pending", "running", "complete"]),
-      )
-      .arg(arg!(-m --"most-recent" "most recent"))
-      .arg(
-        arg!(-l --limit <VALUE> "limit")
-          .value_parser(value_parser!(u8).range(1..)),
-      )
-      .arg(arg!(-o --output <FORMAT> "output format").value_parser(["json"]))
-      .arg(arg!(-x --xnames <XNAMES> "xnames"))
-      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
-      .group(
-        ArgGroup::new("hsm-group_or_xnames_or_name")
-          .args(["group", "xnames", "name"]),
-      )
-      .group(ArgGroup::new("session_limit").args(["most-recent", "limit"]))
+    crate::cli::build::get::subcommand_get_cfs_session()
   }
 
   #[test]

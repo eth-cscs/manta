@@ -398,7 +398,7 @@ pub async fn health() -> impl IntoResponse {
 /// Resolve target xnames from an explicit list or an HSM group name.
 /// Returns 400 if neither is provided.
 async fn resolve_xnames_from_request(
-  backend: &crate::manta_backend_dispatcher::StaticBackendDispatcher,
+  infra: &crate::server::common::app_context::InfraContext<'_>,
   token: &str,
   xnames_expression: Option<&str>,
   hsm_group: Option<&str>,
@@ -407,14 +407,14 @@ async fn resolve_xnames_from_request(
     && !expr.is_empty()
   {
     return crate::service::node_ops::resolve_hosts_expression(
-      backend, token, expr, false,
+      infra, token, expr, false,
     )
     .await
     .map_err(display_error);
   }
   if let Some(group) = hsm_group {
     return crate::service::node_ops::resolve_target_nodes(
-      backend,
+      infra,
       token,
       None,
       Some(group),

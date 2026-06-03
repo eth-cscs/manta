@@ -3,10 +3,6 @@
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::{
-  hsm::group::GroupTrait, migrate_backup::MigrateBackupTrait,
-  migrate_restore::MigrateRestoreTrait,
-};
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
@@ -18,16 +14,7 @@ pub async fn migrate_backup(
   bos: Option<&str>,
   destination: Option<&str>,
 ) -> Result<(), Error> {
-  infra
-    .backend
-    .migrate_backup(
-      token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
-      bos,
-      destination,
-    )
-    .await
+  infra.migrate_backup(token, bos, destination).await
 }
 
 /// Restore a vCluster from backup files; `overwrite` applies to all resource types.
@@ -48,20 +35,17 @@ pub async fn migrate_restore(
   // fans out to all four. Expose them individually if callers need
   // per-resource control in the future.
   infra
-    .backend
     .migrate_restore(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       bos_file,
       cfs_file,
       hsm_file,
       ims_file,
       image_dir,
-      overwrite, // overwrite_bos
-      overwrite, // overwrite_cfs
-      overwrite, // overwrite_hsm
-      overwrite, // overwrite_ims
+      overwrite, // overwrite_group
+      overwrite, // overwrite_configuration
+      overwrite, // overwrite_image
+      overwrite, // overwrite_template
     )
     .await
 }
@@ -93,11 +77,8 @@ pub async fn migrate_nodes(
   dry_run: bool,
   create_hsm_group: bool,
 ) -> Result<(Vec<String>, Vec<NodeMigrationResult>), Error> {
-  let backend = infra.backend;
-
-  // Resolve hosts expression to xnames
   let xname_to_move_vec =
-    node_ops::resolve_hosts_expression(backend, token, hosts_expression, false)
+    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
       .await?;
 
   if xname_to_move_vec.is_empty() {
@@ -108,7 +89,7 @@ pub async fn migrate_nodes(
 
   let mut hsm_group_summary: HashMap<String, Vec<String>> =
     node_ops::get_curated_hsm_group_from_xname_hostlist(
-      backend,
+      infra,
       token,
       &xname_to_move_vec,
     )
@@ -122,7 +103,7 @@ pub async fn migrate_nodes(
   let mut results = Vec::new();
 
   for target_hsm_name in target_hsm_name_vec {
-    if backend.get_group(token, target_hsm_name).await.is_ok() {
+    if infra.get_group(token, target_hsm_name).await.is_ok() {
       tracing::debug!("The group '{target_hsm_name}' exists, good.");
     } else if create_hsm_group {
       tracing::info!(
@@ -142,7 +123,7 @@ pub async fn migrate_nodes(
     }
 
     for (parent_hsm_name, xnames) in &hsm_group_summary {
-      let (mut target_members, mut parent_members) = backend
+      let (mut target_members, mut parent_members) = infra
         .migrate_group_members(
           token,
           target_hsm_name,

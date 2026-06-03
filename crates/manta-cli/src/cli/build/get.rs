@@ -34,13 +34,11 @@ fn add_group_hardware_args(cmd: Command) -> Command {
     )
 }
 
-pub fn subcommand_get_hardware() -> Command {
-  let command_get_hw_configuration_cluster = add_group_hardware_args(
-    Command::new("cluster")
-      .about("[DEPRECATED] Use 'manta get group-hardware' instead"),
-  );
-
-  let command_get_hw_nodes = Command::new("nodes")
+/// Subcommand `manta get hardware nodes`. Extracted so unit tests in
+/// `cli::commands::get_hardware_nodes` can reuse the production
+/// builder instead of mirroring it by hand.
+pub fn subcommand_get_hardware_nodes() -> Command {
+  Command::new("nodes")
     .arg_required_else_help(true)
     .about("Show hardware inventory for a set of nodes")
     // ID preserved as "VALUE" for handler compatibility
@@ -49,13 +47,20 @@ pub fn subcommand_get_hardware() -> Command {
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["table", "json"])
         .default_value("table"),
-    );
+    )
+}
+
+pub fn subcommand_get_hardware() -> Command {
+  let command_get_hw_configuration_cluster = add_group_hardware_args(
+    Command::new("cluster")
+      .about("[DEPRECATED] Use 'manta get group-hardware' instead"),
+  );
 
   Command::new("hardware")
     .arg_required_else_help(true)
     .about("Inspect hardware components")
     .subcommand(command_get_hw_configuration_cluster)
-    .subcommand(command_get_hw_nodes)
+    .subcommand(subcommand_get_hardware_nodes())
 }
 
 /// Canonical replacement for `get hardware cluster`.

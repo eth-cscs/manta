@@ -2,22 +2,16 @@
 //! cross-reference images by CFS configuration name (e.g. boot-config
 //! application, SAT-file rendering).
 
-use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::{cfs::CfsTrait, ims::ImsTrait},
-  types::ims::Image,
-};
+use manta_backend_dispatcher::{error::Error, types::ims::Image};
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 /// This function retrieves the list of image IDs related to a CFS configuration name.
 /// It first checks the CFS sessions for any succeeded sessions that built an image related to the
 /// CFS configuration. Then, it checks if the image ID exists in the IMS.
 pub async fn get_image_vec_related_cfs_configuration_name(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
-  shasta_base_url: &str,
-  shasta_root_cert: &[u8],
   cfs_configuration_name: String,
 ) -> Result<Vec<Image>, Error> {
   tracing::info!(
@@ -25,11 +19,9 @@ pub async fn get_image_vec_related_cfs_configuration_name(
     cfs_configuration_name
   );
 
-  let cfs_session_vec = backend
+  let cfs_session_vec = infra
     .get_sessions(
       shasta_token,
-      shasta_base_url,
-      shasta_root_cert,
       None,
       None,
       None,
@@ -67,7 +59,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       );
 
       let image_vec_rslt =
-        backend.get_images(shasta_token, Some(&image_id)).await;
+        infra.get_images(shasta_token, Some(&image_id)).await;
 
       match image_vec_rslt {
         Ok(mut image_vec) => {

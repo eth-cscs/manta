@@ -57,26 +57,21 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn kernel_params_cmd() -> clap::Command {
-    clap::Command::new("kernel-parameters")
-      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
-      .arg(arg!(-n --nodes <NODES> "nodes"))
-      .arg(arg!(-f --filter <FILTER> "filter"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .default_value("table")
-          .value_parser(["json", "table"]),
-      )
+    crate::cli::build::get::subcommand_get_kernel_parameters()
   }
 
   #[test]
-  fn parse_no_args() {
-    let matches = kernel_params_cmd().get_matches_from(["kernel-parameters"]);
+  fn parse_nodes_only_leaves_group_unset() {
+    let matches = kernel_params_cmd().get_matches_from([
+      "kernel-parameters",
+      "--nodes",
+      "x1000c0s0b0n0",
+    ]);
     let params = parse_kernel_parameters_params(&matches, None);
     assert!(params.hsm_group.is_none());
-    assert!(params.nodes.is_none());
+    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
   }
 
   #[test]
@@ -88,16 +83,5 @@ mod tests {
     ]);
     let params = parse_kernel_parameters_params(&matches, None);
     assert_eq!(params.hsm_group.as_deref(), Some("compute"));
-  }
-
-  #[test]
-  fn parse_nodes() {
-    let matches = kernel_params_cmd().get_matches_from([
-      "kernel-parameters",
-      "--nodes",
-      "x1000c0s0b0n0",
-    ]);
-    let params = parse_kernel_parameters_params(&matches, None);
-    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
   }
 }

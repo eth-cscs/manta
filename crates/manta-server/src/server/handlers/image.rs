@@ -1,12 +1,10 @@
 //! GET/DELETE /api/v1/images.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
+use serde::Deserialize;
+use utoipa::IntoParams;
 
-use super::{
-  ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
-};
+use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -18,33 +16,20 @@ use crate::service;
 pub struct ImageQuery {
   /// Exact IMS image ID; returns just that image when set.
   pub id: Option<String>,
-  /// Reges to filter images by name
+  /// Regex matched against image name. Accepted here but applied by
+  /// the CLI after the response is returned — the server does not
+  /// filter on it.
   pub pattern: Option<String>,
   /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,
 }
 
-/// Wrapper so the image tuple serializes to named fields.
-#[derive(Serialize, ToSchema)]
-pub struct ImageEntry {
-  /// Raw IMS image object (CSM / OpenCHAMI shape, passed through).
-  pub image: serde_json::Value,
-  /// Name of the CFS configuration linked to this image at build time.
-  pub configuration_name: String,
-  /// IMS image ID (UUID). Convenience copy of `image.id` for clients
-  /// that don't want to parse the inner JSON.
-  pub image_id: String,
-  /// Whether the image is still linked to its configuration (vs.
-  /// configuration was deleted but image survives).
-  pub is_linked: bool,
-}
-
-/// GET /images — list IMS images with their associated CFS configuration names.
+/// GET /images — list IMS images sorted by creation time.
 #[utoipa::path(get, path = "/images", tag = "images",
   params(ImageQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "List of images", body = Vec<ImageEntry>),
+    (status = 200, description = "List of images", body = Vec<serde_json::Value>),
     (status = 401, description = "Unauthorized",   body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
   )
@@ -59,7 +44,6 @@ pub async fn get_images(
   let params = service::image::GetImagesParams {
     id: q.id,
     pattern: q.pattern,
-    settings_hsm_group_name: None,
     limit: q.limit,
   };
 

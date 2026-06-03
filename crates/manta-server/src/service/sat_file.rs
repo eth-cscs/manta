@@ -26,16 +26,6 @@ use std::collections::HashMap;
 
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{
-    apply_sat_file::{
-      ApplyConfigurationParams as BackendApplyConfigurationParams,
-      ApplyImageParams as BackendApplyImageParams,
-      ApplySatFileParams as BackendApplySatFileParams,
-      ApplySessionTemplateParams as BackendApplySessionTemplateParams,
-      SatTrait,
-    },
-    hsm::group::GroupTrait,
-  },
   types::{
     bos::{session::BosSession, session_template::BosSessionTemplate},
     cfs::cfs_configuration_response::CfsConfigurationResponse,
@@ -68,32 +58,8 @@ pub async fn apply_sat_file(
   ),
   Error,
 > {
-  let hsm_group_available_vec =
-    infra.backend.get_group_name_available(token).await?;
-
   infra
-    .backend
-    .apply_sat_file(BackendApplySatFileParams {
-      shasta_token: token,
-      shasta_base_url: infra.shasta_base_url,
-      shasta_root_cert: infra.shasta_root_cert,
-      socks5_proxy: infra.socks5_proxy,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      sat_file: params.sat_file,
-      hsm_group_available_vec: &hsm_group_available_vec,
-      ansible_verbosity: params.ansible_verbosity,
-      ansible_passthrough: params.ansible_passthrough,
-      gitea_base_url: infra.gitea_base_url,
-      gitea_token,
-      reboot: params.reboot,
-      watch_logs: params.watch_logs,
-      timestamps: params.timestamps,
-      debug_on_failure: true,
-      overwrite: params.overwrite,
-      dry_run: params.dry_run,
-    })
+    .apply_sat_file(token, gitea_token, vault_base_url, k8s_api_url, params)
     .await
 }
 
@@ -112,21 +78,15 @@ pub async fn apply_configuration(
   overwrite: bool,
 ) -> Result<CfsConfigurationResponse, Error> {
   infra
-    .backend
-    .apply_configuration(BackendApplyConfigurationParams {
-      shasta_token: token,
-      shasta_base_url: infra.shasta_base_url,
-      shasta_root_cert: infra.shasta_root_cert,
-      socks5_proxy: infra.socks5_proxy,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      gitea_base_url: infra.gitea_base_url,
+    .apply_configuration(
+      token,
       gitea_token,
+      vault_base_url,
+      k8s_api_url,
       configuration,
       dry_run,
       overwrite,
-    })
+    )
     .await
 }
 
@@ -148,29 +108,19 @@ pub async fn apply_image(
   timestamps: bool,
   dry_run: bool,
 ) -> Result<Image, Error> {
-  let hsm_group_available_vec =
-    infra.backend.get_group_name_available(token).await?;
-
   infra
-    .backend
-    .apply_image(BackendApplyImageParams {
-      shasta_token: token,
-      shasta_base_url: infra.shasta_base_url,
-      shasta_root_cert: infra.shasta_root_cert,
-      socks5_proxy: infra.socks5_proxy,
+    .apply_image(
+      token,
       vault_base_url,
-      site_name: infra.site_name,
       k8s_api_url,
       image,
       ref_lookup,
-      hsm_group_available_vec: &hsm_group_available_vec,
       ansible_verbosity,
       ansible_passthrough,
-      debug_on_failure: true,
       watch_logs,
       timestamps,
       dry_run,
-    })
+    )
     .await
 }
 
@@ -186,21 +136,7 @@ pub async fn apply_session_template(
   reboot: bool,
   dry_run: bool,
 ) -> Result<(BosSessionTemplate, Option<BosSession>), Error> {
-  let hsm_group_available_vec =
-    infra.backend.get_group_name_available(token).await?;
-
   infra
-    .backend
-    .apply_session_template(BackendApplySessionTemplateParams {
-      shasta_token: token,
-      shasta_base_url: infra.shasta_base_url,
-      shasta_root_cert: infra.shasta_root_cert,
-      socks5_proxy: infra.socks5_proxy,
-      session_template,
-      ref_lookup,
-      hsm_group_available_vec: &hsm_group_available_vec,
-      reboot,
-      dry_run,
-    })
+    .apply_session_template(token, session_template, ref_lookup, reboot, dry_run)
     .await
 }

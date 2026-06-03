@@ -3,8 +3,6 @@
 
 use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
-use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
-use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
@@ -19,7 +17,7 @@ pub async fn get_configurations(
   params: &GetConfigurationParams,
 ) -> Result<Vec<CfsConfigurationResponse>, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    infra.backend,
+    infra,
     token,
     params.hsm_group.as_deref(),
     params.settings_hsm_group_name.as_deref(),
@@ -29,11 +27,8 @@ pub async fn get_configurations(
   let limit_ref = params.limit.as_ref();
 
   let cfs_configuration_vec = infra
-    .backend
     .get_and_filter_configuration(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       params.name.as_deref(),
       params.pattern.as_deref(),
       &target_hsm_group_vec,
@@ -78,13 +73,7 @@ pub(crate) async fn get_deletion_candidates(
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
       vec![settings_hsm_group_name.to_string()]
     } else {
-      get_groups_names_available(
-        infra.backend,
-        token,
-        None,
-        settings_hsm_group_name_opt,
-      )
-      .await?
+      get_groups_names_available(infra, token, None, None).await?
     };
 
   let (
@@ -95,11 +84,8 @@ pub(crate) async fn get_deletion_candidates(
     cfs_session_tuples,
     configurations,
   ) = infra
-    .backend
     .get_data_to_delete(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       &target_hsm_group_vec,
       configuration_name_pattern,
       since,
@@ -154,11 +140,8 @@ pub(crate) async fn delete_configurations_and_derivatives(
     .collect();
 
   infra
-    .backend
-    .delete(
+    .delete_configurations_and_dependents(
       token,
-      infra.shasta_base_url,
-      infra.shasta_root_cert,
       &candidates.configuration_names,
       &candidates.image_ids,
       &cfs_session_name_vec,

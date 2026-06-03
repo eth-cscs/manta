@@ -70,7 +70,6 @@ use super::handlers;
   ),
   components(schemas(
     handlers::ErrorResponse,
-    handlers::ImageEntry,
     handlers::AddNodeRequest,
     handlers::AddNodesToGroupRequest,
     handlers::AddNodesToGroupResponse,

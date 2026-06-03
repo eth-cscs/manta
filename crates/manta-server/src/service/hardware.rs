@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
@@ -115,7 +114,7 @@ pub async fn get_hardware_cluster(
   params: &GetHardwareClusterParams,
 ) -> Result<HardwareClusterResult, Error> {
   let target_hsm_group_vec = get_groups_names_available(
-    infra.backend,
+    infra,
     token,
     params.hsm_group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
@@ -129,7 +128,7 @@ pub async fn get_hardware_cluster(
     })?
     .clone();
 
-  let hsm_group = infra.backend.get_group(token, &hsm_group_name).await?;
+  let hsm_group = infra.get_group(token, &hsm_group_name).await?;
 
   let members = hsm_group
     .members
@@ -181,7 +180,7 @@ pub async fn get_hardware_nodes_list(
   params: &GetHardwareNodesListParams,
 ) -> Result<HardwareNodesListResult, Error> {
   let xnames = node_ops::resolve_hosts_expression(
-    infra.backend,
+    infra,
     token,
     &params.xnames,
     false,
@@ -194,7 +193,7 @@ pub async fn get_hardware_nodes_list(
     ));
   }
 
-  validate_target_hsm_members(infra.backend, token, &xnames).await?;
+  validate_target_hsm_members(infra, token, &xnames).await?;
 
   let node_summaries = fetch_node_summaries(infra, token, &xnames).await;
   Ok(HardwareNodesListResult { node_summaries })

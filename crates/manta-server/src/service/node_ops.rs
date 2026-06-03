@@ -6,11 +6,7 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use hostlist_parser::parse;
-use manta_backend_dispatcher::{
-  error::Error,
-  interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
-  types::Component,
-};
+use manta_backend_dispatcher::{error::Error, types::Component};
 use regex::Regex;
 
 // Compile-time constant pattern — .expect() is safe here because
@@ -20,7 +16,7 @@ static XNAME_RE: LazyLock<Regex> = LazyLock::new(|| {
     .expect("Invalid xname regex pattern")
 });
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 /// Length of a NID string, e.g. "nid000001" = 9 characters.
 const NID_STRING_LENGTH: usize = 9;
@@ -116,13 +112,13 @@ pub async fn get_xname_from_xname_hostlist(
 /// `from_hosts_expression_to_xname_vec()` that appears in many
 /// command files.
 pub async fn resolve_hosts_expression(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   hosts_expression: &str,
   is_include_siblings: bool,
 ) -> Result<Vec<String>, Error> {
   let node_metadata_available_vec =
-    backend.get_node_metadata_available(shasta_token).await?;
+    infra.get_node_metadata_available(shasta_token).await?;
 
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -226,16 +222,16 @@ pub async fn from_hosts_expression_to_xname_vec(
 /// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
 /// hostlist
 pub async fn get_curated_hsm_group_from_xname_hostlist(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   auth_token: &str,
   xname_vec: &[String],
 ) -> Result<HashMap<String, Vec<String>>, Error> {
   let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
   let hsm_name_available_vec =
-    backend.get_group_name_available(auth_token).await?;
+    infra.get_group_name_available(auth_token).await?;
 
-  let hsm_group_available_map = backend
+  let hsm_group_available_map = infra
     .get_group_map_and_filter_by_group_vec(
       auth_token,
       &hsm_name_available_vec
@@ -300,32 +296,32 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 ///
 /// Returns a sorted, deduplicated `Vec<String>` of xnames.
 pub async fn resolve_target_nodes(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   hosts_expression: Option<&str>,
   hsm_group_name_arg_opt: Option<&str>,
   settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
   if let Some(hosts_expr) = hosts_expression {
-    resolve_hosts_expression(backend, shasta_token, hosts_expr, false).await
+    resolve_hosts_expression(infra, shasta_token, hosts_expr, false).await
   } else if hsm_group_name_arg_opt.is_some()
     || settings_hsm_group_name_opt.is_some()
   {
     let hsm_group_name_vec =
       crate::service::authorization::get_groups_names_available(
-        backend,
+        infra,
         shasta_token,
         hsm_group_name_arg_opt,
         settings_hsm_group_name_opt,
       )
       .await?;
 
-    let hsm_members: Vec<String> = backend
+    let hsm_members: Vec<String> = infra
       .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
       .await?;
 
     resolve_hosts_expression(
-      backend,
+      infra,
       shasta_token,
       &hsm_members.join(","),
       false,

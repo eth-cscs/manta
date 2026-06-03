@@ -42,20 +42,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::arg;
 
   fn redfish_cmd() -> clap::Command {
-    clap::Command::new("redfish-endpoints")
-      .arg(arg!(--id <ID> "endpoint id"))
-      .arg(arg!(--fqdn <FQDN> "fqdn"))
-      .arg(arg!(--uuid <UUID> "uuid"))
-      .arg(arg!(--macaddr <MACADDR> "mac address"))
-      .arg(arg!(--ipaddress <IPADDRESS> "ip address"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .value_parser(["table", "json"])
-          .default_value("table"),
-      )
+    crate::cli::build::get::subcommand_get_redfish_endpoints()
   }
 
   #[test]

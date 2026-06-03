@@ -516,26 +516,16 @@ async fn get_templates_happy_path() {
 
 // GET /api/v1/images
 //
-// Handler returns Vec<ImageEntry> — a mapped struct (not raw Image):
-//   { image: Value, configuration_name: String, image_id: String, is_linked: bool }
+// Handler returns a plain Vec<Image> sorted by creation time. Each
+// entry mirrors the IMS image shape: { id, name, created, link?, arch?, metadata? }.
 //
-// Call chain (all internal CFS calls also use v2):
+// Call chain:
 //   service::image::get_images
-//     → get_groups_names_available (GET /smd/hsm/v2/groups)
-//     → backend.get_images_and_details
-//         → GET /ims/v3/images
-//         → get_member_vec_from_hsm_name_vec (GET /smd/hsm/v2/groups?group=compute, x2)
-//         → GET /bos/v2/sessiontemplates
-//         → cfs::session::get_and_sort       (GET /cfs/v2/sessions, await? — must succeed)
-//         → GET /bss/boot/v1/bootparameters  (unwrap_or_default — safe to leave empty)
+//     → backend.get_images (GET /ims/v3/images)
 #[tokio::test]
 async fn get_images_happy_path() {
   let fx = TestFixture::setup().await;
-  mock_hsm_groups(&fx.mock_server).await;
   mock_ims_images(&fx.mock_server).await;
-  mock_bos_v2_templates(&fx.mock_server).await;
-  mock_cfs_v2_sessions(&fx.mock_server).await;
-  mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx.send(fx.auth_get("/api/v1/images")).await;
   assert_eq!(resp.status(), StatusCode::OK);
@@ -543,9 +533,8 @@ async fn get_images_happy_path() {
   let body = TestFixture::body_json(resp).await;
   let arr = body.as_array().expect("expected JSON array");
   assert!(!arr.is_empty());
-  assert!(arr[0]["image_id"].is_string());
-  assert!(arr[0]["configuration_name"].is_string());
-  assert!(arr[0]["is_linked"].is_boolean());
+  assert_eq!(arr[0]["id"], "abc123");
+  assert_eq!(arr[0]["name"], "compute-my-image");
 }
 
 // GET /api/v1/boot-parameters?hsm_group=compute

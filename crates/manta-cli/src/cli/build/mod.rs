@@ -13,7 +13,7 @@ use std::path::PathBuf;
 mod add;
 mod apply;
 mod delete;
-mod get;
+pub(crate) mod get;
 
 const CLI_TERM_WIDTH: usize = 100;
 

@@ -66,22 +66,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::{arg, value_parser};
 
   fn config_cmd() -> clap::Command {
-    clap::Command::new("configurations")
-      .arg(arg!(-n --name <NAME> "config name"))
-      .arg(arg!(-p --pattern <PATTERN> "name pattern"))
-      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
-      .arg(arg!(-m --"most-recent" "most recent"))
-      .arg(
-        arg!(-l --limit <VALUE> "limit")
-          .value_parser(value_parser!(u8).range(1..)),
-      )
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .value_parser(["json", "table"]),
-      )
+    crate::cli::build::get::subcommand_get_cfs_configuration()
   }
 
   #[test]

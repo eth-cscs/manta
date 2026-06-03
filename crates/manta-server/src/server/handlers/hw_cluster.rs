@@ -66,7 +66,7 @@ pub async fn add_hw_component(
   .map_err(to_handler_error)?;
 
   let result = crate::service::hw_cluster::add_hw_component(
-    infra.backend,
+    &infra,
     &ctx.token,
     &target,
     &body.parent_cluster,
@@ -143,7 +143,7 @@ pub async fn delete_hw_component(
   .map_err(to_handler_error)?;
 
   let result = crate::service::hw_cluster::delete_hw_component(
-    infra.backend,
+    &infra,
     &ctx.token,
     &target,
     &body.parent_cluster,
@@ -242,7 +242,7 @@ pub async fn apply_hw_configuration(
   };
 
   let result = crate::service::hw_cluster::apply_hw_configuration(
-    infra.backend,
+    &infra,
     mode,
     &ctx.token,
     &target,

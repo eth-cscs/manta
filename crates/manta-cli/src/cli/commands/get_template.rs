@@ -54,22 +54,9 @@ pub async fn exec(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use clap::{arg, value_parser};
 
   fn template_cmd() -> clap::Command {
-    clap::Command::new("templates")
-      .arg(arg!(-n --name <NAME> "template name"))
-      .arg(arg!(-H --group <HSM_GROUP_NAME> "hsm group"))
-      .arg(
-        arg!(-o --output <FORMAT> "output format")
-          .default_value("table")
-          .value_parser(["json", "table"]),
-      )
-      .arg(arg!(-m --"most-recent" "most recent"))
-      .arg(
-        arg!(-l --limit <VALUE> "limit")
-          .value_parser(value_parser!(u8).range(1..)),
-      )
+    crate::cli::build::get::subcommand_get_bos_template()
   }
 
   #[test]

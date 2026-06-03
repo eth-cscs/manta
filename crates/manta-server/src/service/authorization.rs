@@ -1,20 +1,18 @@
 //! Authorization helpers: validate user access to HSM groups and their members.
 
-use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::group::GroupTrait,
-};
+use manta_backend_dispatcher::error::Error;
 
-use crate::manta_backend_dispatcher::StaticBackendDispatcher;
+use crate::server::common::app_context::InfraContext;
 
 /// Return the accessible HSM groups for the token; errors if the requested group is not accessible.
 pub async fn get_groups_names_available(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   auth_token: &str,
   group_cli_arg_opt: Option<&str>,
   group_env_or_config_file_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
   let hsm_name_available_vec =
-    backend.get_group_name_available(auth_token).await?;
+    infra.get_group_name_available(auth_token).await?;
 
   let target_hsm_group_opt = if group_cli_arg_opt.is_some() {
     group_cli_arg_opt
@@ -45,14 +43,14 @@ pub async fn get_groups_names_available(
 
 /// Validate that every requested xname belongs to a group the token has access to.
 pub async fn validate_target_hsm_members(
-  backend: &StaticBackendDispatcher,
+  infra: &InfraContext<'_>,
   shasta_token: &str,
   hsm_group_members_opt: &[String],
 ) -> Result<Vec<String>, Error> {
   let hsm_groups_user_has_access =
-    backend.get_group_name_available(shasta_token).await?;
+    infra.get_group_name_available(shasta_token).await?;
 
-  let all_xnames_user_has_access = backend
+  let all_xnames_user_has_access = infra
     .get_member_vec_from_group_name_vec(
       shasta_token,
       &hsm_groups_user_has_access,
