@@ -26,7 +26,9 @@
 //! wire-format-lock tests at the bottom of this module catch that
 //! drift; mirror them when you add a new field.
 //!
-//! [`apply_sat_file`]: crate::service::sat_file
+//! Each handler calls the matching `InfraContext` method on
+//! `&infra` directly — the per-trait service shim was removed once the
+//! method bodies stopped doing anything beyond plumbing.
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::types::{

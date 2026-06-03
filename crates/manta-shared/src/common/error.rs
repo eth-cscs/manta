@@ -1,9 +1,10 @@
 //! Structured error type returned by `manta-shared`'s pure helpers.
 //!
-//! Replaces the previous use of `manta_backend_dispatcher::error::Error`
-//! in audit / jwt / kafka / config / sat-file / network-probe helpers,
-//! so that this crate (and therefore `manta-cli`) no longer needs to
-//! reach into backend-dispatcher types for its error surface.
+//! Used by the shared `config` loader and re-used by binary-side
+//! helpers that build on it: `manta-cli`'s SAT-file Jinja renderer and
+//! `manta-server`'s `audit`, `jwt_ops`, and `kafka` modules. Lets
+//! `manta-shared` (and therefore `manta-cli`) avoid pulling in
+//! `manta_backend_dispatcher::error::Error` for its own error surface.
 //!
 //! Server-side code keeps returning `manta_backend_dispatcher::error::Error`
 //! and uses `?` to convert `MantaError` at the call site via the
@@ -40,7 +41,7 @@ use thiserror::Error;
 /// ```
 #[derive(Error, Debug)]
 pub enum MantaError {
-  /// Filesystem I/O failure (config-file read, audit-log write, etc.).
+  /// Filesystem I/O failure (config-file read, token cache write, etc.).
   #[error("IO error: {0}")]
   IoError(#[from] std::io::Error),
   /// `config` crate failure: bad TOML, env-var parse, or schema

@@ -1,7 +1,7 @@
 //! `StaticBackendDispatcher` trait implementations.
 //!
 //! Each `impl <Trait> for StaticBackendDispatcher` block just routes the
-//! call to the `CSM` or `OCHAMI` variant via the [`dispatch!`] macro
+//! call to the `CSM` or `OCHAMI` variant via the `dispatch!` macro
 //! defined below; the actual logic lives in `csm-rs` and `ochami-rs`.
 //!
 //! Without these explicit forwards, calls would fall through to the

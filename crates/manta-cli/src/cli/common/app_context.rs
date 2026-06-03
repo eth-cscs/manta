@@ -1,8 +1,9 @@
 //! CLI context struct threaded through `manta-cli`'s call stack.
 //!
 //! The server's analogous `InfraContext` (with backend dispatcher and
-//! per-site URLs) lives in `manta-server::common::app_context` — it
-//! depends on `StaticBackendDispatcher` which the CLI never touches.
+//! per-site URLs) lives in `manta_server::server::common::app_context`
+//! — it depends on `StaticBackendDispatcher`, which the CLI never
+//! touches.
 
 use config::Config;
 

@@ -635,7 +635,7 @@ async fn get_kernel_parameters_happy_path() {
 // GET /api/v1/redfish-endpoints
 //
 // Call chain:
-//   service::redfish_endpoints::get_redfish_endpoints
+//   InfraContext::get_redfish_endpoints
 //     → backend.get_redfish_endpoints
 //         → GET /smd/hsm/v2/Inventory/RedfishEndpoints
 //
