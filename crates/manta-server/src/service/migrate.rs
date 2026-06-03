@@ -1,4 +1,9 @@
-//! vCluster backup/restore and node migration between HSM groups.
+//! Node migration between HSM groups.
+//!
+//! vCluster backup/restore are 1:1 pass-throughs to `InfraContext`;
+//! handlers call those directly. Only `migrate_nodes` carries real
+//! orchestration (hosts-expression resolution, HSM-group curation,
+//! per-pair member migration).
 
 use std::collections::HashMap;
 
@@ -6,35 +11,6 @@ use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-
-/// Execute a migrate-backup operation against the backend.
-pub async fn migrate_backup(
-  infra: &InfraContext<'_>,
-  token: &str,
-  bos: Option<&str>,
-  destination: Option<&str>,
-) -> Result<(), Error> {
-  infra.migrate_backup(token, bos, destination).await
-}
-
-/// Restore a vCluster from backup files; `overwrite` applies to all resource types.
-#[allow(clippy::too_many_arguments)]
-pub async fn migrate_restore(
-  infra: &InfraContext<'_>,
-  token: &str,
-  bos_file: Option<&str>,
-  cfs_file: Option<&str>,
-  hsm_file: Option<&str>,
-  ims_file: Option<&str>,
-  image_dir: Option<&str>,
-  overwrite: bool,
-) -> Result<(), Error> {
-  infra
-    .migrate_restore(
-      token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite,
-    )
-    .await
-}
 
 /// Result of migrating nodes for a single parent→target pair.
 #[derive(serde::Serialize)]

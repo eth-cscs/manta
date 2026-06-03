@@ -41,7 +41,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, display_error, require_k8s_url,
   require_vault,
 };
-use crate::service;
+use manta_shared::shared::params::sat_file::ApplySatFileParams;
 
 // ---------------------------------------------------------------------------
 // POST /api/v1/sat-file — Apply a SAT file
@@ -133,14 +133,13 @@ pub async fn post_sat_file(
     .await
     .map_err(display_error)?;
 
-  let (configurations, images, session_templates, bos_sessions) =
-    service::sat_file::apply_sat_file(
-      &infra,
+  let (configurations, images, session_templates, bos_sessions) = infra
+    .apply_sat_file(
       &ctx.token,
       &gitea_token,
       vault_base_url,
       k8s_api_url,
-      service::sat_file::ApplySatFileParams {
+      ApplySatFileParams {
         sat_file: body.sat_file,
         ansible_verbosity: body.ansible_verbosity,
         ansible_passthrough: body.ansible_passthrough.as_deref(),
@@ -215,18 +214,18 @@ pub async fn post_sat_configuration(
     .await
     .map_err(display_error)?;
 
-  let cfg = service::sat_file::apply_configuration(
-    &infra,
-    &ctx.token,
-    &gitea_token,
-    vault_base_url,
-    k8s_api_url,
-    body.configuration,
-    body.dry_run,
-    body.overwrite,
-  )
-  .await
-  .map_err(display_error)?;
+  let cfg = infra
+    .apply_configuration(
+      &ctx.token,
+      &gitea_token,
+      vault_base_url,
+      k8s_api_url,
+      body.configuration,
+      body.dry_run,
+      body.overwrite,
+    )
+    .await
+    .map_err(display_error)?;
 
   Ok(Json(cfg))
 }
@@ -287,21 +286,21 @@ pub async fn post_sat_image(
   let vault_base_url = require_vault(infra.vault_base_url)?;
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
-  let image = service::sat_file::apply_image(
-    &infra,
-    &ctx.token,
-    vault_base_url,
-    k8s_api_url,
-    body.image,
-    body.ref_lookup,
-    body.ansible_verbosity,
-    body.ansible_passthrough.as_deref(),
-    body.watch_logs,
-    body.timestamps,
-    body.dry_run,
-  )
-  .await
-  .map_err(display_error)?;
+  let image = infra
+    .apply_image(
+      &ctx.token,
+      vault_base_url,
+      k8s_api_url,
+      body.image,
+      body.ref_lookup,
+      body.ansible_verbosity,
+      body.ansible_passthrough.as_deref(),
+      body.watch_logs,
+      body.timestamps,
+      body.dry_run,
+    )
+    .await
+    .map_err(display_error)?;
 
   Ok(Json(image))
 }
@@ -370,16 +369,16 @@ pub async fn post_sat_session_template(
   );
   let infra = ctx.infra();
 
-  let (template, session) = service::sat_file::apply_session_template(
-    &infra,
-    &ctx.token,
-    body.session_template,
-    body.ref_lookup,
-    body.reboot,
-    body.dry_run,
-  )
-  .await
-  .map_err(display_error)?;
+  let (template, session) = infra
+    .apply_session_template(
+      &ctx.token,
+      body.session_template,
+      body.ref_lookup,
+      body.reboot,
+      body.dry_run,
+    )
+    .await
+    .map_err(display_error)?;
 
   Ok(Json(PostSatSessionTemplateResponse { template, session }))
 }

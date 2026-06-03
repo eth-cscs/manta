@@ -109,14 +109,10 @@ pub async fn migrate_backup(
   tracing::info!("migrate_backup");
   let infra = ctx.infra();
 
-  service::migrate::migrate_backup(
-    &infra,
-    &ctx.token,
-    body.bos.as_deref(),
-    body.destination.as_deref(),
-  )
-  .await
-  .map_err(to_handler_error)?;
+  infra
+    .migrate_backup(&ctx.token, body.bos.as_deref(), body.destination.as_deref())
+    .await
+    .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({ "completed": true })))
 }
@@ -162,18 +158,18 @@ pub async fn migrate_restore(
   tracing::info!("migrate_restore overwrite={}", body.overwrite);
   let infra = ctx.infra();
 
-  service::migrate::migrate_restore(
-    &infra,
-    &ctx.token,
-    body.bos_file.as_deref(),
-    body.cfs_file.as_deref(),
-    body.hsm_file.as_deref(),
-    body.ims_file.as_deref(),
-    body.image_dir.as_deref(),
-    body.overwrite,
-  )
-  .await
-  .map_err(to_handler_error)?;
+  infra
+    .migrate_restore(
+      &ctx.token,
+      body.bos_file.as_deref(),
+      body.cfs_file.as_deref(),
+      body.hsm_file.as_deref(),
+      body.ims_file.as_deref(),
+      body.image_dir.as_deref(),
+      body.overwrite,
+    )
+    .await
+    .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({ "completed": true })))
 }

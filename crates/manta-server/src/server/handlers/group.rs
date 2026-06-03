@@ -41,7 +41,8 @@ pub async fn get_available_groups(
   ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
-  let names = service::group::get_available_group_names(&infra, &ctx.token)
+  let names = infra
+    .get_group_name_available(&ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok(Json(names))
@@ -65,7 +66,8 @@ pub async fn get_all_groups(
   ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
-  let groups = service::group::get_all_groups(&infra, &ctx.token)
+  let groups = infra
+    .get_all_groups(&ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok(Json(groups))
