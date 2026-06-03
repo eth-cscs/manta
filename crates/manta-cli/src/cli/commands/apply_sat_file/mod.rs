@@ -10,7 +10,7 @@
 //!   to the corresponding per-element server endpoint and
 //!   accumulating the CLI's `ref_name → image_id` lookup.
 //!
-//! The Jinja2 renderer lives in `manta_shared::common::sat_file`
+//! The Jinja2 renderer lives in `crate::cli::common::sat_file`
 //! (where it's shared with the server-side test fixtures); the
 //! filter and plan logic moved here from manta-shared once the CLI
 //! gained ownership of the execution order.

@@ -23,7 +23,6 @@ serde_json   = { workspace = true }
 serde_yaml   = { workspace = true }
 chrono       = { workspace = true }
 utoipa       = { workspace = true }
-minijinja    = { workspace = true }
 tracing      = { workspace = true }
 tracing-subscriber = { workspace = true }
 

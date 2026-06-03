@@ -18,7 +18,7 @@
 
 use serde_yaml::{Mapping, Value};
 
-use crate::common::error::MantaError as Error;
+use manta_shared::common::error::MantaError as Error;
 
 /// Merges two `serde_yaml::Value`s into a single `serde_yaml::Value`.
 /// `merge` values override `base` values when keys collide; sequences
