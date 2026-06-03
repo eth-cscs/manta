@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Miscellaneous Tasks
+
+- Clear remaining workspace lints
+
+### Refactor
+
+- Group backend calls on InfraContext; simplify get_images
+- Tighten layer boundaries on InfraContext
+- [**breaking**] Move AppContext from manta-shared to manta-cli
+- Delete pure-forwarder service files
+- Consolidate 18 trait files into mod.rs
+- [**breaking**] Move jwt_ops into manta-server
+- [**breaking**] Split typed config schemas + audit/kafka out of shared
+- [**breaking**] Move CLI-only sat_file Jinja2 renderer to manta-cli
+- Bring redfish_endpoints into the InfraContext pattern
+- Rename internal manta_backend_dispatcher module to dispatcher
+- [**breaking**] Drop dead audit_file field from CliConfiguration and ServerConfiguration
+
 ## [2.0.0-beta.20] - 2026-06-02
 
 ### Miscellaneous Tasks
