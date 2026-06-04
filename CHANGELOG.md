@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.29] - 2026-06-04
+## [2.0.0-beta.30] - 2026-06-04
 
 ### Documentation
 
@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Regenerate man pages + shell completions [skip ci]
 - Regenerate man pages and shell completions
 
 ## [2.0.0-beta.27] - 2026-06-04
@@ -77,6 +78,13 @@ All notable changes to this project will be documented in this file.
 
 ## [2.0.0-beta.22] - 2026-06-04
 
+### Miscellaneous Tasks
+
+- Fix manta version
+- Bump manta version
+
+## [2.0.0-beta.21] - 2026-06-04
+
 ### Documentation
 
 - Regenerate CHANGELOG for the architecture-cleanup batch
@@ -87,8 +95,6 @@ All notable changes to this project will be documented in this file.
 
 - Clear remaining workspace lints
 - Bump csm-rs, ochami-rs and manta-backend-dispatch
-- Fix manta version
-- Bump manta version
 
 ### Refactor
 
