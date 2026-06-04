@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Miscellaneous Tasks
+
+- Clarify command help and regenerate man pages + completions
+
+### Refactor
+
+- Tidy crates/manta-cli file structure
+- Typed request structs for the 8 multi-arg http_client methods (#7a)
+- Exec param structs for kernel-params + power commands (#7b, batch 1)
+- Exec param structs for apply_boot/template (#7b, batch 2)
+- Exec param structs for add/delete hardware + add_group/node (#7b, batch 3)
+- Exec param structs for delete_config, update_* (#7b, batch 4)
+- Exec param structs for migrate + apply_session (#7b, final)
+- Split http_client/mod.rs into client/query/wire (#6)
+- Drop the cli:: prefix from internal imports (#4)
+- Promote add/get/delete/apply/update to subdirectories (#3)
+- Rename files to match user-facing commands
+
 ## [2.0.0-beta.23] - 2026-06-04
 
 ### Miscellaneous Tasks
