@@ -38,7 +38,7 @@ use crate::common;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
 use crate::common::app_context::AppContext;
-use crate::common::sat_file::render_jinja2_sat_file_yaml;
+use super::render::render_jinja2_sat_file_yaml;
 
 /// Options for applying a SAT file.
 #[allow(clippy::struct_excessive_bools)]

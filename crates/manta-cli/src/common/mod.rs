@@ -7,4 +7,3 @@ pub mod config;
 pub mod confirm;
 pub mod hooks;
 pub mod multi_line;
-pub mod sat_file;
