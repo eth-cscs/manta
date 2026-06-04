@@ -10,7 +10,7 @@ This project uses two error types:
 `manta_shared::common::error::MantaError` is the third type. It's used by:
 - `manta-shared`'s remaining helpers (`common::config` loader)
 - `manta-server`'s internal helpers under `server/common/` (`audit`, `jwt_ops`, `kafka`)
-- `manta-cli`'s SAT-file Jinja2 renderer (`commands/apply/sat_file/render.rs`)
+- `manta-cli`'s SAT-file Jinja2 renderer (`dispatch/apply/sat_file/render.rs`)
 
 Server code maps `MantaError` to `BackendError` at call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
 

@@ -172,8 +172,8 @@ history and any aliases / wrapper scripts.
 - **`log = "debug"` in `cli.toml`** makes every outbound HTTP call
   print a copy-pasteable `curl` invocation (passwords and tokens
   auto-redacted) — handy when something looks wrong.
-- **`manta run session`** is the new name for `manta apply session`.
-  Use it for the CFS session create+watch workflow.
+- **`manta run session`** is the canonical CFS session create+watch
+  workflow (the old `manta apply session` form has been removed).
 
 ### 1.6 Regenerate your shell completion
 
@@ -183,9 +183,8 @@ manta gen-autocomplete --shell bash --path /etc/bash_completion.d
 manta gen-autocomplete --shell fish --path ~/.config/fish/completions
 ```
 
-> `manta config gen-autocomplete` still works for one release as a
-> deprecated alias; new shell-completion install snippets should use
-> the top-level `manta gen-autocomplete` form.
+> The legacy `manta config gen-autocomplete` form has been removed —
+> use the top-level `manta gen-autocomplete` shown above.
 
 The new completion script reflects the v2 command tree (and the
 deprecated forms still autocomplete so old habits work during the
