@@ -54,8 +54,28 @@ jobs:
       run: cargo build --workspace --verbose
     - name: Run tests
       run: cargo test --workspace --verbose
-    - name: Check formatting
+    # On pull_request: verify formatting and fail loudly if a
+    # contributor forgot to run `cargo fmt` locally. On push to main:
+    # apply formatting, and if anything changed, commit + push the
+    # result back with a `[skip ci]` marker so this workflow doesn't
+    # re-trigger itself. Same dual-mode shape as the man-page regen
+    # step further down.
+    - name: Verify formatting (PRs only)
+      if: github.event_name == 'pull_request'
       run: cargo fmt -p manta-shared -p manta-cli -p manta-server -- --check
+    - name: Apply and commit formatting (main only)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        cargo fmt -p manta-shared -p manta-cli -p manta-server
+        if git diff --quiet; then
+          echo "Formatting already in sync; nothing to commit."
+          exit 0
+        fi
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add -u crates/
+        git commit -m "style(ci): apply rustfmt [skip ci]"
+        git push origin HEAD:main
     - name: Run clippy
       run: cargo clippy --workspace --no-deps -- -D warnings
     # Build rustdoc. Fails on undocumented public items in
