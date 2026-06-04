@@ -23,6 +23,8 @@ Every command takes one of the top-level verbs:
 | [`power`](#power) | Power on/off/reset nodes or groups |
 | [`log-value`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
 | [`console`](#console) | Open a WebSocket console to a node or running CFS session |
+| [`gen-autocomplete`](#gen-autocomplete) | Generate shell completion scripts |
+| [`upgrade`](#upgrade) | Replace this `manta` binary with the latest release |
 
 **Global flag** (available on every command):
 
@@ -32,10 +34,12 @@ Every command takes one of the top-level verbs:
 
 ## Migrating from earlier shapes
 
-Several CLI shapes were renamed in the latest releases. Every old
-form keeps working for one release with a `[DEPRECATED]` tag in its
-help text and a one-line stderr warning on every use. Plan: drop the
-old forms in the next major release.
+Several CLI shapes were renamed in the latest releases. Most old
+forms still work for one release with a `[DEPRECATED]` tag in their
+help text and a one-line stderr warning on every use; a small number
+of top-level aliases (`add-nodes-to-groups`, `remove-nodes-from-groups`)
+have already been removed. Plan: drop the rest of the old forms in
+the next major release.
 
 | Old form | New canonical form |
 |---|---|
@@ -49,8 +53,6 @@ old forms in the next major release.
 | `manta power reset cluster` | `manta power reset group` |
 | `manta migrate vCluster backup` | `manta backup vcluster` |
 | `manta migrate vCluster restore` | `manta restore vcluster` |
-| `manta add-nodes-to-groups` | `manta add nodes` |
-| `manta remove-nodes-from-groups` | `manta delete nodes` |
 | `--target-cluster` (flag) | `--target-group` |
 | `--parent-cluster` (flag) | `--parent-group` |
 | `--create-hsm-group` (flag) | `--create-group` |
@@ -118,18 +120,11 @@ Remove the parent HSM group.
 
 Remove the stored authentication token.
 
-### config gen-autocomplete
+### config gen-autocomplete *(deprecated alias)*
 
-Generate a shell autocompletion script.
-
-| Flag | Type | Description |
-|------|------|-------------|
-| `-s/--shell` | string | Shell: `bash`, `zsh`, `fish` (auto-detected from `$SHELL` if omitted) |
-| `-p/--path` | dir | Write the script to this directory; prints to stdout if omitted |
-
-```
-manta config gen-autocomplete --shell zsh --path ~/.zsh/completions
-```
+Old subcommand form of [`manta gen-autocomplete`](#gen-autocomplete). Still works for one
+release; prints a stderr warning on every invocation pointing at the
+new top-level form. Same flag set.
 
 ---
 
@@ -375,8 +370,7 @@ Register a brand-new node with HSM. Distinct from [`add nodes`](#add-nodes) (plu
 
 Add existing nodes to an HSM group's membership. Distinct from `add node` (singular), which registers a brand-new node in the inventory.
 
-> Replaces `manta add-nodes-to-groups`, which still works for one
-> release but prints a deprecation warning on use.
+> Replaces the removed `manta add-nodes-to-groups` top-level command.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
@@ -668,8 +662,7 @@ Remove a node from HSM entirely. Distinct from [`delete nodes`](#delete-nodes) (
 
 Remove nodes from an HSM group's membership. Distinct from `delete node` (singular), which removes the node from the system inventory entirely.
 
-> Replaces `manta remove-nodes-from-groups`, which still works for
-> one release but prints a deprecation warning on use.
+> Replaces the removed `manta remove-nodes-from-groups` top-level command.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
@@ -935,19 +928,53 @@ manta console target-ansible my-session
 
 ---
 
-## add-nodes-to-groups *(deprecated)*
+## gen-autocomplete
 
-Old top-level alias of [`add nodes`](#add-nodes). Still works for one
-release; prints a stderr warning on every invocation pointing at the
-new form. Same flag set as the canonical command.
+Generate a shell autocompletion script. Print it to stdout, or write
+it to a directory. The CLI guesses the shell from `$SHELL` if `-s` is
+omitted.
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `-s/--shell` | string | Shell: `bash`, `zsh`, `fish` (auto-detected from `$SHELL` if omitted) |
+| `-p/--path` | dir | Write the script to this directory; prints to stdout if omitted |
+
+```
+manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+manta gen-autocomplete --shell bash --path /etc/bash_completion.d
+manta gen-autocomplete --shell fish --path ~/.config/fish/completions
+```
+
+> Replaces `manta config gen-autocomplete`, which still works for one
+> release as a deprecated alias.
 
 ---
 
-## remove-nodes-from-groups *(deprecated)*
+## upgrade
 
-Old top-level alias of [`delete nodes`](#delete-nodes). Still works
-for one release; prints a stderr warning on every invocation pointing
-at the new form. Same flag set as the canonical command.
+Replace this `manta` binary with the latest release. Fetches the
+highest `manta-cli-v*` tag from <https://github.com/eth-cscs/manta/releases>,
+compares against the running version, downloads the right
+platform tarball, and atomically swaps the binary in place. The
+manta-server is untouched — server installs are infrastructure-managed.
+
+| Flag | Description |
+|------|-------------|
+| `-c/--check` | Check for a newer version and print it, but don't apply |
+| `-d/--dry-run` | Show what would happen without downloading or replacing |
+| `-y/--assume-yes` | Skip the confirmation prompt |
+| `-o/--output {table,json}` | Format the version-info output (default `table`) |
+
+```
+manta upgrade --check
+manta upgrade --dry-run
+manta upgrade -y --output json
+manta upgrade
+```
+
+> If you installed manta via Homebrew, prefer `brew upgrade manta-cli` —
+> `manta upgrade` will warn (but not block) when it detects a
+> Homebrew-managed install path.
 
 ---
 

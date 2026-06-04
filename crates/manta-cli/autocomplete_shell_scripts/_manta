@@ -2583,32 +2583,28 @@ esac
     ;;
 esac
 ;;
-(add-nodes-to-groups)
+(gen-autocomplete)
 _arguments "${_arguments_options[@]}" : \
-'-g+[Group to add the nodes to]:NAME:_default' \
-'--group=[Group to add the nodes to]:NAME:_default' \
-'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
-'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
-'-o+[Output format]:FORMAT:(table json)' \
-'--output=[Output format]:FORMAT:(table json)' \
-'-d[Simulate the operation without making changes]' \
-'--dry-run[Simulate the operation without making changes]' \
+'-s+[Shell type (guessed from \$SHELL if omitted)]:SHELL:(bash zsh fish)' \
+'--shell=[Shell type (guessed from \$SHELL if omitted)]:SHELL:(bash zsh fish)' \
+'-p+[Directory to write the script (prints to stdout if omitted)]:PATH:_files -/' \
+'--path=[Directory to write the script (prints to stdout if omitted)]:PATH:_files -/' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
-(remove-nodes-from-groups)
+(upgrade)
 _arguments "${_arguments_options[@]}" : \
-'-g+[Group to remove the nodes from]:NAME:_default' \
-'--group=[Group to remove the nodes from]:NAME:_default' \
-'-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
-'--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-d[Simulate the operation without making changes]' \
-'--dry-run[Simulate the operation without making changes]' \
-'-h[Print help]' \
-'--help[Print help]' \
+'-c[Check for a newer version and print it, but don'\''t apply]' \
+'--check[Check for a newer version and print it, but don'\''t apply]' \
+'-d[Show what would happen without downloading or replacing]' \
+'--dry-run[Show what would happen without downloading or replacing]' \
+'-y[Skip the confirmation prompt before replacing the binary]' \
+'--assume-yes[Skip the confirmation prompt before replacing the binary]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
 ;;
 (help)
@@ -3243,11 +3239,11 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
-(add-nodes-to-groups)
+(gen-autocomplete)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(remove-nodes-from-groups)
+(upgrade)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -3280,8 +3276,8 @@ _manta_commands() {
 'power:Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set' \
 'log:Stream configuration session logs to stdout (accepts session, node, group, or NID)' \
 'console:Attach to a node'\''s serial console, or to a configuration session'\''s Ansible container' \
-'add-nodes-to-groups:\[DEPRECATED\] Use '\''manta add nodes'\'' instead' \
-'remove-nodes-from-groups:\[DEPRECATED\] Use '\''manta delete nodes'\'' instead' \
+'gen-autocomplete:Generate shell completion scripts' \
+'upgrade:Replace this \`manta\` binary with the latest release' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta commands' commands "$@"
@@ -3389,11 +3385,6 @@ _manta__subcmd__add__subcmd__nodes_commands() {
 _manta__subcmd__add__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta add redfish-endpoints commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__add-nodes-to-groups_commands] )) ||
-_manta__subcmd__add-nodes-to-groups_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta add-nodes-to-groups commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__apply_commands] )) ||
 _manta__subcmd__apply_commands() {
@@ -3667,7 +3658,7 @@ _manta__subcmd__config_commands() {
 'show:Show current configuration values' \
 'set:Set a configuration value' \
 'unset:Clear a configuration value' \
-'gen-autocomplete:Generate shell completion scripts' \
+'gen-autocomplete:\[DEPRECATED\] Use '\''manta gen-autocomplete'\'' instead' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config commands' commands "$@"
@@ -3683,7 +3674,7 @@ _manta__subcmd__config__subcmd__help_commands() {
 'show:Show current configuration values' \
 'set:Set a configuration value' \
 'unset:Clear a configuration value' \
-'gen-autocomplete:Generate shell completion scripts' \
+'gen-autocomplete:\[DEPRECATED\] Use '\''manta gen-autocomplete'\'' instead' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config help commands' commands "$@"
@@ -4067,6 +4058,11 @@ _manta__subcmd__delete__subcmd__session_commands() {
     local commands; commands=()
     _describe -t commands 'manta delete session commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__gen-autocomplete_commands] )) ||
+_manta__subcmd__gen-autocomplete_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta gen-autocomplete commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__get_commands] )) ||
 _manta__subcmd__get_commands() {
     local commands; commands=(
@@ -4309,8 +4305,8 @@ _manta__subcmd__help_commands() {
 'power:Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set' \
 'log:Stream configuration session logs to stdout (accepts session, node, group, or NID)' \
 'console:Attach to a node'\''s serial console, or to a configuration session'\''s Ansible container' \
-'add-nodes-to-groups:\[DEPRECATED\] Use '\''manta add nodes'\'' instead' \
-'remove-nodes-from-groups:\[DEPRECATED\] Use '\''manta delete nodes'\'' instead' \
+'gen-autocomplete:Generate shell completion scripts' \
+'upgrade:Replace this \`manta\` binary with the latest release' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta help commands' commands "$@"
@@ -4362,11 +4358,6 @@ _manta__subcmd__help__subcmd__add__subcmd__nodes_commands() {
 _manta__subcmd__help__subcmd__add__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta help add redfish-endpoints commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__help__subcmd__add-nodes-to-groups_commands] )) ||
-_manta__subcmd__help__subcmd__add-nodes-to-groups_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help add-nodes-to-groups commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__apply_commands] )) ||
 _manta__subcmd__help__subcmd__apply_commands() {
@@ -4472,7 +4463,7 @@ _manta__subcmd__help__subcmd__config_commands() {
 'show:Show current configuration values' \
 'set:Set a configuration value' \
 'unset:Clear a configuration value' \
-'gen-autocomplete:Generate shell completion scripts' \
+'gen-autocomplete:\[DEPRECATED\] Use '\''manta gen-autocomplete'\'' instead' \
     )
     _describe -t commands 'manta help config commands' commands "$@"
 }
@@ -4623,6 +4614,11 @@ _manta__subcmd__help__subcmd__delete__subcmd__redfish-endpoints_commands() {
 _manta__subcmd__help__subcmd__delete__subcmd__session_commands() {
     local commands; commands=()
     _describe -t commands 'manta help delete session commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__gen-autocomplete_commands] )) ||
+_manta__subcmd__help__subcmd__gen-autocomplete_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help gen-autocomplete commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__get_commands] )) ||
 _manta__subcmd__help__subcmd__get_commands() {
@@ -4843,11 +4839,6 @@ _manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__nodes_commands() {
     local commands; commands=()
     _describe -t commands 'manta help power reset nodes commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__help__subcmd__remove-nodes-from-groups_commands] )) ||
-_manta__subcmd__help__subcmd__remove-nodes-from-groups_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help remove-nodes-from-groups commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__help__subcmd__restore_commands] )) ||
 _manta__subcmd__help__subcmd__restore_commands() {
     local commands; commands=(
@@ -4889,6 +4880,11 @@ _manta__subcmd__help__subcmd__update__subcmd__boot-parameters_commands() {
 _manta__subcmd__help__subcmd__update__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta help update redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__upgrade_commands] )) ||
+_manta__subcmd__help__subcmd__upgrade_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help upgrade commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__log_commands] )) ||
 _manta__subcmd__log_commands() {
@@ -5251,11 +5247,6 @@ _manta__subcmd__power__subcmd__reset__subcmd__nodes_commands() {
     local commands; commands=()
     _describe -t commands 'manta power reset nodes commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__remove-nodes-from-groups_commands] )) ||
-_manta__subcmd__remove-nodes-from-groups_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta remove-nodes-from-groups commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__restore_commands] )) ||
 _manta__subcmd__restore_commands() {
     local commands; commands=(
@@ -5361,6 +5352,11 @@ _manta__subcmd__update__subcmd__help__subcmd__redfish-endpoints_commands() {
 _manta__subcmd__update__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta update redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__upgrade_commands] )) ||
+_manta__subcmd__upgrade_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta upgrade commands' commands "$@"
 }
 
 if [ "$funcstack[1]" = "_manta" ]; then

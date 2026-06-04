@@ -27,7 +27,7 @@ If you skim only one section, make it
 | **Binaries** | One — `manta` (CLI talks to CSM/OCHAMI direct) | Two — `manta` (CLI) and `manta-server` (HTTPS API in front of CSM/OCHAMI) |
 | **Auth target** | Each user's CLI authenticates to the backend directly | CLI authenticates to `manta-server`; the server holds the backend creds and tokens |
 | **Config file** | Single `~/.config/manta/config.toml` mixing CLI + backend + (in some setups) server fields | Split into `cli.toml` (workstation) and `server.toml` (server host); the CLI strictly does not need backend URLs |
-| **CLI verbs** | `apply session`, `apply boot cluster`, `migrate vCluster backup`, `get cluster`, `get hardware cluster`, `power on/off/reset cluster`, `add-nodes-to-groups`, `remove-nodes-from-groups`, `apply hardware cluster`, … | Same set, but renamed: `run session`, `apply boot group`, `backup vcluster`, `get group-nodes`, `get group-hardware`, `power on/off/reset group`, `add nodes`, `delete nodes`, `apply hardware group`, … Every old name still works with a stderr deprecation warning for one release |
+| **CLI verbs** | `apply session`, `apply boot cluster`, `migrate vCluster backup`, `get cluster`, `get hardware cluster`, `power on/off/reset cluster`, `add-nodes-to-groups`, `remove-nodes-from-groups`, `apply hardware cluster`, … | Same set, but renamed: `run session`, `apply boot group`, `backup vcluster`, `get group-nodes`, `get group-hardware`, `power on/off/reset group`, `add nodes`, `delete nodes`, `apply hardware group`, … Most old names still work with a stderr deprecation warning for one release; the top-level `add-nodes-to-groups` and `remove-nodes-from-groups` aliases have already been removed — use `manta add nodes` / `manta delete nodes` |
 | **CLI flags** | `--hsm-group`, `--target-cluster`, `--parent-cluster`, `--create-hsm-group`, … | `--group`, `--target-group`, `--parent-group`, `--create-group`, … Old flag names retained as visible clap aliases |
 | **CLI output** | Mix of plain `println!` and ad-hoc JSON dumps; `--output json` only on some `get` commands | Every mutating command honours `-o/--output {table,json}`; JSON envelope is `{"status":"ok","message":"...","data":...}` |
 | **HTTP API** | None — there was no server | Documented REST + WebSocket API on `manta-server`; see [API.md](API.md) |
@@ -120,8 +120,10 @@ credentials.
 
 ### 1.4 Update muscle memory
 
-Every renamed command keeps working in v2 with a one-line stderr
-deprecation warning pointing at the new form. The renames:
+Most renamed commands keep working in v2 with a one-line stderr
+deprecation warning pointing at the new form. The two top-level
+aliases marked **(removed)** below have already been deleted — you
+must update those call sites before upgrading. The renames:
 
 | v1 | v2 |
 |---|---|
@@ -135,8 +137,8 @@ deprecation warning pointing at the new form. The renames:
 | `manta power reset cluster <N>` | `manta power reset group <N>` |
 | `manta migrate vCluster backup` | `manta backup vcluster` |
 | `manta migrate vCluster restore` | `manta restore vcluster` |
-| `manta add-nodes-to-groups` | `manta add nodes` |
-| `manta remove-nodes-from-groups` | `manta delete nodes` |
+| `manta add-nodes-to-groups` **(removed)** | `manta add nodes` |
+| `manta remove-nodes-from-groups` **(removed)** | `manta delete nodes` |
 | `manta add redfish-endpoint` | `manta add redfish-endpoints` |
 | `manta update redfish-endpoint` | `manta update redfish-endpoints` |
 | `manta delete redfish-endpoint` | `manta delete redfish-endpoints` |
@@ -174,10 +176,14 @@ history and any aliases / wrapper scripts.
 ### 1.6 Regenerate your shell completion
 
 ```bash
-manta config gen-autocomplete --shell zsh --path ~/.zsh/completions
-manta config gen-autocomplete --shell bash --path /etc/bash_completion.d
-manta config gen-autocomplete --shell fish --path ~/.config/fish/completions
+manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+manta gen-autocomplete --shell bash --path /etc/bash_completion.d
+manta gen-autocomplete --shell fish --path ~/.config/fish/completions
 ```
+
+> `manta config gen-autocomplete` still works for one release as a
+> deprecated alias; new shell-completion install snippets should use
+> the top-level `manta gen-autocomplete` form.
 
 The new completion script reflects the v2 command tree (and the
 deprecated forms still autocomplete so old habits work during the

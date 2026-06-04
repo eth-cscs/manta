@@ -36,8 +36,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand power 'Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set'
             cand log 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
             cand console 'Attach to a node''s serial console, or to a configuration session''s Ansible container'
-            cand add-nodes-to-groups '[DEPRECATED] Use ''manta add nodes'' instead'
-            cand remove-nodes-from-groups '[DEPRECATED] Use ''manta delete nodes'' instead'
+            cand gen-autocomplete 'Generate shell completion scripts'
+            cand upgrade 'Replace this `manta` binary with the latest release'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config'= {
@@ -46,7 +46,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete 'Generate shell completion scripts'
+            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;show'= {
@@ -143,7 +143,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete 'Generate shell completion scripts'
+            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;help;show'= {
@@ -1676,29 +1676,25 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;console;help;help'= {
         }
-        &'manta;add-nodes-to-groups'= {
-            cand -g 'Group to add the nodes to'
-            cand --group 'Group to add the nodes to'
-            cand -n 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
-            cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -d 'Simulate the operation without making changes'
-            cand --dry-run 'Simulate the operation without making changes'
+        &'manta;gen-autocomplete'= {
+            cand -s 'Shell type (guessed from $SHELL if omitted)'
+            cand --shell 'Shell type (guessed from $SHELL if omitted)'
+            cand -p 'Directory to write the script (prints to stdout if omitted)'
+            cand --path 'Directory to write the script (prints to stdout if omitted)'
             cand -h 'Print help'
             cand --help 'Print help'
         }
-        &'manta;remove-nodes-from-groups'= {
-            cand -g 'Group to remove the nodes from'
-            cand --group 'Group to remove the nodes from'
-            cand -n 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
-            cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
+        &'manta;upgrade'= {
             cand -o 'Output format'
             cand --output 'Output format'
-            cand -d 'Simulate the operation without making changes'
-            cand --dry-run 'Simulate the operation without making changes'
-            cand -h 'Print help'
-            cand --help 'Print help'
+            cand -c 'Check for a newer version and print it, but don''t apply'
+            cand --check 'Check for a newer version and print it, but don''t apply'
+            cand -d 'Show what would happen without downloading or replacing'
+            cand --dry-run 'Show what would happen without downloading or replacing'
+            cand -y 'Skip the confirmation prompt before replacing the binary'
+            cand --assume-yes 'Skip the confirmation prompt before replacing the binary'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;help'= {
             cand config 'Show or change CLI-side settings (active site, default node group, log level)'
@@ -1714,15 +1710,15 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand power 'Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set'
             cand log 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
             cand console 'Attach to a node''s serial console, or to a configuration session''s Ansible container'
-            cand add-nodes-to-groups '[DEPRECATED] Use ''manta add nodes'' instead'
-            cand remove-nodes-from-groups '[DEPRECATED] Use ''manta delete nodes'' instead'
+            cand gen-autocomplete 'Generate shell completion scripts'
+            cand upgrade 'Replace this `manta` binary with the latest release'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;help;config'= {
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete 'Generate shell completion scripts'
+            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
         }
         &'manta;help;config;show'= {
         }
@@ -1981,9 +1977,9 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;console;target-ansible'= {
         }
-        &'manta;help;add-nodes-to-groups'= {
+        &'manta;help;gen-autocomplete'= {
         }
-        &'manta;help;remove-nodes-from-groups'= {
+        &'manta;help;upgrade'= {
         }
         &'manta;help;help'= {
         }
