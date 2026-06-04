@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.21] - 2026-06-04
+## [2.0.0-beta.22] - 2026-06-04
 
 ### Documentation
 
@@ -14,6 +14,8 @@ All notable changes to this project will be documented in this file.
 
 - Clear remaining workspace lints
 - Bump csm-rs, ochami-rs and manta-backend-dispatch
+- Fix manta version
+- Bump manta version
 
 ### Refactor
 
