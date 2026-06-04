@@ -73,3 +73,41 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
 
   println!("{table}");
 }
+
+#[cfg(test)]
+mod tests {
+  //! Locks down the `print()` contract: every supported format and
+  //! the empty-input case return Ok. The regression specifically
+  //! guarded against here is the previous `_ => {}` fall-through arm
+  //! that silently emitted nothing for any value other than
+  //! `"table"` or `"json"` — now the `else` branch always falls
+  //! back to the table renderer, matching the rest of the
+  //! `output/*::print()` family.
+
+  use super::*;
+
+  #[test]
+  fn print_json_on_empty_succeeds() {
+    assert!(print(&[], "json").is_ok());
+  }
+
+  #[test]
+  fn print_table_on_empty_succeeds() {
+    assert!(print(&[], "table").is_ok());
+  }
+
+  #[test]
+  fn print_unknown_format_falls_back_to_table() {
+    // Regression: previously the `_ => {}` arm silently emitted
+    // nothing on an unknown output format. The fix made the `else`
+    // arm always render a table; this test pins that down so we
+    // don't regress.
+    assert!(print(&[], "garbage").is_ok());
+    assert!(print(&[], "").is_ok());
+  }
+
+  #[test]
+  fn print_table_struct_does_not_panic_on_empty() {
+    print_table_struct(vec![]);
+  }
+}

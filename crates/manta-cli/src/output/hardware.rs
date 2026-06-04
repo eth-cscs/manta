@@ -210,3 +210,75 @@ pub fn print_nodes_list(json: &Value, output: &str) -> Result<(), Error> {
   print_table_details(&node_summaries);
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  //! Smoke tests for the public renderer entry points. Each format
+  //! path is exercised once with a minimal valid payload (empty
+  //! `node_summaries` array) so format-handling regressions don't
+  //! slip through silently.
+
+  use super::*;
+  use serde_json::json;
+
+  fn empty_cluster_payload() -> serde_json::Value {
+    json!({
+      "hsm_group_name": "test-group",
+      "node_summaries": [],
+    })
+  }
+
+  #[test]
+  fn print_cluster_json_succeeds() {
+    assert!(print_cluster(&empty_cluster_payload(), "json").is_ok());
+  }
+
+  #[test]
+  fn print_cluster_summary_succeeds() {
+    assert!(print_cluster(&empty_cluster_payload(), "summary").is_ok());
+  }
+
+  #[test]
+  fn print_cluster_details_succeeds() {
+    assert!(print_cluster(&empty_cluster_payload(), "details").is_ok());
+  }
+
+  #[test]
+  fn print_cluster_pattern_succeeds() {
+    assert!(print_cluster(&empty_cluster_payload(), "pattern").is_ok());
+  }
+
+  #[test]
+  fn print_cluster_unknown_format_errors() {
+    // Defense in depth: clap restricts the flag to the four known
+    // values, but a programmer error elsewhere should still bail
+    // rather than fall through silently.
+    let err = print_cluster(&empty_cluster_payload(), "garbage")
+      .unwrap_err()
+      .to_string();
+    assert!(err.contains("unsupported output format"), "got: {err}");
+  }
+
+  #[test]
+  fn print_cluster_missing_node_summaries_errors() {
+    // If the upstream JSON doesn't carry the `node_summaries` key,
+    // deserialization fails — surface that as a clear error rather
+    // than panicking.
+    let payload = json!({ "hsm_group_name": "x" });
+    let err =
+      print_cluster(&payload, "summary").unwrap_err().to_string();
+    assert!(err.contains("node summaries") || err.contains("missing"), "got: {err}");
+  }
+
+  #[test]
+  fn print_nodes_list_json_succeeds() {
+    let payload = json!({ "node_summaries": [] });
+    assert!(print_nodes_list(&payload, "json").is_ok());
+  }
+
+  #[test]
+  fn print_nodes_list_table_succeeds() {
+    let payload = json!({ "node_summaries": [] });
+    assert!(print_nodes_list(&payload, "table").is_ok());
+  }
+}
