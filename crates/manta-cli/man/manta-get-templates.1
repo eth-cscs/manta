@@ -2,15 +2,15 @@
 .el .ds Aq '
 .TH manta-get-templates 1  "templates " 
 .SH NAME
-manta\-get\-templates \- List session templates
+manta\-get\-templates \- List BOS session templates (filter by name, group, or recency)
 .SH SYNOPSIS
 \fBmanta get templates\fR [\fB\-n\fR|\fB\-\-name\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-H\fR|\fB\-\-group\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-List session templates
+List BOS session templates (filter by name, group, or recency)
 .SH OPTIONS
 .TP
 \fB\-n\fR, \fB\-\-name\fR \fI<NAME>\fR
-Template name
+Show only the template with this exact name
 .TP
 \fB\-m\fR, \fB\-\-most\-recent\fR
 Return only the most recent (equivalent to \-\-limit 1)
@@ -19,7 +19,7 @@ Return only the most recent (equivalent to \-\-limit 1)
 Return only the <VALUE> most recent templates
 .TP
 \fB\-H\fR, \fB\-\-group\fR \fI<GROUP_NAME>\fR
-Node group name
+Show only templates whose boot sets target this group
 .TP
 \fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
 Output format

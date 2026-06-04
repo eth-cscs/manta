@@ -28,6 +28,9 @@ use std::io::Error;
 mod cli;
 
 fn main() -> Result<(), Error> {
+  // Re-run when the env-var flips, otherwise cargo treats a stale
+  // build script as up-to-date and the regeneration silently no-ops.
+  println!("cargo:rerun-if-env-changed=MANTA_REGENERATE_DOCS");
   if std::env::var("MANTA_REGENERATE_DOCS").is_err() {
     return Ok(());
   }

@@ -106,7 +106,7 @@ fn subcommand_config() -> Command {
 
   Command::new("config")
     .arg_required_else_help(true)
-    .about("Manage manta CLI configuration")
+    .about("Show or change CLI-side settings (active site, default node group, log level)")
     .subcommand(
       Command::new("show")
         .about("Show current configuration values")
@@ -217,7 +217,7 @@ fn subcommand_migrate_restore() -> Command {
 fn subcommand_backup() -> Command {
   Command::new("backup")
     .arg_required_else_help(true)
-    .about("Back up cluster state")
+    .about("Back up a virtual cluster (images, boot settings, group membership) to disk")
     .subcommand(
       add_vcluster_backup_args(Command::new("vcluster"))
         .about("Back up a virtual cluster (images, boot settings, group membership)")
@@ -232,7 +232,7 @@ fn subcommand_backup() -> Command {
 fn subcommand_run() -> Command {
   Command::new("run")
     .arg_required_else_help(true)
-    .about("Create and run jobs (configuration sessions, etc.)")
+    .about("Create and run a configuration session from a local Ansible repo")
     .subcommand(
       apply::add_run_session_args(Command::new("session"))
         .about("Create and run a configuration session from a local repo")
@@ -248,7 +248,7 @@ fn subcommand_run() -> Command {
 fn subcommand_restore() -> Command {
   Command::new("restore")
     .arg_required_else_help(true)
-    .about("Restore cluster state from a backup")
+    .about("Restore a virtual cluster from a backup bundle")
     .subcommand(
       add_vcluster_restore_args(Command::new("vcluster"))
         .about("Restore a virtual cluster from a backup bundle"),
@@ -330,7 +330,7 @@ fn add_power_reset_group_args(cmd: Command) -> Command {
 fn subcommand_power() -> Command {
   Command::new("power")
     .arg_required_else_help(true)
-    .about("Manage node and group power state")
+    .about("Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set")
     .subcommand(
       Command::new("on")
         .arg_required_else_help(true)
@@ -443,7 +443,7 @@ fn subcommand_power() -> Command {
 fn subcommand_log() -> Command {
   Command::new("log")
     .alias("logs")
-    .about("Stream configuration session logs")
+    .about("Stream configuration session logs to stdout (accepts session, node, group, or NID)")
     .arg(arg!(-t --timestamps "Show log timestamps").action(ArgAction::SetTrue))
     // ID preserved as "VALUE" for handler compatibility
     .arg(
@@ -507,7 +507,7 @@ fn subcommand_update_redfish_endpoint() -> Command {
 fn subcommand_update() -> Command {
   Command::new("update")
     .arg_required_else_help(true)
-    .about("Update system resources")
+    .about("Modify existing boot parameters or Redfish endpoints in place")
     .subcommand(subcommand_update_boot_parameters())
     .subcommand(subcommand_update_redfish_endpoint())
 }
@@ -515,7 +515,7 @@ fn subcommand_update() -> Command {
 fn subcommand_migrate() -> Command {
   Command::new("migrate")
     .arg_required_else_help(true)
-    .about("Move nodes or clusters between groups")
+    .about("Move nodes between groups (vCluster backup/restore have moved to 'manta backup'/'manta restore')")
     .subcommand(
       Command::new("vCluster")
         .about("[experimental] Migrate a cluster")
@@ -541,7 +541,7 @@ fn subcommand_migrate() -> Command {
 fn subcommand_console() -> Command {
   Command::new("console")
     .arg_required_else_help(true)
-    .about("Open an interactive console to a node or configuration session")
+    .about("Attach to a node's serial console, or to a configuration session's Ansible container")
     .subcommand(
       Command::new("node")
         .about("Connect to a node's serial console")

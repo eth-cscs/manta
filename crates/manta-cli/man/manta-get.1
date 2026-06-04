@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-get 1  "get " 
 .SH NAME
-manta\-get \- Query system resources
+manta\-get \- Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
 .SH SYNOPSIS
 \fBmanta get\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-Query system resources
+Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
@@ -14,7 +14,7 @@ Print help
 .SH SUBCOMMANDS
 .TP
 manta\-get\-groups(1)
-List node groups
+List node groups visible to your token (or look up one by name)
 .TP
 manta\-get\-hardware(1)
 Inspect hardware components
@@ -23,10 +23,10 @@ manta\-get\-sessions(1)
 List configuration sessions
 .TP
 manta\-get\-configurations(1)
-List configurations
+List CFS configurations (filter by name, glob, group, or recency)
 .TP
 manta\-get\-templates(1)
-List session templates
+List BOS session templates (filter by name, group, or recency)
 .TP
 manta\-get\-cluster(1)
 [DEPRECATED] Use \*(Aqmanta get group\-nodes\*(Aq instead
@@ -41,13 +41,13 @@ manta\-get\-nodes(1)
 Show node details and status
 .TP
 manta\-get\-images(1)
-List images
+List IMS images (filter by id, name regex, or recency; sorted most\-recent first)
 .TP
 manta\-get\-boot\-parameters(1)
-Show boot parameters for nodes or a group
+Show the BSS boot parameters (kernel, initrd, params) for nodes or a group
 .TP
 manta\-get\-kernel\-parameters(1)
 Show kernel parameters for nodes or a group
 .TP
 manta\-get\-redfish\-endpoints(1)
-List Redfish endpoints
+List the BMCs / controllers the hardware state manager has registered as Redfish endpoints

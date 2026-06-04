@@ -2,15 +2,15 @@
 .el .ds Aq '
 .TH manta-get-boot-parameters 1  "boot-parameters " 
 .SH NAME
-manta\-get\-boot\-parameters \- Show boot parameters for nodes or a group
+manta\-get\-boot\-parameters \- Show the BSS boot parameters (kernel, initrd, params) for nodes or a group
 .SH SYNOPSIS
 \fBmanta get boot\-parameters\fR [\fB\-H\fR|\fB\-\-group\fR] [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Show boot parameters for nodes or a group
+Show the BSS boot parameters (kernel, initrd, params) for nodes or a group
 .SH OPTIONS
 .TP
 \fB\-H\fR, \fB\-\-group\fR \fI<GROUP_NAME>\fR
-Node group name
+Show boot parameters for every node in this group
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
 Xnames, NIDs, or a hostlist expression.

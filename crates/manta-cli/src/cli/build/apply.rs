@@ -98,7 +98,10 @@ pub fn add_run_session_args(cmd: Command) -> Command {
         "Limit the session to specific nodes (must be a subset of --group if both are provided)")
         .required(true),
     )
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Run the session against every node in this group")
+        .visible_alias("hsm-group"),
+    )
     .group(
       ArgGroup::new("hsm-group_or_ansible-limit")
         .args(["group", "ansible-limit"])
@@ -322,9 +325,12 @@ pub fn subcommand_apply_boot_group() -> Command {
 pub fn subcommand_apply_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
-    .about("Replace kernel parameters on nodes")
+    .about("Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Replace kernel parameters on every node in this group")
+        .visible_alias("hsm-group"),
+    )
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
@@ -344,7 +350,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
 pub fn subcommand_apply() -> Command {
   Command::new("apply")
     .arg_required_else_help(true)
-    .about("Apply changes to the system")
+    .about("Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling")
     .subcommand(subcommand_apply_hw_configuration())
     .subcommand(subcommand_apply_configuration())
     .subcommand(subcommand_apply_sat_file())

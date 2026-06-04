@@ -1,6 +1,6 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH manta 1  "manta 2.0.0-beta.16" 
+.TH manta 1  "manta 2.0.0-beta.23" 
 .SH NAME
 manta
 .SH SYNOPSIS
@@ -19,43 +19,43 @@ Print version
 .SH SUBCOMMANDS
 .TP
 manta\-config(1)
-Manage manta CLI configuration
+Show or change CLI\-side settings (active site, default node group, log level)
 .TP
 manta\-get(1)
-Query system resources
+Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
 .TP
 manta\-add(1)
-Create system resources
+Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints
 .TP
 manta\-update(1)
-Update system resources
+Modify existing boot parameters or Redfish endpoints in place
 .TP
 manta\-apply(1)
-Apply changes to the system
+Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .TP
 manta\-delete(1)
-Delete system resources
+Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints
 .TP
 manta\-migrate(1)
-Move nodes or clusters between groups
+Move nodes between groups (vCluster backup/restore have moved to \*(Aqmanta backup\*(Aq/\*(Aqmanta restore\*(Aq)
 .TP
 manta\-backup(1)
-Back up cluster state
+Back up a virtual cluster (images, boot settings, group membership) to disk
 .TP
 manta\-restore(1)
-Restore cluster state from a backup
+Restore a virtual cluster from a backup bundle
 .TP
 manta\-run(1)
-Create and run jobs (configuration sessions, etc.)
+Create and run a configuration session from a local Ansible repo
 .TP
 manta\-power(1)
-Manage node and group power state
+Power nodes on, off, or reset (reboot); waits for the transition unless \-\-no\-wait is set
 .TP
 manta\-log(1)
-Stream configuration session logs
+Stream configuration session logs to stdout (accepts session, node, group, or NID)
 .TP
 manta\-console(1)
-Open an interactive console to a node or configuration session
+Attach to a node\*(Aqs serial console, or to a configuration session\*(Aqs Ansible container
 .TP
 manta\-add\-nodes\-to\-groups(1)
 [DEPRECATED] Use \*(Aqmanta add nodes\*(Aq instead
@@ -63,4 +63,4 @@ manta\-add\-nodes\-to\-groups(1)
 manta\-remove\-nodes\-from\-groups(1)
 [DEPRECATED] Use \*(Aqmanta delete nodes\*(Aq instead
 .SH VERSION
-v2.0.0\-beta.16
+v2.0.0\-beta.23

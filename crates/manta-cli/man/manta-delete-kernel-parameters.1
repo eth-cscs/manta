@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-delete-kernel-parameters 1  "kernel-parameters " 
 .SH NAME
-manta\-delete\-kernel\-parameters \- Remove kernel parameters from nodes
+manta\-delete\-kernel\-parameters \- Remove kernel parameters from nodes (parameter values are ignored — match is by name)
 .SH SYNOPSIS
 \fBmanta delete kernel\-parameters\fR [\fB\-n\fR|\fB\-\-nodes\fR] [\fB\-H\fR|\fB\-\-group\fR] [\fB\-y\fR|\fB\-\-assume\-yes\fR] [\fB\-\-do\-not\-reboot\fR] [\fB\-d\fR|\fB\-\-dry\-run\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] <\fIPARAMS\fR> 
 .SH DESCRIPTION
-Remove kernel parameters from nodes
+Remove kernel parameters from nodes (parameter values are ignored — match is by name)
 .SH OPTIONS
 .TP
 \fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
@@ -15,7 +15,7 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .TP
 \fB\-H\fR, \fB\-\-group\fR \fI<GROUP_NAME>\fR
-Node group name
+Remove the listed kernel parameters from every node in this group
 .TP
 \fB\-y\fR, \fB\-\-assume\-yes\fR
 Skip confirmation prompts

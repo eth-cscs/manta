@@ -2,18 +2,20 @@
 .el .ds Aq '
 .TH manta-add-node 1  "node " 
 .SH NAME
-manta\-add\-node \- Register a new node
+manta\-add\-node \- Register a new node in the hardware state manager
 .SH SYNOPSIS
 \fBmanta add node\fR <\fB\-i\fR|\fB\-\-id\fR> <\fB\-g\fR|\fB\-\-group\fR> [\fB\-H\fR|\fB\-\-hardware\fR] [\fB\-a\fR|\fB\-\-arch\fR] [\fB\-d\fR|\fB\-\-disabled\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-Register a new node
+Register a new node in the hardware state manager.
+.PP
+Use this for nodes that don\*(Aqt exist yet. To attach existing nodes to a group, use `manta add nodes` (plural).
 .SH OPTIONS
 .TP
 \fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
-Node xname
+Xname to register
 .TP
 \fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
-Node group to add the node to
+Group to put the new node into
 .TP
 \fB\-H\fR, \fB\-\-hardware\fR \fI<FILE>\fR
 File containing hardware information
@@ -50,4 +52,4 @@ json
 .RE
 .TP
 \fB\-h\fR, \fB\-\-help\fR
-Print help
+Print help (see a summary with \*(Aq\-h\*(Aq)

@@ -2,24 +2,24 @@
 .el .ds Aq '
 .TH manta-get-images 1  "images " 
 .SH NAME
-manta\-get\-images \- List images
+manta\-get\-images \- List IMS images (filter by id, name regex, or recency; sorted most\-recent first)
 .SH SYNOPSIS
-\fBmanta get images\fR [\fB\-i\fR|\fB\-\-id\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-H\fR|\fB\-\-group\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+\fBmanta get images\fR [\fB\-i\fR|\fB\-\-id\fR] [\fB\-p\fR|\fB\-\-pattern\fR] [\fB\-m\fR|\fB\-\-most\-recent\fR] [\fB\-l\fR|\fB\-\-limit\fR] [\fB\-h\fR|\fB\-\-help\fR] 
 .SH DESCRIPTION
-List images
+List IMS images (filter by id, name regex, or recency; sorted most\-recent first)
 .SH OPTIONS
 .TP
 \fB\-i\fR, \fB\-\-id\fR \fI<IMAGE_ID>\fR
-Image ID
+Show only the image with this exact ID
+.TP
+\fB\-p\fR, \fB\-\-pattern\fR \fI<PATTERN>\fR
+Regex matched against image name (applied client\-side)
 .TP
 \fB\-m\fR, \fB\-\-most\-recent\fR
 Return only the most recent (equivalent to \-\-limit 1)
 .TP
 \fB\-l\fR, \fB\-\-limit\fR \fI<VALUE>\fR
 Return only the <VALUE> most recent images
-.TP
-\fB\-H\fR, \fB\-\-group\fR \fI<GROUP_NAME>\fR
-Node group name
 .TP
 \fB\-h\fR, \fB\-\-help\fR
 Print help

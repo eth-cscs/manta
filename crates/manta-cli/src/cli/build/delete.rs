@@ -7,7 +7,7 @@ use super::{HOSTLIST_HELP, output_flag};
 pub fn subcommand_delete() -> Command {
   Command::new("delete")
     .arg_required_else_help(true)
-    .about("Delete system resources")
+    .about("Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints")
     .subcommand(subcommand_delete_group())
     .subcommand(subcommand_delete_node())
     .subcommand(subcommand_delete_nodes())
@@ -66,7 +66,12 @@ pub fn subcommand_delete_group() -> Command {
 pub fn subcommand_delete_node() -> Command {
   Command::new("node")
     .arg_required_else_help(true)
-    .about("Remove a node from the system")
+    .about("Remove a node from the hardware state manager")
+    .long_about(
+      "Remove a node from the hardware state manager (the node disappears from \
+      the inventory). To only remove it from a group's membership without \
+      deleting it, use `manta delete nodes` (plural).",
+    )
     // ID preserved as "VALUE" for handler compatibility
     .arg(
       arg!(<VALUE> "Xname of the node to remove")
@@ -101,7 +106,7 @@ pub fn subcommand_delete_hw_component() -> Command {
 pub fn subcommand_delete_image() -> Command {
   Command::new("images")
     .arg_required_else_help(true)
-    .about("[experimental] Delete images")
+    .about("[experimental] Delete IMS images by ID (refuses to delete images currently booting a node)")
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     // ID preserved as "IMAGE_LIST" for handler compatibility
     .arg(
@@ -155,9 +160,12 @@ pub fn subcommand_delete_session() -> Command {
 pub fn subcommand_delete_kernel_parameter() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
-    .about("Remove kernel parameters from nodes")
+    .about("Remove kernel parameters from nodes (parameter values are ignored — match is by name)")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Remove the listed kernel parameters from every node in this group")
+        .visible_alias("hsm-group"),
+    )
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))

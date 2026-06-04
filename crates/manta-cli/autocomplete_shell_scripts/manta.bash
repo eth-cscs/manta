@@ -4492,7 +4492,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__images)
-            opts="-i -m -l -H -h --id --most-recent --limit --hsm-group --group --help"
+            opts="-i -p -m -l -h --id --pattern --most-recent --limit --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4506,23 +4506,19 @@ _manta() {
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
+                --pattern)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -p)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
                 --limit)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
                 -l)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --hsm-group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

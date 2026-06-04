@@ -2,11 +2,11 @@
 .el .ds Aq '
 .TH manta-apply 1  "apply " 
 .SH NAME
-manta\-apply \- Apply changes to the system
+manta\-apply \- Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .SH SYNOPSIS
 \fBmanta apply\fR [\fB\-h\fR|\fB\-\-help\fR] [\fIsubcommands\fR]
 .SH DESCRIPTION
-Apply changes to the system
+Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .SH OPTIONS
 .TP
 \fB\-h\fR, \fB\-\-help\fR
@@ -26,7 +26,7 @@ manta\-apply\-boot(1)
 Update boot parameters and runtime configuration
 .TP
 manta\-apply\-kernel\-parameters(1)
-Replace kernel parameters on nodes
+Replace the full kernel\-parameters string on nodes (drops any existing parameters not listed)
 .TP
 manta\-apply\-session(1)
 [DEPRECATED] Use \*(Aqmanta run session\*(Aq instead

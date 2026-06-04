@@ -6,7 +6,7 @@ use super::HOSTLIST_HELP;
 
 pub fn subcommand_get_group() -> Command {
   Command::new("groups")
-    .about("List node groups")
+    .about("List node groups visible to your token (or look up one by name)")
     // ID preserved as "VALUE" for handler compatibility
     .arg(
       arg!(<VALUE> "Group name (lists all groups if omitted)")
@@ -71,16 +71,19 @@ pub fn subcommand_get_group_hardware() -> Command {
 
 pub fn subcommand_get_cfs_configuration() -> Command {
   Command::new("configurations")
-    .about("List configurations")
-    .arg(arg!(-n --name <NAME> "Configuration name"))
-    .arg(arg!(-p --pattern <PATTERN> "Glob pattern to filter by name"))
+    .about("List CFS configurations (filter by name, glob, group, or recency)")
+    .arg(arg!(-n --name <NAME> "Show only the configuration with this exact name"))
+    .arg(arg!(-p --pattern <PATTERN> "Glob pattern to filter by name (eg: 'my-cfg*')"))
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent configurations")
         .value_parser(value_parser!(u8).range(1..)),
     )
     .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["json"]))
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Show only configurations whose layers target this group")
+        .visible_alias("hsm-group"),
+    )
     .group(ArgGroup::new("hsm-group_or_configuration").args(["group", "name"]))
     .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
 }
@@ -117,14 +120,17 @@ pub fn subcommand_get_cfs_session() -> Command {
 
 pub fn subcommand_get_bos_template() -> Command {
   Command::new("templates")
-    .about("List session templates")
-    .arg(arg!(-n --name <NAME> "Template name"))
+    .about("List BOS session templates (filter by name, group, or recency)")
+    .arg(arg!(-n --name <NAME> "Show only the template with this exact name"))
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent templates")
         .value_parser(value_parser!(u8).range(1..)),
     )
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Show only templates whose boot sets target this group")
+        .visible_alias("hsm-group"),
+    )
     .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["json", "table"])
@@ -209,9 +215,9 @@ pub fn subcommand_get_node_details() -> Command {
 
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
-    .about("List images")
-    .arg(arg!(-i --id <IMAGE_ID> "Image ID"))
-    .arg(arg!(-p --pattern <PATTERN> "Regex to filter by name"))
+    .about("List IMS images (filter by id, name regex, or recency; sorted most-recent first)")
+    .arg(arg!(-i --id <IMAGE_ID> "Show only the image with this exact ID"))
+    .arg(arg!(-p --pattern <PATTERN> "Regex matched against image name (applied client-side)"))
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")
@@ -222,9 +228,9 @@ pub fn subcommand_get_images() -> Command {
 pub fn subcommand_get_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
-    .about("Show boot parameters for nodes or a group")
+    .about("Show the BSS boot parameters (kernel, initrd, params) for nodes or a group")
     .arg(
-      arg!(-H --group <GROUP_NAME> "Node group name")
+      arg!(-H --group <GROUP_NAME> "Show boot parameters for every node in this group")
         .visible_alias("hsm-group"),
     )
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
@@ -252,7 +258,7 @@ pub fn subcommand_get_kernel_parameters() -> Command {
 
 pub fn subcommand_get_redfish_endpoints() -> Command {
   Command::new("redfish-endpoints")
-    .about("List Redfish endpoints")
+    .about("List the BMCs / controllers the hardware state manager has registered as Redfish endpoints")
     .arg(arg!(-i --id <VALUE> "Filter by xname (can be specified multiple times)"))
     .arg(arg!(-f --fqdn <VALUE> "Filter by FQDN"))
     .arg(arg!(-u --uuid <VALUE> "Filter by UUID"))
@@ -270,7 +276,7 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
 pub fn subcommand_get() -> Command {
   Command::new("get")
     .arg_required_else_help(true)
-    .about("Query system resources")
+    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters")
     .subcommand(subcommand_get_group())
     .subcommand(subcommand_get_hardware())
     .subcommand(subcommand_get_cfs_session())

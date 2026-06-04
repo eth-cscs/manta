@@ -17,10 +17,15 @@ pub fn subcommand_add_group() -> Command {
 
 pub fn subcommand_add_node() -> Command {
   Command::new("node")
-    .about("Register a new node")
+    .about("Register a new node in the hardware state manager")
+    .long_about(
+      "Register a new node in the hardware state manager.\n\n\
+      Use this for nodes that don't exist yet. To attach existing nodes to a \
+      group, use `manta add nodes` (plural).",
+    )
     .arg_required_else_help(true)
-    .arg(arg!(-i --id <XNAME> "Node xname").required(true))
-    .arg(arg!(-g --group <NAME> "Node group to add the node to").required(true))
+    .arg(arg!(-i --id <XNAME> "Xname to register").required(true))
+    .arg(arg!(-g --group <NAME> "Group to put the new node into").required(true))
     .arg(
       arg!(-H --hardware <FILE> "File containing hardware information")
         .value_parser(value_parser!(PathBuf)),
@@ -92,7 +97,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
 pub fn subcommand_add_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
-    .about("Create boot parameters for nodes")
+    .about("Create a BSS boot-parameters entry (kernel, initrd, params, cloud-init) for one or more nodes")
     .arg(arg!(-H --"hosts" <XNAMES> "Xnames of the nodes").required(true))
     .arg(arg!(-n --"nids" <VALUE> "Comma-separated NIDs of the nodes"))
     .arg(arg!(-m --"macs" <VALUE> "Comma-separated MAC addresses of the nodes"))
@@ -114,9 +119,12 @@ pub fn subcommand_add_boot_parameters() -> Command {
 pub fn subcommand_add_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
-    .about("Append kernel parameters to nodes")
+    .about("Append kernel parameters to nodes (leaves existing parameters untouched unless --overwrite is set)")
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
+    .arg(
+      arg!(-H --group <GROUP_NAME> "Append kernel parameters to every node in this group")
+        .visible_alias("hsm-group"),
+    )
     .arg(output_flag())
     .arg(
       arg!(-O --"overwrite" "Overwrite the value if the parameter already exists")
@@ -140,7 +148,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
 pub fn subcommand_add() -> Command {
   Command::new("add")
     .arg_required_else_help(true)
-    .about("Create system resources")
+    .about("Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints")
     .subcommand(subcommand_add_node())
     .subcommand(subcommand_add_nodes())
     .subcommand(subcommand_add_group())
