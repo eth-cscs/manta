@@ -1,11 +1,22 @@
 //! BOS template endpoints: list, create-session.
 
+use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::shared::dto::BosSessionTemplate;
 use manta_shared::shared::params::template::GetTemplateParams;
 
 use super::{MantaClient, QueryBuilder};
+
+/// Request body for `POST /templates/{name}/sessions`.
+#[derive(Serialize)]
+pub struct ApplyTemplateSessionRequest<'a> {
+  pub operation: &'a str,
+  pub limit: &'a str,
+  pub session_name: Option<&'a str>,
+  pub include_disabled: bool,
+  pub dry_run: bool,
+}
 
 impl MantaClient {
   pub async fn get_templates(
@@ -21,26 +32,14 @@ impl MantaClient {
     self.get_json(token, "/templates", &q).await
   }
 
-  #[allow(clippy::too_many_arguments)]
   pub async fn apply_template_session(
     &self,
     token: &str,
     name: &str,
-    operation: &str,
-    limit: &str,
-    session_name: Option<&str>,
-    include_disabled: bool,
-    dry_run: bool,
+    req: &ApplyTemplateSessionRequest<'_>,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "operation": operation,
-      "limit": limit,
-      "session_name": session_name,
-      "include_disabled": include_disabled,
-      "dry_run": dry_run,
-    });
     self
-      .post_json(token, &format!("/templates/{name}/sessions"), &body)
+      .post_json(token, &format!("/templates/{name}/sessions"), req)
       .await
   }
 }

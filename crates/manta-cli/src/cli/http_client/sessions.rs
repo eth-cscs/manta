@@ -2,6 +2,7 @@
 
 use anyhow::{Context, bail};
 use futures::TryStreamExt;
+use serde::Serialize;
 use serde_json::Value;
 use tokio::io::{AsyncBufRead, BufReader};
 use tokio_util::io::StreamReader;
@@ -10,6 +11,19 @@ use manta_shared::shared::dto::CfsSessionGetResponse;
 use manta_shared::shared::params::session::GetSessionParams;
 
 use super::{MantaClient, QueryBuilder};
+
+/// Request body for `POST /sessions`.
+#[derive(Serialize)]
+pub struct CreateSessionRequest<'a> {
+  pub cfs_conf_sess_name: Option<&'a str>,
+  pub playbook_yaml_file_name: Option<&'a str>,
+  pub hsm_group: Option<&'a str>,
+  pub repo_names: &'a [&'a str],
+  pub repo_last_commit_ids: &'a [&'a str],
+  pub ansible_limit: Option<&'a str>,
+  pub ansible_verbosity: Option<&'a str>,
+  pub ansible_passthrough: Option<&'a str>,
+}
 
 impl MantaClient {
   pub async fn get_sessions(
@@ -30,30 +44,12 @@ impl MantaClient {
     self.get_json(token, "/sessions", &q).await
   }
 
-  #[allow(clippy::too_many_arguments)]
   pub async fn create_session(
     &self,
     token: &str,
-    cfs_conf_sess_name: Option<&str>,
-    playbook_yaml_file_name: Option<&str>,
-    hsm_group: Option<&str>,
-    repo_names: &[&str],
-    repo_last_commit_ids: &[&str],
-    ansible_limit: Option<&str>,
-    ansible_verbosity: Option<&str>,
-    ansible_passthrough: Option<&str>,
+    req: &CreateSessionRequest<'_>,
   ) -> anyhow::Result<(String, String)> {
-    let body = serde_json::json!({
-      "cfs_conf_sess_name": cfs_conf_sess_name,
-      "playbook_yaml_file_name": playbook_yaml_file_name,
-      "hsm_group": hsm_group,
-      "repo_names": repo_names,
-      "repo_last_commit_ids": repo_last_commit_ids,
-      "ansible_limit": ansible_limit,
-      "ansible_verbosity": ansible_verbosity,
-      "ansible_passthrough": ansible_passthrough,
-    });
-    let resp: Value = self.post_json(token, "/sessions", &body).await?;
+    let resp: Value = self.post_json(token, "/sessions", req).await?;
     let session_name = resp["session_name"]
       .as_str()
       .context("missing session_name in response")?

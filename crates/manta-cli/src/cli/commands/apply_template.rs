@@ -2,7 +2,7 @@
 
 use anyhow::Error;
 
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{ApplyTemplateSessionRequest, MantaClient};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
@@ -25,11 +25,13 @@ pub async fn exec(
     .apply_template_session(
       token,
       bos_sessiontemplate_name,
-      bos_session_operation,
-      limit,
-      bos_session_name_opt,
-      include_disabled,
-      dry_run,
+      &ApplyTemplateSessionRequest {
+        operation: bos_session_operation,
+        limit,
+        session_name: bos_session_name_opt,
+        include_disabled,
+        dry_run,
+      },
     )
     .await?;
   let message = if dry_run {

@@ -1,6 +1,6 @@
 //! Implements the `manta apply kernel-parameters` command.
 
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{ApplyKernelParametersRequest, MantaClient};
 use crate::cli::output::action_result;
 use anyhow::Error;
 use crate::cli::common::app_context::AppContext;
@@ -28,13 +28,15 @@ pub async fn exec(
   let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_kernel_parameters(
       token,
-      xnames_expression,
-      hsm_group_name_arg_opt,
-      "apply",
-      kernel_params,
-      false,
-      false,
-      dry_run,
+      &ApplyKernelParametersRequest {
+        xnames_expression,
+        hsm_group: hsm_group_name_arg_opt,
+        operation: "apply",
+        params: kernel_params,
+        overwrite: false,
+        project_sbps: false,
+        dry_run,
+      },
     )
     .await?;
   if dry_run {

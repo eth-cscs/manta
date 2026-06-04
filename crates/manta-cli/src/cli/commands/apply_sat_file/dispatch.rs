@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use serde_json::Value;
 
 use super::{command::SatApplyOptions, plan::SatElement};
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{ApplySatImageRequest, MantaClient};
 
 /// Dispatch every element in the plan in order. For each `Image`, the
 /// response's `id` (or, on dry-run, a synthetic key) is recorded under
@@ -48,13 +48,15 @@ pub async fn dispatch_plan(
         let img = client
           .apply_sat_image(
             token,
-            &body,
-            &ref_lookup,
-            opts.ansible_verbosity_opt,
-            opts.ansible_passthrough_opt,
-            opts.watch_logs,
-            opts.timestamps,
-            opts.dry_run,
+            &ApplySatImageRequest {
+              image: &body,
+              ref_lookup: &ref_lookup,
+              ansible_verbosity: opts.ansible_verbosity_opt,
+              ansible_passthrough: opts.ansible_passthrough_opt,
+              watch_logs: opts.watch_logs,
+              timestamps: opts.timestamps,
+              dry_run: opts.dry_run,
+            },
           )
           .await?;
 

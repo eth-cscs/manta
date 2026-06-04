@@ -3,7 +3,7 @@
 
 use anyhow::{Context, Error, bail};
 
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{MantaClient, MigrateRestoreRequest};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
@@ -77,7 +77,15 @@ pub async fn exec(
   let server_url = ctx.manta_server_url;
   MantaClient::new(server_url, ctx.site_name)?
     .migrate_restore(
-      token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite,
+      token,
+      &MigrateRestoreRequest {
+        bos_file,
+        cfs_file,
+        hsm_file,
+        ims_file,
+        image_dir,
+        overwrite,
+      },
     )
     .await?;
 

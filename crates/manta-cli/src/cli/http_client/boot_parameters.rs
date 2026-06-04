@@ -1,5 +1,6 @@
 //! BSS boot-parameter endpoints: list, add, apply boot config, update, delete.
 
+use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::shared::dto::BootParameters;
@@ -8,6 +9,17 @@ use manta_shared::shared::params::boot_parameters::{
 };
 
 use super::{MantaClient, QueryBuilder};
+
+/// Request body for `POST /boot-config`.
+#[derive(Serialize)]
+pub struct ApplyBootConfigRequest<'a> {
+  pub hosts_expression: &'a str,
+  pub boot_image_id: Option<&'a str>,
+  pub boot_image_configuration: Option<&'a str>,
+  pub kernel_parameters: Option<&'a str>,
+  pub runtime_configuration: Option<&'a str>,
+  pub dry_run: bool,
+}
 
 impl MantaClient {
   pub async fn get_boot_parameters(
@@ -31,29 +43,12 @@ impl MantaClient {
     Ok(())
   }
 
-  // Thin wrapper below relays CLI flags straight into a JSON body; a Params
-  // struct would just relocate the same argument list, so we suppress
-  // `clippy::too_many_arguments` instead of adding boilerplate types.
-  #[allow(clippy::too_many_arguments)]
   pub async fn apply_boot_config(
     &self,
     token: &str,
-    hosts_expression: &str,
-    boot_image_id: Option<&str>,
-    boot_image_configuration: Option<&str>,
-    kernel_parameters: Option<&str>,
-    runtime_configuration: Option<&str>,
-    dry_run: bool,
+    req: &ApplyBootConfigRequest<'_>,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "hosts_expression": hosts_expression,
-      "boot_image_id": boot_image_id,
-      "boot_image_configuration": boot_image_configuration,
-      "kernel_parameters": kernel_parameters,
-      "runtime_configuration": runtime_configuration,
-      "dry_run": dry_run,
-    });
-    self.post_json(token, "/boot-config", &body).await
+    self.post_json(token, "/boot-config", req).await
   }
 
   pub async fn update_boot_parameters(

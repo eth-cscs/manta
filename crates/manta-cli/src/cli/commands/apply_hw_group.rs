@@ -5,7 +5,7 @@ use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 use crate::cli::common::clap_ext::ArgMatchesExt;
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{ApplyHwConfigurationRequest, MantaClient};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 use manta_shared::shared::params::hw_cluster::HwClusterMode;
@@ -54,12 +54,14 @@ pub async fn exec(
     .apply_hw_configuration(
       token,
       target,
-      parent,
-      pattern,
-      mode_str,
-      dryrun,
-      create_target_hsm_group,
-      delete_empty_parent_hsm_group,
+      &ApplyHwConfigurationRequest {
+        parent_cluster: parent,
+        pattern,
+        mode: mode_str,
+        dry_run: dryrun,
+        create_target_hsm_group,
+        delete_empty_parent_hsm_group,
+      },
     )
     .await?;
   let output_opt = cli_apply_hw_group.opt_str("output");

@@ -5,9 +5,22 @@
 
 use std::collections::HashMap;
 
+use serde::Serialize;
 use serde_json::Value;
 
 use super::MantaClient;
+
+/// Request body for `POST /sat-file/images`.
+#[derive(Serialize)]
+pub struct ApplySatImageRequest<'a> {
+  pub image: &'a Value,
+  pub ref_lookup: &'a HashMap<String, String>,
+  pub ansible_verbosity: Option<u8>,
+  pub ansible_passthrough: Option<&'a str>,
+  pub watch_logs: bool,
+  pub timestamps: bool,
+  pub dry_run: bool,
+}
 
 impl MantaClient {
   /// `POST /api/v1/sat-file/configurations` — apply one SAT
@@ -34,28 +47,12 @@ impl MantaClient {
   /// `ref_lookup` carries the CLI's accumulated `ref_name.or(name) ->
   /// image_id` map; the backend uses it to resolve `base.image_ref`.
   /// Returns the created `Image` as `Value`.
-  #[allow(clippy::too_many_arguments)]
   pub async fn apply_sat_image(
     &self,
     token: &str,
-    image: &Value,
-    ref_lookup: &HashMap<String, String>,
-    ansible_verbosity: Option<u8>,
-    ansible_passthrough: Option<&str>,
-    watch_logs: bool,
-    timestamps: bool,
-    dry_run: bool,
+    req: &ApplySatImageRequest<'_>,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "image": image,
-      "ref_lookup": ref_lookup,
-      "ansible_verbosity": ansible_verbosity,
-      "ansible_passthrough": ansible_passthrough,
-      "watch_logs": watch_logs,
-      "timestamps": timestamps,
-      "dry_run": dry_run,
-    });
-    self.post_json(token, "/sat-file/images", &body).await
+    self.post_json(token, "/sat-file/images", req).await
   }
 
   /// `POST /api/v1/sat-file/session-templates` — apply one SAT

@@ -1,6 +1,6 @@
 //! Implements the `manta add kernel-parameters` command.
 
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{AddKernelParametersRequest, MantaClient};
 use crate::cli::output::action_result;
 use anyhow::Error;
 use crate::cli::common::app_context::AppContext;
@@ -30,12 +30,14 @@ pub async fn exec(
   let result = MantaClient::new(server_url, ctx.site_name)?
     .add_kernel_parameters(
       token,
-      kernel_params,
-      xnames_expression,
-      hsm_group_name_arg_opt,
-      overwrite,
-      false,
-      dry_run,
+      &AddKernelParametersRequest {
+        params: kernel_params,
+        xnames_expression,
+        hsm_group: hsm_group_name_arg_opt,
+        overwrite,
+        project_sbps: false,
+        dry_run,
+      },
     )
     .await?;
   if dry_run {

@@ -33,6 +33,16 @@ mod sat_file;
 mod sessions;
 mod templates;
 
+pub use boot_parameters::ApplyBootConfigRequest;
+pub use hw_cluster::ApplyHwConfigurationRequest;
+pub use kernel_parameters::{
+  AddKernelParametersRequest, ApplyKernelParametersRequest,
+};
+pub use migrate::MigrateRestoreRequest;
+pub use sat_file::ApplySatImageRequest;
+pub use sessions::CreateSessionRequest;
+pub use templates::ApplyTemplateSessionRequest;
+
 /// HTTP client that forwards CLI requests to a manta server.
 #[derive(Debug)]
 pub struct MantaClient {

@@ -1,8 +1,20 @@
 //! `manta migrate` endpoints: nodes between HSM groups, vCluster backup/restore.
 
+use serde::Serialize;
 use serde_json::Value;
 
 use super::MantaClient;
+
+/// Request body for `POST /migrate/restore`.
+#[derive(Serialize)]
+pub struct MigrateRestoreRequest<'a> {
+  pub bos_file: Option<&'a str>,
+  pub cfs_file: Option<&'a str>,
+  pub hsm_file: Option<&'a str>,
+  pub ims_file: Option<&'a str>,
+  pub image_dir: Option<&'a str>,
+  pub overwrite: bool,
+}
 
 impl MantaClient {
   pub async fn migrate_nodes(
@@ -35,26 +47,12 @@ impl MantaClient {
     Ok(())
   }
 
-  #[allow(clippy::too_many_arguments)]
   pub async fn migrate_restore(
     &self,
     token: &str,
-    bos_file: Option<&str>,
-    cfs_file: Option<&str>,
-    hsm_file: Option<&str>,
-    ims_file: Option<&str>,
-    image_dir: Option<&str>,
-    overwrite: bool,
+    req: &MigrateRestoreRequest<'_>,
   ) -> anyhow::Result<()> {
-    let body = serde_json::json!({
-      "bos_file": bos_file,
-      "cfs_file": cfs_file,
-      "hsm_file": hsm_file,
-      "ims_file": ims_file,
-      "image_dir": image_dir,
-      "overwrite": overwrite,
-    });
-    let _: Value = self.post_json(token, "/migrate/restore", &body).await?;
+    let _: Value = self.post_json(token, "/migrate/restore", req).await?;
     Ok(())
   }
 }

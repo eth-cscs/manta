@@ -1,6 +1,6 @@
 //! Implements the `manta apply boot nodes` command.
 
-use crate::cli::http_client::MantaClient;
+use crate::cli::http_client::{ApplyBootConfigRequest, MantaClient};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
@@ -25,12 +25,14 @@ pub async fn exec(
   let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_boot_config(
       token,
-      hosts_expression,
-      new_boot_image_id_opt,
-      new_boot_image_configuration_opt,
-      new_kernel_parameters_opt,
-      new_runtime_configuration_opt,
-      dry_run,
+      &ApplyBootConfigRequest {
+        hosts_expression,
+        boot_image_id: new_boot_image_id_opt,
+        boot_image_configuration: new_boot_image_configuration_opt,
+        kernel_parameters: new_kernel_parameters_opt,
+        runtime_configuration: new_runtime_configuration_opt,
+        dry_run,
+      },
     )
     .await?;
   if dry_run {

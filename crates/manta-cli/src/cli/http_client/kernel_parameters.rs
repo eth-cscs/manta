@@ -1,11 +1,35 @@
 //! Kernel-parameter endpoints: list, add, apply, delete.
 
+use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::shared::dto::BootParameters;
 use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
 
 use super::{MantaClient, QueryBuilder};
+
+/// Request body for `POST /kernel-parameters/apply` (replace mode).
+#[derive(Serialize)]
+pub struct ApplyKernelParametersRequest<'a> {
+  pub xnames_expression: Option<&'a str>,
+  pub hsm_group: Option<&'a str>,
+  pub operation: &'a str,
+  pub params: &'a str,
+  pub overwrite: bool,
+  pub project_sbps: bool,
+  pub dry_run: bool,
+}
+
+/// Request body for `POST /kernel-parameters/add` (append/merge mode).
+#[derive(Serialize)]
+pub struct AddKernelParametersRequest<'a> {
+  pub params: &'a str,
+  pub xnames_expression: Option<&'a str>,
+  pub hsm_group: Option<&'a str>,
+  pub overwrite: bool,
+  pub project_sbps: bool,
+  pub dry_run: bool,
+}
 
 impl MantaClient {
   pub async fn get_kernel_parameters(
@@ -22,53 +46,21 @@ impl MantaClient {
 
   /// POST /kernel-parameters/apply — replace/add/delete kernel parameters on nodes.
   /// `operation` is one of "add", "apply", "delete".
-  #[allow(clippy::too_many_arguments)]
   pub async fn apply_kernel_parameters(
     &self,
     token: &str,
-    xnames_expression: Option<&str>,
-    hsm_group: Option<&str>,
-    operation: &str,
-    params: &str,
-    overwrite: bool,
-    project_sbps: bool,
-    dry_run: bool,
+    req: &ApplyKernelParametersRequest<'_>,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "xnames_expression": xnames_expression,
-      "hsm_group": hsm_group,
-      "operation": operation,
-      "params": params,
-      "overwrite": overwrite,
-      "project_sbps": project_sbps,
-      "dry_run": dry_run,
-    });
-    self
-      .post_json(token, "/kernel-parameters/apply", &body)
-      .await
+    self.post_json(token, "/kernel-parameters/apply", req).await
   }
 
   /// POST /kernel-parameters/add — merge new kernel parameters into existing entries.
-  #[allow(clippy::too_many_arguments)]
   pub async fn add_kernel_parameters(
     &self,
     token: &str,
-    params_str: &str,
-    xnames_expression: Option<&str>,
-    hsm_group: Option<&str>,
-    overwrite: bool,
-    project_sbps: bool,
-    dry_run: bool,
+    req: &AddKernelParametersRequest<'_>,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "params": params_str,
-      "xnames_expression": xnames_expression,
-      "hsm_group": hsm_group,
-      "overwrite": overwrite,
-      "project_sbps": project_sbps,
-      "dry_run": dry_run,
-    });
-    self.post_json(token, "/kernel-parameters/add", &body).await
+    self.post_json(token, "/kernel-parameters/add", req).await
   }
 
   /// DELETE /kernel-parameters — remove named kernel parameters from node BSS entries.
