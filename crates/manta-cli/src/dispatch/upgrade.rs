@@ -78,7 +78,7 @@ pub fn exec(
   };
 
   if up_to_date {
-    action_result::print_with_data(
+    render_version_info(
       &format!("Already up to date (v{current_str})."),
       &info,
       output_opt,
@@ -89,7 +89,7 @@ pub fn exec(
   let message = format!(
     "A newer manta is available: v{current_str} → v{latest}"
   );
-  action_result::print_with_data(&message, &info, output_opt)?;
+  render_version_info(&message, &info, output_opt)?;
 
   if check_only || dry_run {
     return Ok(());
@@ -122,12 +122,39 @@ pub fn exec(
     )
   })?;
 
-  action_result::print_with_data(
-    &format!("Replaced {} with v{latest}.", exe_path.display()),
-    &json!({"installed_version": latest.to_string()}),
-    output_opt,
-  )?;
+  let success_msg = format!("Replaced {} with v{latest}.", exe_path.display());
+  if output_opt == Some("json") {
+    action_result::print_with_data(
+      &success_msg,
+      &json!({"installed_version": latest.to_string()}),
+      output_opt,
+    )?;
+  } else {
+    println!("{success_msg}");
+  }
 
+  Ok(())
+}
+
+/// Print the version-info payload. In `--output json` mode this
+/// emits the canonical `action_result` envelope; otherwise it lays
+/// the fields out as readable text (the payload is too small for a
+/// `comfy_table` to add value).
+fn render_version_info(
+  message: &str,
+  info: &VersionInfo,
+  output_opt: Option<&str>,
+) -> Result<()> {
+  if output_opt == Some("json") {
+    return action_result::print_with_data(message, info, output_opt);
+  }
+  println!("{message}");
+  println!("  current: v{}", info.current);
+  println!("  latest:  v{}", info.latest);
+  println!("  target:  {}", info.target);
+  if !info.up_to_date {
+    println!("  asset:   {}", info.asset_url);
+  }
   Ok(())
 }
 

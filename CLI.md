@@ -970,13 +970,22 @@ manta-server is untouched — server installs are infrastructure-managed.
 | `-c/--check` | Check for a newer version and print it, but don't apply |
 | `-d/--dry-run` | Show what would happen without downloading or replacing |
 | `-y/--assume-yes` | Skip the confirmation prompt |
-| `-o/--output {table,json}` | Format the version-info output (default `table`) |
+| `-o/--output {table,json}` | Format the version-info output (default is a few human-readable lines; `json` emits the standard `{"status":"ok","message":"…","data":…}` envelope) |
 
 ```
 manta upgrade --check
 manta upgrade --dry-run
 manta upgrade -y --output json
 manta upgrade
+```
+
+Default output looks like:
+
+```
+Already up to date (v2.0.0-beta.30).
+  current: v2.0.0-beta.30
+  latest:  v2.0.0-beta.30
+  target:  aarch64-apple-darwin
 ```
 
 > If you installed manta via Homebrew, prefer `brew upgrade manta-cli` —
