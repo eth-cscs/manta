@@ -16,15 +16,16 @@ pub async fn handle_backup(
 
   match cli_backup.subcommand() {
     Some(("vcluster", m)) => {
-      let output_opt = m.opt_str("output");
       migrate_backup::exec(
         ctx,
         &token,
-        m.opt_str("bos"),
-        m.opt_str("destination"),
-        m.opt_str("pre-hook"),
-        m.opt_str("post-hook"),
-        output_opt,
+        migrate_backup::ExecParams {
+          bos: m.opt_str("bos"),
+          destination: m.opt_str("destination"),
+          prehook: m.opt_str("pre-hook"),
+          posthook: m.opt_str("post-hook"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }

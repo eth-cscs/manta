@@ -49,40 +49,55 @@ pub async fn exec(
   let _ = apply_session(
     ctx,
     token,
-    cfs_conf_sess_name_opt,
-    playbook_file_name_opt,
-    hsm_group_name_arg_opt,
-    &repo_path_vec,
-    hsm_group_members_opt,
-    ansible_verbosity,
-    ansible_passthrough,
-    watch_logs,
-    timestamps,
-    output_opt,
+    SessionParams {
+      session_name: cfs_conf_sess_name_opt,
+      playbook: playbook_file_name_opt,
+      hsm_group: hsm_group_name_arg_opt,
+      repos: &repo_path_vec,
+      ansible_limit: hsm_group_members_opt,
+      ansible_verbosity,
+      ansible_passthrough,
+      watch_logs,
+      timestamps,
+      output: output_opt,
+    },
   )
   .await?;
 
   Ok(())
 }
 
+struct SessionParams<'a> {
+  session_name: Option<&'a str>,
+  playbook: Option<&'a str>,
+  hsm_group: Option<&'a str>,
+  repos: &'a [PathBuf],
+  ansible_limit: Option<&'a str>,
+  ansible_verbosity: Option<&'a str>,
+  ansible_passthrough: Option<&'a str>,
+  watch_logs: bool,
+  timestamps: bool,
+  output: Option<&'a str>,
+}
+
 /// Creates a CFS session target dynamic.
 ///
 /// Returns `(cfs_configuration_name, cfs_session_name)`.
-#[allow(clippy::too_many_arguments)]
 async fn apply_session(
   ctx: &AppContext<'_>,
   shasta_token: &str,
-  cfs_conf_sess_name: Option<&str>,
-  playbook_yaml_file_name_opt: Option<&str>,
-  hsm_group_opt: Option<&str>,
-  repos_paths: &[PathBuf],
-  ansible_limit_opt: Option<&str>,
-  ansible_verbosity: Option<&str>,
-  ansible_passthrough: Option<&str>,
-  watch_logs: bool,
-  timestamps: bool,
-  output_opt: Option<&str>,
+  p: SessionParams<'_>,
 ) -> Result<(String, String), Error> {
+  let cfs_conf_sess_name = p.session_name;
+  let playbook_yaml_file_name_opt = p.playbook;
+  let hsm_group_opt = p.hsm_group;
+  let repos_paths = p.repos;
+  let ansible_limit_opt = p.ansible_limit;
+  let ansible_verbosity = p.ansible_verbosity;
+  let ansible_passthrough = p.ansible_passthrough;
+  let watch_logs = p.watch_logs;
+  let timestamps = p.timestamps;
+  let output_opt = p.output;
   let server_url = ctx.manta_server_url;
 
   // Check local repos (user interaction: confirm dialogs)

@@ -16,20 +16,20 @@ pub async fn handle_restore(
 
   match cli_restore.subcommand() {
     Some(("vcluster", m)) => {
-      let overwrite: bool = m.get_flag("overwrite");
-      let output_opt = m.opt_str("output");
       migrate_restore::exec(
         ctx,
         &token,
-        m.opt_str("bos-file"),
-        m.opt_str("cfs-file"),
-        m.opt_str("hsm-file"),
-        m.opt_str("ims-file"),
-        m.opt_str("image-dir"),
-        m.opt_str("pre-hook"),
-        m.opt_str("post-hook"),
-        overwrite,
-        output_opt,
+        migrate_restore::ExecParams {
+          bos_file: m.opt_str("bos-file"),
+          cfs_file: m.opt_str("cfs-file"),
+          hsm_file: m.opt_str("hsm-file"),
+          ims_file: m.opt_str("ims-file"),
+          image_dir: m.opt_str("image-dir"),
+          prehook: m.opt_str("pre-hook"),
+          posthook: m.opt_str("post-hook"),
+          overwrite: m.get_flag("overwrite"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }

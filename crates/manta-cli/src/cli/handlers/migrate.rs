@@ -44,12 +44,14 @@ pub async fn handle_migrate(
       migrate_nodes_between_hsm_groups::exec(
         ctx,
         &token,
-        &to,
-        &from,
-        xnames_string,
-        dry_run,
-        false,
-        output_opt,
+        migrate_nodes_between_hsm_groups::ExecParams {
+          target_groups: &to,
+          parent_groups: &from,
+          hosts_expression: xnames_string,
+          dry_run,
+          create_group: false,
+          output: output_opt,
+        },
       )
       .await?;
     }
@@ -59,15 +61,16 @@ pub async fn handle_migrate(
           "warning: 'manta migrate vCluster backup' is deprecated; \
            use 'manta backup vcluster' instead.",
         );
-        let output_opt = m.opt_str("output");
         migrate_backup::exec(
           ctx,
           &token,
-          m.opt_str("bos"),
-          m.opt_str("destination"),
-          m.opt_str("pre-hook"),
-          m.opt_str("post-hook"),
-          output_opt,
+          migrate_backup::ExecParams {
+            bos: m.opt_str("bos"),
+            destination: m.opt_str("destination"),
+            prehook: m.opt_str("pre-hook"),
+            posthook: m.opt_str("post-hook"),
+            output: m.opt_str("output"),
+          },
         )
         .await?;
       }
@@ -76,20 +79,20 @@ pub async fn handle_migrate(
           "warning: 'manta migrate vCluster restore' is deprecated; \
            use 'manta restore vcluster' instead.",
         );
-        let overwrite: bool = m.get_flag("overwrite");
-        let output_opt = m.opt_str("output");
         migrate_restore::exec(
           ctx,
           &token,
-          m.opt_str("bos-file"),
-          m.opt_str("cfs-file"),
-          m.opt_str("hsm-file"),
-          m.opt_str("ims-file"),
-          m.opt_str("image-dir"),
-          m.opt_str("pre-hook"),
-          m.opt_str("post-hook"),
-          overwrite,
-          output_opt,
+          migrate_restore::ExecParams {
+            bos_file: m.opt_str("bos-file"),
+            cfs_file: m.opt_str("cfs-file"),
+            hsm_file: m.opt_str("hsm-file"),
+            ims_file: m.opt_str("ims-file"),
+            image_dir: m.opt_str("image-dir"),
+            prehook: m.opt_str("pre-hook"),
+            posthook: m.opt_str("post-hook"),
+            overwrite: m.get_flag("overwrite"),
+            output: m.opt_str("output"),
+          },
         )
         .await?;
       }

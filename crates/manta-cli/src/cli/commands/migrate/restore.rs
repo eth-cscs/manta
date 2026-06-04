@@ -7,21 +7,33 @@ use crate::cli::http_client::{MantaClient, MigrateRestoreRequest};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
+pub struct ExecParams<'a> {
+  pub bos_file: Option<&'a str>,
+  pub cfs_file: Option<&'a str>,
+  pub hsm_file: Option<&'a str>,
+  pub ims_file: Option<&'a str>,
+  pub image_dir: Option<&'a str>,
+  pub prehook: Option<&'a str>,
+  pub posthook: Option<&'a str>,
+  pub overwrite: bool,
+  pub output: Option<&'a str>,
+}
+
 /// Restore cluster configuration from a backup bundle.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
-  bos_file: Option<&str>,
-  cfs_file: Option<&str>,
-  hsm_file: Option<&str>,
-  ims_file: Option<&str>,
-  image_dir: Option<&str>,
-  prehook: Option<&str>,
-  posthook: Option<&str>,
-  overwrite: bool,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
+  let bos_file = p.bos_file;
+  let cfs_file = p.cfs_file;
+  let hsm_file = p.hsm_file;
+  let ims_file = p.ims_file;
+  let image_dir = p.image_dir;
+  let prehook = p.prehook;
+  let posthook = p.posthook;
+  let overwrite = p.overwrite;
+  let output_opt = p.output;
   let bos_file_value = bos_file.context("BOS file is required")?;
   let cfs_file_value = cfs_file.context("CFS file is required")?;
   let ims_file_value = ims_file.context("IMS file is required")?;

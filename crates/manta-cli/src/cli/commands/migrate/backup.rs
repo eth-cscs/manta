@@ -7,17 +7,25 @@ use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
+pub struct ExecParams<'a> {
+  pub bos: Option<&'a str>,
+  pub destination: Option<&'a str>,
+  pub prehook: Option<&'a str>,
+  pub posthook: Option<&'a str>,
+  pub output: Option<&'a str>,
+}
+
 /// Back up cluster configuration to a local bundle.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
-  bos: Option<&str>,
-  destination: Option<&str>,
-  prehook: Option<&str>,
-  posthook: Option<&str>,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
+  let bos = p.bos;
+  let destination = p.destination;
+  let prehook = p.prehook;
+  let posthook = p.posthook;
+  let output_opt = p.output;
   let bos_value = bos.context("BOS template is required")?;
   let destination_value =
     destination.context("Destination folder is required")?;
