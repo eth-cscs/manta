@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.28] - 2026-06-04
+
+### Documentation
+
+- Refresh CLI/MIGRATING/ARCH + regen man pages and completions
+
+### Features
+
+- [**breaking**] Surface refactor — upgrade, gen-autocomplete top-level, drop legacy aliases
+- [**breaking**] End-of-session sweep — gen-man, apply-redfish/boot moves, drop deprecated v1→v2 aliases
+
+### Miscellaneous Tasks
+
+- Regenerate man pages and shell completions
+
 ## [2.0.0-beta.27] - 2026-06-04
 
 ### Miscellaneous Tasks
