@@ -7,8 +7,8 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use crate::output;
 use crate::common::app_context::AppContext;
-use manta_shared::shared::cluster_status;
-use manta_shared::shared::params::cluster::GetClusterParams;
+use manta_shared::types::cluster_status;
+use manta_shared::types::params::cluster::GetClusterParams;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
 fn parse_cluster_params(

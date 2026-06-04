@@ -7,8 +7,8 @@ use serde_json::Value;
 use tokio::io::{AsyncBufRead, BufReader};
 use tokio_util::io::StreamReader;
 
-use manta_shared::shared::dto::CfsSessionGetResponse;
-use manta_shared::shared::params::session::GetSessionParams;
+use manta_shared::types::dto::CfsSessionGetResponse;
+use manta_shared::types::params::session::GetSessionParams;
 
 use super::{MantaClient, QueryBuilder};
 

@@ -3,8 +3,8 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use manta_shared::shared::dto::BootParameters;
-use manta_shared::shared::params::boot_parameters::{
+use manta_shared::types::dto::BootParameters;
+use manta_shared::types::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };
 

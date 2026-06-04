@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Error, bail};
 use comfy_table::{Cell, Color, Table};
-use manta_shared::shared::dto::NodeSummary;
+use manta_shared::types::dto::NodeSummary;
 use serde_json::Value;
 
 // ---------------------------------------------------------------------------
@@ -174,14 +174,14 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
   match output {
     "details" => print_table_details(&node_summaries),
     "summary" => {
-      let summary = manta_shared::shared::cluster_status::calculate_hsm_hw_component_summary(
+      let summary = manta_shared::types::cluster_status::calculate_hsm_hw_component_summary(
         &node_summaries,
       );
       print_table_summary(&summary);
     }
     "pattern" => {
       let pattern =
-        manta_shared::shared::cluster_status::get_cluster_hw_pattern(
+        manta_shared::types::cluster_status::get_cluster_hw_pattern(
           node_summaries,
         );
       print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);

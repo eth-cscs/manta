@@ -44,7 +44,7 @@ pub async fn handle_update(
       let id = m
         .opt_string("id")
         .context("The 'id' argument is mandatory")?;
-      let params = manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams {
+      let params = manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams {
         id,
         name: m.opt_string("name"),
         hostname: m.opt_string("hostname"),

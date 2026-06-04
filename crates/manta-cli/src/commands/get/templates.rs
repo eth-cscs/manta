@@ -6,7 +6,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use crate::output;
 use crate::common::app_context::AppContext;
-use manta_shared::shared::params::template::GetTemplateParams;
+use manta_shared::types::params::template::GetTemplateParams;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
 fn parse_template_params(

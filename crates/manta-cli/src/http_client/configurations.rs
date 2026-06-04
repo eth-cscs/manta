@@ -2,8 +2,8 @@
 
 use serde_json::Value;
 
-use manta_shared::shared::dto::CfsConfigurationResponse;
-use manta_shared::shared::params::configuration::GetConfigurationParams;
+use manta_shared::types::dto::CfsConfigurationResponse;
+use manta_shared::types::params::configuration::GetConfigurationParams;
 
 use super::{MantaClient, QueryBuilder};
 

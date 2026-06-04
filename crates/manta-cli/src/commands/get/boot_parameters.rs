@@ -6,7 +6,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use crate::output;
 use crate::common::app_context::AppContext;
-use manta_shared::shared::params::boot_parameters::GetBootParametersParams;
+use manta_shared::types::params::boot_parameters::GetBootParametersParams;
 
 /// Parse CLI arguments into typed [`GetBootParametersParams`].
 fn parse_boot_parameters_params(

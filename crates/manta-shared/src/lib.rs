@@ -2,8 +2,9 @@
 //!
 //! Top-level modules:
 //!
-//! - [`shared`] — wire-shaped data (request `*Params`, response DTOs,
-//!   cluster-status helpers). Genuinely used by both binaries.
+//! - [`types`] — wire-shaped data (request `*Params`, response DTOs,
+//!   cluster-status helpers). The CLI↔server API contract — both
+//!   binaries serialize and deserialize through these types.
 //! - [`common`] — bi-binary behavioural helpers: the `config` loader
 //!   (returns an untyped `::config::Config`), `MantaError`, and
 //!   `log_ops::configure(...)`. Single-binary helpers (`audit`,
@@ -22,4 +23,4 @@
 #![deny(missing_docs)]
 
 pub mod common;
-pub mod shared;
+pub mod types;

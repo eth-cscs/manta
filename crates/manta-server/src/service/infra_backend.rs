@@ -51,10 +51,10 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
 use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, HWInventoryByLocationList,
 };
-use manta_shared::shared::params::redfish_endpoints::{
+use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
-use manta_shared::shared::params::sat_file::ApplySatFileParams;
+use manta_shared::types::params::sat_file::ApplySatFileParams;
 
 use crate::server::common::app_context::InfraContext;
 

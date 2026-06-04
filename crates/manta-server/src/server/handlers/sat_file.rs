@@ -43,7 +43,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, display_error, require_k8s_url,
   require_vault,
 };
-use manta_shared::shared::params::sat_file::ApplySatFileParams;
+use manta_shared::types::params::sat_file::ApplySatFileParams;
 
 // ---------------------------------------------------------------------------
 // POST /api/v1/sat-file — Apply a SAT file

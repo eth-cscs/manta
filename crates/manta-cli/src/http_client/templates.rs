@@ -3,8 +3,8 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use manta_shared::shared::dto::BosSessionTemplate;
-use manta_shared::shared::params::template::GetTemplateParams;
+use manta_shared::types::dto::BosSessionTemplate;
+use manta_shared::types::params::template::GetTemplateParams;
 
 use super::{MantaClient, QueryBuilder};
 

@@ -2,7 +2,7 @@
 
 use serde_json::Value;
 
-use manta_shared::shared::params::redfish_endpoints::{
+use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
 

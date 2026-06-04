@@ -3,7 +3,7 @@
 //! callers always get pretty-printed JSON.
 
 use anyhow::Error;
-use manta_shared::shared::dto::BootParameters;
+use manta_shared::types::dto::BootParameters;
 
 /// Pretty-print boot parameters as JSON.
 pub fn print(boot_parameters: &[BootParameters]) -> Result<(), Error> {

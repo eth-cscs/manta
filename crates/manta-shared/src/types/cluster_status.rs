@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use crate::shared::dto::NodeDetails;
+use crate::types::dto::NodeDetails;
 use manta_backend_dispatcher::types::NodeSummary;
 
 /// Divisor to convert MiB to GiB.
@@ -25,8 +25,8 @@ const MIB_PER_GIB: usize = 1024;
 /// other node is on and configured:
 ///
 /// ```
-/// use manta_shared::shared::cluster_status::compute_summary_status;
-/// use manta_shared::shared::dto::NodeDetails;
+/// use manta_shared::types::cluster_status::compute_summary_status;
+/// use manta_shared::types::dto::NodeDetails;
 ///
 /// fn n(power: &str, config: &str) -> NodeDetails {
 ///   NodeDetails {

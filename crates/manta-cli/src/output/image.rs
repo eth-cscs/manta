@@ -3,7 +3,7 @@
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
 use manta_shared::common::DATETIME_FORMAT;
-use manta_shared::shared::dto::Image;
+use manta_shared::types::dto::Image;
 
 /// Print image details as a formatted table.
 pub fn print(image_detail_vec: &[Image]) {

@@ -13,7 +13,7 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-pub use manta_shared::shared::params::power::{
+pub use manta_shared::types::params::power::{
   ApplyPowerParams, PowerAction, PowerTargetType,
 };
 

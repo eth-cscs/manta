@@ -21,7 +21,7 @@ impl MantaClient {
     username: &str,
     password: &str,
   ) -> anyhow::Result<String> {
-    use manta_shared::shared::auth::{AuthTokenRequest, AuthTokenResponse};
+    use manta_shared::types::auth::{AuthTokenRequest, AuthTokenResponse};
     let url = format!("{}/auth/token", self.base_url());
     tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/token");
     let builder = self
@@ -50,7 +50,7 @@ impl MantaClient {
   /// `POST /api/v1/auth/validate` — check whether the backend still
   /// accepts `token`. Returns `Ok(())` on 200, an error otherwise.
   pub async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
-    use manta_shared::shared::auth::ValidateTokenRequest;
+    use manta_shared::types::auth::ValidateTokenRequest;
     let url = format!("{}/auth/validate", self.base_url());
     tracing::debug!(url = %url, site = %self.site_name(), "POST /auth/validate");
     let builder = self

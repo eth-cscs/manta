@@ -36,7 +36,7 @@ clap_mangen               = "0.3.0"
 # transitively through `manta-shared` — manta-cli no longer needs
 # them as direct deps after the wire-type decoupling. Wire types
 # (`NodeDetails`, `BootParameters`, etc.) come from
-# `manta_shared::shared::dto`; error types in `cli/` use `anyhow`.
+# `manta_shared::types::dto`; error types in `cli/` use `anyhow`.
 manta-shared = { workspace = true }
 
 # --- END MANTA DEPENDENCIES ---

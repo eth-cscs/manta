@@ -10,7 +10,7 @@
 //! A NodeDetails conversion isn't needed in-process: the type
 //! boundary is HTTP, and the JSON wire shape is identical between
 //! `csm_rs::node::types::NodeDetails` and
-//! `manta_shared::shared::dto::NodeDetails`.
+//! `manta_shared::types::dto::NodeDetails`.
 
 use manta_backend_dispatcher::error::Error as BackendError;
 use manta_shared::common::error::MantaError;

@@ -6,7 +6,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use crate::output::configuration::print_table_struct;
 use crate::common::app_context::AppContext;
-use manta_shared::shared::params::configuration::GetConfigurationParams;
+use manta_shared::types::params::configuration::GetConfigurationParams;
 
 /// Parse CLI arguments into typed [`GetConfigurationParams`].
 fn parse_configuration_params(

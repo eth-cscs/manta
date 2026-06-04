@@ -6,7 +6,7 @@ use manta_backend_dispatcher::types::Group;
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
 use crate::service::authorization::get_groups_names_available;
-pub use manta_shared::shared::params::group::GetGroupParams;
+pub use manta_shared::types::params::group::GetGroupParams;
 
 /// Validate that `group_name` is in the set this token can access.
 ///

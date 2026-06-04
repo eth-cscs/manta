@@ -1,7 +1,7 @@
 //! Table and JSON renderers for HSM group output.
 
 use comfy_table::{ContentArrangement, Table};
-use manta_shared::shared::dto::Group;
+use manta_shared::types::dto::Group;
 use nodeset::NodeSet;
 
 /// Print HSM groups as a formatted table.

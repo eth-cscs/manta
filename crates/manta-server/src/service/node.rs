@@ -9,7 +9,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-pub use manta_shared::shared::params::node::GetNodesParams;
+pub use manta_shared::types::params::node::GetNodesParams;
 
 /// Fetch node details for the given xname expression.
 pub async fn get_nodes(
@@ -54,7 +54,7 @@ pub async fn get_nodes(
   Ok(node_details_list)
 }
 
-// `compute_summary_status` moved to `manta_shared::shared::cluster_status` —
+// `compute_summary_status` moved to `manta_shared::types::cluster_status` —
 // only CLI display code calls it.
 
 /// Delete a node by its xname/ID.

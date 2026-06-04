@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::node_ops;
-pub use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
+pub use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
 
 /// Fetch kernel boot parameters for the specified nodes.
 ///

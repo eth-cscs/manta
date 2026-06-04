@@ -4,9 +4,9 @@
 
 use serde_json::Value;
 
-use manta_shared::shared::dto::{Group, NodeDetails};
-use manta_shared::shared::params::cluster::GetClusterParams;
-use manta_shared::shared::params::group::GetGroupParams;
+use manta_shared::types::dto::{Group, NodeDetails};
+use manta_shared::types::params::cluster::GetClusterParams;
+use manta_shared::types::params::group::GetGroupParams;
 
 use super::{MantaClient, QueryBuilder};
 

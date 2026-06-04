@@ -3,8 +3,8 @@
 use regex::Regex;
 use serde_json::Value;
 
-use manta_shared::shared::dto::Image;
-use manta_shared::shared::params::image::GetImagesParams;
+use manta_shared::types::dto::Image;
+use manta_shared::types::params::image::GetImagesParams;
 
 use super::{MantaClient, QueryBuilder};
 

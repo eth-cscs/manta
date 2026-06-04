@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Local};
 use comfy_table::Table;
-use manta_shared::shared::dto::CfsConfigurationResponse;
+use manta_shared::types::dto::CfsConfigurationResponse;
 
 use manta_shared::common::DATETIME_FORMAT;
 

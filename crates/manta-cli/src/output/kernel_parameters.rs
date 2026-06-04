@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, ContentArrangement, Table};
-use manta_shared::shared::dto::BootParameters;
+use manta_shared::types::dto::BootParameters;
 
 /// Print kernel boot parameters grouped by common
 /// parameter sets.

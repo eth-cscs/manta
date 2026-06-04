@@ -6,7 +6,7 @@ use crate::http_client::MantaClient;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 use crate::common::app_context::AppContext;
-use manta_shared::shared::params::session::GetSessionParams;
+use manta_shared::types::params::session::GetSessionParams;
 
 /// Dispatch the `manta log` command to stream CFS session logs.
 ///

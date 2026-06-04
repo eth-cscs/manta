@@ -10,7 +10,7 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
-use manta_shared::shared::params::redfish_endpoints::{
+use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
 

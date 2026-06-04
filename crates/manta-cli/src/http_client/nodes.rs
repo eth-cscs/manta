@@ -2,8 +2,8 @@
 
 use serde_json::Value;
 
-use manta_shared::shared::dto::NodeDetails;
-use manta_shared::shared::params::node::GetNodesParams;
+use manta_shared::types::dto::NodeDetails;
+use manta_shared::types::params::node::GetNodesParams;
 
 use super::{MantaClient, QueryBuilder};
 

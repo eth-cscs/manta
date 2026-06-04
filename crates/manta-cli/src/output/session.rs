@@ -3,7 +3,7 @@
 use anyhow::{Context, Error};
 use chrono::{DateTime, Local};
 use comfy_table::{ContentArrangement, Table};
-use manta_shared::shared::dto::CfsSessionGetResponse;
+use manta_shared::types::dto::CfsSessionGetResponse;
 
 use manta_shared::common::DATETIME_FORMAT;
 

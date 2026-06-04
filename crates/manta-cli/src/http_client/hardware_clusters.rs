@@ -5,7 +5,7 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use manta_shared::shared::params::hardware::{
+use manta_shared::types::params::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
 };
 

@@ -16,7 +16,7 @@ use axum::{
   response::IntoResponse,
 };
 use crate::server::common::audit;
-use manta_shared::shared::auth::{
+use manta_shared::types::auth::{
   AuthTokenRequest, AuthTokenResponse, ValidateTokenRequest,
 };
 

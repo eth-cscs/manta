@@ -3,8 +3,8 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use manta_shared::shared::dto::BootParameters;
-use manta_shared::shared::params::kernel_parameters::GetKernelParametersParams;
+use manta_shared::types::dto::BootParameters;
+use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
 
 use super::{MantaClient, QueryBuilder};
 
