@@ -106,10 +106,7 @@ fn push_images(
   let mut ref_name_to_idx: HashMap<String, usize> = HashMap::new();
 
   for (i, img) in images.iter().enumerate() {
-    let name = img
-      .get("name")
-      .and_then(Value::as_str)
-      .map(str::to_string);
+    let name = img.get("name").and_then(Value::as_str).map(str::to_string);
     let ref_name = img
       .get("ref_name")
       .and_then(Value::as_str)
@@ -235,8 +232,10 @@ fn push_session_templates(
       .and_then(Value::as_str)
       && !ref_names.contains(ir)
     {
-      let name =
-        st.get("name").and_then(Value::as_str).unwrap_or("<missing name>");
+      let name = st
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or("<missing name>");
       bail!(
         "session_template #{i} ('{name}') has image.image_ref '{ir}', which does not match any image in this SAT file",
       );
@@ -319,23 +318,25 @@ fn prune_for_filters(
       .get("session_templates")
       .and_then(Value::as_array)
       .map(|sts| {
-        sts.iter().filter_map(image_name_referenced_by_session_template).collect()
+        sts
+          .iter()
+          .filter_map(image_name_referenced_by_session_template)
+          .collect()
       })
       .unwrap_or_default();
 
-    let images_empty = if let Some(imgs) =
-      obj.get_mut("images").and_then(Value::as_array_mut)
-    {
-      imgs.retain(|img| {
-        img
-          .get("name")
-          .and_then(Value::as_str)
-          .is_some_and(|n| image_keep.contains(n))
-      });
-      imgs.is_empty()
-    } else {
-      false
-    };
+    let images_empty =
+      if let Some(imgs) = obj.get_mut("images").and_then(Value::as_array_mut) {
+        imgs.retain(|img| {
+          img
+            .get("name")
+            .and_then(Value::as_str)
+            .is_some_and(|n| image_keep.contains(n))
+        });
+        imgs.is_empty()
+      } else {
+        false
+      };
     if images_empty {
       obj.remove("images");
     }
@@ -348,8 +349,7 @@ fn prune_for_filters(
         }
       }
     }
-    if let Some(sts) = obj.get("session_templates").and_then(Value::as_array)
-    {
+    if let Some(sts) = obj.get("session_templates").and_then(Value::as_array) {
       for st in sts {
         if let Some(c) = st.get("configuration").and_then(Value::as_str) {
           config_keep.insert(c.to_string());

@@ -981,7 +981,9 @@ async fn get_power_transition_happy_path() {
     .mount(&fx.mock_server)
     .await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/power/transitions/abc-123")).await;
+  let resp = fx
+    .send(fx.auth_get("/api/v1/power/transitions/abc-123"))
+    .await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body = TestFixture::body_json(resp).await;
   assert_eq!(body["transitionID"], "abc-123");

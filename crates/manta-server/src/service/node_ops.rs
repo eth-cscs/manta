@@ -320,13 +320,8 @@ pub async fn resolve_target_nodes(
       .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
       .await?;
 
-    resolve_hosts_expression(
-      infra,
-      shasta_token,
-      &hsm_members.join(","),
-      false,
-    )
-    .await
+    resolve_hosts_expression(infra, shasta_token, &hsm_members.join(","), false)
+      .await
   } else {
     Err(Error::BadRequest(
       "No nodes provided. Please provide either a list of nodes \

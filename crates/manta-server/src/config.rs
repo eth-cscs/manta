@@ -6,8 +6,8 @@
 
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::types::K8sDetails;
 use crate::server::common::audit::Auditor;
+use manta_backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
 /// Which backend API this site speaks.

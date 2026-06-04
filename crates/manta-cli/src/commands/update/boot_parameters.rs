@@ -2,9 +2,9 @@
 
 use anyhow::{Context, Error};
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 use manta_shared::types::params::boot_parameters::UpdateBootParametersParams;
 
 pub struct ExecParams<'a> {

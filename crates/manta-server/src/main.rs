@@ -196,8 +196,7 @@ async fn run_server(
     .cloned()
     .or_else(|| configuration.server.listen_address.clone())
     .unwrap_or_else(|| {
-      manta_server::config::ServerSettings::DEFAULT_LISTEN_ADDRESS
-        .to_string()
+      manta_server::config::ServerSettings::DEFAULT_LISTEN_ADDRESS.to_string()
     });
   let console_inactivity_timeout = std::time::Duration::from_secs(
     configuration.server.console_inactivity_timeout_secs,

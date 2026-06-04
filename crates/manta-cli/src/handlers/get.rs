@@ -1,17 +1,16 @@
 //! Routes `manta get *` subcommands to their exec functions.
 
 use crate::commands::get::{
-  boot_parameters as get_boot_parameters,
-  configurations as get_configurations, group_hardware as get_group_hardware,
-  group_nodes as get_group_nodes, groups as get_groups,
-  hardware_nodes as get_hardware_nodes, images as get_images,
-  kernel_parameters as get_kernel_parameters, nodes as get_nodes,
-  sessions as get_sessions, templates as get_templates,
+  boot_parameters as get_boot_parameters, configurations as get_configurations,
+  group_hardware as get_group_hardware, group_nodes as get_group_nodes,
+  groups as get_groups, hardware_nodes as get_hardware_nodes,
+  images as get_images, kernel_parameters as get_kernel_parameters,
+  nodes as get_nodes, sessions as get_sessions, templates as get_templates,
 };
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 
 /// Dispatch `manta get` subcommands (groups, session,
 /// configuration, template, images, cluster, hardware, nodes,

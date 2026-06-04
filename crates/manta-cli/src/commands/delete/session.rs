@@ -1,9 +1,9 @@
 //! Implements the `manta delete session` command.
 
 use crate::common;
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 /// Delete or cancel a CFS session.
 pub async fn exec(

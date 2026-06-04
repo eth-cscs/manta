@@ -97,10 +97,8 @@ pub async fn exec_nodes(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {}", opts.target);
-  if !common::confirm::confirm(
-    opts.action.confirmation_text(),
-    opts.assume_yes,
-  ) {
+  if !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+  {
     bail!("Operation cancelled by user");
   }
   dispatch_and_wait(ctx, token, &opts, "nodes").await
@@ -116,10 +114,8 @@ pub async fn exec_cluster(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Cluster: {}", opts.target);
-  if !common::confirm::confirm(
-    opts.action.confirmation_text(),
-    opts.assume_yes,
-  ) {
+  if !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+  {
     bail!("Operation cancelled by user");
   }
   dispatch_and_wait(ctx, token, &opts, "cluster").await
@@ -241,8 +237,10 @@ fn progress_summary(
     .get("transitionStatus")
     .and_then(Value::as_str)
     .unwrap_or("unknown");
-  let operation =
-    snapshot.get("operation").and_then(Value::as_str).unwrap_or("?");
+  let operation = snapshot
+    .get("operation")
+    .and_then(Value::as_str)
+    .unwrap_or("?");
   let counts = snapshot.get("taskCounts").cloned().unwrap_or(Value::Null);
   let count_u64 = |k: &str| counts.get(k).and_then(Value::as_u64).unwrap_or(0);
 
@@ -308,9 +306,15 @@ mod tests {
     let line = progress_summary(&snap, 7, 300);
     assert!(line.contains("Reset"), "operation missing: {line}");
     assert!(line.contains("attempt 7/300"), "attempt missing: {line}");
-    assert!(line.contains("status: in-progress"), "status missing: {line}");
+    assert!(
+      line.contains("status: in-progress"),
+      "status missing: {line}"
+    );
     assert!(line.contains("failed: 0"), "failed missing: {line}");
-    assert!(line.contains("in-progress: 5"), "in-progress missing: {line}");
+    assert!(
+      line.contains("in-progress: 5"),
+      "in-progress missing: {line}"
+    );
     assert!(line.contains("succeeded: 12"), "succeeded missing: {line}");
     assert!(line.contains("total: 17"), "total missing: {line}");
   }

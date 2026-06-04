@@ -17,11 +17,7 @@ impl QueryBuilder {
   }
 
   /// Push `(name, value.clone())` only when `value` is `Some`.
-  pub fn opt(
-    mut self,
-    name: &'static str,
-    value: &Option<String>,
-  ) -> Self {
+  pub fn opt(mut self, name: &'static str, value: &Option<String>) -> Self {
     if let Some(v) = value {
       self.pairs.push((name, v.clone()));
     }

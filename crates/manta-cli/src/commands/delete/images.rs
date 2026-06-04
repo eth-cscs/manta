@@ -2,9 +2,9 @@
 
 use anyhow::Error;
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 /// Delete IMS images and their linked artifacts.
 pub async fn exec(

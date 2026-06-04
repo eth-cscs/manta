@@ -1,8 +1,8 @@
 //! Implements the `manta apply boot nodes` command.
 
+use crate::common::app_context::AppContext;
 use crate::http_client::{ApplyBootConfigRequest, MantaClient};
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 use anyhow::Error;
 

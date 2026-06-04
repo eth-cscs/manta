@@ -2,9 +2,9 @@
 
 use anyhow::{Context, Error, bail};
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output;
-use crate::common::app_context::AppContext;
 use manta_shared::types::params::group::GetGroupParams;
 
 /// Parse CLI arguments into typed [`GetGroupParams`].

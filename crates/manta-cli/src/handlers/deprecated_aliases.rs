@@ -6,11 +6,11 @@
 
 use crate::commands::add::nodes as add_nodes;
 use crate::commands::delete::nodes as delete_nodes;
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 
 /// Dispatch the deprecated top-level commands (add-nodes-to-groups,
 /// remove-nodes-from-groups).

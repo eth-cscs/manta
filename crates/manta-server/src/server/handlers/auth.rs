@@ -9,13 +9,13 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use crate::server::common::audit;
 use axum::{
   Json,
   extract::{ConnectInfo, State},
   http::StatusCode,
   response::IntoResponse,
 };
-use crate::server::common::audit;
 use manta_shared::types::auth::{
   AuthTokenRequest, AuthTokenResponse, ValidateTokenRequest,
 };

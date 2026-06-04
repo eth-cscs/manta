@@ -4,10 +4,10 @@ use anyhow::{Context, Error};
 use manta_shared::types::dto::BootParameters;
 use serde_json::Value;
 
+use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 /// CLI adapter for `manta add boot-parameters`.
 pub async fn exec(

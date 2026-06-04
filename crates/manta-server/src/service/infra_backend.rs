@@ -142,11 +142,7 @@ impl InfraContext<'_> {
   }
 
   /// Delete a node by xname.
-  pub async fn delete_node(
-    &self,
-    token: &str,
-    id: &str,
-  ) -> Result<(), Error> {
+  pub async fn delete_node(&self, token: &str, id: &str) -> Result<(), Error> {
     self.backend.delete_node(token, id).await.map(|_| ())
   }
 
@@ -202,7 +198,13 @@ impl InfraContext<'_> {
   ) -> Result<(Vec<String>, Vec<String>), Error> {
     self
       .backend
-      .migrate_group_members(token, target_hsm_name, parent_hsm_name, xnames, dry_run)
+      .migrate_group_members(
+        token,
+        target_hsm_name,
+        parent_hsm_name,
+        xnames,
+        dry_run,
+      )
       .await
   }
 
@@ -236,16 +238,8 @@ impl InfraContext<'_> {
     self
       .backend
       .migrate_restore(
-        token,
-        bos_file,
-        cfs_file,
-        hsm_file,
-        ims_file,
-        image_dir,
-        overwrite,
-        overwrite,
-        overwrite,
-        overwrite,
+        token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite,
+        overwrite, overwrite, overwrite,
       )
       .await
   }
@@ -526,7 +520,10 @@ impl InfraContext<'_> {
     token: &str,
     boot_parameters: &BootParameters,
   ) -> Result<(), Error> {
-    self.backend.add_bootparameters(token, boot_parameters).await
+    self
+      .backend
+      .add_bootparameters(token, boot_parameters)
+      .await
   }
 
   /// Update existing BSS boot parameters.
@@ -697,10 +694,7 @@ impl InfraContext<'_> {
   }
 
   /// List every HSM group in the system (no access filter).
-  pub async fn get_all_groups(
-    &self,
-    token: &str,
-  ) -> Result<Vec<Group>, Error> {
+  pub async fn get_all_groups(&self, token: &str) -> Result<Vec<Group>, Error> {
     self.backend.get_all_groups(token).await
   }
 
@@ -779,7 +773,12 @@ impl InfraContext<'_> {
   ) -> Result<(), Error> {
     self
       .backend
-      .update_group_members(token, group_name, members_to_remove, members_to_add)
+      .update_group_members(
+        token,
+        group_name,
+        members_to_remove,
+        members_to_add,
+      )
       .await
   }
 
@@ -790,7 +789,10 @@ impl InfraContext<'_> {
     operation: &str,
     nodes: &[String],
   ) -> Result<TransitionStartOutput, Error> {
-    self.backend.pcs_transitions_post(token, operation, nodes).await
+    self
+      .backend
+      .pcs_transitions_post(token, operation, nodes)
+      .await
   }
 
   /// Fetch a single PCS power-transition snapshot by id.

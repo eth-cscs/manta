@@ -4,10 +4,10 @@
 use anyhow::{Context, Error};
 use clap::ArgMatches;
 
+use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{ApplyHwConfigurationRequest, MantaClient};
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 use manta_shared::types::params::hw_cluster::HwClusterMode;
 
 /// Apply a hardware cluster configuration (pin or unpin).

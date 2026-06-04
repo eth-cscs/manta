@@ -6,11 +6,11 @@ use crate::commands::add::{
   node as add_node, nodes as add_nodes,
   redfish_endpoint as add_redfish_endpoint,
 };
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 use std::path::PathBuf;
 
 /// Dispatch `manta add` subcommands (node, group,

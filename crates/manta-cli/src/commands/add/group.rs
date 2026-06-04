@@ -3,9 +3,9 @@
 use anyhow::{Context, Error, bail};
 
 use crate::common;
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 use manta_shared::types::dto::Group;
 
 pub struct ExecParams<'a> {

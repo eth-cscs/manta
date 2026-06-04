@@ -4,9 +4,9 @@
 use anyhow::{Error, bail};
 
 use crate::common;
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 /// Add/assign a list of xnames to an HSM group.
 pub async fn exec(

@@ -1,11 +1,11 @@
 //! Routes `manta apply *` subcommands to their exec functions.
 
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::{commands, http_client::MantaClient};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 
 /// Dispatch `manta apply` subcommands (hardware, session,
 /// sat-file, boot, template, ephemeral-env,

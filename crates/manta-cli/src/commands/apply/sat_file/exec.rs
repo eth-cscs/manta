@@ -33,12 +33,12 @@
 use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
 
+use super::render::render_jinja2_sat_file_yaml;
 use crate::commands::apply::sat_file::{dispatch, plan};
 use crate::common;
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
-use super::render::render_jinja2_sat_file_yaml;
 
 /// Options for applying a SAT file.
 #[allow(clippy::struct_excessive_bools)]

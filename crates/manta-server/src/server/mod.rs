@@ -116,8 +116,8 @@ pub async fn start_server(
   // `build_router` so the per-route `/power` override actually wins —
   // see the comment on `build_router` for why a global outer layer
   // would silently defeat the override.
-  let app = routes::build_router(state)
-    .layer(axum::middleware::from_fn(log_requests));
+  let app =
+    routes::build_router(state).layer(axum::middleware::from_fn(log_requests));
 
   let addr: SocketAddr = format!("{listen_addr}:{port}")
     .parse()
@@ -277,5 +277,4 @@ mod timeout_layer_tests {
     let resp = router.oneshot(get_req("/fast")).await.unwrap();
     assert_eq!(resp.status(), StatusCode::OK);
   }
-
 }

@@ -1,12 +1,12 @@
 //! Routes `manta console *` subcommands to their exec functions.
 
 use crate::commands::console as console_common;
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 use std::io::IsTerminal;
 
 /// Dispatch `manta console` subcommands (node, target-ansible).

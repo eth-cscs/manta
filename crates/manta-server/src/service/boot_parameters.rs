@@ -11,9 +11,9 @@ use manta_backend_dispatcher::{
 use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::node_ops;
 use crate::service::authorization::validate_target_hsm_members;
 use crate::service::ims_ops::get_image_vec_related_cfs_configuration_name;
+use crate::service::node_ops;
 pub use manta_shared::types::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };
@@ -113,13 +113,9 @@ pub(crate) async fn prepare_boot_config(
 ) -> Result<BootConfigChangeset, Error> {
   let mut need_restart = false;
 
-  let xname_vec = node_ops::resolve_hosts_expression(
-    infra,
-    token,
-    hosts_expression,
-    false,
-  )
-  .await?;
+  let xname_vec =
+    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
+      .await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> =
     infra.get_bootparameters(token, &xname_vec).await?;
@@ -255,8 +251,9 @@ async fn get_new_boot_image(
     Some(most_recent_image.clone())
   } else if let Some(boot_image_id) = new_boot_image_id_opt {
     tracing::info!("Boot image id '{}' provided", boot_image_id);
-    let image_in_csm_vec =
-      infra.get_images(shasta_token, new_boot_image_id_opt).await?;
+    let image_in_csm_vec = infra
+      .get_images(shasta_token, new_boot_image_id_opt)
+      .await?;
 
     if image_in_csm_vec.is_empty() {
       return Err(Error::NotFound(format!(

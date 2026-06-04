@@ -4,11 +4,11 @@ use crate::commands::update::{
   boot_parameters as update_boot_parameters,
   redfish_endpoint as update_redfish_endpoint,
 };
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 
 /// Dispatch `manta update` subcommands (boot-parameters,
 /// redfish-endpoint).

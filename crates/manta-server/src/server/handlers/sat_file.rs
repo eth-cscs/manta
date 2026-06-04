@@ -545,7 +545,10 @@ mod tests {
     });
     let req: PostSatImageRequest = serde_json::from_value(cli_body).unwrap();
     assert_eq!(req.image["name"].as_str(), Some("img-v1"));
-    assert_eq!(req.ref_lookup.get("earlier-ref").map(String::as_str), Some("abc-123"));
+    assert_eq!(
+      req.ref_lookup.get("earlier-ref").map(String::as_str),
+      Some("abc-123")
+    );
     assert_eq!(req.ansible_verbosity, Some(2));
     assert_eq!(req.ansible_passthrough.as_deref(), Some("--check"));
     assert!(req.watch_logs);
@@ -578,7 +581,10 @@ mod tests {
     let req: PostSatSessionTemplateRequest =
       serde_json::from_value(cli_body).unwrap();
     assert_eq!(req.session_template["name"].as_str(), Some("st-1"));
-    assert_eq!(req.ref_lookup.get("base").map(String::as_str), Some("image-xyz"));
+    assert_eq!(
+      req.ref_lookup.get("base").map(String::as_str),
+      Some("image-xyz")
+    );
     assert!(req.reboot);
     assert!(!req.dry_run);
   }

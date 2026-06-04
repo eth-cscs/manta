@@ -5,11 +5,11 @@
 //! against the CSM/OCHAMI backend. The CLI never reaches a backend
 //! directly.
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
-use crate::common::app_context::AppContext;
 use manta_shared::common::config::get_default_cache_path;
 use std::{
   fs::{File, create_dir_all},

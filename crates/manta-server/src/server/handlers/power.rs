@@ -6,12 +6,7 @@
 //! - `GET /api/v1/power/transitions/{id}` returns the current snapshot
 //!   of the named transition (status + task counts + per-task detail).
 
-use axum::{
-  Json,
-  extract::Path,
-  http::StatusCode,
-  response::IntoResponse,
-};
+use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 use utoipa::ToSchema;
 

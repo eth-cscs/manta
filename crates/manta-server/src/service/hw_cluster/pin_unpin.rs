@@ -4,9 +4,7 @@
 
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::{
-  error::Error, types::Group,
-};
+use manta_backend_dispatcher::{error::Error, types::Group};
 
 use super::{NodeHwCountVec, scoring};
 use crate::server::common::app_context::InfraContext;

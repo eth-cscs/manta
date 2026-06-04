@@ -405,7 +405,12 @@ impl CfsTrait for StaticBackendDispatcher {
     auth_token: &str,
     cfs_configuration_name_opt: Option<&String>,
   ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-    dispatch!(self, get_configuration, auth_token, cfs_configuration_name_opt)
+    dispatch!(
+      self,
+      get_configuration,
+      auth_token,
+      cfs_configuration_name_opt
+    )
   }
 
   async fn get_and_filter_configuration(
@@ -539,7 +544,12 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     shasta_token: &str,
     bos_session_template_id_opt: Option<&str>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
-    dispatch!(self, get_template, shasta_token, bos_session_template_id_opt)
+    dispatch!(
+      self,
+      get_template,
+      shasta_token,
+      bos_session_template_id_opt
+    )
   }
 
   async fn get_and_filter_templates(
@@ -574,7 +584,13 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     bos_template: &BosSessionTemplate,
     bos_template_name: &str,
   ) -> Result<BosSessionTemplate, Error> {
-    dispatch!(self, put_template, shasta_token, bos_template, bos_template_name)
+    dispatch!(
+      self,
+      put_template,
+      shasta_token,
+      bos_template,
+      bos_template_name
+    )
   }
 
   async fn delete_template(
@@ -961,7 +977,13 @@ impl GroupTrait for StaticBackendDispatcher {
     group_label: &str,
     xname: &str,
   ) -> Result<(), Error> {
-    dispatch!(self, delete_member_from_group, auth_token, group_label, xname)
+    dispatch!(
+      self,
+      delete_member_from_group,
+      auth_token,
+      group_label,
+      xname
+    )
   }
 
   async fn migrate_group_members(

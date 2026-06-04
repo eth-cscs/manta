@@ -40,7 +40,9 @@ impl MantaClient {
       "overwrite": overwrite,
       "dry_run": dry_run,
     });
-    self.post_json(token, "/sat-file/configurations", &body).await
+    self
+      .post_json(token, "/sat-file/configurations", &body)
+      .await
   }
 
   /// `POST /api/v1/sat-file/images` — apply one SAT image entry.
@@ -73,6 +75,8 @@ impl MantaClient {
       "reboot": reboot,
       "dry_run": dry_run,
     });
-    self.post_json(token, "/sat-file/session-templates", &body).await
+    self
+      .post_json(token, "/sat-file/session-templates", &body)
+      .await
   }
 }

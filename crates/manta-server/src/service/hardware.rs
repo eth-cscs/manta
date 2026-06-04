@@ -179,13 +179,9 @@ pub async fn get_hardware_nodes_list(
   token: &str,
   params: &GetHardwareNodesListParams,
 ) -> Result<HardwareNodesListResult, Error> {
-  let xnames = node_ops::resolve_hosts_expression(
-    infra,
-    token,
-    &params.xnames,
-    false,
-  )
-  .await?;
+  let xnames =
+    node_ops::resolve_hosts_expression(infra, token, &params.xnames, false)
+      .await?;
 
   if xnames.is_empty() {
     return Err(Error::BadRequest(

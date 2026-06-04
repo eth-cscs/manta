@@ -377,7 +377,8 @@ mod tests {
     assert_eq!(st_name, "deploy-cluster-action");
 
     // Verify session template configuration uses overridden name
-    let st_config = templates[0].get("configuration").unwrap().as_str().unwrap();
+    let st_config =
+      templates[0].get("configuration").unwrap().as_str().unwrap();
     assert_eq!(st_config, "new-value-v1.0.0");
   }
 

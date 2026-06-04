@@ -72,10 +72,7 @@ pub async fn get_sessions(
 
   let xnames = match q.xnames {
     Some(expr) => crate::service::node_ops::resolve_hosts_expression(
-      &infra,
-      &ctx.token,
-      &expr,
-      false,
+      &infra, &ctx.token, &expr, false,
     )
     .await
     .map_err(to_handler_error)?,

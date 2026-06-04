@@ -61,13 +61,9 @@ pub async fn prepare_session_deletion(
   session_name: &str,
   settings_hsm_group_name_opt: Option<&str>,
 ) -> Result<SessionDeletionContext, Error> {
-  let group_available_names = get_groups_names_available(
-    infra,
-    token,
-    None,
-    settings_hsm_group_name_opt,
-  )
-  .await?;
+  let group_available_names =
+    get_groups_names_available(infra, token, None, settings_hsm_group_name_opt)
+      .await?;
 
   tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();

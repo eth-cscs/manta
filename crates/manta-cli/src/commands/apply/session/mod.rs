@@ -5,11 +5,11 @@ use std::path::PathBuf;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
+use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::common::confirm;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 mod local_git_repo;
 

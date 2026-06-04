@@ -26,12 +26,12 @@ mod images;
 mod kernel_parameters;
 mod migrate;
 mod nodes;
-mod vcluster;
 mod power;
 mod redfish_endpoints;
 mod sat_file;
 mod sessions;
 mod templates;
+mod vcluster;
 
 pub use client::MantaClient;
 pub(super) use query::QueryBuilder;
@@ -42,15 +42,15 @@ pub use hardware_clusters::ApplyHwConfigurationRequest;
 pub use kernel_parameters::{
   AddKernelParametersRequest, ApplyKernelParametersRequest,
 };
-pub use vcluster::RestoreVclusterRequest;
 pub use sat_file::ApplySatImageRequest;
 pub use sessions::CreateSessionRequest;
 pub use templates::ApplyTemplateSessionRequest;
+pub use vcluster::RestoreVclusterRequest;
 
 #[cfg(test)]
 mod tests {
-  use super::wire::{redact_json_secrets, ws_base_url};
   use super::QueryBuilder;
+  use super::wire::{redact_json_secrets, ws_base_url};
 
   // ---- ws_base_url ----
 
@@ -234,9 +234,8 @@ mod tests {
 
   #[test]
   fn new_with_timeout_none_pins_url_and_site() {
-    let c =
-      MantaClient::new_with_timeout("http://stub.invalid", "alps", None)
-        .expect("construction with timeout=None must succeed");
+    let c = MantaClient::new_with_timeout("http://stub.invalid", "alps", None)
+      .expect("construction with timeout=None must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid/api/v1");
     assert_eq!(c.site_name(), "alps");
   }
@@ -264,8 +263,7 @@ mod tests {
   async fn new_with_timeout_some_fires_within_configured_window() {
     use std::time::Duration;
 
-    let listener =
-      tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let server = tokio::spawn(async move {
       if let Ok((_socket, _)) = listener.accept().await {
@@ -304,8 +302,7 @@ mod tests {
   async fn new_without_timeout_does_not_fire_inside_one_second() {
     use std::time::Duration;
 
-    let listener =
-      tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let server = tokio::spawn(async move {
       if let Ok((_socket, _)) = listener.accept().await {

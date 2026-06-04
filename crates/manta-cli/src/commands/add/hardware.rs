@@ -1,8 +1,8 @@
 //! Implements the `manta add hardware` command.
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 pub struct ExecParams<'a> {
   pub target_group: &'a str,

@@ -1,9 +1,9 @@
 //! Implements the `manta apply kernel-parameters` command.
 
+use crate::common::app_context::AppContext;
 use crate::http_client::{ApplyKernelParametersRequest, MantaClient};
 use crate::output::action_result;
 use anyhow::Error;
-use crate::common::app_context::AppContext;
 
 pub struct ExecParams<'a> {
   pub kernel_params: &'a str,

@@ -1,11 +1,11 @@
 //! Routes the `manta log` command to its exec function.
 
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use anyhow::{Context, Error};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 use manta_shared::types::params::session::GetSessionParams;
 
 /// Dispatch the `manta log` command to stream CFS session logs.

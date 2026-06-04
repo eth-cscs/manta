@@ -110,7 +110,11 @@ pub async fn migrate_backup(
   let infra = ctx.infra();
 
   infra
-    .migrate_backup(&ctx.token, body.bos.as_deref(), body.destination.as_deref())
+    .migrate_backup(
+      &ctx.token,
+      body.bos.as_deref(),
+      body.destination.as_deref(),
+    )
     .await
     .map_err(to_handler_error)?;
 

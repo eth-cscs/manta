@@ -27,8 +27,7 @@ pub async fn get_kernel_parameters(
   )
   .await?;
 
-  let boot_parameter_vec =
-    infra.get_bootparameters(token, &xname_vec).await?;
+  let boot_parameter_vec = infra.get_bootparameters(token, &xname_vec).await?;
 
   Ok(boot_parameter_vec)
 }

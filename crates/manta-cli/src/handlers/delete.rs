@@ -3,16 +3,16 @@
 use crate::commands::delete::{
   boot_parameters as delete_boot_parameters,
   configurations_and_derivatives as delete_configurations_and_derivatives,
-  group as delete_group, hardware as delete_hardware,
-  images as delete_images, kernel_parameters as delete_kernel_parameters,
-  node as delete_node, nodes as delete_nodes,
-  redfish_endpoint as delete_redfish_endpoint, session as delete_session,
+  group as delete_group, hardware as delete_hardware, images as delete_images,
+  kernel_parameters as delete_kernel_parameters, node as delete_node,
+  nodes as delete_nodes, redfish_endpoint as delete_redfish_endpoint,
+  session as delete_session,
 };
+use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
-use crate::common::app_context::AppContext;
 
 /// Dispatch `manta delete` subcommands (group, node,
 /// session, configuration, image, boot-parameters,

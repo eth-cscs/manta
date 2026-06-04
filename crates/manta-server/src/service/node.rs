@@ -140,8 +140,7 @@ pub async fn add_node(
 
   if let Some(hw_inventory) = hw_inventory_opt {
     tracing::info!("Adding hardware inventory for '{}'", id);
-    if let Err(error) =
-      infra.post_inventory_hardware(token, hw_inventory).await
+    if let Err(error) = infra.post_inventory_hardware(token, hw_inventory).await
     {
       rollback_node(infra, token, id).await;
       return Err(error);

@@ -1,9 +1,9 @@
 //! Implements the `manta apply boot group` command (and the deprecated
 //! `manta apply boot cluster` alias that forwards to it).
 
+use crate::common::app_context::AppContext;
 use crate::http_client::{ApplyBootConfigRequest, MantaClient};
 use crate::output::action_result;
-use crate::common::app_context::AppContext;
 
 pub struct ExecParams<'a> {
   pub boot_image: Option<&'a str>,

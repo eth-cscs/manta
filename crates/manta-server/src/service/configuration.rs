@@ -1,8 +1,8 @@
 //! CFS configuration queries, layer-detail lookups, and cascading deletion of
 //! all dependent resources (sessions, BOS templates, IMS images).
 
-use manta_backend_dispatcher::error::Error;
 use chrono::NaiveDateTime;
+use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 
 use crate::server::common::app_context::InfraContext;

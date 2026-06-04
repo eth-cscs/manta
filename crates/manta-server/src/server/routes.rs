@@ -6,7 +6,9 @@
 use std::sync::Arc;
 
 use axum::{
-  Extension, Router, http::StatusCode, middleware,
+  Extension, Router,
+  http::StatusCode,
+  middleware,
   routing::{delete, get, post},
 };
 use tower_http::timeout::TimeoutLayer;

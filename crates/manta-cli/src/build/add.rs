@@ -25,7 +25,9 @@ pub fn subcommand_add_node() -> Command {
     )
     .arg_required_else_help(true)
     .arg(arg!(-i --id <XNAME> "Xname to register").required(true))
-    .arg(arg!(-g --group <NAME> "Group to put the new node into").required(true))
+    .arg(
+      arg!(-g --group <NAME> "Group to put the new node into").required(true),
+    )
     .arg(
       arg!(-H --hardware <FILE> "File containing hardware information")
         .value_parser(value_parser!(PathBuf)),

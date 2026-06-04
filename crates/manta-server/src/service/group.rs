@@ -4,8 +4,8 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::node_ops;
 use crate::service::authorization::get_groups_names_available;
+use crate::service::node_ops;
 pub use manta_shared::types::params::group::GetGroupParams;
 
 /// Validate that `group_name` is in the set this token can access.
@@ -118,13 +118,9 @@ pub async fn delete_group_members(
   xnames_expression: &str,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let xnames = node_ops::resolve_hosts_expression(
-    infra,
-    token,
-    xnames_expression,
-    false,
-  )
-  .await?;
+  let xnames =
+    node_ops::resolve_hosts_expression(infra, token, xnames_expression, false)
+      .await?;
 
   if dry_run {
     return Ok(());
@@ -149,13 +145,9 @@ pub async fn add_nodes_to_group(
   target_hsm_name: &str,
   hosts_expression: &str,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
-  let xname_to_move_vec = node_ops::resolve_hosts_expression(
-    infra,
-    token,
-    hosts_expression,
-    false,
-  )
-  .await?;
+  let xname_to_move_vec =
+    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
+      .await?;
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::BadRequest(

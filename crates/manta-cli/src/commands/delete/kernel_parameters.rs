@@ -1,9 +1,9 @@
 //! Implements the `manta delete kernel-parameters` command.
 
+use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
 use anyhow::Error;
-use crate::common::app_context::AppContext;
 
 pub struct ExecParams<'a> {
   pub kernel_params: &'a str,
@@ -21,8 +21,7 @@ pub async fn exec(
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
-  let xnames_expression =
-    if p.hsm_group.is_none() { p.nodes } else { None };
+  let xnames_expression = if p.hsm_group.is_none() { p.nodes } else { None };
   let result = MantaClient::new(server_url, ctx.site_name)?
     .delete_kernel_parameters(
       token,
