@@ -6,23 +6,28 @@ use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
+pub struct ExecParams<'a> {
+  pub target_group: Option<&'a str>,
+  pub parent_group: Option<&'a str>,
+  pub pattern: &'a str,
+  pub dry_run: bool,
+  pub delete_group: bool,
+  pub output: Option<&'a str>,
+}
+
 /// Remove hardware components from a cluster group.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
-  target_hsm_group_name_arg_opt: Option<&str>,
-  parent_hsm_group_name_arg_opt: Option<&str>,
-  pattern: &str,
-  dryrun: bool,
-  delete_hsm_group: bool,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
-  let target = target_hsm_group_name_arg_opt
+  let target = p
+    .target_group
     .or(ctx.settings_hsm_group_name_opt)
     .ok_or_else(|| anyhow!("No target HSM group specified"))?;
-  let parent = parent_hsm_group_name_arg_opt
+  let parent = p
+    .parent_group
     .or(ctx.settings_hsm_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
   let result = MantaClient::new(server_url, ctx.site_name)?
@@ -30,16 +35,16 @@ pub async fn exec(
       token,
       target,
       parent,
-      pattern,
-      delete_hsm_group,
-      dryrun,
+      p.pattern,
+      p.delete_group,
+      p.dry_run,
     )
     .await?;
-  let message = if dryrun {
+  let message = if p.dry_run {
     "Dry run enabled, not modifying the HSM groups on the system."
   } else {
     "Hardware components removed."
   };
-  action_result::print_with_data(message, &result, output_opt)?;
+  action_result::print_with_data(message, &result, p.output)?;
   Ok(())
 }

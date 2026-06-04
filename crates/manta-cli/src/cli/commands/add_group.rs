@@ -8,22 +8,25 @@ use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 use manta_shared::shared::dto::Group;
 
+pub struct ExecParams<'a> {
+  pub label: &'a str,
+  pub description: Option<&'a str>,
+  pub hosts_expression: Option<&'a str>,
+  pub assume_yes: bool,
+  pub dry_run: bool,
+  pub output: Option<&'a str>,
+}
+
 /// CLI adapter for `manta add group`.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   auth_token: &str,
-  label: &str,
-  description: Option<&str>,
-  hosts_expression_opt: Option<&str>,
-  assume_yes: bool,
-  dryrun: bool,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let grp = Group {
-    label: label.to_string(),
-    description: description.map(String::from),
+    label: p.label.to_string(),
+    description: p.description.map(String::from),
     tags: None,
     members: None,
     exclusive_group: Some("false".to_string()),
@@ -35,12 +38,12 @@ pub async fn exec(
       serde_json::to_string_pretty(&grp)
         .context("Failed to serialize group")?
     ),
-    assume_yes,
+    p.assume_yes,
   ) {
     bail!("Operation cancelled by user");
   }
 
-  if dryrun {
+  if p.dry_run {
     println!(
       "Dryrun mode: The group below would be created:\n{}",
       serde_json::to_string_pretty(&grp)
@@ -52,11 +55,11 @@ pub async fn exec(
   let client = MantaClient::new(server_url, ctx.site_name)?;
   client.create_group(auth_token, grp).await?;
 
-  if let Some(expr) = hosts_expression_opt {
-    client.add_nodes_to_group(auth_token, label, expr).await?;
+  if let Some(expr) = p.hosts_expression {
+    client.add_nodes_to_group(auth_token, p.label, expr).await?;
   }
 
-  action_result::print(&format!("Group '{label}' created"), output_opt)?;
+  action_result::print(&format!("Group '{}' created", p.label), p.output)?;
 
   Ok(())
 }

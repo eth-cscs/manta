@@ -51,21 +51,17 @@ pub async fn handle_delete(
       .await?;
     }
     Some(("hardware", m)) => {
-      let dryrun = m.get_flag("dry-run");
-      let delete_hsm_group = m.get_flag("delete-group");
-      let target_hsm_group_name_arg_opt = m.opt_str("target-group");
-      let parent_hsm_group_name_arg_opt = m.opt_str("parent-group");
-      let pattern = m.req_str("pattern")?;
-      let output_opt = m.opt_str("output");
       delete_hw_component_group::exec(
         ctx,
         &token,
-        target_hsm_group_name_arg_opt,
-        parent_hsm_group_name_arg_opt,
-        pattern,
-        dryrun,
-        delete_hsm_group,
-        output_opt,
+        delete_hw_component_group::ExecParams {
+          target_group: m.opt_str("target-group"),
+          parent_group: m.opt_str("parent-group"),
+          pattern: m.req_str("pattern")?,
+          dry_run: m.get_flag("dry-run"),
+          delete_group: m.get_flag("delete-group"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }

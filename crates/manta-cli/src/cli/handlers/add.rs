@@ -38,38 +38,32 @@ pub async fn handle_add(
       .await?;
     }
     Some(("node", m)) => {
-      let id = m.req_str("id")?;
-      let group = m.req_str("group")?;
-      let hardware_file_opt = m.get_one::<PathBuf>("hardware");
-      let arch_opt = m.opt_string("arch");
-      let enabled = !m.get_flag("disabled");
-      let output_opt = m.opt_str("output");
       add_node::exec(
         ctx,
         &token,
-        id,
-        group,
-        enabled,
-        arch_opt,
-        hardware_file_opt,
-        output_opt,
+        add_node::ExecParams {
+          id: m.req_str("id")?,
+          group: m.req_str("group")?,
+          enabled: !m.get_flag("disabled"),
+          arch: m.opt_string("arch"),
+          hardware_file: m.get_one::<PathBuf>("hardware"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }
     Some(("group", m)) => {
-      let label = m.req_str("label")?;
-      let description = m.opt_str("description");
-      let node_expression = m.opt_str("nodes");
-      let output_opt = m.opt_str("output");
       add_group::exec(
         ctx,
         &token,
-        label,
-        description,
-        node_expression,
-        true,
-        false,
-        output_opt,
+        add_group::ExecParams {
+          label: m.req_str("label")?,
+          description: m.opt_str("description"),
+          hosts_expression: m.opt_str("nodes"),
+          assume_yes: true,
+          dry_run: false,
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }
@@ -84,19 +78,17 @@ pub async fn handle_add(
         .opt_str("parent-group")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
-      let dryrun = m.get_flag("dry-run");
-      let create_hsm_group =
-        *m.get_one::<bool>("create-group").unwrap_or(&false);
-      let output_opt = m.opt_str("output");
       add_hw_component_group::exec(
         ctx,
         &token,
-        target,
-        parent,
-        m.req_str("pattern")?,
-        dryrun,
-        create_hsm_group,
-        output_opt,
+        add_hw_component_group::ExecParams {
+          target_group: target,
+          parent_group: parent,
+          pattern: m.req_str("pattern")?,
+          dry_run: m.get_flag("dry-run"),
+          create_group: *m.get_one::<bool>("create-group").unwrap_or(&false),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }
