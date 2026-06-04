@@ -1,6 +1,6 @@
 //! Routes `manta restore *` subcommands to their exec functions.
 
-use crate::commands::migrate::restore as migrate_restore;
+use crate::commands::restore::vcluster as restore_vcluster;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};
@@ -16,10 +16,10 @@ pub async fn handle_restore(
 
   match cli_restore.subcommand() {
     Some(("vcluster", m)) => {
-      migrate_restore::exec(
+      restore_vcluster::exec(
         ctx,
         &token,
-        migrate_restore::ExecParams {
+        restore_vcluster::ExecParams {
           bos_file: m.opt_str("bos-file"),
           cfs_file: m.opt_str("cfs-file"),
           hsm_file: m.opt_str("hsm-file"),

@@ -19,14 +19,14 @@ pub async fn handle_apply(
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
       Some(("group", m)) => {
-        commands::apply::hw_group::exec(m, ctx, &token).await?
+        commands::apply::hardware_group::exec(m, ctx, &token).await?
       }
       Some(("cluster", m)) => {
         eprintln!(
           "warning: 'manta apply hardware cluster' is deprecated; \
            use 'manta apply hardware group' instead.",
         );
-        commands::apply::hw_group::exec(m, ctx, &token).await?
+        commands::apply::hardware_group::exec(m, ctx, &token).await?
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),
@@ -102,10 +102,10 @@ pub async fn handle_apply(
       let dry_run: bool = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
 
-      commands::apply::sat_file::command::exec(
+      commands::apply::sat_file::exec::exec(
         ctx,
         &token,
-        &commands::apply::sat_file::command::SatApplyOptions {
+        &commands::apply::sat_file::exec::SatApplyOptions {
           sat_file_content: sat_file_content.as_str(),
           values_file_content_opt: cli_values_file_content_opt.as_deref(),
           values_cli_opt: cli_value_vec_opt.as_deref(),

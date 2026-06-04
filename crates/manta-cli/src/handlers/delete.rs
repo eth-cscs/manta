@@ -1,14 +1,13 @@
 //! Routes `manta delete *` subcommands to their exec functions.
 
 use crate::commands::delete::{
-  and_cancel_session as delete_and_cancel_session,
   boot_parameters as delete_boot_parameters,
   configurations_and_derivatives as delete_configurations_and_derivatives,
-  group as delete_group, hw_component_group as delete_hw_component_group,
+  group as delete_group, hardware as delete_hardware,
   images as delete_images, kernel_parameters as delete_kernel_parameters,
-  node as delete_node, redfish_endpoint as delete_redfish_endpoint,
+  node as delete_node, nodes as delete_nodes,
+  redfish_endpoint as delete_redfish_endpoint, session as delete_session,
 };
-use crate::commands::remove_nodes_from_hsm_groups;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
@@ -43,7 +42,7 @@ pub async fn handle_delete(
       let hosts_expression = m.req_str("nodes")?;
       let dryrun = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      remove_nodes_from_hsm_groups::exec(
+      delete_nodes::exec(
         ctx,
         &token,
         target_hsm_name,
@@ -54,10 +53,10 @@ pub async fn handle_delete(
       .await?;
     }
     Some(("hardware", m)) => {
-      delete_hw_component_group::exec(
+      delete_hardware::exec(
         ctx,
         &token,
-        delete_hw_component_group::ExecParams {
+        delete_hardware::ExecParams {
           target_group: m.opt_str("target-group"),
           parent_group: m.opt_str("parent-group"),
           pattern: m.req_str("pattern")?,
@@ -113,7 +112,7 @@ pub async fn handle_delete(
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      if let Err(e) = delete_and_cancel_session::exec(
+      if let Err(e) = delete_session::exec(
         ctx,
         &token,
         session_name,

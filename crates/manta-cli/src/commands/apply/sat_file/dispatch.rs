@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use super::{command::SatApplyOptions, plan::SatElement};
+use super::{exec::SatApplyOptions, plan::SatElement};
 use crate::http_client::{ApplySatImageRequest, MantaClient};
 
 /// Dispatch every element in the plan in order. For each `Image`, the

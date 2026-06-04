@@ -1,9 +1,8 @@
 //! Routes `manta migrate *` subcommands to their exec functions.
 
-use crate::commands::migrate::{
-  backup as migrate_backup, nodes_between_groups as migrate_nodes_between_hsm_groups,
-  restore as migrate_restore,
-};
+use crate::commands::backup::vcluster as backup_vcluster;
+use crate::commands::migrate::nodes_between_groups as migrate_nodes_between_hsm_groups;
+use crate::commands::restore::vcluster as restore_vcluster;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
@@ -61,10 +60,10 @@ pub async fn handle_migrate(
           "warning: 'manta migrate vCluster backup' is deprecated; \
            use 'manta backup vcluster' instead.",
         );
-        migrate_backup::exec(
+        backup_vcluster::exec(
           ctx,
           &token,
-          migrate_backup::ExecParams {
+          backup_vcluster::ExecParams {
             bos: m.opt_str("bos"),
             destination: m.opt_str("destination"),
             prehook: m.opt_str("pre-hook"),
@@ -79,10 +78,10 @@ pub async fn handle_migrate(
           "warning: 'manta migrate vCluster restore' is deprecated; \
            use 'manta restore vcluster' instead.",
         );
-        migrate_restore::exec(
+        restore_vcluster::exec(
           ctx,
           &token,
-          migrate_restore::ExecParams {
+          restore_vcluster::ExecParams {
             bos_file: m.opt_str("bos-file"),
             cfs_file: m.opt_str("cfs-file"),
             hsm_file: m.opt_str("hsm-file"),

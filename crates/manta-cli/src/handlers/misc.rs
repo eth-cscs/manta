@@ -4,8 +4,8 @@
 //! module exists solely to keep the old top-level spellings working
 //! during the deprecation grace period.
 
-use crate::commands::add::nodes_to_hsm_groups as add_nodes_to_hsm_groups;
-use crate::commands::remove_nodes_from_hsm_groups;
+use crate::commands::add::nodes as add_nodes;
+use crate::commands::delete::nodes as delete_nodes;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};
@@ -30,7 +30,7 @@ pub async fn handle_misc(
       let hosts_expression = m.req_str("nodes")?;
       let target_hsm_name = m.req_str("group")?;
       let output_opt = m.opt_str("output");
-      add_nodes_to_hsm_groups::exec(
+      add_nodes::exec(
         ctx,
         &token,
         target_hsm_name,
@@ -49,7 +49,7 @@ pub async fn handle_misc(
       let nodes = m.req_str("nodes")?;
       let target_hsm_name = m.req_str("group")?;
       let output_opt = m.opt_str("output");
-      remove_nodes_from_hsm_groups::exec(
+      delete_nodes::exec(
         ctx,
         &token,
         target_hsm_name,

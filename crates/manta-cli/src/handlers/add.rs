@@ -2,9 +2,8 @@
 
 use crate::commands::add::{
   boot_parameters as add_boot_parameters, group as add_group,
-  hw_component_group as add_hw_component_group,
-  kernel_parameters as add_kernel_parameters, node as add_node,
-  nodes_to_hsm_groups as add_nodes_to_hsm_groups,
+  hardware as add_hardware, kernel_parameters as add_kernel_parameters,
+  node as add_node, nodes as add_nodes,
   redfish_endpoint as add_redfish_endpoint,
 };
 use crate::common::authentication::get_api_token;
@@ -29,7 +28,7 @@ pub async fn handle_add(
       let hosts_expression = m.req_str("nodes")?;
       let dryrun = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      add_nodes_to_hsm_groups::exec(
+      add_nodes::exec(
         ctx,
         &token,
         target_hsm_name,
@@ -80,10 +79,10 @@ pub async fn handle_add(
         .opt_str("parent-group")
         .or(ctx.settings_hsm_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
-      add_hw_component_group::exec(
+      add_hardware::exec(
         ctx,
         &token,
-        add_hw_component_group::ExecParams {
+        add_hardware::ExecParams {
           target_group: target,
           parent_group: parent,
           pattern: m.req_str("pattern")?,

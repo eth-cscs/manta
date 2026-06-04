@@ -1,6 +1,6 @@
 //! The `manta apply sat-file` command and its supporting modules.
 //!
-//! - [`command`] — entry point: render Jinja2, parse, filter, build
+//! - [`exec`] — entry point: render Jinja2, parse, filter, build
 //!   the plan, preview + confirm, then dispatch.
 //! - [`plan`] — walks the parsed SAT `Value` and returns
 //!   `Vec<SatElement>` in execution order, applying the
@@ -15,8 +15,8 @@
 //! filter and plan logic moved here from manta-shared once the CLI
 //! gained ownership of the execution order.
 
-pub mod command;
 pub mod dispatch;
+pub mod exec;
 pub mod plan;
 // -- TESTS --
 #[cfg(test)]

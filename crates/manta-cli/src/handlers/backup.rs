@@ -1,6 +1,6 @@
 //! Routes `manta backup *` subcommands to their exec functions.
 
-use crate::commands::migrate::backup as migrate_backup;
+use crate::commands::backup::vcluster as backup_vcluster;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};
@@ -16,10 +16,10 @@ pub async fn handle_backup(
 
   match cli_backup.subcommand() {
     Some(("vcluster", m)) => {
-      migrate_backup::exec(
+      backup_vcluster::exec(
         ctx,
         &token,
-        migrate_backup::ExecParams {
+        backup_vcluster::ExecParams {
           bos: m.opt_str("bos"),
           destination: m.opt_str("destination"),
           prehook: m.opt_str("pre-hook"),

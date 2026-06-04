@@ -1,6 +1,6 @@
 //! Routes `manta console *` subcommands to their exec functions.
 
-use crate::commands::console::common as console_common;
+use crate::commands::console as console_common;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;

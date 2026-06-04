@@ -1,11 +1,12 @@
 //! Routes `manta get *` subcommands to their exec functions.
 
 use crate::commands::get::{
-  boot_parameters as get_boot_parameters, configuration as get_configuration,
-  group as get_group, group_hardware as get_group_hardware,
-  group_nodes as get_group_nodes, hardware_nodes as get_hardware_nodes,
-  images as get_images, kernel_parameters as get_kernel_parameters,
-  nodes as get_nodes, session as get_session, template as get_template,
+  boot_parameters as get_boot_parameters,
+  configurations as get_configurations, group_hardware as get_group_hardware,
+  group_nodes as get_group_nodes, groups as get_groups,
+  hardware_nodes as get_hardware_nodes, images as get_images,
+  kernel_parameters as get_kernel_parameters, nodes as get_nodes,
+  sessions as get_sessions, templates as get_templates,
 };
 use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
@@ -22,7 +23,7 @@ pub async fn handle_get(
   let token = get_api_token(ctx).await?;
 
   match cli_get.subcommand() {
-    Some(("groups", m)) => get_group::exec(ctx, &token, m).await?,
+    Some(("groups", m)) => get_groups::exec(ctx, &token, m).await?,
     Some(("group-nodes", m)) => get_group_nodes::exec(ctx, &token, m).await?,
     Some(("group-hardware", m)) => {
       get_group_hardware::exec(ctx, &token, m).await?
@@ -40,10 +41,10 @@ pub async fn handle_get(
       None => bail!("No 'get hardware' subcommand provided"),
     },
     Some(("configurations", m)) => {
-      get_configuration::exec(ctx, &token, m).await?
+      get_configurations::exec(ctx, &token, m).await?
     }
-    Some(("sessions", m)) => get_session::exec(ctx, &token, m).await?,
-    Some(("templates", m)) => get_template::exec(ctx, &token, m).await?,
+    Some(("sessions", m)) => get_sessions::exec(ctx, &token, m).await?,
+    Some(("templates", m)) => get_templates::exec(ctx, &token, m).await?,
     Some(("cluster", m)) => {
       eprintln!(
         "warning: 'manta get cluster' is deprecated; \
