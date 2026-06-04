@@ -8,8 +8,8 @@ use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch `manta config` subcommands (show, set, unset,
-/// gen-autocomplete).
+/// Dispatch `manta config` subcommands (show, set, unset, plus the
+/// deprecated `gen-autocomplete` alias).
 pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -46,8 +46,12 @@ pub async fn handle_config(
       None => bail!("No 'config unset' subcommand provided"),
     },
     Some(("gen-autocomplete", m)) => {
+      eprintln!(
+        "warning: 'manta config gen-autocomplete' is deprecated; \
+         use 'manta gen-autocomplete' instead.",
+      );
       let cli = crate::build::build_cli();
-      commands::config::gen_autocomplete::exec(cli, m)?;
+      commands::gen_autocomplete::exec(cli, m)?;
     }
     Some((other, _)) => bail!("Unknown 'config' subcommand: {other}"),
     None => bail!("No 'config' subcommand provided"),

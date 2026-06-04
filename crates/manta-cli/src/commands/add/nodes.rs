@@ -1,5 +1,4 @@
-//! Implements the `manta add nodes` command (and the deprecated
-//! `manta add-nodes-to-groups` alias that forwards to it).
+//! Implements the `manta add nodes` command.
 
 use anyhow::{Error, bail};
 

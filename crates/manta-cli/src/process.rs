@@ -1,12 +1,12 @@
 //! Top-level CLI dispatch: matches the parsed command tree and calls handlers.
 
 use crate::common::app_context::AppContext;
-use anyhow::Error;
+use anyhow::{Error, bail};
 use clap::ArgMatches;
 
 use crate::handlers::{
-  add, apply, backup, config, console, delete, deprecated_aliases, get, log,
-  migrate, power, restore, run, update,
+  add, apply, backup, config, console, delete, gen_autocomplete, get, log,
+  migrate, power, restore, run, update, upgrade,
 };
 
 /// Parse CLI arguments and dispatch to the appropriate
@@ -29,7 +29,12 @@ pub async fn process_cli(
     Some(("restore", m)) => restore::handle_restore(m, ctx).await?,
     Some(("run", m)) => run::handle_run(m, ctx).await?,
     Some(("delete", m)) => delete::handle_delete(m, ctx).await?,
-    _ => deprecated_aliases::handle_deprecated_aliases(cli_root, ctx).await?,
+    Some(("gen-autocomplete", m)) => {
+      gen_autocomplete::handle_gen_autocomplete(m, ctx).await?
+    }
+    Some(("upgrade", m)) => upgrade::handle_upgrade(m, ctx).await?,
+    Some((other, _)) => bail!("Unknown command: {other}"),
+    None => bail!("No command provided"),
   }
   Ok(())
 }

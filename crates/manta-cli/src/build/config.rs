@@ -1,8 +1,8 @@
 //! Clap definitions for `manta config *` subcommands.
 
-use clap::{Command, ValueHint, arg, value_parser};
-use std::path::PathBuf;
+use clap::{Command, arg};
 
+use super::gen_autocomplete::subcommand_gen_autocomplete;
 use super::output_flag;
 
 pub fn subcommand_config() -> Command {
@@ -62,16 +62,7 @@ pub fn subcommand_config() -> Command {
         .subcommand(subcommand_config_unset_auth),
     )
     .subcommand(
-      Command::new("gen-autocomplete")
-        .about("Generate shell completion scripts")
-        .arg(
-          arg!(-s --shell <SHELL> "Shell type (guessed from $SHELL if omitted)")
-            .value_parser(["bash", "zsh", "fish"]),
-        )
-        .arg(
-          arg!(-p --path <PATH> "Directory to write the script (prints to stdout if omitted)")
-            .value_parser(value_parser!(PathBuf))
-            .value_hint(ValueHint::DirPath),
-        ),
+      subcommand_gen_autocomplete()
+        .about("[DEPRECATED] Use 'manta gen-autocomplete' instead"),
     )
 }

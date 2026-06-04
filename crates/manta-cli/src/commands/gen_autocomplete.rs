@@ -1,4 +1,6 @@
-//! Implements the `manta config gen-autocomplete` command.
+//! Implements the `manta gen-autocomplete` command (and the
+//! deprecated `manta config gen-autocomplete` alias that forwards
+//! to it).
 
 use clap::{ArgMatches, Command};
 use clap_complete::{generate, generate_to};

@@ -20,21 +20,6 @@ pub fn subcommand_delete() -> Command {
     .subcommand(subcommand_delete_redfish_endpoint())
 }
 
-/// Deprecated top-level alias for `manta delete nodes`, kept for
-/// one release. Wired into `build_cli` directly so the old spelling
-/// keeps resolving.
-pub fn subcommand_remove_nodes_from_groups() -> Command {
-  Command::new("remove-nodes-from-groups")
-    .about("[DEPRECATED] Use 'manta delete nodes' instead")
-    .arg(arg!(-g --group <NAME> "Group to remove the nodes from"))
-    .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
-    .arg(output_flag())
-}
-
 /// `manta delete nodes` — remove nodes from a group's membership.
 /// Distinct from `delete node` (singular), which removes the node
 /// from the system inventory entirely.

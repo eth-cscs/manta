@@ -182,16 +182,3 @@ pub fn subcommand_add_nodes() -> Command {
     .arg(output_flag())
 }
 
-/// DEPRECATED top-level form retained for one release. New name:
-/// `manta add nodes --group <name> --nodes <expr>`.
-pub fn subcommand_add_nodes_to_groups() -> Command {
-  Command::new("add-nodes-to-groups")
-    .about("[DEPRECATED] Use 'manta add nodes' instead")
-    .arg(arg!(-g --group <NAME> "Group to add the nodes to"))
-    .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
-    .arg(output_flag())
-}

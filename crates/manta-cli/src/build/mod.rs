@@ -13,6 +13,7 @@ mod backup;
 mod config;
 mod console;
 mod delete;
+mod gen_autocomplete;
 pub(crate) mod get;
 mod log;
 mod migrate;
@@ -20,6 +21,7 @@ mod power;
 mod restore;
 mod run;
 mod update;
+mod upgrade;
 
 const CLI_TERM_WIDTH: usize = 100;
 
@@ -75,8 +77,8 @@ pub fn build_cli() -> Command {
     .subcommand(power::subcommand_power())
     .subcommand(log::subcommand_log())
     .subcommand(console::subcommand_console())
-    .subcommand(add::subcommand_add_nodes_to_groups())
-    .subcommand(delete::subcommand_remove_nodes_from_groups())
+    .subcommand(gen_autocomplete::subcommand_gen_autocomplete())
+    .subcommand(upgrade::subcommand_upgrade())
 }
 
 #[cfg(test)]
