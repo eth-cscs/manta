@@ -1,4 +1,14 @@
-// Code below inspired on https://github.com/rust-lang/git2-rs/issues/561
+//! Local-Git-repo helpers for `manta run session`.
+//!
+//! Wraps `git2` to open the operator's working repo, read its HEAD
+//! commit, derive the bare-repo name from its remote URL, and push
+//! the current branch to that remote. The `apply session` flow
+//! relies on these to ensure the configuration session runs against
+//! a known-good commit that's been mirrored to the system VCS.
+//!
+//! See <https://github.com/rust-lang/git2-rs/issues/561> for the
+//! pattern used here.
+
 use std::path::{Path, PathBuf};
 
 use anyhow::{Error, anyhow};

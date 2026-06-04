@@ -17,7 +17,7 @@ pub struct ExecParams<'a> {
   pub output: Option<&'a str>,
 }
 
-/// CLI adapter for `manta update boot-parameters`.
+/// CLI adapter for `manta apply boot-parameters`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

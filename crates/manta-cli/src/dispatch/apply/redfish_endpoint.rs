@@ -10,9 +10,8 @@ use manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams;
 /// CLI adapter for `manta apply redfish-endpoint`. Takes
 /// `UpdateRedfishEndpointParams` directly — the shared wire-type
 /// struct is the natural request body and already groups every
-/// field. (The struct name still says "Update" because that's the
-/// underlying HTTP operation against the wire endpoint; this CLI
-/// command is the canonical surface for it.)
+/// field. The wire type retains the `Update` prefix because that's
+/// the HTTP-API operation name (`PUT /redfish-endpoints`).
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

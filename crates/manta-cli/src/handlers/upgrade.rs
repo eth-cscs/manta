@@ -1,8 +1,8 @@
 //! Routes the `manta upgrade` command to its exec function.
 //!
-//! Unlike every other handler, this one does NOT call
-//! `get_api_token(ctx)` — `manta upgrade` talks to GitHub releases, not
-//! to the manta server, so there's no token to bootstrap.
+//! Like `gen_autocomplete` and `gen_man`, this handler does NOT call
+//! `get_api_token(ctx)` — `manta upgrade` talks to GitHub releases,
+//! not the manta server, so there's no token to bootstrap.
 
 use anyhow::Error;
 use clap::ArgMatches;
