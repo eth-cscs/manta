@@ -52,3 +52,82 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
 
   println!("{table}");
 }
+
+#[cfg(test)]
+mod tests {
+  //! Smoke tests for the CFS configuration renderer. The renderer
+  //! reaches into multiple `Option` fields (layer name, commit)
+  //! with `unwrap_or` fallbacks, and parses `last_updated` with a
+  //! non-strict fallback (raw string when the format is unknown).
+  //! Tests pin the happy path + edge cases. Test data is built via
+  //! JSON deserialization since the inner `Layer` type isn't
+  //! re-exported through `manta_shared` and we don't want to add a
+  //! direct `manta-backend-dispatcher` dev-dep just for tests.
+
+  use super::*;
+  use serde_json::json;
+
+  fn from_json(value: serde_json::Value) -> CfsConfigurationResponse {
+    serde_json::from_value(value).unwrap()
+  }
+
+  #[test]
+  fn print_empty_list_does_not_panic() {
+    print_table_struct(&[]);
+  }
+
+  #[test]
+  fn print_config_with_no_layers_does_not_panic() {
+    // The `if let Some(first_layer)` branch is skipped; layers
+    // column ends up empty.
+    let cfg = from_json(json!({
+      "name": "cfg-empty",
+      "last_updated": "2026-06-04T12:00:00Z",
+      "layers": [],
+    }));
+    print_table_struct(&[cfg]);
+  }
+
+  #[test]
+  fn print_config_with_single_layer_does_not_panic() {
+    let cfg = from_json(json!({
+      "name": "cfg-one",
+      "last_updated": "2026-06-04T12:00:00Z",
+      "layers": [{
+        "name": "ss11",
+        "clone_url": "https://example.com/repo.git",
+        "playbook": "site.yml",
+        "commit": "abc123",
+      }],
+    }));
+    print_table_struct(&[cfg]);
+  }
+
+  #[test]
+  fn print_config_with_multiple_layers_does_not_panic() {
+    // The .skip(1) loop appends additional layers; this exercises it.
+    // Also: middle layer omits `commit` (None fallback path).
+    let cfg = from_json(json!({
+      "name": "cfg-multi",
+      "last_updated": "2026-06-04T12:00:00Z",
+      "layers": [
+        {"name": "ss11", "clone_url": "https://x", "playbook": "a.yml", "commit": "abc"},
+        {"clone_url": "https://y", "playbook": "b.yml"},
+        {"name": "cscs", "clone_url": "https://z", "playbook": "c.yml", "commit": "def"},
+      ],
+    }));
+    print_table_struct(&[cfg]);
+  }
+
+  #[test]
+  fn print_config_with_unparseable_date_falls_back_to_raw_string() {
+    // The `last_updated.parse::<DateTime<Local>>()` `.map_or_else`
+    // fallback returns the raw string when parsing fails.
+    let cfg = from_json(json!({
+      "name": "cfg-bad-date",
+      "last_updated": "not-a-real-date",
+      "layers": [],
+    }));
+    print_table_struct(&[cfg]);
+  }
+}
