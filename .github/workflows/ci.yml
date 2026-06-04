@@ -14,10 +14,22 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # contents: write is required by the "Regenerate and commit generated
+    # docs" step, which runs only on push to main and pushes the
+    # regenerated man pages + shell completions back. On pull_request
+    # this permission has no effect because the regen step is skipped.
+    permissions:
+      contents: write
+
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+        # Need full history + a real token so the post-push step
+        # below can `git push` back to main when on a push event.
+        # On pull_request the default ephemeral token is fine.
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
     # Install the Rust toolchain pinned by rust-toolchain.toml at the
     # workspace root. Without this, the workflow uses whatever Rust
     # ships preinstalled on the ubuntu-latest runner image — typically
@@ -86,12 +98,14 @@ jobs:
       run: cargo install cargo-machete --version 0.9.2 --locked
     - name: Run cargo machete
       run: cargo machete
-    # Verify that the checked-in man pages and shell-completion scripts
-    # are in sync with the current clap definition. `build.rs` only
-    # regenerates them when MANTA_REGENERATE_DOCS=1 is set, so a clap
-    # change that the contributor forgot to regenerate would otherwise
-    # ship stale docs. Run the regen, then fail if git sees any diff.
-    - name: Check generated docs are up to date
+    # On pull_request: verify that the checked-in man pages and shell-
+    # completion scripts are in sync with the current clap definition.
+    # `build.rs` only regenerates them when MANTA_REGENERATE_DOCS=1 is
+    # set, so a clap change a contributor forgot to regenerate would
+    # otherwise ship stale docs. Fail loudly so the PR author knows to
+    # run the regen + commit locally.
+    - name: Verify generated docs are up to date (PRs only)
+      if: github.event_name == 'pull_request'
       run: |
         MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli
         if ! git diff --exit-code -- crates/manta-cli/man crates/manta-cli/autocomplete_shell_scripts; then
@@ -99,6 +113,25 @@ jobs:
           echo "Run 'MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli' and commit the diff."
           exit 1
         fi
+    # On push to main: regenerate, and if anything actually changed,
+    # commit + push the result back. Without this, cargo-release's
+    # version bumps leave manta.1's embedded version string stale on
+    # every release until someone notices the next PR failing. The
+    # `[skip ci]` marker on the auto-commit prevents this workflow
+    # from re-triggering itself.
+    - name: Regenerate and commit generated docs (main only)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli
+        if git diff --quiet -- crates/manta-cli/man crates/manta-cli/autocomplete_shell_scripts; then
+          echo "Generated docs already in sync; nothing to commit."
+          exit 0
+        fi
+        git config user.name  "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add crates/manta-cli/man crates/manta-cli/autocomplete_shell_scripts
+        git commit -m "chore(cli): regenerate man pages + shell completions [skip ci]"
+        git push origin HEAD:main
 
   # Validate that both Dockerfiles still build and produce a runnable
   # binary. Runs in parallel with the cargo `build` job above (no
