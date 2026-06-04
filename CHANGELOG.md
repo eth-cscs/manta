@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.26] - 2026-06-04
+
+### Documentation
+
+- Refresh ARCHITECTURE and CLAUDE after the naming-clarity work
+- Refresh three stale in-source path references
+
+### Miscellaneous Tasks
+
+- Drop unused `config` crate dependency
+
 ## [2.0.0-beta.25] - 2026-06-04
 
 ### Documentation
