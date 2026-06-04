@@ -95,16 +95,17 @@ pub async fn handle_delete(
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let dryrun = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
+      let _ = (assume_yes, do_not_reboot);
       delete_kernel_parameters::exec(
         ctx,
         &token,
-        hsm_group_name_arg_opt,
-        nodes,
-        kernel_parameters,
-        assume_yes,
-        do_not_reboot,
-        dryrun,
-        output_opt,
+        delete_kernel_parameters::ExecParams {
+          kernel_params: kernel_parameters,
+          nodes,
+          hsm_group: hsm_group_name_arg_opt,
+          dry_run: dryrun,
+          output: output_opt,
+        },
       )
       .await?;
     }

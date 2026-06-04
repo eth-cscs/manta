@@ -77,92 +77,69 @@ impl PowerAction {
   }
 }
 
+/// Options shared by `exec_nodes` and `exec_cluster`.
+pub struct PowerOpts<'a> {
+  pub action: PowerAction,
+  pub target: &'a str,
+  pub force: bool,
+  pub no_wait: bool,
+  pub assume_yes: bool,
+  pub output: &'a str,
+}
+
 /// Execute a power action against a list of nodes resolved
 /// from a hosts expression.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec_nodes(
   ctx: &AppContext<'_>,
-  action: PowerAction,
-  hosts_expression: &str,
-  force: bool,
-  no_wait: bool,
-  assume_yes: bool,
-  output: &str,
   token: &str,
+  opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
-  println!("Nodes expression: {hosts_expression}");
-  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
-  {
+  println!("Nodes expression: {}", opts.target);
+  if !common::user_interaction::confirm(
+    opts.action.confirmation_text(),
+    opts.assume_yes,
+  ) {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(
-    ctx,
-    token,
-    action,
-    hosts_expression,
-    "nodes",
-    force,
-    no_wait,
-    output,
-  )
-  .await
+  dispatch_and_wait(ctx, token, &opts, "nodes").await
 }
 
 /// Execute a power action against all nodes in an HSM group
 /// (cluster).
-#[allow(clippy::too_many_arguments)]
 pub async fn exec_cluster(
   ctx: &AppContext<'_>,
-  action: PowerAction,
-  hsm_group_name_arg: &str,
-  force: bool,
-  no_wait: bool,
-  assume_yes: bool,
-  output: &str,
   token: &str,
+  opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
-  println!("Cluster: {hsm_group_name_arg}");
-  if !common::user_interaction::confirm(action.confirmation_text(), assume_yes)
-  {
+  println!("Cluster: {}", opts.target);
+  if !common::user_interaction::confirm(
+    opts.action.confirmation_text(),
+    opts.assume_yes,
+  ) {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(
-    ctx,
-    token,
-    action,
-    hsm_group_name_arg,
-    "cluster",
-    force,
-    no_wait,
-    output,
-  )
-  .await
+  dispatch_and_wait(ctx, token, &opts, "cluster").await
 }
 
 /// POST `/power` to start the transition, then (unless `no_wait`)
 /// poll `GET /power/transitions/{id}` until the transition reports
 /// `completed`. Renders a one-line progress summary on every poll,
 /// prints a final summary, and exits non-zero if any task failed.
-#[allow(clippy::too_many_arguments)]
 async fn dispatch_and_wait(
   ctx: &AppContext<'_>,
   token: &str,
-  action: PowerAction,
-  targets_expression: &str,
+  opts: &PowerOpts<'_>,
   target_type: &str,
-  force: bool,
-  no_wait: bool,
-  output: &str,
 ) -> Result<(), Error> {
-  let action_str = action.wire();
+  let action_str = opts.action.wire();
   let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
 
   let started = client
-    .power(token, action_str, targets_expression, target_type, force)
+    .power(token, action_str, opts.target, target_type, opts.force)
     .await?;
   let transition_id = started
     .get("transitionID")
@@ -172,14 +149,14 @@ async fn dispatch_and_wait(
     })?
     .to_string();
 
-  if no_wait {
+  if opts.no_wait {
     action_result::print_with_data(
       &format!(
         "Power {action_str} transition started: {transition_id}. \
          Run `manta power transition show {transition_id}` (or re-POST without --no-wait) to follow."
       ),
       &started,
-      Some(output),
+      Some(opts.output),
     )?;
     return Ok(());
   }
@@ -192,7 +169,7 @@ async fn dispatch_and_wait(
   } else {
     format!("Power {action_str} completed.")
   };
-  action_result::print_with_data(&message, &final_snapshot, Some(output))?;
+  action_result::print_with_data(&message, &final_snapshot, Some(opts.output))?;
   if failed > 0 {
     bail!("power transition reported {failed} failed task(s)");
   }

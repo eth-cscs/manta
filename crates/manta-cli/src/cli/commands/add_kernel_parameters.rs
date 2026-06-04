@@ -5,25 +5,26 @@ use crate::cli::output::action_result;
 use anyhow::Error;
 use crate::cli::common::app_context::AppContext;
 
+pub struct ExecParams<'a> {
+  pub kernel_params: &'a str,
+  pub hosts_expression: Option<&'a str>,
+  pub hsm_group: Option<&'a str>,
+  pub overwrite: bool,
+  pub dry_run: bool,
+  pub output: Option<&'a str>,
+}
+
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.
 /// Reboots the nodes whose kernel params have changed.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
-  kernel_params: &str,
-  hosts_expression: Option<&str>,
-  hsm_group_name_arg_opt: Option<&str>,
-  overwrite: bool,
-  _assume_yes: bool,
-  _do_not_reboot: bool,
-  dry_run: bool,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
-  let xnames_expression = if hsm_group_name_arg_opt.is_none() {
-    hosts_expression
+  let xnames_expression = if p.hsm_group.is_none() {
+    p.hosts_expression
   } else {
     None
   };
@@ -31,23 +32,23 @@ pub async fn exec(
     .add_kernel_parameters(
       token,
       &AddKernelParametersRequest {
-        params: kernel_params,
+        params: p.kernel_params,
         xnames_expression,
-        hsm_group: hsm_group_name_arg_opt,
-        overwrite,
+        hsm_group: p.hsm_group,
+        overwrite: p.overwrite,
         project_sbps: false,
-        dry_run,
+        dry_run: p.dry_run,
       },
     )
     .await?;
-  if dry_run {
+  if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",
       &result,
-      output_opt,
+      p.output,
     )?;
   } else {
-    action_result::print("Kernel parameters added.", output_opt)?;
+    action_result::print("Kernel parameters added.", p.output)?;
   }
   Ok(())
 }

@@ -104,29 +104,23 @@ pub async fn handle_add(
       add_boot_parameters::exec(ctx, &token, m).await?;
     }
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt = m.opt_str("group");
-      let nodes_opt: Option<&str> = if hsm_group_name_arg_opt.is_none() {
+      let hsm_group = m.opt_str("group");
+      let nodes_opt: Option<&str> = if hsm_group.is_none() {
         m.opt_str("nodes")
       } else {
         None
       };
-      let kernel_parameters = m.req_str("VALUE")?;
-      let overwrite: bool = m.get_flag("overwrite");
-      let assume_yes: bool = m.get_flag("assume-yes");
-      let do_not_reboot: bool = m.get_flag("do-not-reboot");
-      let dryrun = m.get_flag("dry-run");
-      let output_opt = m.opt_str("output");
       add_kernel_parameters::exec(
         ctx,
         &token,
-        kernel_parameters,
-        nodes_opt,
-        hsm_group_name_arg_opt,
-        overwrite,
-        assume_yes,
-        do_not_reboot,
-        dryrun,
-        output_opt,
+        add_kernel_parameters::ExecParams {
+          kernel_params: m.req_str("VALUE")?,
+          hosts_expression: nodes_opt,
+          hsm_group,
+          overwrite: m.get_flag("overwrite"),
+          dry_run: m.get_flag("dry-run"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }

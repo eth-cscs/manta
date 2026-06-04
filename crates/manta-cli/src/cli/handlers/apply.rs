@@ -180,16 +180,17 @@ pub async fn handle_apply(
       let assume_yes: bool = m.get_flag("assume-yes");
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let output_opt = m.opt_str("output");
+      let _ = (assume_yes, do_not_reboot);
       commands::apply_kernel_parameters::exec(
         ctx,
         &token,
-        kernel_parameters,
-        nodes_opt,
-        hsm_group_name_arg_opt,
-        assume_yes,
-        do_not_reboot,
-        dryrun,
-        output_opt,
+        commands::apply_kernel_parameters::ExecParams {
+          kernel_params: kernel_parameters,
+          hosts_expression: nodes_opt,
+          hsm_group: hsm_group_name_arg_opt,
+          dry_run: dryrun,
+          output: output_opt,
+        },
       )
       .await?;
     }
