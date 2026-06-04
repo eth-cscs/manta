@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.31] - 2026-06-04
+## [2.0.0-beta.32] - 2026-06-04
 
 ### Bug Fixes
 
