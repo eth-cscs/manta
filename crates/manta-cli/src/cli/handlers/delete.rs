@@ -151,14 +151,16 @@ pub async fn handle_delete(
       let cfs_configuration_name_pattern = m.opt_str("configuration-name");
       let assume_yes = m.get_flag("assume-yes");
       let output_opt = m.opt_str("output");
+      let _ = assume_yes;
       if let Err(e) = delete_configurations_and_derivatives::exec(
         ctx,
         &token,
-        cfs_configuration_name_pattern,
-        since_opt,
-        until_opt,
-        assume_yes,
-        output_opt,
+        delete_configurations_and_derivatives::ExecParams {
+          configuration_name_pattern: cfs_configuration_name_pattern,
+          since: since_opt,
+          until: until_opt,
+          output: output_opt,
+        },
       )
       .await
       {

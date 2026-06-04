@@ -23,7 +23,17 @@ pub async fn handle_update(
       let initrd = m.opt_str("initrd");
       let output_opt = m.opt_str("output");
       update_boot_parameters::exec(
-        ctx, &token, hosts, None, None, params, kernel, initrd, output_opt,
+        ctx,
+        &token,
+        update_boot_parameters::ExecParams {
+          xnames: hosts,
+          nids: None,
+          macs: None,
+          boot_params: params,
+          kernel,
+          initrd,
+          output: output_opt,
+        },
       )
       .await?;
     }
@@ -31,40 +41,24 @@ pub async fn handle_update(
       let id = m
         .opt_string("id")
         .context("The 'id' argument is mandatory")?;
-      let name = m.opt_string("name");
-      let hostname = m.opt_string("hostname");
-      let domain = m.opt_string("domain");
-      let fqdn = m.opt_string("fqdn");
-      let enabled: bool = m.get_flag("enabled");
-      let user = m.opt_string("user");
-      let password = m.opt_string("password");
-      let use_ssdp: bool = m.get_flag("use-ssdp");
-      let mac_required: bool = m.get_flag("mac-required");
-      let mac_addr = m.opt_string("macaddr");
-      let ip_address = m.opt_string("ipaddress");
-      let rediscover_on_update: bool = m.get_flag("rediscover-on-update");
-      let template_id = m.opt_string("template-id");
-      let output_opt = m.opt_str("output");
-      update_redfish_endpoint::exec(
-        ctx,
-        &token,
+      let params = manta_shared::shared::params::redfish_endpoints::UpdateRedfishEndpointParams {
         id,
-        name,
-        hostname,
-        domain,
-        fqdn,
-        enabled,
-        user,
-        password,
-        use_ssdp,
-        mac_required,
-        mac_addr,
-        ip_address,
-        rediscover_on_update,
-        template_id,
-        output_opt,
-      )
-      .await?;
+        name: m.opt_string("name"),
+        hostname: m.opt_string("hostname"),
+        domain: m.opt_string("domain"),
+        fqdn: m.opt_string("fqdn"),
+        enabled: m.get_flag("enabled"),
+        user: m.opt_string("user"),
+        password: m.opt_string("password"),
+        use_ssdp: m.get_flag("use-ssdp"),
+        mac_required: m.get_flag("mac-required"),
+        mac_addr: m.opt_string("macaddr"),
+        ip_address: m.opt_string("ipaddress"),
+        rediscover_on_update: m.get_flag("rediscover-on-update"),
+        template_id: m.opt_string("template-id"),
+      };
+      update_redfish_endpoint::exec(ctx, &token, params, m.opt_str("output"))
+        .await?;
     }
     Some((other, _)) => bail!("Unknown 'update' subcommand: {other}"),
     None => bail!("No 'update' subcommand provided"),

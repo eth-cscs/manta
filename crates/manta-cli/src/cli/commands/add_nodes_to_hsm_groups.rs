@@ -9,7 +9,6 @@ use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
 /// Add/assign a list of xnames to an HSM group.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
