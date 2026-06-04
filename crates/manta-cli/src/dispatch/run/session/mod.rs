@@ -22,31 +22,31 @@ const GITEA_REPO_NAME_PREFIX: &str = "cray/";
 /// `--ansible-limit` belonging to an accessible group) is enforced
 /// server-side by `POST /api/v1/sessions`.
 pub async fn exec(
-  cli_apply_session: &ArgMatches,
+  cli_run_session: &ArgMatches,
   ctx: &AppContext<'_>,
   token: &str,
 ) -> Result<(), Error> {
-  let repo_path_vec: Vec<PathBuf> = cli_apply_session
+  let repo_path_vec: Vec<PathBuf> = cli_run_session
     .get_many("repo-path")
     .context("'repo-path' argument not provided")?
     .cloned()
     .collect();
 
-  let hsm_group_name_arg_opt = cli_apply_session.opt_str("group");
+  let hsm_group_name_arg_opt = cli_run_session.opt_str("group");
 
-  let cfs_conf_sess_name_opt = cli_apply_session.opt_str("name");
-  let playbook_file_name_opt = cli_apply_session.opt_str("playbook-name");
+  let cfs_conf_sess_name_opt = cli_run_session.opt_str("name");
+  let playbook_file_name_opt = cli_run_session.opt_str("playbook-name");
 
-  let hsm_group_members_opt = cli_apply_session.opt_str("ansible-limit");
-  let ansible_verbosity = cli_apply_session.opt_str("ansible-verbosity");
+  let hsm_group_members_opt = cli_run_session.opt_str("ansible-limit");
+  let ansible_verbosity = cli_run_session.opt_str("ansible-verbosity");
 
-  let ansible_passthrough = cli_apply_session.opt_str("ansible-passthrough");
+  let ansible_passthrough = cli_run_session.opt_str("ansible-passthrough");
 
-  let watch_logs: bool = cli_apply_session.get_flag("watch-logs");
-  let timestamps: bool = cli_apply_session.get_flag("timestamps");
-  let output_opt = cli_apply_session.opt_str("output");
+  let watch_logs: bool = cli_run_session.get_flag("watch-logs");
+  let timestamps: bool = cli_run_session.get_flag("timestamps");
+  let output_opt = cli_run_session.opt_str("output");
 
-  let _ = apply_session(
+  let _ = run_session(
     ctx,
     token,
     SessionParams {
@@ -80,10 +80,13 @@ struct SessionParams<'a> {
   output: Option<&'a str>,
 }
 
-/// Creates a CFS session target dynamic.
+/// Create a dynamic-target CFS session: pushes the local repos'
+/// HEADs to gitea, POSTs `/sessions`, and (if `watch_logs`) streams
+/// the session log to stdout via SSE before printing the action
+/// result.
 ///
 /// Returns `(cfs_configuration_name, cfs_session_name)`.
-async fn apply_session(
+async fn run_session(
   ctx: &AppContext<'_>,
   shasta_token: &str,
   p: SessionParams<'_>,
