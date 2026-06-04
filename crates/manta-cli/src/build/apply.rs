@@ -56,24 +56,6 @@ pub fn subcommand_apply_hw_configuration() -> Command {
     )
 }
 
-pub fn subcommand_apply_configuration() -> Command {
-  Command::new("configuration")
-    .arg_required_else_help(true)
-    .about("Create a configuration (deprecated — use 'apply sat-file')")
-    .arg(
-      arg!(-t --"sat-template-file" <SAT_FILE_PATH> "SAT file path")
-        .value_parser(value_parser!(PathBuf))
-        .required(true),
-    )
-    .arg(
-      arg!(-f --"values-file" <VALUES_FILE_PATH> "Values file for SAT jinja2 templates")
-        .value_parser(value_parser!(PathBuf)),
-    )
-    .arg(arg!(-V --"values" <VALUES> ... "Inline values for SAT jinja2 templates (overrides --values-file)"))
-    .arg(arg!(-o --output <FORMAT> "Output format").value_parser(["json"]))
-    .arg(arg!(-H --group <GROUP_NAME> "Node group name").visible_alias("hsm-group"))
-}
-
 pub fn subcommand_apply_template() -> Command {
   Command::new("template")
     .arg_required_else_help(true)
@@ -335,7 +317,6 @@ pub fn subcommand_apply() -> Command {
     .arg_required_else_help(true)
     .about("Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling")
     .subcommand(subcommand_apply_hw_configuration())
-    .subcommand(subcommand_apply_configuration())
     .subcommand(subcommand_apply_sat_file())
     .subcommand(
       Command::new("boot")

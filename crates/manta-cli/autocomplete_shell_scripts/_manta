@@ -954,23 +954,6 @@ esac
     ;;
 esac
 ;;
-(configuration)
-_arguments "${_arguments_options[@]}" : \
-'-t+[SAT file path]:SAT_FILE_PATH:_files' \
-'--sat-template-file=[SAT file path]:SAT_FILE_PATH:_files' \
-'-f+[Values file for SAT jinja2 templates]:VALUES_FILE_PATH:_files' \
-'--values-file=[Values file for SAT jinja2 templates]:VALUES_FILE_PATH:_files' \
-'*-V+[Inline values for SAT jinja2 templates (overrides --values-file)]:VALUES:_default' \
-'*--values=[Inline values for SAT jinja2 templates (overrides --values-file)]:VALUES:_default' \
-'-o+[Output format]:FORMAT:(json)' \
-'--output=[Output format]:FORMAT:(json)' \
-'-H+[Node group name]:GROUP_NAME:_default' \
-'--group=[Node group name]:GROUP_NAME:_default' \
-'--hsm-group=[Node group name]:GROUP_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-&& ret=0
-;;
 (sat-file)
 _arguments "${_arguments_options[@]}" : \
 '-t+[SAT file path (may be a jinja2 template)]:FILE:_files' \
@@ -1270,10 +1253,6 @@ _arguments "${_arguments_options[@]}" : \
         esac
     ;;
 esac
-;;
-(configuration)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
 ;;
 (sat-file)
 _arguments "${_arguments_options[@]}" : \
@@ -2501,10 +2480,6 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
-(configuration)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (sat-file)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2964,7 +2939,6 @@ _manta__subcmd__add__subcmd__redfish-endpoints_commands() {
 _manta__subcmd__apply_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
-'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
 'boot:Update boot parameters and runtime configuration' \
 'boot-parameters:Update boot parameters for nodes' \
@@ -3025,11 +2999,6 @@ _manta__subcmd__apply__subcmd__boot-parameters_commands() {
     local commands; commands=()
     _describe -t commands 'manta apply boot-parameters commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__apply__subcmd__configuration_commands] )) ||
-_manta__subcmd__apply__subcmd__configuration_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta apply configuration commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__apply__subcmd__ephemeral-environment_commands] )) ||
 _manta__subcmd__apply__subcmd__ephemeral-environment_commands() {
     local commands; commands=()
@@ -3070,7 +3039,6 @@ _manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__help_commands() {
 _manta__subcmd__apply__subcmd__help_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
-'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
 'boot:Update boot parameters and runtime configuration' \
 'boot-parameters:Update boot parameters for nodes' \
@@ -3104,11 +3072,6 @@ _manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__nodes_commands() {
 _manta__subcmd__apply__subcmd__help__subcmd__boot-parameters_commands() {
     local commands; commands=()
     _describe -t commands 'manta apply help boot-parameters commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__configuration_commands] )) ||
-_manta__subcmd__apply__subcmd__help__subcmd__configuration_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta apply help configuration commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__ephemeral-environment_commands] )) ||
 _manta__subcmd__apply__subcmd__help__subcmd__ephemeral-environment_commands() {
@@ -3877,7 +3840,6 @@ _manta__subcmd__help__subcmd__add__subcmd__redfish-endpoints_commands() {
 _manta__subcmd__help__subcmd__apply_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
-'configuration:Create a configuration (deprecated — use '\''apply sat-file'\'')' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
 'boot:Update boot parameters and runtime configuration' \
 'boot-parameters:Update boot parameters for nodes' \
@@ -3910,11 +3872,6 @@ _manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__nodes_commands() {
 _manta__subcmd__help__subcmd__apply__subcmd__boot-parameters_commands() {
     local commands; commands=()
     _describe -t commands 'manta help apply boot-parameters commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__configuration_commands] )) ||
-_manta__subcmd__help__subcmd__apply__subcmd__configuration_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help apply configuration commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__ephemeral-environment_commands] )) ||
 _manta__subcmd__help__subcmd__apply__subcmd__ephemeral-environment_commands() {

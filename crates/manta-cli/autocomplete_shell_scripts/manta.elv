@@ -605,7 +605,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand hardware '[experimental] Rescale a group''s hardware allocation'
-            cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
             cand boot-parameters 'Update boot parameters for nodes'
@@ -653,21 +652,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;hardware;help;group'= {
         }
         &'manta;apply;hardware;help;help'= {
-        }
-        &'manta;apply;configuration'= {
-            cand -t 'SAT file path'
-            cand --sat-template-file 'SAT file path'
-            cand -f 'Values file for SAT jinja2 templates'
-            cand --values-file 'Values file for SAT jinja2 templates'
-            cand -V 'Inline values for SAT jinja2 templates (overrides --values-file)'
-            cand --values 'Inline values for SAT jinja2 templates (overrides --values-file)'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -H 'Node group name'
-            cand --group 'Node group name'
-            cand --hsm-group 'Node group name'
-            cand -h 'Print help'
-            cand --help 'Print help'
         }
         &'manta;apply;sat-file'= {
             cand -t 'SAT file path (may be a jinja2 template)'
@@ -887,7 +871,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;apply;help'= {
             cand hardware '[experimental] Rescale a group''s hardware allocation'
-            cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
             cand boot-parameters 'Update boot parameters for nodes'
@@ -901,8 +884,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group '[experimental] Rescale a group''s hardware allocation'
         }
         &'manta;apply;help;hardware;group'= {
-        }
-        &'manta;apply;help;configuration'= {
         }
         &'manta;apply;help;sat-file'= {
         }
@@ -1560,7 +1541,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;apply'= {
             cand hardware '[experimental] Rescale a group''s hardware allocation'
-            cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
             cand boot-parameters 'Update boot parameters for nodes'
@@ -1573,8 +1553,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group '[experimental] Rescale a group''s hardware allocation'
         }
         &'manta;help;apply;hardware;group'= {
-        }
-        &'manta;help;apply;configuration'= {
         }
         &'manta;help;apply;sat-file'= {
         }

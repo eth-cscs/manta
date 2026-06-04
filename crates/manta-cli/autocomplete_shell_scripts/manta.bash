@@ -121,9 +121,6 @@ _manta() {
             manta__subcmd__apply,boot-parameters)
                 cmd="manta__subcmd__apply__subcmd__boot__subcmd__parameters"
                 ;;
-            manta__subcmd__apply,configuration)
-                cmd="manta__subcmd__apply__subcmd__configuration"
-                ;;
             manta__subcmd__apply,ephemeral-environment)
                 cmd="manta__subcmd__apply__subcmd__ephemeral__subcmd__environment"
                 ;;
@@ -183,9 +180,6 @@ _manta() {
                 ;;
             manta__subcmd__apply__subcmd__help,boot-parameters)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__apply__subcmd__help,configuration)
-                cmd="manta__subcmd__apply__subcmd__help__subcmd__configuration"
                 ;;
             manta__subcmd__apply__subcmd__help,ephemeral-environment)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__ephemeral__subcmd__environment"
@@ -582,9 +576,6 @@ _manta() {
                 ;;
             manta__subcmd__help__subcmd__apply,boot-parameters)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__help__subcmd__apply,configuration)
-                cmd="manta__subcmd__help__subcmd__apply__subcmd__configuration"
                 ;;
             manta__subcmd__help__subcmd__apply,ephemeral-environment)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__ephemeral__subcmd__environment"
@@ -1468,7 +1459,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply)
-            opts="-h --help hardware configuration sat-file boot boot-parameters redfish-endpoints redfish-endpoint kernel-parameters ephemeral-environment template help"
+            opts="-h --help hardware sat-file boot boot-parameters redfish-endpoints redfish-endpoint kernel-parameters ephemeral-environment template help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1713,64 +1704,6 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__apply__subcmd__configuration)
-            opts="-t -f -V -o -H -h --sat-template-file --values-file --values --output --hsm-group --group --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --sat-template-file)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -t)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --values-file)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -f)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --values)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -V)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "json" -- "${cur}"))
-                    return 0
-                    ;;
-                --group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --hsm-group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__apply__subcmd__ephemeral__subcmd__environment)
             opts="-i -h --image-id --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
@@ -1904,7 +1837,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__help)
-            opts="hardware configuration sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template help"
+            opts="hardware sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1962,20 +1895,6 @@ _manta() {
         manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__nodes)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__help__subcmd__configuration)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -4602,7 +4521,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__apply)
-            opts="hardware configuration sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template"
+            opts="hardware sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4660,20 +4579,6 @@ _manta() {
         manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__nodes)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__apply__subcmd__configuration)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
