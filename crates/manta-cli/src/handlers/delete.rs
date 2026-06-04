@@ -1,11 +1,14 @@
 //! Routes `manta delete *` subcommands to their exec functions.
 
-use crate::commands::{
-  delete_and_cancel_session, delete_boot_parameters,
-  delete_configurations_and_derivatives, delete_group,
-  delete_hw_component_group, delete_images, delete_kernel_parameters,
-  delete_node, delete_redfish_endpoint, remove_nodes_from_hsm_groups,
+use crate::commands::delete::{
+  and_cancel_session as delete_and_cancel_session,
+  boot_parameters as delete_boot_parameters,
+  configurations_and_derivatives as delete_configurations_and_derivatives,
+  group as delete_group, hw_component_group as delete_hw_component_group,
+  images as delete_images, kernel_parameters as delete_kernel_parameters,
+  node as delete_node, redfish_endpoint as delete_redfish_endpoint,
 };
+use crate::commands::remove_nodes_from_hsm_groups;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};

@@ -4,9 +4,8 @@
 //! module exists solely to keep the old top-level spellings working
 //! during the deprecation grace period.
 
-use crate::commands::{
-  add_nodes_to_hsm_groups, remove_nodes_from_hsm_groups,
-};
+use crate::commands::add::nodes_to_hsm_groups as add_nodes_to_hsm_groups;
+use crate::commands::remove_nodes_from_hsm_groups;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};

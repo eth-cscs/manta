@@ -33,7 +33,7 @@
 use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
 
-use crate::commands::apply_sat_file::{dispatch, plan};
+use crate::commands::apply::sat_file::{dispatch, plan};
 use crate::common;
 use crate::http_client::MantaClient;
 use crate::output::action_result;

@@ -35,7 +35,7 @@ fn add_group_hardware_args(cmd: Command) -> Command {
 }
 
 /// Subcommand `manta get hardware nodes`. Extracted so unit tests in
-/// `cli::commands::get_hardware_nodes` can reuse the production
+/// `cli::commands::get::hardware_nodes` can reuse the production
 /// builder instead of mirroring it by hand.
 pub fn subcommand_get_hardware_nodes() -> Command {
   Command::new("nodes")

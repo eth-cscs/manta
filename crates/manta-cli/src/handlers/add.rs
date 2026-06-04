@@ -1,9 +1,11 @@
 //! Routes `manta add *` subcommands to their exec functions.
 
-use crate::commands::{
-  add_boot_parameters, add_group, add_hw_component_group,
-  add_kernel_parameters, add_node, add_nodes_to_hsm_groups,
-  add_redfish_endpoint,
+use crate::commands::add::{
+  boot_parameters as add_boot_parameters, group as add_group,
+  hw_component_group as add_hw_component_group,
+  kernel_parameters as add_kernel_parameters, node as add_node,
+  nodes_to_hsm_groups as add_nodes_to_hsm_groups,
+  redfish_endpoint as add_redfish_endpoint,
 };
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;

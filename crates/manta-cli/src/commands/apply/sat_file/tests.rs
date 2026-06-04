@@ -1,7 +1,7 @@
 use crate::common::sat_file::render_jinja2_sat_file_yaml;
 use serde_yaml::Value;
 
-use crate::commands::apply_sat_file::plan::{SatElement, build_plan};
+use crate::commands::apply::sat_file::plan::{SatElement, build_plan};
 
 /// Render a SAT template + values file (with a CLI `--var` override) and
 /// confirm the rendered YAML string substitutes variables from all

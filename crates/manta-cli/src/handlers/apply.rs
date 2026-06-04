@@ -19,14 +19,14 @@ pub async fn handle_apply(
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
       Some(("group", m)) => {
-        commands::apply_hw_group::exec(m, ctx, &token).await?
+        commands::apply::hw_group::exec(m, ctx, &token).await?
       }
       Some(("cluster", m)) => {
         eprintln!(
           "warning: 'manta apply hardware cluster' is deprecated; \
            use 'manta apply hardware group' instead.",
         );
-        commands::apply_hw_group::exec(m, ctx, &token).await?
+        commands::apply::hw_group::exec(m, ctx, &token).await?
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),
@@ -37,7 +37,7 @@ pub async fn handle_apply(
         "warning: 'manta apply session' is deprecated; \
          use 'manta run session' instead.",
       );
-      commands::apply_session::exec(m, ctx, &token).await?
+      commands::apply::session::exec(m, ctx, &token).await?
     }
 
     Some(("sat-file", m)) => {
@@ -102,10 +102,10 @@ pub async fn handle_apply(
       let dry_run: bool = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
 
-      commands::apply_sat_file::command::exec(
+      commands::apply::sat_file::command::exec(
         ctx,
         &token,
-        &commands::apply_sat_file::command::SatApplyOptions {
+        &commands::apply::sat_file::command::SatApplyOptions {
           sat_file_content: sat_file_content.as_str(),
           values_file_content_opt: cli_values_file_content_opt.as_deref(),
           values_cli_opt: cli_value_vec_opt.as_deref(),
@@ -137,10 +137,10 @@ pub async fn handle_apply(
         .context("'include-disabled' must have a value")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let _ = assume_yes;
-      commands::apply_template::exec(
+      commands::apply::template::exec(
         ctx,
         &token,
-        commands::apply_template::ExecParams {
+        commands::apply::template::ExecParams {
           session_name: bos_session_name_opt,
           template_name: bos_sessiontemplate_name,
           operation: bos_session_operation,
@@ -181,10 +181,10 @@ pub async fn handle_apply(
       let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let output_opt = m.opt_str("output");
       let _ = (assume_yes, do_not_reboot);
-      commands::apply_kernel_parameters::exec(
+      commands::apply::kernel_parameters::exec(
         ctx,
         &token,
-        commands::apply_kernel_parameters::ExecParams {
+        commands::apply::kernel_parameters::ExecParams {
           kernel_params: kernel_parameters,
           hosts_expression: nodes_opt,
           hsm_group: hsm_group_name_arg_opt,
@@ -205,10 +205,10 @@ pub async fn handle_apply(
           bail!("Image id is not a UUID");
         }
         let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
-        commands::apply_boot_node::exec(
+        commands::apply::boot_node::exec(
           ctx,
           &token,
-          commands::apply_boot_node::ExecParams {
+          commands::apply::boot_node::ExecParams {
             boot_image: new_boot_image_id_opt,
             boot_image_configuration: m.opt_str("boot-image-configuration"),
             runtime_configuration: m.opt_str("runtime-configuration"),
@@ -222,10 +222,10 @@ pub async fn handle_apply(
       }
       Some(("group", m)) => {
         let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
-        commands::apply_boot_group::exec(
+        commands::apply::boot_group::exec(
           ctx,
           &token,
-          commands::apply_boot_group::ExecParams {
+          commands::apply::boot_group::ExecParams {
             boot_image: m.opt_str("boot-image"),
             boot_image_configuration: m.opt_str("boot-image-configuration"),
             runtime_configuration: m.opt_str("runtime-configuration"),
@@ -243,10 +243,10 @@ pub async fn handle_apply(
            use 'manta apply boot group' instead.",
         );
         let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
-        commands::apply_boot_group::exec(
+        commands::apply::boot_group::exec(
           ctx,
           &token,
-          commands::apply_boot_group::ExecParams {
+          commands::apply::boot_group::ExecParams {
             boot_image: m.opt_str("boot-image"),
             boot_image_configuration: m.opt_str("boot-image-configuration"),
             runtime_configuration: m.opt_str("runtime-configuration"),

@@ -1,6 +1,9 @@
 //! Routes `manta update *` subcommands to their exec functions.
 
-use crate::commands::{update_boot_parameters, update_redfish_endpoint};
+use crate::commands::update::{
+  boot_parameters as update_boot_parameters,
+  redfish_endpoint as update_redfish_endpoint,
+};
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};

@@ -1,9 +1,11 @@
 //! Routes `manta get *` subcommands to their exec functions.
 
-use crate::commands::{
-  get_boot_parameters, get_configuration, get_group, get_group_hardware,
-  get_group_nodes, get_hardware_nodes, get_images, get_kernel_parameters,
-  get_nodes, get_session, get_template,
+use crate::commands::get::{
+  boot_parameters as get_boot_parameters, configuration as get_configuration,
+  group as get_group, group_hardware as get_group_hardware,
+  group_nodes as get_group_nodes, hardware_nodes as get_hardware_nodes,
+  images as get_images, kernel_parameters as get_kernel_parameters,
+  nodes as get_nodes, session as get_session, template as get_template,
 };
 use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
@@ -58,7 +60,7 @@ pub async fn handle_get(
       get_kernel_parameters::exec(ctx, &token, m).await?
     }
     Some(("redfish-endpoints", m)) => {
-      crate::commands::get_redfish_endpoints::exec(ctx, &token, m).await?
+      crate::commands::get::redfish_endpoints::exec(ctx, &token, m).await?
     }
     Some((other, _)) => bail!("Unknown 'get' subcommand: {other}"),
     None => bail!("No 'get' subcommand provided"),
