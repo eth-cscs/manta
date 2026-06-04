@@ -1,8 +1,8 @@
 //! Wire response types shared by both binaries.
 //!
-//! The CLI (in `http_client.rs` and `cli::output::*`) deserializes
-//! responses from the manta-server using these types; the server
-//! serializes them back over HTTP via the service layer.
+//! The CLI (in `manta_cli::http_client::*` and `manta_cli::output::*`)
+//! deserializes responses from the manta-server using these types;
+//! the server serializes them back over HTTP via the service layer.
 //!
 //! `NodeDetails` is mirrored locally (rather than re-exporting from
 //! `csm-rs`) so `manta-shared` — and therefore `manta-cli` — does not

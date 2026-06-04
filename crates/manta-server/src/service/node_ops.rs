@@ -277,10 +277,6 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
   XNAME_RE.is_match(xname)
 }
 
-// `string_vec_to_multi_line_string` (display-only helper) moved to
-// `crate::cli::common::display::string_vec_to_multi_line_string`.
-// The server never used it; its tests moved alongside it.
-
 /// Resolve target nodes from either a hosts expression, an
 /// explicit HSM group name, or the settings-level HSM group.
 ///
