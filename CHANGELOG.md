@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.25] - 2026-06-04
+
+### Documentation
+
+- Fix broken intra-doc link in config_summary
+
+### Styling
+
+- Apply rustfmt across the workspace
+
 ## [2.0.0-beta.24] - 2026-06-04
 
 ### Miscellaneous Tasks
