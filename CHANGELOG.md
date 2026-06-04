@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.31] - 2026-06-04
+
+### Bug Fixes
+
+- Manta upgrade prints readable text in default mode, not JSON
+
+### Miscellaneous Tasks
+
+- Auto-apply rustfmt on push to main, verify on PRs
+
+### Refactor
+
+- Rename commands → dispatch, move process.rs into handlers
+
 ## [2.0.0-beta.30] - 2026-06-04
 
 ### Documentation
