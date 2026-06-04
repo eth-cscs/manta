@@ -1,4 +1,5 @@
-//! Top-level CLI dispatch: matches the parsed command tree and calls handlers.
+//! Root CLI dispatcher: matches the parsed top-level verb and calls
+//! the per-verb handler in this module's siblings.
 
 use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};

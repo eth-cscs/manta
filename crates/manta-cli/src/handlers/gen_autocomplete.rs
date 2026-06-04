@@ -6,7 +6,7 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::commands::gen_autocomplete;
+use crate::dispatch::gen_autocomplete;
 use crate::common::app_context::AppContext;
 
 /// Dispatch `manta gen-autocomplete`.

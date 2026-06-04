@@ -1,6 +1,6 @@
 //! Routes `manta run *` subcommands to their exec functions.
 
-use crate::commands::apply::session as apply_session;
+use crate::dispatch::apply::session as apply_session;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};

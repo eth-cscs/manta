@@ -10,7 +10,7 @@ use serde::Serialize;
 
 /// All the values surfaced by `manta config show`.
 ///
-/// Built by [`crate::commands::config::show`] from a mix of the
+/// Built by [`crate::dispatch::config::show`] from a mix of the
 /// parsed CLI config file and a live call to the server for the list
 /// of HSM groups the token can access.
 #[derive(Debug, Serialize)]

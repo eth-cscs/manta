@@ -4,12 +4,11 @@
 //! server named by `cli.toml`'s `manta_server_url`.
 
 mod build;
-mod commands;
 mod common;
+mod dispatch;
 mod handlers;
 mod http_client;
 mod output;
-mod process;
 
 use crate::common::app_context::AppContext;
 use crate::common::config::CliConfiguration;
@@ -98,7 +97,7 @@ async fn run_cli(
   };
 
   let cli_result =
-    crate::process::process_cli(&cli_matches, &app_context).await;
+    crate::handlers::process::process_cli(&cli_matches, &app_context).await;
 
   match cli_result {
     Ok(_) => Ok(()),

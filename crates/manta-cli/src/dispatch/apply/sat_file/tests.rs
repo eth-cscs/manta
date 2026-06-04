@@ -3,8 +3,8 @@
 //! input. Pure-renderer tests live in [`super::render`]; this file
 //! holds tests that span the full module.
 
-use crate::commands::apply::sat_file::plan::{SatElement, build_plan};
-use crate::commands::apply::sat_file::render::render_jinja2_sat_file_yaml;
+use crate::dispatch::apply::sat_file::plan::{SatElement, build_plan};
+use crate::dispatch::apply::sat_file::render::render_jinja2_sat_file_yaml;
 
 /// End-to-end client-side pipeline: render Jinja2, parse to
 /// `serde_json::Value`, apply `image_only=true`, and confirm the

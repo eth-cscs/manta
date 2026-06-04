@@ -1,6 +1,6 @@
 //! Routes `manta get *` subcommands to their exec functions.
 
-use crate::commands::get::{
+use crate::dispatch::get::{
   boot_parameters as get_boot_parameters, configurations as get_configurations,
   group_hardware as get_group_hardware, group_nodes as get_group_nodes,
   groups as get_groups, hardware_nodes as get_hardware_nodes,
@@ -46,7 +46,7 @@ pub async fn handle_get(
       get_kernel_parameters::exec(ctx, &token, m).await?
     }
     Some(("redfish-endpoints", m)) => {
-      crate::commands::get::redfish_endpoints::exec(ctx, &token, m).await?
+      crate::dispatch::get::redfish_endpoints::exec(ctx, &token, m).await?
     }
     Some((other, _)) => bail!("Unknown 'get' subcommand: {other}"),
     None => bail!("No 'get' subcommand provided"),

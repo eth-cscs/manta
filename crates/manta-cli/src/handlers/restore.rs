@@ -1,6 +1,6 @@
 //! Routes `manta restore *` subcommands to their exec functions.
 
-use crate::commands::restore::vcluster as restore_vcluster;
+use crate::dispatch::restore::vcluster as restore_vcluster;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;

@@ -7,7 +7,7 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::commands::upgrade;
+use crate::dispatch::upgrade;
 use crate::common::app_context::AppContext;
 
 /// Dispatch the `manta upgrade` command.

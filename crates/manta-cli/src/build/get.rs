@@ -21,7 +21,7 @@ pub fn subcommand_get_group() -> Command {
 }
 
 /// Subcommand `manta get hardware nodes`. Extracted so unit tests in
-/// [`crate::commands::get::hardware_nodes`] can reuse the production
+/// [`crate::dispatch::get::hardware_nodes`] can reuse the production
 /// builder instead of mirroring it by hand.
 pub fn subcommand_get_hardware_nodes() -> Command {
   Command::new("nodes")

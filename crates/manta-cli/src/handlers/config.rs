@@ -1,6 +1,6 @@
 //! Routes `manta config *` subcommands to their exec functions.
 
-use crate::commands;
+use crate::dispatch;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
@@ -18,29 +18,29 @@ pub async fn handle_config(
       let token = get_api_token(ctx).await?;
       let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
       let output_opt = m.opt_str("output");
-      commands::config::show::exec(&client, &token, ctx.settings, output_opt)
+      dispatch::config::show::exec(&client, &token, ctx.settings, output_opt)
         .await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
         let token = get_api_token(ctx).await?;
         let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
-        commands::config::set_hsm::exec(m, &client, &token).await?;
+        dispatch::config::set_hsm::exec(m, &client, &token).await?;
       }
       Some(("parent-hsm", m)) => {
         let token = get_api_token(ctx).await?;
         let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
-        commands::config::set_parent_hsm::exec(m, &client, &token).await?;
+        dispatch::config::set_parent_hsm::exec(m, &client, &token).await?;
       }
-      Some(("site", m)) => commands::config::set_site::exec(m)?,
-      Some(("log", m)) => commands::config::set_log::exec(m)?,
+      Some(("site", m)) => dispatch::config::set_site::exec(m)?,
+      Some(("log", m)) => dispatch::config::set_log::exec(m)?,
       Some((other, _)) => bail!("Unknown 'config set' subcommand: {other}"),
       None => bail!("No 'config set' subcommand provided"),
     },
     Some(("unset", m)) => match m.subcommand() {
-      Some(("hsm", _)) => commands::config::unset_hsm::exec()?,
-      Some(("parent-hsm", _)) => commands::config::unset_parent_hsm::exec()?,
-      Some(("auth", _)) => commands::config::unset_auth::exec()?,
+      Some(("hsm", _)) => dispatch::config::unset_hsm::exec()?,
+      Some(("parent-hsm", _)) => dispatch::config::unset_parent_hsm::exec()?,
+      Some(("auth", _)) => dispatch::config::unset_auth::exec()?,
       Some((other, _)) => bail!("Unknown 'config unset' subcommand: {other}"),
       None => bail!("No 'config unset' subcommand provided"),
     },

@@ -34,7 +34,7 @@ use anyhow::{Context, Error, bail};
 use crossterm::style::Stylize;
 
 use super::render::render_jinja2_sat_file_yaml;
-use crate::commands::apply::sat_file::{dispatch, plan};
+use crate::dispatch::apply::sat_file::{dispatch, plan};
 use crate::common;
 use crate::common::app_context::AppContext;
 use crate::http_client::MantaClient;

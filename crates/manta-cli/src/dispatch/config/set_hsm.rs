@@ -3,7 +3,7 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::commands::config::set_hsm_shared;
+use crate::dispatch::config::set_hsm_shared;
 use crate::http_client::MantaClient;
 
 /// Set the default HSM group in configuration.

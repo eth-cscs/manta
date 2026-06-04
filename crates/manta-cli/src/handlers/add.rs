@@ -1,6 +1,6 @@
 //! Routes `manta add *` subcommands to their exec functions.
 
-use crate::commands::add::{
+use crate::dispatch::add::{
   boot_parameters as add_boot_parameters, group as add_group,
   hardware as add_hardware, kernel_parameters as add_kernel_parameters,
   node as add_node, nodes as add_nodes,

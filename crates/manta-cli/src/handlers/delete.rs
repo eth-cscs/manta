@@ -1,6 +1,6 @@
 //! Routes `manta delete *` subcommands to their exec functions.
 
-use crate::commands::delete::{
+use crate::dispatch::delete::{
   boot_parameters as delete_boot_parameters,
   configurations_and_derivatives as delete_configurations_and_derivatives,
   group as delete_group, hardware as delete_hardware, images as delete_images,
