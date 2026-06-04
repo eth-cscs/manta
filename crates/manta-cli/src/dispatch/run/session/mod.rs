@@ -1,4 +1,4 @@
-//! Implements the `manta apply session` command.
+//! Implements the `manta run session` command.
 
 use std::path::PathBuf;
 

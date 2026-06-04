@@ -7,5 +7,4 @@ pub mod hardware_group;
 pub mod kernel_parameters;
 pub mod redfish_endpoint;
 pub mod sat_file;
-pub mod session;
 pub mod template;

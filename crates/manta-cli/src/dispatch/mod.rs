@@ -12,4 +12,5 @@ pub mod get;
 pub mod migrate;
 pub mod power;
 pub mod restore;
+pub mod run;
 pub mod upgrade;

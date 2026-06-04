@@ -2,7 +2,7 @@
 //!
 //! Wraps `git2` to open the operator's working repo, read its HEAD
 //! commit, derive the bare-repo name from its remote URL, and push
-//! the current branch to that remote. The `apply session` flow
+//! the current branch to that remote. The `run session` flow
 //! relies on these to ensure the configuration session runs against
 //! a known-good commit that's been mirrored to the system VCS.
 //!
