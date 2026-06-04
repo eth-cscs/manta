@@ -28,7 +28,7 @@ Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends
 
 The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/mod.rs`, `dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
 
-`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/cli/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `sat_file` Jinja renderer); `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `jwt_ops`, `kafka`, `vault`) and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `confirm`, `multi_line`); the SAT-file Jinja renderer lives next to its caller at `crates/manta-cli/src/commands/apply/sat_file/render.rs`. `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `jwt_ops`, `kafka`, `vault`) and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
 
 ---
 
@@ -85,13 +85,16 @@ Mirrors the CLI bootstrap, then starts the HTTPS server. Minimal Clap surface: `
 
 ## Layer responsibilities
 
-### `crates/manta-cli/src/cli/`
+### `crates/manta-cli/src/`
 
 Presentation layer. Responsibilities:
 
-- **`build/`** — Clap command and subcommand definitions.
-- **`process/`** — Argument extraction and dispatch to the service layer (via `manta-shared` helpers or HTTP calls through `MantaClient`).
-- **`http_client/`** — `MantaClient` HTTP client. Parent `mod.rs` keeps the struct, constructor, shared HTTP-verb helpers (`get_json`, `post_json`, …), and `QueryBuilder`; 18 per-resource sub-modules (`auth`, `sessions`, `groups`, `nodes`, `boot_parameters`, …) each carry an `impl MantaClient { ... }` block for that resource's endpoints. The layout mirrors `crates/manta-server/src/server/handlers/`.
+- **`build/`** — Clap command and subcommand definitions, split per verb (`add.rs`, `apply.rs`, `backup.rs`, `config.rs`, `console.rs`, `delete.rs`, `get.rs`, `log.rs`, `migrate.rs`, `power.rs`, `restore.rs`, `run.rs`, `update.rs`); `mod.rs` keeps the top-level `build_cli()` plus a few shared helpers (`output_flag`, `HOSTLIST_HELP`).
+- **`process.rs`** — Root dispatcher: routes the matched clap subcommand to its handler in `handlers/`.
+- **`handlers/`** — One file per verb (`add`, `apply`, `backup`, `config`, `console`, `delete`, `deprecated_aliases`, `get`, `log`, `migrate`, `power`, `restore`, `run`, `update`). Each handler does argument extraction, auth-token bootstrap (`get_api_token`), deprecation warnings on legacy aliases, then dispatches to a `commands/<verb>/<noun>.rs::exec(...)`.
+- **`commands/`** — One subdirectory per verb (`add/`, `apply/`, `backup/`, `config/`, `console/`, `delete/`, `get/`, `migrate/`, `power/`, `restore/`, `update/`), each containing one file per noun (`commands/get/sessions.rs` implements `manta get sessions`, etc.). Each file exports `pub async fn exec(...)`. `apply/sat_file/` is itself a sub-tree (`render`, `plan`, `dispatch`, `exec`).
+- **`http_client/`** — `MantaClient` HTTP client. `client.rs` keeps the struct, constructor, shared HTTP-verb helpers (`get_json`, `post_json`, …); `query.rs` holds the chainable `QueryBuilder`; `wire.rs` handles URL-scheme rewriting + curl debug + JSON-secret redaction; per-resource sub-modules (`auth`, `sessions`, `groups`, `nodes`, `boot_parameters`, `hardware_clusters`, `vcluster`, …) each carry an `impl MantaClient { ... }` block. The layout mirrors `crates/manta-server/src/server/handlers/`.
+- **`output/`** — Per-resource table + JSON renderers (`group.rs`, `session.rs`, `node.rs`, `hardware.rs`, …) plus `action_result.rs` (generic side-effect renderer used by every mutating command).
 - Output formatting via `comfy-table` for terminal tables.
 - Interactive prompts via `dialoguer`.
 - Error handling via `anyhow::Error`; CLI handlers terminate with `eprintln!` + `process::exit()`.
@@ -136,7 +139,7 @@ Genuinely bi-binary helpers:
 | `error` | `MantaError` enum — error type for pure helpers (no backend-dispatcher dep) |
 | `log_ops` | Logger initialisation; both binaries call `log_ops::configure(...)` on startup |
 
-CLI-only modules live under `crates/manta-cli/src/cli/common/` (`app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `user_interaction`, `kernel_parameters_ops`, `local_git_repo`, `sat_file` Jinja renderer). Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `jwt_ops`, `kafka`, `vault`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
+CLI-only modules live under `crates/manta-cli/src/common/` (`app_context::AppContext`, `authentication`, `clap_ext` ArgMatches extension trait, `config::CliConfiguration`, `confirm` y/n prompt, `hooks` pre-/post-hook runner, `multi_line` table-cell wrapper). The SAT-file Jinja renderer + the apply-session local-git-repo helpers live next to their callers at `crates/manta-cli/src/commands/apply/sat_file/render.rs` and `crates/manta-cli/src/commands/apply/session/local_git_repo.rs`. Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `jwt_ops`, `kafka`, `vault`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
 
 ### `crates/manta-server/src/server/`
 
@@ -162,7 +165,7 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 | Type | Used by | Contents |
 |------|---------|---------|
 | `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, site name, shasta + gitea base URLs, root CA cert, optional SOCKS5 proxy, optional vault + k8s URLs (8 borrowed fields) |
-| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/cli/common/app_context.rs`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `request_timeout_secs`, `settings` |
+| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `request_timeout_secs`, `settings` |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
 `manta_server_url` is a CLI routing decision — proxy requests through the manta HTTP server instead of calling the backend directly. It is not needed by the service layer or the HTTP server.
@@ -241,7 +244,7 @@ Three error types, partitioned by layer (the backend-dispatcher rule is enforced
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,dispatcher.rs}`).
 - **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (config loader). Also raised by binary-side helpers that depend on it (`manta-cli`'s sat-file Jinja renderer, `manta-server`'s `audit`/`jwt_ops`/`kafka`). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
-- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` handlers and CLI-only helpers.
+- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.
 
@@ -294,7 +297,7 @@ A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/s
 
 There's no per-route override on the server. Long-running work runs CLI-side:
 
-- **Power transitions:** `POST /power` returns immediately with the PCS transition id; the CLI polls `GET /power/transitions/{id}` every 3s (matching csm-rs's historical poll interval) until the transition reports `completed`. See `crates/manta-cli/src/cli/commands/power_common.rs::poll_until_done`.
+- **Power transitions:** `POST /power` returns immediately with the PCS transition id; the CLI polls `GET /power/transitions/{id}` every 3s (matching csm-rs's historical poll interval) until the transition reports `completed`. See `crates/manta-cli/src/commands/power/mod.rs::poll_until_done`.
 - **SAT-file apply:** the CLI dispatches the execution plan one element at a time to per-section endpoints (see [SAT files](API.md#sat-files)). Each per-element call fits well under the default timeout.
 
 This also means the `MantaClient` constructor stays simple — no per-request timeout override is needed for any current command path. `MantaClient::from_app_ctx(&AppContext<'_>)` is available for future opt-in if any command needs to honour `cli.toml`'s optional `request_timeout_secs`.
@@ -369,15 +372,15 @@ Only `manta-server` emits Kafka audit events. Configuration lives under `[audito
 
 ## Hooks
 
-The CLI's `apply sat-file` supports optional `--pre-hook` / `--post-hook` flags pointing at arbitrary shell commands run before / after the operation. `cli::common::hooks::run_hook` executes them via a subshell and returns `anyhow::Error` if the exit code is non-zero.
+The CLI's `apply sat-file`, `backup vcluster`, and `restore vcluster` commands support optional `--pre-hook` / `--post-hook` flags pointing at arbitrary shell commands run before / after the operation. `common::hooks::run_hook` executes them via a subshell and returns `anyhow::Error` if the exit code is non-zero; `common::hooks::check_hook_perms` validates existence + executable bit up front so a typo'd path errors before the expensive work begins.
 
 ---
 
 ## Adding a new command
 
-1. Create `crates/manta-cli/src/cli/commands/<verb_noun>.rs` with the clap `Args` struct and an `exec` function.
-2. Register it in `crates/manta-cli/src/cli/commands/mod.rs` and add the subcommand variant to the appropriate clap enum in `crates/manta-cli/src/cli/build.rs`.
-3. Add the dispatch arm in `crates/manta-cli/src/cli/process/`.
+1. Create `crates/manta-cli/src/commands/<verb>/<noun>.rs` with `pub async fn exec(...)`. (For an entirely new verb, create the directory and a `mod.rs` re-exporting the noun modules.)
+2. Register the noun module in `crates/manta-cli/src/commands/<verb>/mod.rs` (and the verb in `crates/manta-cli/src/commands/mod.rs` for a new verb), then add the clap subcommand definition to `crates/manta-cli/src/build/<verb>.rs`.
+3. Add the dispatch arm in `crates/manta-cli/src/handlers/<verb>.rs` (which does auth-token bootstrap, argument extraction, and the call to `commands::<verb>::<noun>::exec`). For a brand-new verb, also wire `process.rs` to call into the new handler.
 4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `crates/manta-server/src/service/<module>.rs`.
 5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm to the corresponding `impl <Trait> for StaticBackendDispatcher` block in `crates/manta-server/src/backend_dispatcher/mod.rs`.
 6. If the command should also be reachable via the HTTP API, add a handler in the appropriate `crates/manta-server/src/server/handlers/<resource>.rs` (with a `#[utoipa::path(...)]` annotation; `handlers/mod.rs` re-exports the resource module's public items, so the handler is automatically reachable as `handlers::<fn_name>`). Register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.

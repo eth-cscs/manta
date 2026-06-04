@@ -5,12 +5,12 @@
 This project uses two error types:
 
 - **`manta_backend_dispatcher::error::Error`** — structured error type for shared backend-touching code: everything under `crates/manta-server/src/server/`, `crates/manta-server/src/service/`, `crates/manta-server/src/backend_dispatcher/`, and `crates/manta-server/src/dispatcher.rs`.
-- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/cli/` (handlers and CLI-only command functions). CLI handlers terminate with `eprintln!` + `process::exit()`, so anyhow's ergonomics are appropriate there.
+- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/` (handlers and CLI-only command functions). CLI handlers terminate with `eprintln!` + `process::exit()`, so anyhow's ergonomics are appropriate there.
 
 `manta_shared::common::error::MantaError` is the third type. It's used by:
 - `manta-shared`'s remaining helpers (`common::config` loader)
 - `manta-server`'s internal helpers under `server/common/` (`audit`, `jwt_ops`, `kafka`)
-- `manta-cli`'s SAT-file Jinja2 renderer (`cli/common/sat_file`)
+- `manta-cli`'s SAT-file Jinja2 renderer (`commands/apply/sat_file/render.rs`)
 
 Server code maps `MantaError` to `BackendError` at call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
 
