@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.23] - 2026-06-04
+
+### Miscellaneous Tasks
+
+- Update dependencies
+
 ## [2.0.0-beta.22] - 2026-06-04
 
 ### Documentation
