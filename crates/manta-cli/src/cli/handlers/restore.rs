@@ -1,6 +1,6 @@
 //! Routes `manta restore *` subcommands to their exec functions.
 
-use crate::cli::commands::migrate_restore;
+use crate::cli::commands::migrate::restore as migrate_restore;
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};

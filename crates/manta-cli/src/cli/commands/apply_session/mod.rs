@@ -6,10 +6,12 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 use crate::cli::common::clap_ext::ArgMatchesExt;
-use crate::cli::common::{local_git_repo, user_interaction};
+use crate::cli::common::user_interaction;
 use crate::cli::http_client::MantaClient;
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
+
+mod local_git_repo;
 
 /// Gitea repository name prefix used by CFS.
 const GITEA_REPO_NAME_PREFIX: &str = "cray/";

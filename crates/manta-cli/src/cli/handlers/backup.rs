@@ -1,6 +1,6 @@
 //! Routes `manta backup *` subcommands to their exec functions.
 
-use crate::cli::commands::migrate_backup;
+use crate::cli::commands::migrate::backup as migrate_backup;
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
 use anyhow::{Error, bail};

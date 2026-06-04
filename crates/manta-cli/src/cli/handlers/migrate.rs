@@ -1,7 +1,8 @@
 //! Routes `manta migrate *` subcommands to their exec functions.
 
-use crate::cli::commands::{
-  migrate_backup, migrate_nodes_between_hsm_groups, migrate_restore,
+use crate::cli::commands::migrate::{
+  backup as migrate_backup, nodes_between_groups as migrate_nodes_between_hsm_groups,
+  restore as migrate_restore,
 };
 use crate::cli::common::authentication::get_api_token;
 use crate::cli::common::clap_ext::ArgMatchesExt;
