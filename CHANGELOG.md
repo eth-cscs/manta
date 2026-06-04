@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.0.0-beta.24] - 2026-06-04
 
 ### Miscellaneous Tasks
 
 - Clarify command help and regenerate man pages + completions
+- Update CHANGELOG
 
 ### Refactor
 
@@ -21,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - Drop the cli:: prefix from internal imports (#4)
 - Promote add/get/delete/apply/update to subdirectories (#3)
 - Rename files to match user-facing commands
+- Tier-1+2 naming-clarity follow-up to the deep audit
+- Move SAT-file Jinja2 renderer next to its only caller
+- Rename manta_shared::shared module to types
 
 ## [2.0.0-beta.23] - 2026-06-04
 
