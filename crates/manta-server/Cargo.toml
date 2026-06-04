@@ -43,7 +43,6 @@ base64             = { workspace = true }
 chrono             = { workspace = true }
 rdkafka            = { workspace = true }
 comfy-table        = "7.2.2"
-config             = { workspace = true }
 hostlist-parser    = "0.1.6"
 regex              = { workspace = true }
 reqwest            = { workspace = true }
