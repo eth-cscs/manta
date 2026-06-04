@@ -1,0 +1,33 @@
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
+.TH manta-gen-man 1  "gen-man " 
+.SH NAME
+manta\-gen\-man \- Generate and install manta man pages
+.SH SYNOPSIS
+\fBmanta gen\-man\fR [\fB\-p\fR|\fB\-\-path\fR] [\fB\-o\fR|\fB\-\-output\fR] [\fB\-h\fR|\fB\-\-help\fR] 
+.SH DESCRIPTION
+Generate one man\-page (`.1`) per subcommand from the running binary\*(Aqs clap tree and write them into the target directory.
+.PP
+Defaults to `$XDG_DATA_HOME/man/man1` (i.e. `~/.local/share/man/man1`) when `\-\-path` is omitted. The directory is created if it doesn\*(Aqt exist.
+.PP
+After install, configure your shell so `man` finds the new location — on Linux this directory is searched by default; on macOS you may need `export MANPATH="$HOME/.local/share/man:$MANPATH"`.
+.SH OPTIONS
+.TP
+\fB\-p\fR, \fB\-\-path\fR \fI<PATH>\fR
+Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fI<FORMAT>\fR [default: table]
+Output format
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+table
+.IP \(bu 2
+json
+.RE
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help (see a summary with \*(Aq\-h\*(Aq)

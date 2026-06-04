@@ -37,6 +37,9 @@ _manta() {
             manta,gen-autocomplete)
                 cmd="manta__subcmd__gen__subcmd__autocomplete"
                 ;;
+            manta,gen-man)
+                cmd="manta__subcmd__gen__subcmd__man"
+                ;;
             manta,get)
                 cmd="manta__subcmd__get"
                 ;;
@@ -57,9 +60,6 @@ _manta() {
                 ;;
             manta,run)
                 cmd="manta__subcmd__run"
-                ;;
-            manta,update)
-                cmd="manta__subcmd__update"
                 ;;
             manta,upgrade)
                 cmd="manta__subcmd__upgrade"
@@ -118,6 +118,9 @@ _manta() {
             manta__subcmd__apply,boot)
                 cmd="manta__subcmd__apply__subcmd__boot"
                 ;;
+            manta__subcmd__apply,boot-parameters)
+                cmd="manta__subcmd__apply__subcmd__boot__subcmd__parameters"
+                ;;
             manta__subcmd__apply,configuration)
                 cmd="manta__subcmd__apply__subcmd__configuration"
                 ;;
@@ -133,17 +136,17 @@ _manta() {
             manta__subcmd__apply,kernel-parameters)
                 cmd="manta__subcmd__apply__subcmd__kernel__subcmd__parameters"
                 ;;
+            manta__subcmd__apply,redfish-endpoint)
+                cmd="manta__subcmd__apply__subcmd__redfish__subcmd__endpoints"
+                ;;
+            manta__subcmd__apply,redfish-endpoints)
+                cmd="manta__subcmd__apply__subcmd__redfish__subcmd__endpoints"
+                ;;
             manta__subcmd__apply,sat-file)
                 cmd="manta__subcmd__apply__subcmd__sat__subcmd__file"
                 ;;
-            manta__subcmd__apply,session)
-                cmd="manta__subcmd__apply__subcmd__session"
-                ;;
             manta__subcmd__apply,template)
                 cmd="manta__subcmd__apply__subcmd__template"
-                ;;
-            manta__subcmd__apply__subcmd__boot,cluster)
-                cmd="manta__subcmd__apply__subcmd__boot__subcmd__cluster"
                 ;;
             manta__subcmd__apply__subcmd__boot,group)
                 cmd="manta__subcmd__apply__subcmd__boot__subcmd__group"
@@ -154,9 +157,6 @@ _manta() {
             manta__subcmd__apply__subcmd__boot,nodes)
                 cmd="manta__subcmd__apply__subcmd__boot__subcmd__nodes"
                 ;;
-            manta__subcmd__apply__subcmd__boot__subcmd__help,cluster)
-                cmd="manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__cluster"
-                ;;
             manta__subcmd__apply__subcmd__boot__subcmd__help,group)
                 cmd="manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__group"
                 ;;
@@ -166,17 +166,11 @@ _manta() {
             manta__subcmd__apply__subcmd__boot__subcmd__help,nodes)
                 cmd="manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__nodes"
                 ;;
-            manta__subcmd__apply__subcmd__hardware,cluster)
-                cmd="manta__subcmd__apply__subcmd__hardware__subcmd__cluster"
-                ;;
             manta__subcmd__apply__subcmd__hardware,group)
                 cmd="manta__subcmd__apply__subcmd__hardware__subcmd__group"
                 ;;
             manta__subcmd__apply__subcmd__hardware,help)
                 cmd="manta__subcmd__apply__subcmd__hardware__subcmd__help"
-                ;;
-            manta__subcmd__apply__subcmd__hardware__subcmd__help,cluster)
-                cmd="manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__cluster"
                 ;;
             manta__subcmd__apply__subcmd__hardware__subcmd__help,group)
                 cmd="manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__group"
@@ -186,6 +180,9 @@ _manta() {
                 ;;
             manta__subcmd__apply__subcmd__help,boot)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__boot"
+                ;;
+            manta__subcmd__apply__subcmd__help,boot-parameters)
+                cmd="manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__parameters"
                 ;;
             manta__subcmd__apply__subcmd__help,configuration)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__configuration"
@@ -202,26 +199,20 @@ _manta() {
             manta__subcmd__apply__subcmd__help,kernel-parameters)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__kernel__subcmd__parameters"
                 ;;
+            manta__subcmd__apply__subcmd__help,redfish-endpoints)
+                cmd="manta__subcmd__apply__subcmd__help__subcmd__redfish__subcmd__endpoints"
+                ;;
             manta__subcmd__apply__subcmd__help,sat-file)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__sat__subcmd__file"
                 ;;
-            manta__subcmd__apply__subcmd__help,session)
-                cmd="manta__subcmd__apply__subcmd__help__subcmd__session"
-                ;;
             manta__subcmd__apply__subcmd__help,template)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__template"
-                ;;
-            manta__subcmd__apply__subcmd__help__subcmd__boot,cluster)
-                cmd="manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__cluster"
                 ;;
             manta__subcmd__apply__subcmd__help__subcmd__boot,group)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__group"
                 ;;
             manta__subcmd__apply__subcmd__help__subcmd__boot,nodes)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__nodes"
-                ;;
-            manta__subcmd__apply__subcmd__help__subcmd__hardware,cluster)
-                cmd="manta__subcmd__apply__subcmd__help__subcmd__hardware__subcmd__cluster"
                 ;;
             manta__subcmd__apply__subcmd__help__subcmd__hardware,group)
                 cmd="manta__subcmd__apply__subcmd__help__subcmd__hardware__subcmd__group"
@@ -238,9 +229,6 @@ _manta() {
             manta__subcmd__backup__subcmd__help,vcluster)
                 cmd="manta__subcmd__backup__subcmd__help__subcmd__vcluster"
                 ;;
-            manta__subcmd__config,gen-autocomplete)
-                cmd="manta__subcmd__config__subcmd__gen__subcmd__autocomplete"
-                ;;
             manta__subcmd__config,help)
                 cmd="manta__subcmd__config__subcmd__help"
                 ;;
@@ -252,9 +240,6 @@ _manta() {
                 ;;
             manta__subcmd__config,unset)
                 cmd="manta__subcmd__config__subcmd__unset"
-                ;;
-            manta__subcmd__config__subcmd__help,gen-autocomplete)
-                cmd="manta__subcmd__config__subcmd__help__subcmd__gen__subcmd__autocomplete"
                 ;;
             manta__subcmd__config__subcmd__help,help)
                 cmd="manta__subcmd__config__subcmd__help__subcmd__help"
@@ -433,9 +418,6 @@ _manta() {
             manta__subcmd__get,boot-parameters)
                 cmd="manta__subcmd__get__subcmd__boot__subcmd__parameters"
                 ;;
-            manta__subcmd__get,cluster)
-                cmd="manta__subcmd__get__subcmd__cluster"
-                ;;
             manta__subcmd__get,configurations)
                 cmd="manta__subcmd__get__subcmd__configurations"
                 ;;
@@ -472,17 +454,11 @@ _manta() {
             manta__subcmd__get,templates)
                 cmd="manta__subcmd__get__subcmd__templates"
                 ;;
-            manta__subcmd__get__subcmd__hardware,cluster)
-                cmd="manta__subcmd__get__subcmd__hardware__subcmd__cluster"
-                ;;
             manta__subcmd__get__subcmd__hardware,help)
                 cmd="manta__subcmd__get__subcmd__hardware__subcmd__help"
                 ;;
             manta__subcmd__get__subcmd__hardware,nodes)
                 cmd="manta__subcmd__get__subcmd__hardware__subcmd__nodes"
-                ;;
-            manta__subcmd__get__subcmd__hardware__subcmd__help,cluster)
-                cmd="manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__cluster"
                 ;;
             manta__subcmd__get__subcmd__hardware__subcmd__help,help)
                 cmd="manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__help"
@@ -492,9 +468,6 @@ _manta() {
                 ;;
             manta__subcmd__get__subcmd__help,boot-parameters)
                 cmd="manta__subcmd__get__subcmd__help__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__get__subcmd__help,cluster)
-                cmd="manta__subcmd__get__subcmd__help__subcmd__cluster"
                 ;;
             manta__subcmd__get__subcmd__help,configurations)
                 cmd="manta__subcmd__get__subcmd__help__subcmd__configurations"
@@ -532,9 +505,6 @@ _manta() {
             manta__subcmd__get__subcmd__help,templates)
                 cmd="manta__subcmd__get__subcmd__help__subcmd__templates"
                 ;;
-            manta__subcmd__get__subcmd__help__subcmd__hardware,cluster)
-                cmd="manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__cluster"
-                ;;
             manta__subcmd__get__subcmd__help__subcmd__hardware,nodes)
                 cmd="manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__nodes"
                 ;;
@@ -559,6 +529,9 @@ _manta() {
             manta__subcmd__help,gen-autocomplete)
                 cmd="manta__subcmd__help__subcmd__gen__subcmd__autocomplete"
                 ;;
+            manta__subcmd__help,gen-man)
+                cmd="manta__subcmd__help__subcmd__gen__subcmd__man"
+                ;;
             manta__subcmd__help,get)
                 cmd="manta__subcmd__help__subcmd__get"
                 ;;
@@ -579,9 +552,6 @@ _manta() {
                 ;;
             manta__subcmd__help,run)
                 cmd="manta__subcmd__help__subcmd__run"
-                ;;
-            manta__subcmd__help,update)
-                cmd="manta__subcmd__help__subcmd__update"
                 ;;
             manta__subcmd__help,upgrade)
                 cmd="manta__subcmd__help__subcmd__upgrade"
@@ -610,6 +580,9 @@ _manta() {
             manta__subcmd__help__subcmd__apply,boot)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__boot"
                 ;;
+            manta__subcmd__help__subcmd__apply,boot-parameters)
+                cmd="manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__parameters"
+                ;;
             manta__subcmd__help__subcmd__apply,configuration)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__configuration"
                 ;;
@@ -622,17 +595,14 @@ _manta() {
             manta__subcmd__help__subcmd__apply,kernel-parameters)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__kernel__subcmd__parameters"
                 ;;
+            manta__subcmd__help__subcmd__apply,redfish-endpoints)
+                cmd="manta__subcmd__help__subcmd__apply__subcmd__redfish__subcmd__endpoints"
+                ;;
             manta__subcmd__help__subcmd__apply,sat-file)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__sat__subcmd__file"
                 ;;
-            manta__subcmd__help__subcmd__apply,session)
-                cmd="manta__subcmd__help__subcmd__apply__subcmd__session"
-                ;;
             manta__subcmd__help__subcmd__apply,template)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__template"
-                ;;
-            manta__subcmd__help__subcmd__apply__subcmd__boot,cluster)
-                cmd="manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__cluster"
                 ;;
             manta__subcmd__help__subcmd__apply__subcmd__boot,group)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__group"
@@ -640,17 +610,11 @@ _manta() {
             manta__subcmd__help__subcmd__apply__subcmd__boot,nodes)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__nodes"
                 ;;
-            manta__subcmd__help__subcmd__apply__subcmd__hardware,cluster)
-                cmd="manta__subcmd__help__subcmd__apply__subcmd__hardware__subcmd__cluster"
-                ;;
             manta__subcmd__help__subcmd__apply__subcmd__hardware,group)
                 cmd="manta__subcmd__help__subcmd__apply__subcmd__hardware__subcmd__group"
                 ;;
             manta__subcmd__help__subcmd__backup,vcluster)
                 cmd="manta__subcmd__help__subcmd__backup__subcmd__vcluster"
-                ;;
-            manta__subcmd__help__subcmd__config,gen-autocomplete)
-                cmd="manta__subcmd__help__subcmd__config__subcmd__gen__subcmd__autocomplete"
                 ;;
             manta__subcmd__help__subcmd__config,set)
                 cmd="manta__subcmd__help__subcmd__config__subcmd__set"
@@ -721,9 +685,6 @@ _manta() {
             manta__subcmd__help__subcmd__get,boot-parameters)
                 cmd="manta__subcmd__help__subcmd__get__subcmd__boot__subcmd__parameters"
                 ;;
-            manta__subcmd__help__subcmd__get,cluster)
-                cmd="manta__subcmd__help__subcmd__get__subcmd__cluster"
-                ;;
             manta__subcmd__help__subcmd__get,configurations)
                 cmd="manta__subcmd__help__subcmd__get__subcmd__configurations"
                 ;;
@@ -757,23 +718,11 @@ _manta() {
             manta__subcmd__help__subcmd__get,templates)
                 cmd="manta__subcmd__help__subcmd__get__subcmd__templates"
                 ;;
-            manta__subcmd__help__subcmd__get__subcmd__hardware,cluster)
-                cmd="manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__cluster"
-                ;;
             manta__subcmd__help__subcmd__get__subcmd__hardware,nodes)
                 cmd="manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__nodes"
                 ;;
             manta__subcmd__help__subcmd__migrate,nodes)
                 cmd="manta__subcmd__help__subcmd__migrate__subcmd__nodes"
-                ;;
-            manta__subcmd__help__subcmd__migrate,vCluster)
-                cmd="manta__subcmd__help__subcmd__migrate__subcmd__vCluster"
-                ;;
-            manta__subcmd__help__subcmd__migrate__subcmd__vCluster,backup)
-                cmd="manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__backup"
-                ;;
-            manta__subcmd__help__subcmd__migrate__subcmd__vCluster,restore)
-                cmd="manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__restore"
                 ;;
             manta__subcmd__help__subcmd__power,off)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__off"
@@ -784,26 +733,17 @@ _manta() {
             manta__subcmd__help__subcmd__power,reset)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__reset"
                 ;;
-            manta__subcmd__help__subcmd__power__subcmd__off,cluster)
-                cmd="manta__subcmd__help__subcmd__power__subcmd__off__subcmd__cluster"
-                ;;
             manta__subcmd__help__subcmd__power__subcmd__off,group)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__off__subcmd__group"
                 ;;
             manta__subcmd__help__subcmd__power__subcmd__off,nodes)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__off__subcmd__nodes"
                 ;;
-            manta__subcmd__help__subcmd__power__subcmd__on,cluster)
-                cmd="manta__subcmd__help__subcmd__power__subcmd__on__subcmd__cluster"
-                ;;
             manta__subcmd__help__subcmd__power__subcmd__on,group)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__on__subcmd__group"
                 ;;
             manta__subcmd__help__subcmd__power__subcmd__on,nodes)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__on__subcmd__nodes"
-                ;;
-            manta__subcmd__help__subcmd__power__subcmd__reset,cluster)
-                cmd="manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__cluster"
                 ;;
             manta__subcmd__help__subcmd__power__subcmd__reset,group)
                 cmd="manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__group"
@@ -817,53 +757,17 @@ _manta() {
             manta__subcmd__help__subcmd__run,session)
                 cmd="manta__subcmd__help__subcmd__run__subcmd__session"
                 ;;
-            manta__subcmd__help__subcmd__update,boot-parameters)
-                cmd="manta__subcmd__help__subcmd__update__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__help__subcmd__update,redfish-endpoints)
-                cmd="manta__subcmd__help__subcmd__update__subcmd__redfish__subcmd__endpoints"
-                ;;
             manta__subcmd__migrate,help)
                 cmd="manta__subcmd__migrate__subcmd__help"
                 ;;
             manta__subcmd__migrate,nodes)
                 cmd="manta__subcmd__migrate__subcmd__nodes"
                 ;;
-            manta__subcmd__migrate,vCluster)
-                cmd="manta__subcmd__migrate__subcmd__vCluster"
-                ;;
             manta__subcmd__migrate__subcmd__help,help)
                 cmd="manta__subcmd__migrate__subcmd__help__subcmd__help"
                 ;;
             manta__subcmd__migrate__subcmd__help,nodes)
                 cmd="manta__subcmd__migrate__subcmd__help__subcmd__nodes"
-                ;;
-            manta__subcmd__migrate__subcmd__help,vCluster)
-                cmd="manta__subcmd__migrate__subcmd__help__subcmd__vCluster"
-                ;;
-            manta__subcmd__migrate__subcmd__help__subcmd__vCluster,backup)
-                cmd="manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__backup"
-                ;;
-            manta__subcmd__migrate__subcmd__help__subcmd__vCluster,restore)
-                cmd="manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__restore"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster,backup)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__backup"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster,help)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__help"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster,restore)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__restore"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster__subcmd__help,backup)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__backup"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster__subcmd__help,help)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__help"
-                ;;
-            manta__subcmd__migrate__subcmd__vCluster__subcmd__help,restore)
-                cmd="manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__restore"
                 ;;
             manta__subcmd__power,help)
                 cmd="manta__subcmd__power__subcmd__help"
@@ -889,17 +793,11 @@ _manta() {
             manta__subcmd__power__subcmd__help,reset)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__reset"
                 ;;
-            manta__subcmd__power__subcmd__help__subcmd__off,cluster)
-                cmd="manta__subcmd__power__subcmd__help__subcmd__off__subcmd__cluster"
-                ;;
             manta__subcmd__power__subcmd__help__subcmd__off,group)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__off__subcmd__group"
                 ;;
             manta__subcmd__power__subcmd__help__subcmd__off,nodes)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__off__subcmd__nodes"
-                ;;
-            manta__subcmd__power__subcmd__help__subcmd__on,cluster)
-                cmd="manta__subcmd__power__subcmd__help__subcmd__on__subcmd__cluster"
                 ;;
             manta__subcmd__power__subcmd__help__subcmd__on,group)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__on__subcmd__group"
@@ -907,17 +805,11 @@ _manta() {
             manta__subcmd__power__subcmd__help__subcmd__on,nodes)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__on__subcmd__nodes"
                 ;;
-            manta__subcmd__power__subcmd__help__subcmd__reset,cluster)
-                cmd="manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__cluster"
-                ;;
             manta__subcmd__power__subcmd__help__subcmd__reset,group)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__group"
                 ;;
             manta__subcmd__power__subcmd__help__subcmd__reset,nodes)
                 cmd="manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__nodes"
-                ;;
-            manta__subcmd__power__subcmd__off,cluster)
-                cmd="manta__subcmd__power__subcmd__off__subcmd__cluster"
                 ;;
             manta__subcmd__power__subcmd__off,group)
                 cmd="manta__subcmd__power__subcmd__off__subcmd__group"
@@ -928,9 +820,6 @@ _manta() {
             manta__subcmd__power__subcmd__off,nodes)
                 cmd="manta__subcmd__power__subcmd__off__subcmd__nodes"
                 ;;
-            manta__subcmd__power__subcmd__off__subcmd__help,cluster)
-                cmd="manta__subcmd__power__subcmd__off__subcmd__help__subcmd__cluster"
-                ;;
             manta__subcmd__power__subcmd__off__subcmd__help,group)
                 cmd="manta__subcmd__power__subcmd__off__subcmd__help__subcmd__group"
                 ;;
@@ -939,9 +828,6 @@ _manta() {
                 ;;
             manta__subcmd__power__subcmd__off__subcmd__help,nodes)
                 cmd="manta__subcmd__power__subcmd__off__subcmd__help__subcmd__nodes"
-                ;;
-            manta__subcmd__power__subcmd__on,cluster)
-                cmd="manta__subcmd__power__subcmd__on__subcmd__cluster"
                 ;;
             manta__subcmd__power__subcmd__on,group)
                 cmd="manta__subcmd__power__subcmd__on__subcmd__group"
@@ -952,9 +838,6 @@ _manta() {
             manta__subcmd__power__subcmd__on,nodes)
                 cmd="manta__subcmd__power__subcmd__on__subcmd__nodes"
                 ;;
-            manta__subcmd__power__subcmd__on__subcmd__help,cluster)
-                cmd="manta__subcmd__power__subcmd__on__subcmd__help__subcmd__cluster"
-                ;;
             manta__subcmd__power__subcmd__on__subcmd__help,group)
                 cmd="manta__subcmd__power__subcmd__on__subcmd__help__subcmd__group"
                 ;;
@@ -964,9 +847,6 @@ _manta() {
             manta__subcmd__power__subcmd__on__subcmd__help,nodes)
                 cmd="manta__subcmd__power__subcmd__on__subcmd__help__subcmd__nodes"
                 ;;
-            manta__subcmd__power__subcmd__reset,cluster)
-                cmd="manta__subcmd__power__subcmd__reset__subcmd__cluster"
-                ;;
             manta__subcmd__power__subcmd__reset,group)
                 cmd="manta__subcmd__power__subcmd__reset__subcmd__group"
                 ;;
@@ -975,9 +855,6 @@ _manta() {
                 ;;
             manta__subcmd__power__subcmd__reset,nodes)
                 cmd="manta__subcmd__power__subcmd__reset__subcmd__nodes"
-                ;;
-            manta__subcmd__power__subcmd__reset__subcmd__help,cluster)
-                cmd="manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__cluster"
                 ;;
             manta__subcmd__power__subcmd__reset__subcmd__help,group)
                 cmd="manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__group"
@@ -1012,27 +889,6 @@ _manta() {
             manta__subcmd__run__subcmd__help,session)
                 cmd="manta__subcmd__run__subcmd__help__subcmd__session"
                 ;;
-            manta__subcmd__update,boot-parameters)
-                cmd="manta__subcmd__update__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__update,help)
-                cmd="manta__subcmd__update__subcmd__help"
-                ;;
-            manta__subcmd__update,redfish-endpoint)
-                cmd="manta__subcmd__update__subcmd__redfish__subcmd__endpoints"
-                ;;
-            manta__subcmd__update,redfish-endpoints)
-                cmd="manta__subcmd__update__subcmd__redfish__subcmd__endpoints"
-                ;;
-            manta__subcmd__update__subcmd__help,boot-parameters)
-                cmd="manta__subcmd__update__subcmd__help__subcmd__boot__subcmd__parameters"
-                ;;
-            manta__subcmd__update__subcmd__help,help)
-                cmd="manta__subcmd__update__subcmd__help__subcmd__help"
-                ;;
-            manta__subcmd__update__subcmd__help,redfish-endpoints)
-                cmd="manta__subcmd__update__subcmd__help__subcmd__redfish__subcmd__endpoints"
-                ;;
             *)
                 ;;
         esac
@@ -1040,7 +896,7 @@ _manta() {
 
     case "${cmd}" in
         manta)
-            opts="-h -V --site --help --version config get add update apply delete migrate backup restore run power log console gen-autocomplete upgrade help"
+            opts="-h -V --site --help --version config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 1 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1612,7 +1468,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply)
-            opts="-h --help hardware configuration sat-file boot kernel-parameters session ephemeral-environment template help"
+            opts="-h --help hardware configuration sat-file boot boot-parameters redfish-endpoints redfish-endpoint kernel-parameters ephemeral-environment template help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1626,7 +1482,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__boot)
-            opts="-h --help nodes group cluster help"
+            opts="-h --help nodes group help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1639,42 +1495,42 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__apply__subcmd__boot__subcmd__cluster)
-            opts="-i -b -r -k -y -d -o -h --boot-image --boot-image-configuration --runtime-configuration --kernel-parameters --assume-yes --do-not-reboot --dry-run --output --help <CLUSTER_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
+        manta__subcmd__apply__subcmd__boot__subcmd__parameters)
+            opts="-H -p -k -i -d -y -o -h --hosts --params --kernel --initrd --dry-run --assume-yes --output --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                --boot-image)
+                --hosts)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                -i)
+                -H)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                --boot-image-configuration)
+                --params)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                -b)
+                -p)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
-                --runtime-configuration)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -r)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --kernel-parameters)
+                --kernel)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
                 -k)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --initrd)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -i)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -1748,22 +1604,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__boot__subcmd__help)
-            opts="nodes group cluster help"
+            opts="nodes group help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__boot__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -1952,66 +1794,12 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__hardware)
-            opts="-h --help group cluster help"
+            opts="-h --help group help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__hardware__subcmd__cluster)
-            opts="-P -t -p -d -c -D -u -o -h --pattern --target-cluster --target-group --parent-cluster --parent-group --dry-run --create-target-hsm-group --create-target-group --delete-empty-parent-hsm-group --delete-empty-parent-group --unpin-nodes --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --pattern)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -P)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --target-group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --target-cluster)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -t)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --parent-group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --parent-cluster)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -2074,22 +1862,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__hardware__subcmd__help)
-            opts="group cluster help"
+            opts="group help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__hardware__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2130,7 +1904,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__help)
-            opts="hardware configuration sat-file boot kernel-parameters session ephemeral-environment template help"
+            opts="hardware configuration sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2144,7 +1918,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__help__subcmd__boot)
-            opts="nodes group cluster"
+            opts="nodes group"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2157,9 +1931,9 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__cluster)
+        manta__subcmd__apply__subcmd__help__subcmd__boot__subcmd__parameters)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2228,22 +2002,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__help__subcmd__hardware)
-            opts="group cluster"
+            opts="group"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__help__subcmd__hardware__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -2297,7 +2057,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__apply__subcmd__help__subcmd__sat__subcmd__file)
+        manta__subcmd__apply__subcmd__help__subcmd__redfish__subcmd__endpoints)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2311,7 +2071,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__apply__subcmd__help__subcmd__session)
+        manta__subcmd__apply__subcmd__help__subcmd__sat__subcmd__file)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2363,6 +2123,108 @@ _manta() {
                     return 0
                     ;;
                 -H)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --output)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
+                    return 0
+                    ;;
+                -o)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
+        manta__subcmd__apply__subcmd__redfish__subcmd__endpoints)
+            opts="-i -n -H -d -f -e -u -p -U -m -M -I -r -t -o -h --id --name --hostname --domain --fqdn --enabled --user --password --use-ssdp --mac-required --macaddr --ipaddress --rediscover-on-update --template-id --output --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --id)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -i)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --name)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -n)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --hostname)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -H)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --domain)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -d)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --fqdn)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -f)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --user)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -u)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --password)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -p)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --macaddr)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -M)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --ipaddress)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -I)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                --template-id)
+                    COMPREPLY=($(compgen -f "${cur}"))
+                    return 0
+                    ;;
+                -t)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;
@@ -2489,94 +2351,6 @@ _manta() {
                     return 0
                     ;;
                 --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__apply__subcmd__session)
-            opts="-n -p -r -w -t -v -P -l -H -o -h --name --playbook-name --repo-path --watch-logs --timestamps --ansible-verbosity --ansible-passthrough --ansible-limit --hsm-group --group --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --name)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -n)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --playbook-name)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --repo-path)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                -r)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                --ansible-verbosity)
-                    COMPREPLY=($(compgen -W "0 1 2 3 4" -- "${cur}"))
-                    return 0
-                    ;;
-                -v)
-                    COMPREPLY=($(compgen -W "0 1 2 3 4" -- "${cur}"))
-                    return 0
-                    ;;
-                --ansible-passthrough)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -P)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --ansible-limit)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -l)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --hsm-group)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
                     COMPREPLY=($(compgen -W "table json" -- "${cur}"))
                     return 0
                     ;;
@@ -2750,7 +2524,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config)
-            opts="-h --help show set unset gen-autocomplete help"
+            opts="-h --help show set unset help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2763,59 +2537,9 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__config__subcmd__gen__subcmd__autocomplete)
-            opts="-s -p -h --shell --path --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --shell)
-                    COMPREPLY=($(compgen -W "bash zsh fish" -- "${cur}"))
-                    return 0
-                    ;;
-                -s)
-                    COMPREPLY=($(compgen -W "bash zsh fish" -- "${cur}"))
-                    return 0
-                    ;;
-                --path)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__config__subcmd__help)
-            opts="show set unset gen-autocomplete help"
+            opts="show set unset help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__config__subcmd__help__subcmd__gen__subcmd__autocomplete)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -3927,8 +3651,44 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
+        manta__subcmd__gen__subcmd__man)
+            opts="-p -o -h --path --output --help"
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                --path)
+                    COMPREPLY=()
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o plusdirs
+                    fi
+                    return 0
+                    ;;
+                -p)
+                    COMPREPLY=()
+                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
+                        compopt -o plusdirs
+                    fi
+                    return 0
+                    ;;
+                --output)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
+                    return 0
+                    ;;
+                -o)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
+                    return 0
+                    ;;
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
         manta__subcmd__get)
-            opts="-h --help groups hardware sessions configurations templates cluster group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints help"
+            opts="-h --help groups hardware sessions configurations templates group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3966,36 +3726,6 @@ _manta() {
                     ;;
                 -n)
                     COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__get__subcmd__cluster)
-            opts="-n -x -s -T -o -h --nids-only-one-line --xnames-only-one-line --status --summary-status --output --help <GROUP_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --status)
-                    COMPREPLY=($(compgen -W "OFF ON READY STANDBY PENDING FAILED CONFIGURED" -- "${cur}"))
-                    return 0
-                    ;;
-                -s)
-                    COMPREPLY=($(compgen -W "OFF ON READY STANDBY PENDING FAILED CONFIGURED" -- "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table table-wide json summary" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table table-wide json summary" -- "${cur}"))
                     return 0
                     ;;
                 *)
@@ -4138,7 +3868,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__hardware)
-            opts="-h --help cluster nodes help"
+            opts="-h --help nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4151,45 +3881,9 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__get__subcmd__hardware__subcmd__cluster)
-            opts="-o -h --output --help <CLUSTER_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --output)
-                    COMPREPLY=($(compgen -W "json summary details pattern" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "json summary details pattern" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__get__subcmd__hardware__subcmd__help)
-            opts="cluster nodes help"
+            opts="nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -4252,7 +3946,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__help)
-            opts="groups hardware sessions configurations templates cluster group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints help"
+            opts="groups hardware sessions configurations templates group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4266,20 +3960,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__help__subcmd__boot__subcmd__parameters)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__get__subcmd__help__subcmd__cluster)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -4350,22 +4030,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__help__subcmd__hardware)
-            opts="cluster nodes"
+            opts="nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -4810,7 +4476,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help)
-            opts="config get add update apply delete migrate backup restore run power log console gen-autocomplete upgrade help"
+            opts="config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4936,7 +4602,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__apply)
-            opts="hardware configuration sat-file boot kernel-parameters session ephemeral-environment template"
+            opts="hardware configuration sat-file boot boot-parameters redfish-endpoints kernel-parameters ephemeral-environment template"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4950,7 +4616,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__apply__subcmd__boot)
-            opts="nodes group cluster"
+            opts="nodes group"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -4963,9 +4629,9 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__cluster)
+        manta__subcmd__help__subcmd__apply__subcmd__boot__subcmd__parameters)
             opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5034,22 +4700,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__apply__subcmd__hardware)
-            opts="group cluster"
+            opts="group"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__apply__subcmd__hardware__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5089,7 +4741,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__help__subcmd__apply__subcmd__sat__subcmd__file)
+        manta__subcmd__help__subcmd__apply__subcmd__redfish__subcmd__endpoints)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -5103,7 +4755,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__help__subcmd__apply__subcmd__session)
+        manta__subcmd__help__subcmd__apply__subcmd__sat__subcmd__file)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -5160,22 +4812,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__config)
-            opts="show set unset gen-autocomplete"
+            opts="show set unset"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__config__subcmd__gen__subcmd__autocomplete)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5537,8 +5175,22 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
+        manta__subcmd__help__subcmd__gen__subcmd__man)
+            opts=""
+            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
+                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+                return 0
+            fi
+            case "${prev}" in
+                *)
+                    COMPREPLY=()
+                    ;;
+            esac
+            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
+            return 0
+            ;;
         manta__subcmd__help__subcmd__get)
-            opts="groups hardware sessions configurations templates cluster group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints"
+            opts="groups hardware sessions configurations templates group-nodes group-hardware nodes images boot-parameters kernel-parameters redfish-endpoints"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5552,20 +5204,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__get__subcmd__boot__subcmd__parameters)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__get__subcmd__cluster)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -5636,22 +5274,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__get__subcmd__hardware)
-            opts="cluster nodes"
+            opts="nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5790,7 +5414,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__migrate)
-            opts="vCluster nodes"
+            opts="nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5817,48 +5441,6 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__help__subcmd__migrate__subcmd__vCluster)
-            opts="backup restore"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__backup)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__migrate__subcmd__vCluster__subcmd__restore)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__help__subcmd__power)
             opts="on off reset"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
@@ -5874,22 +5456,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__power__subcmd__off)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__power__subcmd__off__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5930,22 +5498,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__power__subcmd__on)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__power__subcmd__on__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -5986,22 +5540,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__power__subcmd__reset)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__power__subcmd__reset__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -6097,48 +5637,6 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__help__subcmd__update)
-            opts="boot-parameters redfish-endpoints"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__update__subcmd__boot__subcmd__parameters)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__update__subcmd__redfish__subcmd__endpoints)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__help__subcmd__upgrade)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
@@ -6168,7 +5666,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__migrate)
-            opts="-h --help vCluster nodes help"
+            opts="-h --help nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -6182,7 +5680,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__migrate__subcmd__help)
-            opts="vCluster nodes help"
+            opts="nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -6223,48 +5721,6 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__migrate__subcmd__help__subcmd__vCluster)
-            opts="backup restore"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__backup)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__help__subcmd__vCluster__subcmd__restore)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__migrate__subcmd__nodes)
             opts="-f -t -d -o -h --from --to --dry-run --output --help <XNAMES>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
@@ -6293,304 +5749,6 @@ _manta() {
                     return 0
                     ;;
                 -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster)
-            opts="-h --help backup restore help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__backup)
-            opts="-b -d -p -a -o -h --bos --destination --pre-hook --post-hook --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --bos)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -b)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --destination)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                -d)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                --pre-hook)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --post-hook)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -a)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__help)
-            opts="backup restore help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__backup)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__help)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__help__subcmd__restore)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__migrate__subcmd__vCluster__subcmd__restore)
-            opts="-b -c -j -m -i -p -a -o -h --bos-file --cfs-file --hsm-file --ims-file --image-dir --pre-hook --post-hook --overwrite --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --bos-file)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                -b)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --cfs-file)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                -c)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --hsm-file)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                -j)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --ims-file)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                -m)
-                    local oldifs
-                    if [ -n "${IFS+x}" ]; then
-                        oldifs="$IFS"
-                    fi
-                    IFS=$'\n'
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    if [ -n "${oldifs+x}" ]; then
-                        IFS="$oldifs"
-                    fi
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o filenames
-                    fi
-                    return 0
-                    ;;
-                --image-dir)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                -i)
-                    COMPREPLY=()
-                    if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
-                        compopt -o plusdirs
-                    fi
-                    return 0
-                    ;;
-                --pre-hook)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --post-hook)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -a)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
                     COMPREPLY=($(compgen -W "table json" -- "${cur}"))
                     return 0
                     ;;
@@ -6644,22 +5802,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__help__subcmd__off)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__help__subcmd__off__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -6700,22 +5844,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__help__subcmd__on)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__help__subcmd__on__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -6756,22 +5886,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__help__subcmd__reset)
-            opts="group cluster nodes"
+            opts="group nodes"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__help__subcmd__reset__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -6812,42 +5928,12 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__off)
-            opts="-h --help group cluster nodes help"
+            opts="-h --help group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__off__subcmd__cluster)
-            opts="-g -R -y -o -h --graceful --reason --assume-yes --no-wait --output --help <CLUSTER_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --reason)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -R)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -6886,22 +5972,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__off__subcmd__help)
-            opts="group cluster nodes help"
+            opts="group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__off__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -6978,42 +6050,12 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__on)
-            opts="-h --help group cluster nodes help"
+            opts="-h --help group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__on__subcmd__cluster)
-            opts="-R -y -o -h --reason --assume-yes --no-wait --output --help <CLUSTER_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --reason)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -R)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -7052,22 +6094,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__on__subcmd__help)
-            opts="group cluster nodes help"
+            opts="group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__on__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -7144,42 +6172,12 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__reset)
-            opts="-h --help group cluster nodes help"
+            opts="-h --help group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
             case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__reset__subcmd__cluster)
-            opts="-g -y -o -r -h --graceful --assume-yes --no-wait --output --reason --help <CLUSTER_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                --reason)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -r)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
                 *)
                     COMPREPLY=()
                     ;;
@@ -7218,22 +6216,8 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__reset__subcmd__help)
-            opts="group cluster nodes help"
+            opts="group nodes help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__power__subcmd__reset__subcmd__help__subcmd__cluster)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
             fi
@@ -7659,232 +6643,6 @@ _manta() {
                     return 0
                     ;;
                 -H)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update)
-            opts="-h --help boot-parameters redfish-endpoints redfish-endpoint help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__boot__subcmd__parameters)
-            opts="-H -p -k -i -d -y -o -h --hosts --params --kernel --initrd --dry-run --assume-yes --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --hosts)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --params)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --kernel)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -k)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --initrd)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -i)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --output)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                -o)
-                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__help)
-            opts="boot-parameters redfish-endpoints help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__help__subcmd__boot__subcmd__parameters)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__help__subcmd__help)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__help__subcmd__redfish__subcmd__endpoints)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__update__subcmd__redfish__subcmd__endpoints)
-            opts="-i -n -H -d -f -e -u -p -U -m -M -I -r -t -o -h --id --name --hostname --domain --fqdn --enabled --user --password --use-ssdp --mac-required --macaddr --ipaddress --rediscover-on-update --template-id --output --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --id)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -i)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --name)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -n)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --hostname)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -H)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --domain)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -d)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --fqdn)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -f)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --user)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -u)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --password)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -p)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --macaddr)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -M)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --ipaddress)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -I)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                --template-id)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                -t)
                     COMPREPLY=($(compgen -f "${cur}"))
                     return 0
                     ;;

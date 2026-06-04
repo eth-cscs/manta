@@ -26,10 +26,9 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand config 'Show or change CLI-side settings (active site, default node group, log level)'
             cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
-            cand update 'Modify existing boot parameters or Redfish endpoints in place'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
             cand delete 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
-            cand migrate 'Move nodes between groups (vCluster backup/restore have moved to ''manta backup''/''manta restore'')'
+            cand migrate 'Move nodes between groups'
             cand backup 'Back up a virtual cluster (images, boot settings, group membership) to disk'
             cand restore 'Restore a virtual cluster from a backup bundle'
             cand run 'Create and run a configuration session from a local Ansible repo'
@@ -37,6 +36,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand log 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
             cand console 'Attach to a node''s serial console, or to a configuration session''s Ansible container'
             cand gen-autocomplete 'Generate shell completion scripts'
+            cand gen-man 'Generate and install manta man pages'
             cand upgrade 'Replace this `manta` binary with the latest release'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
@@ -46,7 +46,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;show'= {
@@ -131,19 +130,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;unset;help;help'= {
         }
-        &'manta;config;gen-autocomplete'= {
-            cand -s 'Shell type (guessed from $SHELL if omitted)'
-            cand --shell 'Shell type (guessed from $SHELL if omitted)'
-            cand -p 'Directory to write the script (prints to stdout if omitted)'
-            cand --path 'Directory to write the script (prints to stdout if omitted)'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
         &'manta;config;help'= {
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;help;show'= {
@@ -173,8 +163,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;help;unset;auth'= {
         }
-        &'manta;config;help;gen-autocomplete'= {
-        }
         &'manta;config;help;help'= {
         }
         &'manta;get'= {
@@ -185,7 +173,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
-            cand cluster '[DEPRECATED] Use ''manta get group-nodes'' instead'
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
@@ -204,15 +191,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;hardware'= {
             cand -h 'Print help'
             cand --help 'Print help'
-            cand cluster '[DEPRECATED] Use ''manta get group-hardware'' instead'
             cand nodes 'Show hardware inventory for a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;get;hardware;cluster'= {
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -h 'Print help'
-            cand --help 'Print help'
         }
         &'manta;get;hardware;nodes'= {
             cand -o 'Output format'
@@ -221,11 +201,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
         }
         &'manta;get;hardware;help'= {
-            cand cluster '[DEPRECATED] Use ''manta get group-hardware'' instead'
             cand nodes 'Show hardware inventory for a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;get;hardware;help;cluster'= {
         }
         &'manta;get;hardware;help;nodes'= {
         }
@@ -285,20 +262,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --output 'Output format'
             cand -m 'Return only the most recent (equivalent to --limit 1)'
             cand --most-recent 'Return only the most recent (equivalent to --limit 1)'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;get;cluster'= {
-            cand -s 'Filter nodes by status'
-            cand --status 'Filter nodes by status'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -n 'Print NIDs on a single line'
-            cand --nids-only-one-line 'Print NIDs on a single line'
-            cand -x 'Print xnames on a single line'
-            cand --xnames-only-one-line 'Print xnames on a single line'
-            cand -T 'Show a group status summary: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node''s configuration failed'
-            cand --summary-status 'Show a group status summary: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node''s configuration failed'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -392,7 +355,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
-            cand cluster '[DEPRECATED] Use ''manta get group-nodes'' instead'
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
@@ -405,10 +367,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;help;groups'= {
         }
         &'manta;get;help;hardware'= {
-            cand cluster '[DEPRECATED] Use ''manta get group-hardware'' instead'
             cand nodes 'Show hardware inventory for a set of nodes'
-        }
-        &'manta;get;help;hardware;cluster'= {
         }
         &'manta;get;help;hardware;nodes'= {
         }
@@ -417,8 +376,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;help;configurations'= {
         }
         &'manta;get;help;templates'= {
-        }
-        &'manta;get;help;cluster'= {
         }
         &'manta;get;help;group-nodes'= {
         }
@@ -644,111 +601,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;add;help;help'= {
         }
-        &'manta;update'= {
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand boot-parameters 'Update boot parameters for nodes'
-            cand redfish-endpoints 'Update a Redfish endpoint'
-            cand redfish-endpoint 'Update a Redfish endpoint'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;update;boot-parameters'= {
-            cand -H 'Xnames of the nodes to update'
-            cand --hosts 'Xnames of the nodes to update'
-            cand -p 'Kernel parameters'
-            cand --params 'Kernel parameters'
-            cand -k 'S3 path to the kernel file'
-            cand --kernel 'S3 path to the kernel file'
-            cand -i 'S3 path to the initrd file'
-            cand --initrd 'S3 path to the initrd file'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -d 'Simulate the operation without making changes'
-            cand --dry-run 'Simulate the operation without making changes'
-            cand -y 'Skip confirmation prompts'
-            cand --assume-yes 'Skip confirmation prompts'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;update;redfish-endpoints'= {
-            cand -i 'Xname of the endpoint to update'
-            cand --id 'Xname of the endpoint to update'
-            cand -n 'Arbitrary user-provided name for the endpoint'
-            cand --name 'Arbitrary user-provided name for the endpoint'
-            cand -H 'Hostname (FQDN host portion)'
-            cand --hostname 'Hostname (FQDN host portion)'
-            cand -d 'Domain (FQDN domain portion)'
-            cand --domain 'Domain (FQDN domain portion)'
-            cand -f 'Fully-qualified domain name on the management network'
-            cand --fqdn 'Fully-qualified domain name on the management network'
-            cand -u 'Username for endpoint authentication'
-            cand --user 'Username for endpoint authentication'
-            cand -p 'Password for endpoint authentication'
-            cand --password 'Password for endpoint authentication'
-            cand -M 'MAC address of the Redfish endpoint on the management network'
-            cand --macaddr 'MAC address of the Redfish endpoint on the management network'
-            cand -I 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
-            cand --ipaddress 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
-            cand -t 'Discovery template ID'
-            cand --template-id 'Discovery template ID'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -e 'Enable the endpoint'
-            cand --enabled 'Enable the endpoint'
-            cand -U 'Use SSDP for discovery if the endpoint supports it'
-            cand --use-ssdp 'Use SSDP for discovery if the endpoint supports it'
-            cand -m 'Require a MAC address for geolocation'
-            cand --mac-required 'Require a MAC address for geolocation'
-            cand -r 'Trigger rediscovery when endpoint information is updated'
-            cand --rediscover-on-update 'Trigger rediscovery when endpoint information is updated'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;update;redfish-endpoint'= {
-            cand -i 'Xname of the endpoint to update'
-            cand --id 'Xname of the endpoint to update'
-            cand -n 'Arbitrary user-provided name for the endpoint'
-            cand --name 'Arbitrary user-provided name for the endpoint'
-            cand -H 'Hostname (FQDN host portion)'
-            cand --hostname 'Hostname (FQDN host portion)'
-            cand -d 'Domain (FQDN domain portion)'
-            cand --domain 'Domain (FQDN domain portion)'
-            cand -f 'Fully-qualified domain name on the management network'
-            cand --fqdn 'Fully-qualified domain name on the management network'
-            cand -u 'Username for endpoint authentication'
-            cand --user 'Username for endpoint authentication'
-            cand -p 'Password for endpoint authentication'
-            cand --password 'Password for endpoint authentication'
-            cand -M 'MAC address of the Redfish endpoint on the management network'
-            cand --macaddr 'MAC address of the Redfish endpoint on the management network'
-            cand -I 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
-            cand --ipaddress 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
-            cand -t 'Discovery template ID'
-            cand --template-id 'Discovery template ID'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -e 'Enable the endpoint'
-            cand --enabled 'Enable the endpoint'
-            cand -U 'Use SSDP for discovery if the endpoint supports it'
-            cand --use-ssdp 'Use SSDP for discovery if the endpoint supports it'
-            cand -m 'Require a MAC address for geolocation'
-            cand --mac-required 'Require a MAC address for geolocation'
-            cand -r 'Trigger rediscovery when endpoint information is updated'
-            cand --rediscover-on-update 'Trigger rediscovery when endpoint information is updated'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;update;help'= {
-            cand boot-parameters 'Update boot parameters for nodes'
-            cand redfish-endpoints 'Update a Redfish endpoint'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;update;help;boot-parameters'= {
-        }
-        &'manta;update;help;redfish-endpoints'= {
-        }
-        &'manta;update;help;help'= {
-        }
         &'manta;apply'= {
             cand -h 'Print help'
             cand --help 'Print help'
@@ -756,8 +608,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
+            cand boot-parameters 'Update boot parameters for nodes'
+            cand redfish-endpoints 'Update an existing Redfish endpoint'
+            cand redfish-endpoint 'Update an existing Redfish endpoint'
             cand kernel-parameters 'Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)'
-            cand session '[DEPRECATED] Use ''manta run session'' instead'
             cand ephemeral-environment 'Launch an ephemeral SSH environment from an image'
             cand template 'Boot nodes using an existing session template'
             cand help 'Print this message or the help of the given subcommand(s)'
@@ -766,7 +620,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand group '[experimental] Rescale a group''s hardware allocation'
-            cand cluster '[DEPRECATED] Use ''manta apply hardware group'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;hardware;group'= {
@@ -793,38 +646,11 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
-        &'manta;apply;hardware;cluster'= {
-            cand -P 'Hardware pattern: <component>:<qty>[:<component>:<qty>...]. eg: ''a100:12:epyc:5'''
-            cand --pattern 'Hardware pattern: <component>:<qty>[:<component>:<qty>...]. eg: ''a100:12:epyc:5'''
-            cand -t 'Group to rescale'
-            cand --target-group 'Group to rescale'
-            cand --target-cluster 'Group to rescale'
-            cand -p 'Group that donates or receives the redistributed nodes'
-            cand --parent-group 'Group that donates or receives the redistributed nodes'
-            cand --parent-cluster 'Group that donates or receives the redistributed nodes'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -d 'Simulate the operation without making changes'
-            cand --dry-run 'Simulate the operation without making changes'
-            cand -c 'Create the target group if it does not exist'
-            cand --create-target-group 'Create the target group if it does not exist'
-            cand --create-target-hsm-group 'Create the target group if it does not exist'
-            cand -D 'Delete the parent group if empty after this operation'
-            cand --delete-empty-parent-group 'Delete the parent group if empty after this operation'
-            cand --delete-empty-parent-hsm-group 'Delete the parent group if empty after this operation'
-            cand -u 'Allow any available nodes to be selected'
-            cand --unpin-nodes 'Allow any available nodes to be selected'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
         &'manta;apply;hardware;help'= {
             cand group '[experimental] Rescale a group''s hardware allocation'
-            cand cluster '[DEPRECATED] Use ''manta apply hardware group'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;hardware;help;group'= {
-        }
-        &'manta;apply;hardware;help;cluster'= {
         }
         &'manta;apply;hardware;help;help'= {
         }
@@ -882,7 +708,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
             cand nodes 'Update boot parameters for a set of nodes'
             cand group 'Update boot parameters for all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta apply boot group'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;boot;nodes'= {
@@ -923,38 +748,102 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
-        &'manta;apply;boot;cluster'= {
-            cand -i 'Image ID to boot the nodes'
-            cand --boot-image 'Image ID to boot the nodes'
-            cand -b 'Configuration name used to build the boot image (uses the most recent matching image)'
-            cand --boot-image-configuration 'Configuration name used to build the boot image (uses the most recent matching image)'
-            cand -r 'Configuration to apply to nodes after booting'
-            cand --runtime-configuration 'Configuration to apply to nodes after booting'
-            cand -k 'Kernel parameters to assign to all group members'
-            cand --kernel-parameters 'Kernel parameters to assign to all group members'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -y 'Skip confirmation prompts'
-            cand --assume-yes 'Skip confirmation prompts'
-            cand --do-not-reboot 'Suppress the automatic reboot after updating boot parameters'
-            cand -d 'Simulate the operation without making changes'
-            cand --dry-run 'Simulate the operation without making changes'
-            cand -h 'Print help (see more with ''--help'')'
-            cand --help 'Print help (see more with ''--help'')'
-        }
         &'manta;apply;boot;help'= {
             cand nodes 'Update boot parameters for a set of nodes'
             cand group 'Update boot parameters for all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta apply boot group'' instead'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;boot;help;nodes'= {
         }
         &'manta;apply;boot;help;group'= {
         }
-        &'manta;apply;boot;help;cluster'= {
-        }
         &'manta;apply;boot;help;help'= {
+        }
+        &'manta;apply;boot-parameters'= {
+            cand -H 'Xnames of the nodes to update'
+            cand --hosts 'Xnames of the nodes to update'
+            cand -p 'Kernel parameters'
+            cand --params 'Kernel parameters'
+            cand -k 'S3 path to the kernel file'
+            cand --kernel 'S3 path to the kernel file'
+            cand -i 'S3 path to the initrd file'
+            cand --initrd 'S3 path to the initrd file'
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand -d 'Simulate the operation without making changes'
+            cand --dry-run 'Simulate the operation without making changes'
+            cand -y 'Skip confirmation prompts'
+            cand --assume-yes 'Skip confirmation prompts'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
+        &'manta;apply;redfish-endpoints'= {
+            cand -i 'Xname of the endpoint to update'
+            cand --id 'Xname of the endpoint to update'
+            cand -n 'Arbitrary user-provided name for the endpoint'
+            cand --name 'Arbitrary user-provided name for the endpoint'
+            cand -H 'Hostname (FQDN host portion)'
+            cand --hostname 'Hostname (FQDN host portion)'
+            cand -d 'Domain (FQDN domain portion)'
+            cand --domain 'Domain (FQDN domain portion)'
+            cand -f 'Fully-qualified domain name on the management network'
+            cand --fqdn 'Fully-qualified domain name on the management network'
+            cand -u 'Username for endpoint authentication'
+            cand --user 'Username for endpoint authentication'
+            cand -p 'Password for endpoint authentication'
+            cand --password 'Password for endpoint authentication'
+            cand -M 'MAC address of the Redfish endpoint on the management network'
+            cand --macaddr 'MAC address of the Redfish endpoint on the management network'
+            cand -I 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
+            cand --ipaddress 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
+            cand -t 'Discovery template ID'
+            cand --template-id 'Discovery template ID'
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand -e 'Enable the endpoint'
+            cand --enabled 'Enable the endpoint'
+            cand -U 'Use SSDP for discovery if the endpoint supports it'
+            cand --use-ssdp 'Use SSDP for discovery if the endpoint supports it'
+            cand -m 'Require a MAC address for geolocation'
+            cand --mac-required 'Require a MAC address for geolocation'
+            cand -r 'Trigger rediscovery when endpoint information is updated'
+            cand --rediscover-on-update 'Trigger rediscovery when endpoint information is updated'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
+        &'manta;apply;redfish-endpoint'= {
+            cand -i 'Xname of the endpoint to update'
+            cand --id 'Xname of the endpoint to update'
+            cand -n 'Arbitrary user-provided name for the endpoint'
+            cand --name 'Arbitrary user-provided name for the endpoint'
+            cand -H 'Hostname (FQDN host portion)'
+            cand --hostname 'Hostname (FQDN host portion)'
+            cand -d 'Domain (FQDN domain portion)'
+            cand --domain 'Domain (FQDN domain portion)'
+            cand -f 'Fully-qualified domain name on the management network'
+            cand --fqdn 'Fully-qualified domain name on the management network'
+            cand -u 'Username for endpoint authentication'
+            cand --user 'Username for endpoint authentication'
+            cand -p 'Password for endpoint authentication'
+            cand --password 'Password for endpoint authentication'
+            cand -M 'MAC address of the Redfish endpoint on the management network'
+            cand --macaddr 'MAC address of the Redfish endpoint on the management network'
+            cand -I 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
+            cand --ipaddress 'IP address of the Redfish endpoint on the management network (IPv4 or IPv6)'
+            cand -t 'Discovery template ID'
+            cand --template-id 'Discovery template ID'
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand -e 'Enable the endpoint'
+            cand --enabled 'Enable the endpoint'
+            cand -U 'Use SSDP for discovery if the endpoint supports it'
+            cand --use-ssdp 'Use SSDP for discovery if the endpoint supports it'
+            cand -m 'Require a MAC address for geolocation'
+            cand --mac-required 'Require a MAC address for geolocation'
+            cand -r 'Trigger rediscovery when endpoint information is updated'
+            cand --rediscover-on-update 'Trigger rediscovery when endpoint information is updated'
+            cand -h 'Print help'
+            cand --help 'Print help'
         }
         &'manta;apply;kernel-parameters'= {
             cand -n 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
@@ -971,31 +860,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
             cand --help 'Print help'
-        }
-        &'manta;apply;session'= {
-            cand -n 'Session name'
-            cand --name 'Session name'
-            cand -p 'Ansible playbook filename'
-            cand --playbook-name 'Ansible playbook filename'
-            cand -r 'Path to the local git repo containing the Ansible playbook'
-            cand --repo-path 'Path to the local git repo containing the Ansible playbook'
-            cand -v 'Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)'
-            cand --ansible-verbosity 'Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)'
-            cand -P 'Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)'
-            cand --ansible-passthrough 'Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)'
-            cand -l 'Limit the session to specific nodes (must be a subset of --group if both are provided)'
-            cand --ansible-limit 'Limit the session to specific nodes (must be a subset of --group if both are provided)'
-            cand -H 'Run the session against every node in this group'
-            cand --group 'Run the session against every node in this group'
-            cand --hsm-group 'Run the session against every node in this group'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -w 'Stream session logs to stdout'
-            cand --watch-logs 'Stream session logs to stdout'
-            cand -t 'Show log timestamps'
-            cand --timestamps 'Show log timestamps'
-            cand -h 'Print help (see more with ''--help'')'
-            cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;apply;ephemeral-environment'= {
             cand -i 'Image ID to use'
@@ -1026,19 +890,17 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
+            cand boot-parameters 'Update boot parameters for nodes'
+            cand redfish-endpoints 'Update an existing Redfish endpoint'
             cand kernel-parameters 'Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)'
-            cand session '[DEPRECATED] Use ''manta run session'' instead'
             cand ephemeral-environment 'Launch an ephemeral SSH environment from an image'
             cand template 'Boot nodes using an existing session template'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;help;hardware'= {
             cand group '[experimental] Rescale a group''s hardware allocation'
-            cand cluster '[DEPRECATED] Use ''manta apply hardware group'' instead'
         }
         &'manta;apply;help;hardware;group'= {
-        }
-        &'manta;apply;help;hardware;cluster'= {
         }
         &'manta;apply;help;configuration'= {
         }
@@ -1047,17 +909,16 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;help;boot'= {
             cand nodes 'Update boot parameters for a set of nodes'
             cand group 'Update boot parameters for all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta apply boot group'' instead'
         }
         &'manta;apply;help;boot;nodes'= {
         }
         &'manta;apply;help;boot;group'= {
         }
-        &'manta;apply;help;boot;cluster'= {
+        &'manta;apply;help;boot-parameters'= {
+        }
+        &'manta;apply;help;redfish-endpoints'= {
         }
         &'manta;apply;help;kernel-parameters'= {
-        }
-        &'manta;apply;help;session'= {
         }
         &'manta;apply;help;ephemeral-environment'= {
         }
@@ -1236,62 +1097,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;migrate'= {
             cand -h 'Print help'
             cand --help 'Print help'
-            cand vCluster '[experimental] Migrate a cluster'
             cand nodes 'Move nodes between clusters'
             cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;migrate;vCluster'= {
-            cand -h 'Print help'
-            cand --help 'Print help'
-            cand backup '[DEPRECATED] Use ''manta backup vcluster'' instead'
-            cand restore '[DEPRECATED] Use ''manta restore vcluster'' instead. The old path keeps working for one release.'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;migrate;vCluster;backup'= {
-            cand -b 'Session template to derive the backup from'
-            cand --bos 'Session template to derive the backup from'
-            cand -d 'Destination directory for the backup files'
-            cand --destination 'Destination directory for the backup files'
-            cand -p 'Command to run before the backup. eg: --pre-hook "echo hello"'
-            cand --pre-hook 'Command to run before the backup. eg: --pre-hook "echo hello"'
-            cand -a 'Command to run after a successful backup. eg: --post-hook "echo hello"'
-            cand --post-hook 'Command to run after a successful backup. eg: --post-hook "echo hello"'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -h 'Print help (see more with ''--help'')'
-            cand --help 'Print help (see more with ''--help'')'
-        }
-        &'manta;migrate;vCluster;restore'= {
-            cand -b 'Session template backup file'
-            cand --bos-file 'Session template backup file'
-            cand -c 'Configuration backup file'
-            cand --cfs-file 'Configuration backup file'
-            cand -j 'Group description backup file'
-            cand --hsm-file 'Group description backup file'
-            cand -m 'Image metadata backup file'
-            cand --ims-file 'Image metadata backup file'
-            cand -i 'Directory containing the image files'
-            cand --image-dir 'Directory containing the image files'
-            cand -p 'Command to run before the restore. eg: --pre-hook "echo hello"'
-            cand --pre-hook 'Command to run before the restore. eg: --pre-hook "echo hello"'
-            cand -a 'Command to run after a successful restore. eg: --post-hook "echo hello"'
-            cand --post-hook 'Command to run after a successful restore. eg: --post-hook "echo hello"'
-            cand --output 'Output format'
-            cand -o 'Overwrite existing data'
-            cand --overwrite 'Overwrite existing data'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;migrate;vCluster;help'= {
-            cand backup '[DEPRECATED] Use ''manta backup vcluster'' instead'
-            cand restore '[DEPRECATED] Use ''manta restore vcluster'' instead. The old path keeps working for one release.'
-            cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;migrate;vCluster;help;backup'= {
-        }
-        &'manta;migrate;vCluster;help;restore'= {
-        }
-        &'manta;migrate;vCluster;help;help'= {
         }
         &'manta;migrate;nodes'= {
             cand -f 'Source cluster to move nodes from'
@@ -1306,17 +1113,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
         }
         &'manta;migrate;help'= {
-            cand vCluster '[experimental] Migrate a cluster'
             cand nodes 'Move nodes between clusters'
             cand help 'Print this message or the help of the given subcommand(s)'
-        }
-        &'manta;migrate;help;vCluster'= {
-            cand backup '[DEPRECATED] Use ''manta backup vcluster'' instead'
-            cand restore '[DEPRECATED] Use ''manta restore vcluster'' instead. The old path keeps working for one release.'
-        }
-        &'manta;migrate;help;vCluster;backup'= {
-        }
-        &'manta;migrate;help;vCluster;restore'= {
         }
         &'manta;migrate;help;nodes'= {
         }
@@ -1436,22 +1234,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Power on all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power on group'' instead'
             cand nodes 'Power on a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;on;group'= {
-            cand -R 'Reason for the power operation'
-            cand --reason 'Reason for the power operation'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -y 'Skip confirmation prompts'
-            cand --assume-yes 'Skip confirmation prompts'
-            cand --no-wait 'Return as soon as the transition is queued; don''t poll for completion'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;power;on;cluster'= {
             cand -R 'Reason for the power operation'
             cand --reason 'Reason for the power operation'
             cand -o 'Output format'
@@ -1473,13 +1259,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;power;on;help'= {
             cand group 'Power on all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power on group'' instead'
             cand nodes 'Power on a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;on;help;group'= {
-        }
-        &'manta;power;on;help;cluster'= {
         }
         &'manta;power;on;help;nodes'= {
         }
@@ -1489,24 +1272,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Power off all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power off group'' instead'
             cand nodes 'Power off a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;off;group'= {
-            cand -R 'Reason for the power operation'
-            cand --reason 'Reason for the power operation'
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -g 'Perform a graceful shutdown'
-            cand --graceful 'Perform a graceful shutdown'
-            cand -y 'Skip confirmation prompts'
-            cand --assume-yes 'Skip confirmation prompts'
-            cand --no-wait 'Return as soon as the transition is queued; don''t poll for completion'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;power;off;cluster'= {
             cand -R 'Reason for the power operation'
             cand --reason 'Reason for the power operation'
             cand -o 'Output format'
@@ -1532,13 +1301,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;power;off;help'= {
             cand group 'Power off all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power off group'' instead'
             cand nodes 'Power off a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;off;help;group'= {
-        }
-        &'manta;power;off;help;cluster'= {
         }
         &'manta;power;off;help;nodes'= {
         }
@@ -1548,24 +1314,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Reset all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power reset group'' instead'
             cand nodes 'Reset a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;reset;group'= {
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand -r 'Reason for the power operation'
-            cand --reason 'Reason for the power operation'
-            cand -g 'Perform a graceful reboot'
-            cand --graceful 'Perform a graceful reboot'
-            cand -y 'Skip confirmation prompts'
-            cand --assume-yes 'Skip confirmation prompts'
-            cand --no-wait 'Return as soon as the transition is queued; don''t poll for completion'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;power;reset;cluster'= {
             cand -o 'Output format'
             cand --output 'Output format'
             cand -r 'Reason for the power operation'
@@ -1591,13 +1343,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;power;reset;help'= {
             cand group 'Reset all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power reset group'' instead'
             cand nodes 'Reset a set of nodes'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;reset;help;group'= {
-        }
-        &'manta;power;reset;help;cluster'= {
         }
         &'manta;power;reset;help;nodes'= {
         }
@@ -1611,34 +1360,25 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;power;help;on'= {
             cand group 'Power on all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power on group'' instead'
             cand nodes 'Power on a set of nodes'
         }
         &'manta;power;help;on;group'= {
-        }
-        &'manta;power;help;on;cluster'= {
         }
         &'manta;power;help;on;nodes'= {
         }
         &'manta;power;help;off'= {
             cand group 'Power off all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power off group'' instead'
             cand nodes 'Power off a set of nodes'
         }
         &'manta;power;help;off;group'= {
-        }
-        &'manta;power;help;off;cluster'= {
         }
         &'manta;power;help;off;nodes'= {
         }
         &'manta;power;help;reset'= {
             cand group 'Reset all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power reset group'' instead'
             cand nodes 'Reset a set of nodes'
         }
         &'manta;power;help;reset;group'= {
-        }
-        &'manta;power;help;reset;cluster'= {
         }
         &'manta;power;help;reset;nodes'= {
         }
@@ -1684,6 +1424,14 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'manta;gen-man'= {
+            cand -p 'Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)'
+            cand --path 'Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)'
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+        }
         &'manta;upgrade'= {
             cand -o 'Output format'
             cand --output 'Output format'
@@ -1700,10 +1448,9 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand config 'Show or change CLI-side settings (active site, default node group, log level)'
             cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
-            cand update 'Modify existing boot parameters or Redfish endpoints in place'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
             cand delete 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
-            cand migrate 'Move nodes between groups (vCluster backup/restore have moved to ''manta backup''/''manta restore'')'
+            cand migrate 'Move nodes between groups'
             cand backup 'Back up a virtual cluster (images, boot settings, group membership) to disk'
             cand restore 'Restore a virtual cluster from a backup bundle'
             cand run 'Create and run a configuration session from a local Ansible repo'
@@ -1711,6 +1458,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand log 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
             cand console 'Attach to a node''s serial console, or to a configuration session''s Ansible container'
             cand gen-autocomplete 'Generate shell completion scripts'
+            cand gen-man 'Generate and install manta man pages'
             cand upgrade 'Replace this `manta` binary with the latest release'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
@@ -1718,7 +1466,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand show 'Show current configuration values'
             cand set 'Set a configuration value'
             cand unset 'Clear a configuration value'
-            cand gen-autocomplete '[DEPRECATED] Use ''manta gen-autocomplete'' instead'
         }
         &'manta;help;config;show'= {
         }
@@ -1747,15 +1494,12 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;config;unset;auth'= {
         }
-        &'manta;help;config;gen-autocomplete'= {
-        }
         &'manta;help;get'= {
             cand groups 'List node groups visible to your token (or look up one by name)'
             cand hardware 'Inspect hardware components'
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
-            cand cluster '[DEPRECATED] Use ''manta get group-nodes'' instead'
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
@@ -1767,10 +1511,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;get;groups'= {
         }
         &'manta;help;get;hardware'= {
-            cand cluster '[DEPRECATED] Use ''manta get group-hardware'' instead'
             cand nodes 'Show hardware inventory for a set of nodes'
-        }
-        &'manta;help;get;hardware;cluster'= {
         }
         &'manta;help;get;hardware;nodes'= {
         }
@@ -1779,8 +1520,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;get;configurations'= {
         }
         &'manta;help;get;templates'= {
-        }
-        &'manta;help;get;cluster'= {
         }
         &'manta;help;get;group-nodes'= {
         }
@@ -1819,31 +1558,21 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;add;redfish-endpoints'= {
         }
-        &'manta;help;update'= {
-            cand boot-parameters 'Update boot parameters for nodes'
-            cand redfish-endpoints 'Update a Redfish endpoint'
-        }
-        &'manta;help;update;boot-parameters'= {
-        }
-        &'manta;help;update;redfish-endpoints'= {
-        }
         &'manta;help;apply'= {
             cand hardware '[experimental] Rescale a group''s hardware allocation'
             cand configuration 'Create a configuration (deprecated — use ''apply sat-file'')'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
             cand boot 'Update boot parameters and runtime configuration'
+            cand boot-parameters 'Update boot parameters for nodes'
+            cand redfish-endpoints 'Update an existing Redfish endpoint'
             cand kernel-parameters 'Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)'
-            cand session '[DEPRECATED] Use ''manta run session'' instead'
             cand ephemeral-environment 'Launch an ephemeral SSH environment from an image'
             cand template 'Boot nodes using an existing session template'
         }
         &'manta;help;apply;hardware'= {
             cand group '[experimental] Rescale a group''s hardware allocation'
-            cand cluster '[DEPRECATED] Use ''manta apply hardware group'' instead'
         }
         &'manta;help;apply;hardware;group'= {
-        }
-        &'manta;help;apply;hardware;cluster'= {
         }
         &'manta;help;apply;configuration'= {
         }
@@ -1852,17 +1581,16 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;apply;boot'= {
             cand nodes 'Update boot parameters for a set of nodes'
             cand group 'Update boot parameters for all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta apply boot group'' instead'
         }
         &'manta;help;apply;boot;nodes'= {
         }
         &'manta;help;apply;boot;group'= {
         }
-        &'manta;help;apply;boot;cluster'= {
+        &'manta;help;apply;boot-parameters'= {
+        }
+        &'manta;help;apply;redfish-endpoints'= {
         }
         &'manta;help;apply;kernel-parameters'= {
-        }
-        &'manta;help;apply;session'= {
         }
         &'manta;help;apply;ephemeral-environment'= {
         }
@@ -1901,16 +1629,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;delete;redfish-endpoints'= {
         }
         &'manta;help;migrate'= {
-            cand vCluster '[experimental] Migrate a cluster'
             cand nodes 'Move nodes between clusters'
-        }
-        &'manta;help;migrate;vCluster'= {
-            cand backup '[DEPRECATED] Use ''manta backup vcluster'' instead'
-            cand restore '[DEPRECATED] Use ''manta restore vcluster'' instead. The old path keeps working for one release.'
-        }
-        &'manta;help;migrate;vCluster;backup'= {
-        }
-        &'manta;help;migrate;vCluster;restore'= {
         }
         &'manta;help;migrate;nodes'= {
         }
@@ -1936,34 +1655,25 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;power;on'= {
             cand group 'Power on all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power on group'' instead'
             cand nodes 'Power on a set of nodes'
         }
         &'manta;help;power;on;group'= {
-        }
-        &'manta;help;power;on;cluster'= {
         }
         &'manta;help;power;on;nodes'= {
         }
         &'manta;help;power;off'= {
             cand group 'Power off all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power off group'' instead'
             cand nodes 'Power off a set of nodes'
         }
         &'manta;help;power;off;group'= {
-        }
-        &'manta;help;power;off;cluster'= {
         }
         &'manta;help;power;off;nodes'= {
         }
         &'manta;help;power;reset'= {
             cand group 'Reset all nodes in a group'
-            cand cluster '[DEPRECATED] Use ''manta power reset group'' instead'
             cand nodes 'Reset a set of nodes'
         }
         &'manta;help;power;reset;group'= {
-        }
-        &'manta;help;power;reset;cluster'= {
         }
         &'manta;help;power;reset;nodes'= {
         }
@@ -1978,6 +1688,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;console;target-ansible'= {
         }
         &'manta;help;gen-autocomplete'= {
+        }
+        &'manta;help;gen-man'= {
         }
         &'manta;help;upgrade'= {
         }

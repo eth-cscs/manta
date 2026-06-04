@@ -27,9 +27,6 @@ Inspect groups, nodes, hardware, images, configurations, sessions, templates, an
 manta\-add(1)
 Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints
 .TP
-manta\-update(1)
-Modify existing boot parameters or Redfish endpoints in place
-.TP
 manta\-apply(1)
 Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .TP
@@ -37,7 +34,7 @@ manta\-delete(1)
 Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints
 .TP
 manta\-migrate(1)
-Move nodes between groups (vCluster backup/restore have moved to \*(Aqmanta backup\*(Aq/\*(Aqmanta restore\*(Aq)
+Move nodes between groups
 .TP
 manta\-backup(1)
 Back up a virtual cluster (images, boot settings, group membership) to disk
@@ -59,6 +56,9 @@ Attach to a node\*(Aqs serial console, or to a configuration session\*(Aqs Ansib
 .TP
 manta\-gen\-autocomplete(1)
 Generate shell completion scripts
+.TP
+manta\-gen\-man(1)
+Generate and install manta man pages
 .TP
 manta\-upgrade(1)
 Replace this `manta` binary with the latest release
