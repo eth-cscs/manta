@@ -1,0 +1,98 @@
+//! Implements the `manta backup vcluster` command (and the deprecated
+//! `manta migrate vCluster backup` alias that forwards to it).
+
+use anyhow::{Context, Error, bail};
+
+use crate::http_client::MantaClient;
+use crate::output::action_result;
+use crate::common::app_context::AppContext;
+
+pub struct ExecParams<'a> {
+  pub bos: Option<&'a str>,
+  pub destination: Option<&'a str>,
+  pub prehook: Option<&'a str>,
+  pub posthook: Option<&'a str>,
+  pub output: Option<&'a str>,
+}
+
+/// Back up cluster configuration to a local bundle.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  p: ExecParams<'_>,
+) -> Result<(), Error> {
+  let bos = p.bos;
+  let destination = p.destination;
+  let prehook = p.prehook;
+  let posthook = p.posthook;
+  let output_opt = p.output;
+  let bos_value = bos.context("BOS template is required")?;
+  let destination_value =
+    destination.context("Destination folder is required")?;
+
+  action_result::print(
+    &format!(
+      "Migrate backup\n BOS Template: {}\n Destination folder: {}\n Pre-hook: {}\n Post-hook: {}",
+      bos_value,
+      destination_value,
+      prehook.unwrap_or("none"),
+      posthook.unwrap_or("none"),
+    ),
+    output_opt,
+  )?;
+
+  if let Some(prehook_path) = prehook {
+    match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
+      Ok(_r) => {
+        tracing::debug!("Pre-hook script exists and is executable.")
+      }
+      Err(e) => {
+        bail!("{e}. File: {prehook_path}");
+      }
+    }
+  }
+  if let Some(posthook_path) = posthook {
+    match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
+      Ok(_) => {
+        tracing::debug!("Post-hook script exists and is executable.")
+      }
+      Err(e) => {
+        bail!("{e}. File: {posthook_path}");
+      }
+    }
+  }
+
+  if let Some(prehook_path) = prehook {
+    println!("Running the pre-hook {prehook_path}");
+    match crate::common::hooks::run_hook(Some(prehook_path)) {
+      Ok(_code) => {
+        tracing::debug!("Pre-hook script completed ok. RT={}", _code)
+      }
+      Err(_error) => {
+        bail!("Pre-hook script failed. Error: {_error}");
+      }
+    }
+  }
+
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
+    .migrate_backup(token, bos, destination)
+    .await?;
+  tracing::debug!("Migrate backup completed successfully.");
+
+  if let Some(posthook_path) = posthook {
+    println!("Running the post-hook {posthook_path}");
+    match crate::common::hooks::run_hook(posthook) {
+      Ok(_code) => {
+        tracing::debug!("Post-hook script completed ok. RT={}", _code);
+      }
+      Err(_error) => {
+        bail!("Post-hook script failed. Error: {_error}");
+      }
+    }
+  }
+
+  action_result::print("Backup completed", output_opt)?;
+
+  Ok(())
+}

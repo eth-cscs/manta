@@ -1,0 +1,122 @@
+//! Implements the `manta restore vcluster` command (and the deprecated
+//! `manta migrate vCluster restore` alias that forwards to it).
+
+use anyhow::{Context, Error, bail};
+
+use crate::http_client::{MantaClient, MigrateRestoreRequest};
+use crate::output::action_result;
+use crate::common::app_context::AppContext;
+
+pub struct ExecParams<'a> {
+  pub bos_file: Option<&'a str>,
+  pub cfs_file: Option<&'a str>,
+  pub hsm_file: Option<&'a str>,
+  pub ims_file: Option<&'a str>,
+  pub image_dir: Option<&'a str>,
+  pub prehook: Option<&'a str>,
+  pub posthook: Option<&'a str>,
+  pub overwrite: bool,
+  pub output: Option<&'a str>,
+}
+
+/// Restore cluster configuration from a backup bundle.
+pub async fn exec(
+  ctx: &AppContext<'_>,
+  token: &str,
+  p: ExecParams<'_>,
+) -> Result<(), Error> {
+  let bos_file = p.bos_file;
+  let cfs_file = p.cfs_file;
+  let hsm_file = p.hsm_file;
+  let ims_file = p.ims_file;
+  let image_dir = p.image_dir;
+  let prehook = p.prehook;
+  let posthook = p.posthook;
+  let overwrite = p.overwrite;
+  let output_opt = p.output;
+  let bos_file_value = bos_file.context("BOS file is required")?;
+  let cfs_file_value = cfs_file.context("CFS file is required")?;
+  let ims_file_value = ims_file.context("IMS file is required")?;
+  let hsm_file_value = hsm_file.context("HSM file is required")?;
+
+  action_result::print(
+    &format!(
+      "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
+      prehook.unwrap_or("none"),
+      posthook.unwrap_or("none"),
+      bos_file_value,
+      cfs_file_value,
+      ims_file_value,
+      hsm_file_value
+    ),
+    output_opt,
+  )?;
+
+  if let Some(prehook_path) = prehook {
+    match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
+      Ok(_) => {
+        tracing::debug!("Pre-hook script exists and is executable.")
+      }
+      Err(e) => {
+        bail!("{e}. File: {prehook_path}");
+      }
+    }
+  }
+  if let Some(posthook_path) = posthook {
+    match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
+      Ok(_) => {
+        tracing::debug!("Post-hook script exists and is executable.")
+      }
+      Err(e) => {
+        bail!("{e}. File: {posthook_path}");
+      }
+    }
+  }
+
+  println!();
+  if let Some(prehook_path) = prehook {
+    println!("Running the pre-hook {prehook_path}");
+    match crate::common::hooks::run_hook(prehook) {
+      Ok(_code) => {
+        tracing::debug!("Pre-hook script completed ok. RT={}", _code)
+      }
+      Err(_error) => {
+        bail!("Pre-hook script failed. Error: {_error}");
+      }
+    }
+  }
+
+  let server_url = ctx.manta_server_url;
+  MantaClient::new(server_url, ctx.site_name)?
+    .migrate_restore(
+      token,
+      &MigrateRestoreRequest {
+        bos_file,
+        cfs_file,
+        hsm_file,
+        ims_file,
+        image_dir,
+        overwrite,
+      },
+    )
+    .await?;
+
+  if let Some(posthook_path) = posthook {
+    println!("Running the post-hook {posthook_path}");
+    match crate::common::hooks::run_hook(posthook) {
+      Ok(_code) => {
+        tracing::debug!("Post-hook script completed ok. RT={}", _code)
+      }
+      Err(_error) => {
+        bail!("Post-hook script failed. Error: {_error}");
+      }
+    }
+  }
+
+  action_result::print(
+    "Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.",
+    output_opt,
+  )?;
+
+  Ok(())
+}

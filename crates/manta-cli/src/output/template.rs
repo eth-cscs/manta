@@ -1,0 +1,75 @@
+//! Table and JSON renderers for BOS session template output.
+
+use anyhow::{Context, Error};
+use comfy_table::Table;
+use manta_shared::shared::dto::BosSessionTemplate;
+
+/// Print BOS session templates in the requested format.
+pub fn print(
+  templates: &[BosSessionTemplate],
+  output: &str,
+) -> Result<(), Error> {
+  match output {
+    "table" => print_table_struct(templates.to_vec()),
+    "json" => println!(
+      "{}",
+      serde_json::to_string_pretty(templates)
+        .context("Failed to serialize BOS sessiontemplates")?
+    ),
+    _ => {}
+  }
+  Ok(())
+}
+
+/// Print BOS session templates as a formatted table.
+pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
+  let mut table = Table::new();
+
+  table.set_header(vec![
+    "Name",
+    "Image ID",
+    "Runtime Configuration",
+    "Cfs Enabled",
+    "Target",
+  ]);
+
+  for bos_template in bos_sessiontemplate_vec {
+    let enable_cfs = bos_template
+      .enable_cfs
+      .map_or_else(|| "N/A".to_string(), |v| v.to_string());
+
+    if let Some(boot_sets) = bos_template.boot_sets {
+      for boot_set in boot_sets {
+        let target: Vec<String> =
+          if let Some(node_groups) = boot_set.1.node_groups {
+            node_groups
+          } else {
+            boot_set.1.node_list.unwrap_or_default()
+          };
+
+        table.add_row(vec![
+          bos_template.name.clone().unwrap_or_default(),
+          boot_set
+            .1
+            .path
+            .unwrap_or_default()
+            .trim_start_matches("s3://boot-images/")
+            .trim_end_matches("/manifest.json")
+            .to_string(),
+          bos_template
+            .cfs
+            .as_ref()
+            .and_then(|cfs| cfs.configuration.clone())
+            .unwrap_or_else(|| "NA".to_string()),
+          enable_cfs.clone(),
+          crate::common::display::string_vec_to_multi_line_string(
+            Some(&target),
+            2,
+          ),
+        ]);
+      }
+    }
+  }
+
+  println!("{table}");
+}

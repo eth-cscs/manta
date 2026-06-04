@@ -3,10 +3,16 @@
 //! OCHAMI directly — every operation is forwarded to the manta HTTPS
 //! server named by `cli.toml`'s `manta_server_url`.
 
-mod cli;
+mod build;
+mod commands;
+mod common;
+mod handlers;
+mod http_client;
+mod output;
+mod process;
 
-use crate::cli::common::app_context::AppContext;
-use crate::cli::common::config::CliConfiguration;
+use crate::common::app_context::AppContext;
+use crate::common::config::CliConfiguration;
 
 use clap::ArgMatches;
 
@@ -25,7 +31,7 @@ fn main() {
 /// sets the SOCKS5 env var (must happen before the multi-threaded tokio
 /// runtime is active), and then launches the async runtime.
 fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
-  let cli_matches = crate::cli::build::build_cli().get_matches();
+  let cli_matches = crate::build::build_cli().get_matches();
 
   let settings = manta_shared::common::config::get_cli_configuration()
     .map_err(|e| format!("Could not read CLI configuration file: {e}"))?;
@@ -92,7 +98,7 @@ async fn run_cli(
   };
 
   let cli_result =
-    crate::cli::process::process_cli(&cli_matches, &app_context).await;
+    crate::process::process_cli(&cli_matches, &app_context).await;
 
   match cli_result {
     Ok(_) => Ok(()),
