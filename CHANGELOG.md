@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.27] - 2026-06-04
+
+### Miscellaneous Tasks
+
+- Refresh manta.1 with current crate version
+- Auto-regenerate man pages and shell completions on push to main
+
 ## [2.0.0-beta.26] - 2026-06-04
 
 ### Documentation
