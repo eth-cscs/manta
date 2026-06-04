@@ -39,9 +39,9 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # `[patch.crates-io]` block at the bottom of this file redirects the
 # three sibling crates to local checkouts. Comment it out (or move it
 # to a per-user `.cargo/config.toml` if you don't want it in-tree).
-manta-backend-dispatcher = "1.0.0-beta.4"
-csm-rs                   = "1.0.0-beta.5"
-ochami-rs                = "1.0.0-beta.4"
+manta-backend-dispatcher = "1.0.0-beta.5"
+csm-rs                   = "1.0.0-beta.6"
+ochami-rs                = "1.0.0-beta.5"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
