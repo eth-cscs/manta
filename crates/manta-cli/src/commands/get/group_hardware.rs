@@ -19,7 +19,7 @@ fn parse_hardware_cluster_params(
   }
 }
 
-/// CLI adapter for `manta get hardware cluster`.
+/// CLI adapter for `manta get group-hardware`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

@@ -1,13 +1,12 @@
-//! CLI-only display helpers (string formatting for tables, etc.).
+//! Multi-line wrapping helper for wide table cells.
 //!
-//! Anything here is consumed by `crate::output::*` table renderers
-//! and has no business logic. The full xname/nid resolution lives in
-//! `crate::service::node_ops` (server-side).
+//! Used by `crate::output::node` and `crate::output::template` to
+//! keep long comma-separated lists (xnames, nids, boot-set members)
+//! readable in `comfy_table` output.
 
 /// Render a list of node identifiers (xnames, NIDs, group members…)
 /// as a comma-separated string, wrapping after every `num_columns`
-/// entries with a newline. Used by the table renderers in
-/// `cli::output` to keep wide columns readable.
+/// entries with a newline.
 pub fn string_vec_to_multi_line_string(
   nodes: Option<&[String]>,
   num_columns: usize,

@@ -14,7 +14,7 @@ use crate::common::app_context::AppContext;
 
 /// Dispatch the deprecated top-level commands (add-nodes-to-groups,
 /// remove-nodes-from-groups).
-pub async fn handle_misc(
+pub async fn handle_deprecated_aliases(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
@@ -59,8 +59,6 @@ pub async fn handle_misc(
       )
       .await?;
     }
-    Some(("download-boot-image", _)) => println!("Download boot image"),
-    Some(("upload-boot-image", _)) => println!("Upload boot image"),
     Some((other, _)) => bail!("Unknown command: {other}"),
     None => bail!("No command provided"),
   }

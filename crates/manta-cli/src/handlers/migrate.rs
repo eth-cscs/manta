@@ -1,7 +1,7 @@
 //! Routes `manta migrate *` subcommands to their exec functions.
 
 use crate::commands::backup::vcluster as backup_vcluster;
-use crate::commands::migrate::nodes_between_groups as migrate_nodes_between_hsm_groups;
+use crate::commands::migrate::nodes as migrate_nodes;
 use crate::commands::restore::vcluster as restore_vcluster;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
@@ -40,10 +40,10 @@ pub async fn handle_migrate(
       };
       let to = vec![to.to_string()];
 
-      migrate_nodes_between_hsm_groups::exec(
+      migrate_nodes::exec(
         ctx,
         &token,
-        migrate_nodes_between_hsm_groups::ExecParams {
+        migrate_nodes::ExecParams {
           target_groups: &to,
           parent_groups: &from,
           hosts_expression: xnames_string,

@@ -1,8 +1,8 @@
 //! `manta config` subcommands.
 
-pub mod common;
 pub mod gen_autocomplete;
 pub mod set_hsm;
+pub mod set_hsm_shared;
 pub mod set_log;
 pub mod set_parent_hsm;
 pub mod set_site;

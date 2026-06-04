@@ -124,7 +124,7 @@ pub async fn exec(
   let preview = serde_yaml::to_string(&sat_file)
     .context("Failed to serialize filtered SAT value for preview")?;
   println!("{}\n{}", "#### SAT file content ####".blue(), &preview,);
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     "Please review the rendered SAT file above and confirm to proceed.",
     opts.assume_yes,
   ) {
@@ -135,7 +135,7 @@ pub async fn exec(
   //    after filtering.
   if sat_file.get("session_templates").is_some()
     && opts.reboot
-    && !common::user_interaction::confirm(
+    && !common::confirm::confirm(
       "This operation will reboot nodes. Please confirm to proceed.",
       opts.assume_yes,
     )

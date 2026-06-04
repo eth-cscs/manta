@@ -37,7 +37,7 @@ pub async fn exec(
     .get_boot_parameters(token, &params)
     .await?;
 
-  output::boot_parameters::print(&boot_parameters, None)?;
+  output::boot_parameters::print(&boot_parameters)?;
 
   Ok(())
 }

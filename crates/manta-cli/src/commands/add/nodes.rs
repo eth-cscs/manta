@@ -19,7 +19,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
 
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     &format!(
       "Nodes matching '{hosts_expression}' will be added to HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),

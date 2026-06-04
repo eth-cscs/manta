@@ -1,4 +1,6 @@
-//! Implements the `manta delete configurations` command.
+//! Implements the `manta delete configurations` command, which also
+//! cascades to derived artifacts (images, session templates, sessions)
+//! — hence the longer filename.
 
 use crate::http_client::MantaClient;
 use crate::output::action_result;

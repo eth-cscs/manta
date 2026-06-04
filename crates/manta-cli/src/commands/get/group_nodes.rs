@@ -37,7 +37,7 @@ pub async fn exec(
 
   let server_url = ctx.manta_server_url;
   let node_details_list = MantaClient::new(server_url, ctx.site_name)?
-    .get_clusters(token, &params)
+    .get_group_nodes(token, &params)
     .await?;
 
   if summary_status {

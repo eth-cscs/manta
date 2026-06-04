@@ -32,7 +32,7 @@ pub async fn exec(
     exclusive_group: Some("false".to_string()),
   };
 
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     &format!(
       "This operation will create the group below:\n{}\nPlease confirm to proceed",
       serde_json::to_string_pretty(&grp)

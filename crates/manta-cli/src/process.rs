@@ -5,8 +5,8 @@ use clap::ArgMatches;
 use crate::common::app_context::AppContext;
 
 use crate::handlers::{
-  add, apply, backup, config, console, delete, get, log, migrate, misc, power,
-  restore, run, update,
+  add, apply, backup, config, console, delete, deprecated_aliases, get, log,
+  migrate, power, restore, run, update,
 };
 
 /// Parse CLI arguments and dispatch to the appropriate
@@ -29,7 +29,7 @@ pub async fn process_cli(
     Some(("restore", m)) => restore::handle_restore(m, ctx).await?,
     Some(("run", m)) => run::handle_run(m, ctx).await?,
     Some(("delete", m)) => delete::handle_delete(m, ctx).await?,
-    _ => misc::handle_misc(cli_root, ctx).await?,
+    _ => deprecated_aliases::handle_deprecated_aliases(cli_root, ctx).await?,
   }
   Ok(())
 }

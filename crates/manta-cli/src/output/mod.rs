@@ -1,4 +1,4 @@
-//! Re-exports all CLI output/rendering modules.
+//! Output renderer modules — one per resource (table + JSON).
 
 pub mod action_result;
 pub mod boot_parameters;

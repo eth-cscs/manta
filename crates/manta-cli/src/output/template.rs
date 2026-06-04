@@ -9,14 +9,14 @@ pub fn print(
   templates: &[BosSessionTemplate],
   output: &str,
 ) -> Result<(), Error> {
-  match output {
-    "table" => print_table_struct(templates.to_vec()),
-    "json" => println!(
+  if output == "json" {
+    println!(
       "{}",
       serde_json::to_string_pretty(templates)
         .context("Failed to serialize BOS sessiontemplates")?
-    ),
-    _ => {}
+    );
+  } else {
+    print_table_struct(templates.to_vec());
   }
   Ok(())
 }
@@ -62,7 +62,7 @@ pub fn print_table_struct(bos_sessiontemplate_vec: Vec<BosSessionTemplate>) {
             .and_then(|cfs| cfs.configuration.clone())
             .unwrap_or_else(|| "NA".to_string()),
           enable_cfs.clone(),
-          crate::common::display::string_vec_to_multi_line_string(
+          crate::common::multi_line::string_vec_to_multi_line_string(
             Some(&target),
             2,
           ),

@@ -1,3 +1,8 @@
+//! Pre-/post-hook execution: validate that the configured hook path
+//! is an executable shell command, then run it via a subshell and
+//! return its exit code. Used by `apply sat-file`, `backup vcluster`,
+//! and `restore vcluster`.
+
 use std::path::Path;
 
 use anyhow::{Error, anyhow, bail};

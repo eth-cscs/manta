@@ -1,8 +1,11 @@
-//! HSM group endpoints: list, available/all, create, add/remove members, delete.
+//! HSM group endpoints: list, available/all, create, add/remove
+//! members, delete, plus `/groups/nodes` for group-scoped node detail
+//! queries.
 
 use serde_json::Value;
 
-use manta_shared::shared::dto::Group;
+use manta_shared::shared::dto::{Group, NodeDetails};
+use manta_shared::shared::params::cluster::GetClusterParams;
 use manta_shared::shared::params::group::GetGroupParams;
 
 use super::{MantaClient, QueryBuilder};
@@ -15,6 +18,25 @@ impl MantaClient {
   ) -> anyhow::Result<Vec<Group>> {
     let q = QueryBuilder::new().opt("name", &params.group_name).build();
     self.get_json(token, "/groups", &q).await
+  }
+
+  /// `GET /api/v1/groups/nodes` — list node details scoped to an HSM
+  /// group (with optional status filter). Backs `manta get group-nodes`.
+  pub async fn get_group_nodes(
+    &self,
+    token: &str,
+    params: &GetClusterParams,
+  ) -> anyhow::Result<Vec<NodeDetails>> {
+    let hsm = params
+      .hsm_group_name
+      .as_deref()
+      .or(params.settings_hsm_group_name.as_deref())
+      .map(String::from);
+    let q = QueryBuilder::new()
+      .opt("hsm_group", &hsm)
+      .opt("status", &params.status_filter)
+      .build();
+    self.get_json(token, "/groups/nodes", &q).await
   }
 
   /// `GET /api/v1/groups/available` — list HSM group names the token can

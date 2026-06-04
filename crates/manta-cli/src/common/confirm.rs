@@ -1,3 +1,5 @@
+//! Yes/no confirmation prompt with an `--assume-yes` bypass.
+
 use dialoguer::{Confirm, theme::ColorfulTheme};
 
 /// Prompt for confirmation; returns `true` immediately if `assume_yes` is set.

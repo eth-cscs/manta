@@ -3,6 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
+use super::run::add_run_session_args;
 use super::{HOSTLIST_HELP, output_flag, output_flag_long_only};
 
 /// Attach the hardware-rescale argument set to a clap `Command`.
@@ -60,54 +61,6 @@ pub fn subcommand_apply_hw_configuration() -> Command {
       add_apply_hw_group_args(Command::new("cluster"))
         .about("[DEPRECATED] Use 'manta apply hardware group' instead"),
     )
-}
-
-/// Attach the session-run argument set to a clap `Command`. Shared
-/// between the canonical `manta run session` and the deprecated
-/// `manta apply session` paths so both stay in lockstep.
-pub fn add_run_session_args(cmd: Command) -> Command {
-  cmd
-    .arg_required_else_help(true)
-    .arg(arg!(-n --name <VALUE> "Session name").required(true))
-    .arg(
-      arg!(-p --"playbook-name" <VALUE> "Ansible playbook filename")
-        .default_value("site.yml"),
-    )
-    .arg(
-      arg!(-r --"repo-path" <REPO_PATH> ... "Path to the local git repo containing the Ansible playbook")
-        .required(true)
-        .value_parser(value_parser!(PathBuf))
-        .value_hint(ValueHint::DirPath),
-    )
-    .arg(arg!(-w --"watch-logs" "Stream session logs to stdout").action(ArgAction::SetTrue))
-    .arg(arg!(-t --timestamps "Show log timestamps").action(ArgAction::SetTrue))
-    .arg(
-      arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)")
-        .value_parser(["0", "1", "2", "3", "4"])
-        .num_args(1)
-        .default_value("2")
-        .default_missing_value("2"),
-    )
-    .arg(
-      arg!(-P --"ansible-passthrough" <VALUE>
-        "Additional Ansible flags (limited to --extra-vars, --forks, --skip-tags, --start-at-task, --tags)")
-        .allow_hyphen_values(true),
-    )
-    .arg(
-      arg!(-l --"ansible-limit" <VALUE>
-        "Limit the session to specific nodes (must be a subset of --group if both are provided)")
-        .required(true),
-    )
-    .arg(
-      arg!(-H --group <GROUP_NAME> "Run the session against every node in this group")
-        .visible_alias("hsm-group"),
-    )
-    .group(
-      ArgGroup::new("hsm-group_or_ansible-limit")
-        .args(["group", "ansible-limit"])
-        .required(true),
-    )
-    .arg(output_flag())
 }
 
 pub fn subcommand_apply_session() -> Command {

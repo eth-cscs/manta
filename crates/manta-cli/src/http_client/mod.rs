@@ -17,17 +17,16 @@ mod wire;
 
 mod auth;
 mod boot_parameters;
-mod clusters;
 mod configurations;
 mod console;
 mod ephemeral_env;
 mod groups;
-mod hardware;
-mod hw_cluster;
+mod hardware_clusters;
 mod images;
 mod kernel_parameters;
 mod migrate;
 mod nodes;
+mod vcluster;
 mod power;
 mod redfish_endpoints;
 mod sat_file;
@@ -39,11 +38,11 @@ pub(super) use query::QueryBuilder;
 pub(super) use wire::ws_base_url;
 
 pub use boot_parameters::ApplyBootConfigRequest;
-pub use hw_cluster::ApplyHwConfigurationRequest;
+pub use hardware_clusters::ApplyHwConfigurationRequest;
 pub use kernel_parameters::{
   AddKernelParametersRequest, ApplyKernelParametersRequest,
 };
-pub use migrate::MigrateRestoreRequest;
+pub use vcluster::RestoreVclusterRequest;
 pub use sat_file::ApplySatImageRequest;
 pub use sessions::CreateSessionRequest;
 pub use templates::ApplyTemplateSessionRequest;

@@ -3,7 +3,7 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::commands::config::common;
+use crate::commands::config::set_hsm_shared;
 use crate::http_client::MantaClient;
 
 /// Set the parent HSM group in configuration.
@@ -16,7 +16,7 @@ pub async fn exec(
     .get_one("HSM_GROUP_NAME")
     .ok_or_else(|| Error::msg("new parent hsm group not defined"))?;
 
-  common::set_hsm_config_value(
+  set_hsm_shared::set_hsm_config_value(
     client,
     token,
     new_parent_hsm,

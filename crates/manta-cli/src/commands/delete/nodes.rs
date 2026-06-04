@@ -8,7 +8,7 @@ use crate::http_client::MantaClient;
 use crate::output::action_result;
 use crate::common::app_context::AppContext;
 
-/// Remove/unassign a list of xnames to a list of HSM groups
+/// Remove/unassign a list of xnames from a list of HSM groups
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -19,7 +19,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
 
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     &format!(
       "Nodes matching '{hosts_expression}' will be removed from HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),

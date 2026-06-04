@@ -3,7 +3,7 @@
 
 use anyhow::{Context, Error, bail};
 
-use crate::http_client::{MantaClient, MigrateRestoreRequest};
+use crate::http_client::{MantaClient, RestoreVclusterRequest};
 use crate::output::action_result;
 use crate::common::app_context::AppContext;
 
@@ -88,9 +88,9 @@ pub async fn exec(
 
   let server_url = ctx.manta_server_url;
   MantaClient::new(server_url, ctx.site_name)?
-    .migrate_restore(
+    .restore_vcluster(
       token,
-      &MigrateRestoreRequest {
+      &RestoreVclusterRequest {
         bos_file,
         cfs_file,
         hsm_file,

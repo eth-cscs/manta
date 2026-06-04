@@ -1,4 +1,6 @@
-//! Shared logic for `manta console` subcommands (node, target-ansible).
+//! `manta console` — interactive raw-mode loop bridging local
+//! stdin/stdout to the remote console streams. Shared by the `node`
+//! and `target-ansible` subcommands.
 
 use futures::StreamExt;
 use tokio::io::{AsyncRead, AsyncWrite, AsyncWriteExt};

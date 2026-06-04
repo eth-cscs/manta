@@ -13,7 +13,7 @@
 //!
 //! The `--image-only` / `--sessiontemplate-only` filters used to live
 //! here too but now sit inside `build_plan` in
-//! `manta-cli/src/cli/commands/apply_sat_file/plan.rs`, where they share
+//! `manta-cli/src/commands/apply/sat_file/plan.rs`, where they share
 //! the SAT-file walk that builds the execution plan.
 
 use serde_yaml::{Mapping, Value};

@@ -1,5 +1,5 @@
-//! Shared argument types and dispatch logic for `manta power`
-//! subcommands (on, off, reset — targeting nodes or groups).
+//! `manta power` — argument types, dispatch, and poll loop for the
+//! on/off/reset subcommands, targeting nodes or groups.
 //!
 //! Both `exec_nodes` and `exec_cluster` reduce to a POST + poll loop
 //! against the manta server. The server's `POST /power` returns
@@ -97,7 +97,7 @@ pub async fn exec_nodes(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {}", opts.target);
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     opts.action.confirmation_text(),
     opts.assume_yes,
   ) {
@@ -116,7 +116,7 @@ pub async fn exec_cluster(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Cluster: {}", opts.target);
-  if !common::user_interaction::confirm(
+  if !common::confirm::confirm(
     opts.action.confirmation_text(),
     opts.assume_yes,
   ) {

@@ -6,7 +6,7 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::common::user_interaction;
+use crate::common::confirm;
 use crate::http_client::MantaClient;
 use crate::output::action_result;
 use crate::common::app_context::AppContext;
@@ -204,7 +204,7 @@ fn check_local_repos(
       })?;
 
     if !all_committed {
-      if user_interaction::confirm(
+      if confirm::confirm(
         "Your local repo has uncommitted changes. Do you want to continue?",
         false,
       ) {
@@ -266,7 +266,7 @@ fn check_local_repos(
     );
   }
 
-  if user_interaction::confirm(
+  if confirm::confirm(
     "Please review the layers and its order and confirm if proceed. Do you want to continue?",
     false,
   ) {
