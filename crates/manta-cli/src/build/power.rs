@@ -89,10 +89,6 @@ pub fn subcommand_power() -> Command {
             .about("Power on all nodes in a group"),
         )
         .subcommand(
-          add_power_on_group_args(Command::new("cluster"))
-            .about("[DEPRECATED] Use 'manta power on group' instead"),
-        )
-        .subcommand(
           Command::new("nodes")
             .arg_required_else_help(true)
             .about("Power on a set of nodes")
@@ -120,10 +116,6 @@ pub fn subcommand_power() -> Command {
         .subcommand(
           add_power_off_group_args(Command::new("group"))
             .about("Power off all nodes in a group"),
-        )
-        .subcommand(
-          add_power_off_group_args(Command::new("cluster"))
-            .about("[DEPRECATED] Use 'manta power off group' instead"),
         )
         .subcommand(
           Command::new("nodes")
@@ -157,10 +149,6 @@ pub fn subcommand_power() -> Command {
         .subcommand(
           add_power_reset_group_args(Command::new("group"))
             .about("Reset all nodes in a group"),
-        )
-        .subcommand(
-          add_power_reset_group_args(Command::new("cluster"))
-            .about("[DEPRECATED] Use 'manta power reset group' instead"),
         )
         .subcommand(
           Command::new("nodes")

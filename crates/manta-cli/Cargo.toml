@@ -60,6 +60,7 @@ futures = { version = "0.3.31", default-features = false }
 toml_edit = "0.22.27" # used to edit manta configuration file
 clap = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete = "4.5.66"
+clap_mangen = "0.3.0"
 comfy-table = "7.2.2"
 crossterm = { version = "0.29.0", default-features = false }               # terminal colors and raw mode
 execute = "0.2.13"

@@ -1,13 +1,11 @@
-//! Clap definitions for `manta restore *` subcommands and the
-//! deprecated `manta migrate vCluster restore` alias.
+//! Clap definitions for `manta restore *` subcommands.
 
 use clap::{ArgAction, Command, ValueHint, arg};
 
 use super::output_flag_long_only;
 
-/// Attach the vCluster-restore argument set. Shared between
-/// `manta restore vcluster` and `manta migrate vCluster restore`.
-pub(super) fn add_vcluster_restore_args(cmd: Command) -> Command {
+/// Attach the vCluster-restore argument set.
+fn add_vcluster_restore_args(cmd: Command) -> Command {
   cmd
     .arg_required_else_help(true)
     .arg(
@@ -49,11 +47,3 @@ pub fn subcommand_restore() -> Command {
     )
 }
 
-/// Deprecated `manta migrate vCluster restore`; wired into the
-/// `subcommand_migrate` tree in [`super::migrate`].
-pub(super) fn subcommand_migrate_restore() -> Command {
-  add_vcluster_restore_args(Command::new("restore")).about(
-    "[DEPRECATED] Use 'manta restore vcluster' instead. \
-     The old path keeps working for one release.",
-  )
-}

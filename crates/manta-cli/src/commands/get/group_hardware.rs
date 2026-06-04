@@ -1,5 +1,4 @@
-//! Implements the `manta get group-hardware` command (and the deprecated
-//! `manta get hardware cluster` alias that forwards to it).
+//! Implements the `manta get group-hardware` command.
 
 use anyhow::Error;
 

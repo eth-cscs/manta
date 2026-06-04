@@ -5,8 +5,8 @@ use anyhow::{Error, bail};
 use clap::ArgMatches;
 
 use crate::handlers::{
-  add, apply, backup, config, console, delete, gen_autocomplete, get, log,
-  migrate, power, restore, run, update, upgrade,
+  add, apply, backup, config, console, delete, gen_autocomplete, gen_man, get,
+  log, migrate, power, restore, run, upgrade,
 };
 
 /// Parse CLI arguments and dispatch to the appropriate
@@ -19,7 +19,6 @@ pub async fn process_cli(
     Some(("config", m)) => config::handle_config(m, ctx).await?,
     Some(("power", m)) => power::handle_power(m, ctx).await?,
     Some(("add", m)) => add::handle_add(m, ctx).await?,
-    Some(("update", m)) => update::handle_update(m, ctx).await?,
     Some(("get", m)) => get::handle_get(m, ctx).await?,
     Some(("apply", m)) => apply::handle_apply(m, ctx).await?,
     Some(("log", m)) => log::handle_log(m, ctx).await?,
@@ -32,6 +31,7 @@ pub async fn process_cli(
     Some(("gen-autocomplete", m)) => {
       gen_autocomplete::handle_gen_autocomplete(m, ctx).await?
     }
+    Some(("gen-man", m)) => gen_man::handle_gen_man(m, ctx).await?,
     Some(("upgrade", m)) => upgrade::handle_upgrade(m, ctx).await?,
     Some((other, _)) => bail!("Unknown command: {other}"),
     None => bail!("No command provided"),

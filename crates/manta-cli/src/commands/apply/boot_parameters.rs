@@ -1,4 +1,4 @@
-//! Implements the `manta update boot-parameters` command.
+//! Implements the `manta apply boot-parameters` command.
 
 use anyhow::{Context, Error};
 

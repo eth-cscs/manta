@@ -14,13 +14,13 @@ mod config;
 mod console;
 mod delete;
 mod gen_autocomplete;
+mod gen_man;
 pub(crate) mod get;
 mod log;
 mod migrate;
 mod power;
 mod restore;
 mod run;
-mod update;
 mod upgrade;
 
 const CLI_TERM_WIDTH: usize = 100;
@@ -67,7 +67,6 @@ pub fn build_cli() -> Command {
     .subcommand(config::subcommand_config())
     .subcommand(get::subcommand_get())
     .subcommand(add::subcommand_add())
-    .subcommand(update::subcommand_update())
     .subcommand(apply::subcommand_apply())
     .subcommand(delete::subcommand_delete())
     .subcommand(migrate::subcommand_migrate())
@@ -78,6 +77,7 @@ pub fn build_cli() -> Command {
     .subcommand(log::subcommand_log())
     .subcommand(console::subcommand_console())
     .subcommand(gen_autocomplete::subcommand_gen_autocomplete())
+    .subcommand(gen_man::subcommand_gen_man())
     .subcommand(upgrade::subcommand_upgrade())
 }
 

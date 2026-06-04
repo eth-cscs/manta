@@ -21,24 +21,9 @@ pub async fn handle_apply(
       Some(("group", m)) => {
         commands::apply::hardware_group::exec(m, ctx, &token).await?
       }
-      Some(("cluster", m)) => {
-        eprintln!(
-          "warning: 'manta apply hardware cluster' is deprecated; \
-           use 'manta apply hardware group' instead.",
-        );
-        commands::apply::hardware_group::exec(m, ctx, &token).await?
-      }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),
     },
-
-    Some(("session", m)) => {
-      eprintln!(
-        "warning: 'manta apply session' is deprecated; \
-         use 'manta run session' instead.",
-      );
-      commands::apply::session::exec(m, ctx, &token).await?
-    }
 
     Some(("sat-file", m)) => {
       let timestamp = chrono::Utc::now().format("%Y%m%d%H%M%S").to_string();
@@ -168,6 +153,57 @@ pub async fn handle_apply(
       }
     }
 
+    Some(("boot-parameters", m)) => {
+      let hosts = m.req_str("hosts")?;
+      let params = m.opt_str("params");
+      let kernel = m.opt_str("kernel");
+      let initrd = m.opt_str("initrd");
+      let output_opt = m.opt_str("output");
+      commands::apply::boot_parameters::exec(
+        ctx,
+        &token,
+        commands::apply::boot_parameters::ExecParams {
+          xnames: hosts,
+          nids: None,
+          macs: None,
+          boot_params: params,
+          kernel,
+          initrd,
+          output: output_opt,
+        },
+      )
+      .await?;
+    }
+
+    Some(("redfish-endpoints", m)) => {
+      let id = m
+        .opt_string("id")
+        .context("The 'id' argument is mandatory")?;
+      let params = manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams {
+        id,
+        name: m.opt_string("name"),
+        hostname: m.opt_string("hostname"),
+        domain: m.opt_string("domain"),
+        fqdn: m.opt_string("fqdn"),
+        enabled: m.get_flag("enabled"),
+        user: m.opt_string("user"),
+        password: m.opt_string("password"),
+        use_ssdp: m.get_flag("use-ssdp"),
+        mac_required: m.get_flag("mac-required"),
+        mac_addr: m.opt_string("macaddr"),
+        ip_address: m.opt_string("ipaddress"),
+        rediscover_on_update: m.get_flag("rediscover-on-update"),
+        template_id: m.opt_string("template-id"),
+      };
+      commands::apply::redfish_endpoint::exec(
+        ctx,
+        &token,
+        params,
+        m.opt_str("output"),
+      )
+      .await?;
+    }
+
     Some(("kernel-parameters", m)) => {
       let hsm_group_name_arg_opt = m.opt_str("group");
       let nodes_opt = if hsm_group_name_arg_opt.is_none() {
@@ -221,27 +257,6 @@ pub async fn handle_apply(
         .await?;
       }
       Some(("group", m)) => {
-        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
-        commands::apply::boot_group::exec(
-          ctx,
-          &token,
-          commands::apply::boot_group::ExecParams {
-            boot_image: m.opt_str("boot-image"),
-            boot_image_configuration: m.opt_str("boot-image-configuration"),
-            runtime_configuration: m.opt_str("runtime-configuration"),
-            kernel_parameters: m.opt_str("kernel-parameters"),
-            hsm_group_name: m.req_str("CLUSTER_NAME")?,
-            dry_run: m.get_flag("dry-run"),
-            output: m.opt_str("output"),
-          },
-        )
-        .await?;
-      }
-      Some(("cluster", m)) => {
-        eprintln!(
-          "warning: 'manta apply boot cluster' is deprecated; \
-           use 'manta apply boot group' instead.",
-        );
         let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         commands::apply::boot_group::exec(
           ctx,

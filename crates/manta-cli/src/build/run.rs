@@ -1,17 +1,12 @@
 //! Clap definitions for `manta run *` subcommands.
-//!
-//! Hosts the shared `add_run_session_args` builder, also used by the
-//! deprecated `manta apply session` alias in [`super::apply`].
 
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
 use super::output_flag;
 
-/// Attach the session-run argument set to a clap `Command`. Shared
-/// between the canonical `manta run session` and the deprecated
-/// `manta apply session` paths so both stay in lockstep.
-pub(super) fn add_run_session_args(cmd: Command) -> Command {
+/// Attach the session-run argument set to a clap `Command`.
+fn add_run_session_args(cmd: Command) -> Command {
   cmd
     .arg_required_else_help(true)
     .arg(arg!(-n --name <VALUE> "Session name").required(true))

@@ -7,9 +7,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch a single `power on group/cluster` invocation. Shared
-/// between the canonical `group` arm and the deprecated `cluster`
-/// arm so both stay in lockstep.
+/// Dispatch a `power on group` invocation.
 async fn dispatch_power_on_group(
   m: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -30,7 +28,7 @@ async fn dispatch_power_on_group(
   .await
 }
 
-/// Shared dispatch for `power off group/cluster`.
+/// Dispatch a `power off group` invocation.
 async fn dispatch_power_off_group(
   m: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -54,7 +52,7 @@ async fn dispatch_power_off_group(
   .await
 }
 
-/// Shared dispatch for `power reset group/cluster`.
+/// Dispatch a `power reset group` invocation.
 async fn dispatch_power_reset_group(
   m: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -78,13 +76,6 @@ async fn dispatch_power_reset_group(
   .await
 }
 
-fn warn_cluster_deprecated(action: &str) {
-  eprintln!(
-    "warning: 'manta power {action} cluster' is deprecated; \
-     use 'manta power {action} group' instead.",
-  );
-}
-
 /// Dispatch `manta power` subcommands (on, off, reset —
 /// each targeting nodes or groups).
 pub async fn handle_power(
@@ -96,10 +87,6 @@ pub async fn handle_power(
   match cli_power.subcommand() {
     Some(("on", m)) => match m.subcommand() {
       Some(("group", m)) => dispatch_power_on_group(m, ctx, &token).await?,
-      Some(("cluster", m)) => {
-        warn_cluster_deprecated("on");
-        dispatch_power_on_group(m, ctx, &token).await?;
-      }
       Some(("nodes", m)) => {
         power_common::exec_nodes(
           ctx,
@@ -120,10 +107,6 @@ pub async fn handle_power(
     },
     Some(("off", m)) => match m.subcommand() {
       Some(("group", m)) => dispatch_power_off_group(m, ctx, &token).await?,
-      Some(("cluster", m)) => {
-        warn_cluster_deprecated("off");
-        dispatch_power_off_group(m, ctx, &token).await?;
-      }
       Some(("nodes", m)) => {
         let graceful = m
           .get_one::<bool>("graceful")
@@ -147,10 +130,6 @@ pub async fn handle_power(
     },
     Some(("reset", m)) => match m.subcommand() {
       Some(("group", m)) => dispatch_power_reset_group(m, ctx, &token).await?,
-      Some(("cluster", m)) => {
-        warn_cluster_deprecated("reset");
-        dispatch_power_reset_group(m, ctx, &token).await?;
-      }
       Some(("nodes", m)) => {
         let graceful = m
           .get_one::<bool>("graceful")

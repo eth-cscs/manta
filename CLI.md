@@ -13,8 +13,7 @@ Every command takes one of the top-level verbs:
 | [`config`](#config) | Manage `~/.config/manta/cli.toml` |
 | [`get`](#get) | Read-only queries (sessions, configurations, nodes, groups, hardware, …) |
 | [`add`](#add) | Create resources (node, group, hardware components, boot/kernel params) |
-| [`update`](#update) | Modify boot parameters or Redfish endpoints |
-| [`apply`](#apply) | Apply changes (SAT files, boot configs, kernel params, …) |
+| [`apply`](#apply) | Apply changes (SAT files, boot/kernel parameters, Redfish endpoints, hardware allocation, …) |
 | [`run`](#run) | Create and run jobs (configuration sessions) |
 | [`delete`](#delete) | Remove resources |
 | [`backup`](#backup) | Back up cluster state (virtual cluster) |
@@ -24,6 +23,7 @@ Every command takes one of the top-level verbs:
 | [`log-value`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
 | [`console`](#console) | Open a WebSocket console to a node or running CFS session |
 | [`gen-autocomplete`](#gen-autocomplete) | Generate shell completion scripts |
+| [`gen-man`](#gen-man) | Generate and install man pages |
 | [`upgrade`](#upgrade) | Replace this `manta` binary with the latest release |
 
 **Global flag** (available on every command):
@@ -34,14 +34,10 @@ Every command takes one of the top-level verbs:
 
 ## Migrating from earlier shapes
 
-Several CLI shapes were renamed in the latest releases. Most old
-forms still work for one release with a `[DEPRECATED]` tag in their
-help text and a one-line stderr warning on every use; a small number
-of top-level aliases (`add-nodes-to-groups`, `remove-nodes-from-groups`)
-have already been removed. Plan: drop the rest of the old forms in
-the next major release.
+Several CLI shapes were renamed in the latest releases and the old
+forms have now been removed. The canonical names:
 
-| Old form | New canonical form |
+| Removed form | Replacement |
 |---|---|
 | `manta apply session` | `manta run session` |
 | `manta apply boot cluster` | `manta apply boot group` |
@@ -53,14 +49,25 @@ the next major release.
 | `manta power reset cluster` | `manta power reset group` |
 | `manta migrate vCluster backup` | `manta backup vcluster` |
 | `manta migrate vCluster restore` | `manta restore vcluster` |
-| `--target-cluster` (flag) | `--target-group` |
-| `--parent-cluster` (flag) | `--parent-group` |
-| `--create-hsm-group` (flag) | `--create-group` |
-| `--delete-hsm-group` (flag) | `--delete-group` |
-| `--create-target-hsm-group` (flag) | `--create-target-group` |
-| `--delete-empty-parent-hsm-group` (flag) | `--delete-empty-parent-group` |
-| `--hsm-group` (flag) | `--group` |
-| `add redfish-endpoint` / `update redfish-endpoint` / `delete redfish-endpoint` | use `redfish-endpoints` (plural) — singular kept as visible alias |
+| `manta config gen-autocomplete` | `manta gen-autocomplete` |
+| `manta update boot-parameters` | `manta apply boot-parameters` |
+| `manta update redfish-endpoints` | `manta apply redfish-endpoint` |
+| `manta add-nodes-to-groups` | `manta add nodes` |
+| `manta remove-nodes-from-groups` | `manta delete nodes` |
+
+The following flag renames are still in effect; the old spellings
+are kept as visible clap aliases on the canonical commands:
+
+| Old flag | New flag |
+|---|---|
+| `--target-cluster` | `--target-group` |
+| `--parent-cluster` | `--parent-group` |
+| `--create-hsm-group` | `--create-group` |
+| `--delete-hsm-group` | `--delete-group` |
+| `--create-target-hsm-group` | `--create-target-group` |
+| `--delete-empty-parent-hsm-group` | `--delete-empty-parent-group` |
+| `--hsm-group` | `--group` |
+| `redfish-endpoint` (singular noun on `add` / `delete` / `apply`) | `redfish-endpoints` (plural) |
 
 ---
 
@@ -120,12 +127,6 @@ Remove the parent HSM group.
 
 Remove the stored authentication token.
 
-### config gen-autocomplete *(deprecated alias)*
-
-Old subcommand form of [`manta gen-autocomplete`](#gen-autocomplete). Still works for one
-release; prints a stderr warning on every invocation pointing at the
-new top-level form. Same flag set.
-
 ---
 
 ## get
@@ -149,9 +150,6 @@ manta get groups my-cluster -o json
 ### get group-hardware \<GROUP_NAME\>
 
 List hardware components in a group.
-
-> Replaces `get hardware cluster <NAME>`, which still works for one
-> release but prints a deprecation warning on use.
 
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|
@@ -242,9 +240,6 @@ List BOS session templates.
 ### get group-nodes \<GROUP_NAME\>
 
 Show node membership and status for an HSM group.
-
-> Replaces `get cluster <NAME>`, which still works for one release
-> but prints a deprecation warning on use.
 
 | Arg/Flag | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -454,29 +449,6 @@ Register a Redfish endpoint (BMC).
 
 ---
 
-## update
-
-Modify existing resources.
-
-### update boot-parameters
-
-Update existing BSS boot parameters for nodes.
-
-| Flag | Type | Required | Description |
-|------|------|----------|-------------|
-| `-H/--hosts` | string | **yes** | Comma-separated xnames |
-| `-p/--params` | string | no | Kernel parameters |
-| `-k/--kernel` | string | no | S3 path to kernel file |
-| `-i/--initrd` | string | no | S3 path to initrd file |
-| `-d/--dry-run` | flag | no | Simulate without changes |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
-
-### update redfish-endpoint
-
-Update an existing Redfish endpoint. Accepts the same flags as [`add redfish-endpoint`](#add-redfish-endpoint); `-i/--id` is required to identify the entry.
-
----
-
 ## apply
 
 Apply changes to the system.
@@ -512,9 +484,6 @@ manta apply sat-file -t deploy.yaml -s   # configurations + session templates on
 ### run session
 
 Create and run a CFS session from one or more local git repositories.
-
-> Replaces `apply session`, which still works for one release but
-> prints a deprecation warning on use.
 
 | Flag | Type | Required | Default | Description |
 |------|------|----------|---------|-------------|
@@ -555,9 +524,6 @@ manta apply template -t my-template -l compute --operation reboot
 
 Update boot parameters (image + runtime config + kernel parameters) for all nodes in an HSM group.
 
-> Replaces `apply boot cluster <NAME>`, which still works for one
-> release but prints a deprecation warning on use.
-
 | Arg/Flag | Type | Required | Description |
 |----------|------|----------|-------------|
 | `GROUP_NAME` | string | **yes** | HSM group name |
@@ -591,6 +557,27 @@ Update boot parameters for specific nodes.
 | `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
+### apply boot-parameters
+
+Update existing BSS boot parameters for nodes — set the kernel
+command line, kernel image, and/or initrd that nodes use on next
+boot.
+
+| Flag | Type | Required | Description |
+|------|------|----------|-------------|
+| `-H/--hosts` | string | **yes** | Comma-separated xnames |
+| `-p/--params` | string | no | Kernel parameters |
+| `-k/--kernel` | string | no | S3 path to kernel file |
+| `-i/--initrd` | string | no | S3 path to initrd file |
+| `-d/--dry-run` | flag | no | Simulate without changes |
+| `-y/--assume-yes` | flag | no | Non-interactive mode |
+
+### apply redfish-endpoint
+
+Update an existing Redfish endpoint (network/auth/discovery fields).
+Accepts the same flags as [`add redfish-endpoint`](#add-redfish-endpoint);
+`-i/--id` is required to identify the entry.
+
 ### apply kernel-parameters \<VALUE\>
 
 Replace kernel parameters for nodes (full replace, not merge).
@@ -618,11 +605,9 @@ Launch a temporary container environment from an IMS image, useful for image ins
 
 Upscale or downscale hardware resources in an HSM group.
 
-> Replaces `apply hardware cluster`, which still works for one
-> release but prints a deprecation warning on use. The old flag
-> spellings (`--target-cluster`, `--parent-cluster`,
+> The old flag spellings (`--target-cluster`, `--parent-cluster`,
 > `--create-target-hsm-group`, `--delete-empty-parent-hsm-group`)
-> also still work as visible aliases on the new flag names below.
+> still work as visible aliases on the new flag names below.
 
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
@@ -834,10 +819,6 @@ Every `power on/off/reset` invocation first POSTs to the manta server, which kic
 
 Power on all nodes in an HSM group.
 
-> Replaces `power on cluster <NAME>`, which still works for one
-> release but prints a deprecation warning on use. Same for
-> `power off cluster` / `power reset cluster` below.
-
 | Arg/Flag | Type | Default | Description |
 |----------|------|---------|-------------|
 | `GROUP_NAME` | string | — | HSM group name |
@@ -945,8 +926,34 @@ manta gen-autocomplete --shell bash --path /etc/bash_completion.d
 manta gen-autocomplete --shell fish --path ~/.config/fish/completions
 ```
 
-> Replaces `manta config gen-autocomplete`, which still works for one
-> release as a deprecated alias.
+---
+
+## gen-man
+
+Generate one man page (`.1` file) per subcommand from the running
+binary's clap tree and write them into a directory. Useful when you
+installed manta via the shell installer (or built from source) and
+want `man manta`, `man manta-apply-sat-file`, etc. to work locally
+without juggling source-tree paths.
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `-p/--path` | dir | Target directory; defaults to `$XDG_DATA_HOME/man/man1` (i.e. `~/.local/share/man/man1`) when omitted |
+| `-o/--output {table,json}` | enum | Format the result message (default `table`) |
+
+```
+manta gen-man
+manta gen-man --path ~/.local/share/man/man1
+manta gen-man --output json
+```
+
+On Linux the default user man directory (`~/.local/share/man`) is
+searched by `man` automatically. On macOS you may need to add it to
+`MANPATH`:
+
+```bash
+export MANPATH="$HOME/.local/share/man:$MANPATH"
+```
 
 ---
 

@@ -2,7 +2,6 @@
 
 use clap::{Command, arg};
 
-use super::gen_autocomplete::subcommand_gen_autocomplete;
 use super::output_flag;
 
 pub fn subcommand_config() -> Command {
@@ -60,9 +59,5 @@ pub fn subcommand_config() -> Command {
         .subcommand(subcommand_config_unset_hsm)
         .subcommand(subcommand_config_unset_parent_hsm)
         .subcommand(subcommand_config_unset_auth),
-    )
-    .subcommand(
-      subcommand_gen_autocomplete()
-        .about("[DEPRECATED] Use 'manta gen-autocomplete' instead"),
     )
 }

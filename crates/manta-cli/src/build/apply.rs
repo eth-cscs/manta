@@ -3,16 +3,13 @@
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
-use super::run::add_run_session_args;
 use super::{HOSTLIST_HELP, output_flag, output_flag_long_only};
 
 /// Attach the hardware-rescale argument set to a clap `Command`.
-/// Shared between the canonical `apply hardware group` and the
-/// deprecated `apply hardware cluster` paths so they stay in lockstep.
 ///
-/// `--target-cluster`/`--parent-cluster` are renamed to
-/// `--target-group`/`--parent-group`; old flag names retained as
-/// visible aliases. Same for the create/delete lifecycle flags.
+/// `--target-cluster`/`--parent-cluster` are kept as visible aliases
+/// for `--target-group`/`--parent-group`. Same for the
+/// create/delete lifecycle flags.
 fn add_apply_hw_group_args(cmd: Command) -> Command {
   cmd
     .arg_required_else_help(true)
@@ -56,22 +53,6 @@ pub fn subcommand_apply_hw_configuration() -> Command {
           Pattern format: <component>:<quantity>[:<component>:<quantity>...]\n\
           eg: 'a100:12:epyc:5'  — assign nodes with 12 A100 GPUs and 5 EPYC CPUs total",
         ),
-    )
-    .subcommand(
-      add_apply_hw_group_args(Command::new("cluster"))
-        .about("[DEPRECATED] Use 'manta apply hardware group' instead"),
-    )
-}
-
-pub fn subcommand_apply_session() -> Command {
-  add_run_session_args(Command::new("session"))
-    .about("[DEPRECATED] Use 'manta run session' instead")
-    .long_about(
-      "Create and run a configuration session from a local git repo.\n\n\
-      The repo must already exist in the system's VCS. The session runs \
-      the specified Ansible playbook against the target nodes or group.\n\n\
-      DEPRECATED: this command has moved to `manta run session`. The old \
-      path keeps working for one release.",
     )
 }
 
@@ -223,9 +204,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     .arg(output_flag())
 }
 
-/// Attach the per-group boot-parameter argument set. Shared between
-/// the canonical `apply boot group` and the deprecated
-/// `apply boot cluster` paths so they stay in lockstep.
+/// Attach the per-group boot-parameter argument set.
 fn add_apply_boot_group_args(cmd: Command) -> Command {
   cmd
     .arg_required_else_help(true)
@@ -251,16 +230,6 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
-pub fn subcommand_apply_boot_cluster_deprecated() -> Command {
-  add_apply_boot_group_args(Command::new("cluster"))
-    .about("[DEPRECATED] Use 'manta apply boot group' instead")
-    .long_about(
-      "Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a group.\n\n\
-      DEPRECATED: this command has been renamed to `manta apply boot group`. The old name keeps working for one release.",
-    )
-}
-
-/// Canonical replacement for `apply boot cluster`.
 pub fn subcommand_apply_boot_group() -> Command {
   add_apply_boot_group_args(Command::new("group"))
     .about("Update boot parameters for all nodes in a group")
@@ -273,6 +242,67 @@ pub fn subcommand_apply_boot_group() -> Command {
         --boot-image-configuration <config-name> \\\n    \
         --runtime-configuration <config-name> <group-name>",
     )
+}
+
+/// Attach the boot-parameter argument set to a clap `Command`.
+fn add_boot_parameters_args(cmd: Command) -> Command {
+  cmd
+    .arg_required_else_help(true)
+    .arg(
+      arg!(-H --"hosts" <XNAMES> "Xnames of the nodes to update")
+        .required(true),
+    )
+    .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
+    .arg(arg!(-k --"kernel" <VALUE> "S3 path to the kernel file"))
+    .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(-y --"assume-yes" "Skip confirmation prompts")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(output_flag())
+}
+
+pub fn subcommand_apply_boot_parameters() -> Command {
+  add_boot_parameters_args(Command::new("boot-parameters"))
+    .about("Update boot parameters for nodes")
+}
+
+/// Attach the Redfish-endpoint argument set to a clap `Command`.
+fn add_redfish_endpoint_args(cmd: Command) -> Command {
+  cmd
+    .visible_alias("redfish-endpoint")
+    .arg_required_else_help(true)
+    .arg(arg!(-i --id <XNAME> "Xname of the endpoint to update").required(true))
+    .arg(arg!(-n --name <VALUE> "Arbitrary user-provided name for the endpoint"))
+    .arg(arg!(-H --hostname <VALUE> "Hostname (FQDN host portion)"))
+    .arg(arg!(-d --domain <VALUE> "Domain (FQDN domain portion)"))
+    .arg(
+      arg!(-f --fqdn <VALUE> "Fully-qualified domain name on the management network"),
+    )
+    .arg(arg!(-e --enabled "Enable the endpoint").action(ArgAction::SetTrue))
+    .arg(arg!(-u --user <VALUE> "Username for endpoint authentication"))
+    .arg(arg!(-p --password <VALUE> "Password for endpoint authentication"))
+    .arg(arg!(-U --"use-ssdp" "Use SSDP for discovery if the endpoint supports it").action(ArgAction::SetTrue))
+    .arg(arg!(-m --"mac-required" "Require a MAC address for geolocation").action(ArgAction::SetTrue))
+    .arg(arg!(-M --macaddr <VALUE> "MAC address of the Redfish endpoint on the management network"))
+    .arg(
+      arg!(-I --ipaddress <VALUE> "IP address of the Redfish endpoint on the management network (IPv4 or IPv6)"),
+    )
+    .arg(
+      arg!(-r --"rediscover-on-update" "Trigger rediscovery when endpoint information is updated")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(arg!(-t --"template-id" <VALUE> "Discovery template ID"))
+    .arg(output_flag())
+}
+
+pub fn subcommand_apply_redfish_endpoint() -> Command {
+  add_redfish_endpoint_args(Command::new("redfish-endpoints"))
+    .about("Update an existing Redfish endpoint")
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {
@@ -312,11 +342,11 @@ pub fn subcommand_apply() -> Command {
         .arg_required_else_help(true)
         .about("Update boot parameters and runtime configuration")
         .subcommand(subcommand_apply_boot_nodes())
-        .subcommand(subcommand_apply_boot_group())
-        .subcommand(subcommand_apply_boot_cluster_deprecated()),
+        .subcommand(subcommand_apply_boot_group()),
     )
+    .subcommand(subcommand_apply_boot_parameters())
+    .subcommand(subcommand_apply_redfish_endpoint())
     .subcommand(subcommand_apply_kernel_parameters())
-    .subcommand(subcommand_apply_session())
     .subcommand(subcommand_apply_ephemeral_environment())
     .subcommand(subcommand_apply_template())
 }

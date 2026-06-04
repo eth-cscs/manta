@@ -1,4 +1,4 @@
-//! Implements the `manta update redfish-endpoint` command.
+//! Implements the `manta apply redfish-endpoint` command.
 
 use anyhow::Error;
 
@@ -7,9 +7,12 @@ use crate::http_client::MantaClient;
 use crate::output::action_result;
 use manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams;
 
-/// CLI adapter for `manta update redfish-endpoint`. Takes
-/// `UpdateRedfishEndpointParams` directly — the shared param struct is
-/// the natural request body and already groups every field.
+/// CLI adapter for `manta apply redfish-endpoint`. Takes
+/// `UpdateRedfishEndpointParams` directly — the shared wire-type
+/// struct is the natural request body and already groups every
+/// field. (The struct name still says "Update" because that's the
+/// underlying HTTP operation against the wire endpoint; this CLI
+/// command is the canonical surface for it.)
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

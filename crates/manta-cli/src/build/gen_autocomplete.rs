@@ -1,7 +1,5 @@
 //! Clap definition for `manta gen-autocomplete` — generates shell
-//! completion scripts for bash/zsh/fish. The same builder is reused
-//! by `build/config.rs` for the deprecated `manta config
-//! gen-autocomplete` alias, so the two stay in lockstep.
+//! completion scripts for bash/zsh/fish.
 
 use clap::{Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;

@@ -1,14 +1,11 @@
-//! Clap definitions for `manta backup *` subcommands and the
-//! deprecated `manta migrate vCluster backup` alias.
+//! Clap definitions for `manta backup *` subcommands.
 
 use clap::{Command, ValueHint, arg};
 
 use super::output_flag;
 
-/// Attach the vCluster-backup argument set to a clap `Command`. Shared
-/// between the canonical `manta backup vcluster` and the deprecated
-/// `manta migrate vCluster backup` paths so both stay in lockstep.
-pub(super) fn add_vcluster_backup_args(cmd: Command) -> Command {
+/// Attach the vCluster-backup argument set to a clap `Command`.
+fn add_vcluster_backup_args(cmd: Command) -> Command {
   cmd
     .arg_required_else_help(true)
     .arg(arg!(-b --"bos" <SESSIONTEMPLATE> "Session template to derive the backup from"))
@@ -38,15 +35,3 @@ pub fn subcommand_backup() -> Command {
     )
 }
 
-/// Deprecated `manta migrate vCluster backup`; wired into the
-/// `subcommand_migrate` tree in [`super::migrate`].
-pub(super) fn subcommand_migrate_backup() -> Command {
-  add_vcluster_backup_args(Command::new("backup"))
-    .about("[DEPRECATED] Use 'manta backup vcluster' instead")
-    .long_about(
-      "Back up a cluster's configuration: images, boot settings, and group membership.\n\n\
-      The backup is derived from the specified session template.\n\n\
-      DEPRECATED: this command has moved to the top-level verb tree as \
-      `manta backup vcluster`. The old path keeps working for one release.",
-    )
-}

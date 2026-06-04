@@ -2,20 +2,12 @@
 
 use clap::{ArgAction, Command, arg};
 
-use super::backup::subcommand_migrate_backup;
 use super::output_flag;
-use super::restore::subcommand_migrate_restore;
 
 pub fn subcommand_migrate() -> Command {
   Command::new("migrate")
     .arg_required_else_help(true)
-    .about("Move nodes between groups (vCluster backup/restore have moved to 'manta backup'/'manta restore')")
-    .subcommand(
-      Command::new("vCluster")
-        .about("[experimental] Migrate a cluster")
-        .subcommand(subcommand_migrate_backup())
-        .subcommand(subcommand_migrate_restore()),
-    )
+    .about("Move nodes between groups")
     .subcommand(
       Command::new("nodes")
         .arg_required_else_help(true)
