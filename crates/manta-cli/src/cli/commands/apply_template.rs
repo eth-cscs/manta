@@ -6,39 +6,41 @@ use crate::cli::http_client::{ApplyTemplateSessionRequest, MantaClient};
 use crate::cli::output::action_result;
 use crate::cli::common::app_context::AppContext;
 
+pub struct ExecParams<'a> {
+  pub session_name: Option<&'a str>,
+  pub template_name: &'a str,
+  pub operation: &'a str,
+  pub limit: &'a str,
+  pub include_disabled: bool,
+  pub dry_run: bool,
+  pub output: Option<&'a str>,
+}
+
 /// Create a BOS session template and optionally boot.
-#[allow(clippy::too_many_arguments)]
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
-  bos_session_name_opt: Option<&str>,
-  bos_sessiontemplate_name: &str,
-  bos_session_operation: &str,
-  limit: &str,
-  include_disabled: bool,
-  _assume_yes: bool,
-  dry_run: bool,
-  output_opt: Option<&str>,
+  p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let server_url = ctx.manta_server_url;
   let result = MantaClient::new(server_url, ctx.site_name)?
     .apply_template_session(
       token,
-      bos_sessiontemplate_name,
+      p.template_name,
       &ApplyTemplateSessionRequest {
-        operation: bos_session_operation,
-        limit,
-        session_name: bos_session_name_opt,
-        include_disabled,
-        dry_run,
+        operation: p.operation,
+        limit: p.limit,
+        session_name: p.session_name,
+        include_disabled: p.include_disabled,
+        dry_run: p.dry_run,
       },
     )
     .await?;
-  let message = if dry_run {
+  let message = if p.dry_run {
     "Dry-run enabled. No changes persisted into the system."
   } else {
     "BOS session created."
   };
-  action_result::print_with_data(message, &result, output_opt)?;
+  action_result::print_with_data(message, &result, p.output)?;
   Ok(())
 }

@@ -136,19 +136,19 @@ pub async fn handle_apply(
         .get_one("include-disabled")
         .context("'include-disabled' must have a value")?;
       let assume_yes: bool = m.get_flag("assume-yes");
-      let dry_run: bool = m.get_flag("dry-run");
-      let output_opt = m.opt_str("output");
+      let _ = assume_yes;
       commands::apply_template::exec(
         ctx,
         &token,
-        bos_session_name_opt,
-        bos_sessiontemplate_name,
-        bos_session_operation,
-        limit,
-        include_disabled,
-        assume_yes,
-        dry_run,
-        output_opt,
+        commands::apply_template::ExecParams {
+          session_name: bos_session_name_opt,
+          template_name: bos_sessiontemplate_name,
+          operation: bos_session_operation,
+          limit,
+          include_disabled,
+          dry_run: m.get_flag("dry-run"),
+          output: m.opt_str("output"),
+        },
       )
       .await?;
     }
@@ -204,43 +204,36 @@ pub async fn handle_apply(
         {
           bail!("Image id is not a UUID");
         }
-        let assume_yes = m.get_flag("assume-yes");
-        let do_not_reboot = m.get_flag("do-not-reboot");
-        let dry_run = m.get_flag("dry-run");
-        let output_opt = m.opt_str("output");
+        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         commands::apply_boot_node::exec(
           ctx,
           &token,
-          new_boot_image_id_opt,
-          m.opt_str("boot-image-configuration"),
-          m.opt_str("runtime-configuration"),
-          m.opt_str("kernel-parameters"),
-          hosts_string,
-          assume_yes,
-          do_not_reboot,
-          dry_run,
-          output_opt,
+          commands::apply_boot_node::ExecParams {
+            boot_image: new_boot_image_id_opt,
+            boot_image_configuration: m.opt_str("boot-image-configuration"),
+            runtime_configuration: m.opt_str("runtime-configuration"),
+            kernel_parameters: m.opt_str("kernel-parameters"),
+            hosts_expression: hosts_string,
+            dry_run: m.get_flag("dry-run"),
+            output: m.opt_str("output"),
+          },
         )
         .await?;
       }
       Some(("group", m)) => {
-        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
-        let assume_yes = m.get_flag("assume-yes");
-        let do_not_reboot = m.get_flag("do-not-reboot");
-        let dry_run = m.get_flag("dry-run");
-        let output_opt = m.opt_str("output");
+        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         commands::apply_boot_group::exec(
           ctx,
           &token,
-          m.opt_str("boot-image"),
-          m.opt_str("boot-image-configuration"),
-          m.opt_str("runtime-configuration"),
-          m.opt_str("kernel-parameters"),
-          hsm_group_name_arg,
-          assume_yes,
-          do_not_reboot,
-          dry_run,
-          output_opt,
+          commands::apply_boot_group::ExecParams {
+            boot_image: m.opt_str("boot-image"),
+            boot_image_configuration: m.opt_str("boot-image-configuration"),
+            runtime_configuration: m.opt_str("runtime-configuration"),
+            kernel_parameters: m.opt_str("kernel-parameters"),
+            hsm_group_name: m.req_str("CLUSTER_NAME")?,
+            dry_run: m.get_flag("dry-run"),
+            output: m.opt_str("output"),
+          },
         )
         .await?;
       }
@@ -249,23 +242,19 @@ pub async fn handle_apply(
           "warning: 'manta apply boot cluster' is deprecated; \
            use 'manta apply boot group' instead.",
         );
-        let hsm_group_name_arg = m.req_str("CLUSTER_NAME")?;
-        let assume_yes = m.get_flag("assume-yes");
-        let do_not_reboot = m.get_flag("do-not-reboot");
-        let dry_run = m.get_flag("dry-run");
-        let output_opt = m.opt_str("output");
+        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         commands::apply_boot_group::exec(
           ctx,
           &token,
-          m.opt_str("boot-image"),
-          m.opt_str("boot-image-configuration"),
-          m.opt_str("runtime-configuration"),
-          m.opt_str("kernel-parameters"),
-          hsm_group_name_arg,
-          assume_yes,
-          do_not_reboot,
-          dry_run,
-          output_opt,
+          commands::apply_boot_group::ExecParams {
+            boot_image: m.opt_str("boot-image"),
+            boot_image_configuration: m.opt_str("boot-image-configuration"),
+            runtime_configuration: m.opt_str("runtime-configuration"),
+            kernel_parameters: m.opt_str("kernel-parameters"),
+            hsm_group_name: m.req_str("CLUSTER_NAME")?,
+            dry_run: m.get_flag("dry-run"),
+            output: m.opt_str("output"),
+          },
         )
         .await?;
       }
