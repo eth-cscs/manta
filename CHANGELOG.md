@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.37] - 2026-06-05
+
+### Documentation
+
+- Disambiguate intra-doc link to print() to fix rustdoc CI
+
 ## [2.0.0-beta.36] - 2026-06-05
 
 ### Bug Fixes
