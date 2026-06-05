@@ -97,18 +97,8 @@ toml = "0.9"
 # template so this crate cuts a workspace-wide tag (e.g. `v2.0.0-beta.35`)
 # instead of `manta-cli-v...`. The release.yml workflow trigger filters
 # to `v*` only, so only this single tag fires dist + a GitHub Release.
-#
-# `verify = false` is required because manta-cli pins manta-shared with
-# `=` (lockstep version) and cargo's batch publish runs the verify
-# (~`cargo build`) step on each crate against the published registry
-# index BEFORE uploading any of them. With the `=` pin, the verify
-# step for manta-cli fails to resolve `manta-shared = =<new-version>`
-# because it isn't on crates.io yet (manta-shared hasn't been
-# uploaded). `--no-verify` skips that resolve and the upload proceeds
-# in topological order (manta-shared first, then manta-cli).
 [package.metadata.release]
 tag-name = "v{{version}}"
-verify   = false
 pre-release-hook = [
   "git",
   "cliff",
