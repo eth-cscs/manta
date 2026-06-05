@@ -650,6 +650,15 @@ impl InfraContext<'_> {
   }
 
   /// Apply a single SAT `images[]` entry.
+  ///
+  /// After the backend finishes building the image, stamps
+  /// `manta.image_session.{base,groups,configuration}` onto the
+  /// resulting IMS image (via [`manta_shared::image_session::apply`])
+  /// and PATCHes the image so the provenance survives the request.
+  /// Skipped on `dry_run` since there is no real IMS image to patch.
+  /// A failure of the metadata-write step does NOT fail the apply:
+  /// the image was built successfully and a missing
+  /// `manta.image_session.*` annotation is recoverable via a backfill.
   #[allow(clippy::too_many_arguments)]
   pub async fn apply_image(
     &self,
@@ -665,7 +674,7 @@ impl InfraContext<'_> {
     dry_run: bool,
   ) -> Result<Image, Error> {
     let hsm_group_available_vec = self.get_group_name_available(token).await?;
-    self
+    let (mut image, cfs_session) = self
       .backend
       .apply_image(BackendApplyImageParams {
         shasta_token: token,
@@ -682,7 +691,58 @@ impl InfraContext<'_> {
         timestamps,
         dry_run,
       })
-      .await
+      .await?;
+
+    if !dry_run {
+      self
+        .stamp_image_session_metadata(token, &mut image, &cfs_session)
+        .await;
+    }
+
+    Ok(image)
+  }
+
+  /// Stamp `manta.image_session.*` metadata onto `image` from
+  /// `cfs_session` and PATCH it through to IMS.
+  ///
+  /// Errors are logged at `warn` and swallowed — see `apply_image`
+  /// for the rationale.
+  async fn stamp_image_session_metadata(
+    &self,
+    token: &str,
+    image: &mut Image,
+    cfs_session: &CfsSessionGetResponse,
+  ) {
+    if let Err(e) = manta_shared::image_session::apply(cfs_session, image)
+      .map_err(crate::wire_conv::to_backend)
+    {
+      tracing::warn!(
+        image_id = image.id.as_deref().unwrap_or("?"),
+        error = ?e,
+        "image_session::apply failed; image built but provenance \
+         metadata not stamped",
+      );
+      return;
+    }
+    let Some(image_id) = image.id.clone() else {
+      tracing::warn!(
+        "image returned from backend.apply_image had no id; skipping \
+         image_session metadata PATCH",
+      );
+      return;
+    };
+    let patch = PatchImage {
+      metadata: image.metadata.clone(),
+      ..Default::default()
+    };
+    if let Err(e) = self.update_image(token, &image_id, &patch).await {
+      tracing::warn!(
+        image_id = %image_id,
+        error = ?e,
+        "image_session metadata PATCH failed; image built but \
+         provenance not persisted",
+      );
+    }
   }
 
   /// Fetch metadata for every HSM node the caller can access.
