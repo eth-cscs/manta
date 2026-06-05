@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.38] - 2026-06-05
+## [2.0.0-beta.39] - 2026-06-05
 
 ### Features
 
@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Miscellaneous Tasks
 
+- Regenerate man pages + shell completions [skip ci]
 - Regenerate tag glob to match cargo-dist's expectation
 
 ## [2.0.0-beta.37] - 2026-06-05
