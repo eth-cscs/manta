@@ -17,6 +17,7 @@ mod delete;
 mod gen_autocomplete;
 mod gen_man;
 pub(crate) mod get;
+pub(crate) mod manpage;
 mod log;
 mod migrate;
 mod power;

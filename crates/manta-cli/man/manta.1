@@ -1,11 +1,19 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
 .TH manta 1  "manta 2.0.0-beta.32" 
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
 .SH NAME
 manta
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
 .SH SYNOPSIS
 \fBmanta\fR [\fB\-\-site\fR] [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] [\fIsubcommands\fR]
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
 .SH DESCRIPTION
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
 .SH OPTIONS
 .TP
 \fB\-\-site\fR \fI<SITE_NAME>\fR
@@ -16,51 +24,1430 @@ Print help
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version
+.ie \n(.g .ds Aq \(aq
+.el .ds Aq '
 .SH SUBCOMMANDS
-.TP
-manta\-config(1)
+.SS "manta config"
 Show or change CLI\-side settings (active site, default node group, log level)
 .TP
-manta\-get(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config show"
+Show current configuration values
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config set"
+Set a configuration value
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config set hsm"
+Set the active node group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIGROUP_NAME\fR
+Node group name
+.SS "manta config set parent-hsm"
+Set the parent node group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIGROUP_NAME\fR
+Node group name
+.SS "manta config set site"
+Set the active site
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fISITE_NAME\fR
+Site name
+.SS "manta config set log"
+Set the log verbosity level
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fILOG_LEVEL\fR
+Log verbosity level
+.SS "manta config unset"
+Clear a configuration value
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config unset hsm"
+Clear the active node group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config unset parent-hsm"
+Clear the parent node group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config unset auth"
+Clear the cached authentication token
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get"
 Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
 .TP
-manta\-add(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get groups"
+List node groups visible to your token (or look up one by name)
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+[\fIGROUP_NAME\fR]
+Group name (lists all groups if omitted)
+.SS "manta get hardware"
+Inspect hardware components
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get hardware nodes"
+Show hardware inventory for a set of nodes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta get sessions"
+List configuration sessions
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<SESSION_NAME>\fR
+Return only the session with this name
+.TP
+[\fB\-a\fR, \fB\-\-min\-age\fR] \fI<VALUE>\fR
+Return only sessions older than this age (eg: \*(Aq1d\*(Aq, \*(Aq6h\*(Aq)
+.TP
+[\fB\-A\fR, \fB\-\-max\-age\fR] \fI<VALUE>\fR
+Return only sessions younger than this age (eg: \*(Aq1d\*(Aq, \*(Aq6h\*(Aq)
+.TP
+[\fB\-t\fR, \fB\-\-type\fR] \fI<VALUE>\fR
+Return only sessions of this type
+.TP
+[\fB\-s\fR, \fB\-\-status\fR] \fI<VALUE>\fR
+Return only sessions with this status
+.TP
+[\fB\-m\fR, \fB\-\-most\-recent\fR]
+Return only the most recent session (equivalent to \-\-limit 1)
+.TP
+[\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
+Return only the <VALUE> most recent sessions
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-x\fR, \fB\-\-xnames\fR] \fI<NODES>\fR
+Xnames, NIDs, or hostlist expression. Returns sessions targeting these nodes or their groups
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Node group name. Returns sessions targeting this group or its members
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get configurations"
+List CFS configurations (filter by name, glob, group, or recency)
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<NAME>\fR
+Show only the configuration with this exact name
+.TP
+[\fB\-p\fR, \fB\-\-pattern\fR] \fI<PATTERN>\fR
+Glob pattern to filter by name (eg: \*(Aqmy\-cfg*\*(Aq)
+.TP
+[\fB\-m\fR, \fB\-\-most\-recent\fR]
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+[\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
+Return only the <VALUE> most recent configurations
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Show only configurations whose layers target this group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get templates"
+List BOS session templates (filter by name, group, or recency)
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<NAME>\fR
+Show only the template with this exact name
+.TP
+[\fB\-m\fR, \fB\-\-most\-recent\fR]
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+[\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
+Return only the <VALUE> most recent templates
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Show only templates whose boot sets target this group
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get group-nodes"
+Show node details and status for a group
+.TP
+[\fB\-n\fR, \fB\-\-nids\-only\-one\-line\fR]
+Print NIDs on a single line
+.TP
+[\fB\-x\fR, \fB\-\-xnames\-only\-one\-line\fR]
+Print xnames on a single line
+.TP
+[\fB\-s\fR, \fB\-\-status\fR] \fI<VALUE>\fR
+Filter nodes by status
+.TP
+[\fB\-T\fR, \fB\-\-summary\-status\fR]
+Show a group status summary:
+OK          — all nodes booted and configured
+OFF         — at least one node is OFF
+ON          — no nodes OFF, at least one is ON
+STANDBY     — at least one node\*(Aqs heartbeat is lost
+UNCONFIGURED — all nodes READY but at least one is still being configured
+FAILED      — at least one node\*(Aqs configuration failed
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIGROUP_NAME\fR
+Group name
+.SS "manta get group-hardware"
+Show hardware inventory for a group
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fICLUSTER_NAME\fR
+Group name
+.SS "manta get nodes"
+Show node details and status
+.TP
+[\fB\-n\fR, \fB\-\-nids\-only\-one\-line\fR]
+Print NIDs on a single line
+.TP
+[\fB\-s\fR, \fB\-\-status\fR] \fI<VALUE>\fR
+Filter nodes by status
+.TP
+[\fB\-T\fR, \fB\-\-summary\-status\fR]
+Show a node status summary:
+OK          — all nodes booted and configured
+OFF         — at least one node is OFF
+ON          — no nodes OFF, at least one is ON
+STANDBY     — at least one node\*(Aqs heartbeat is lost
+UNCONFIGURED — all nodes READY but at least one is still being configured
+FAILED      — at least one node\*(Aqs configuration failed
+.TP
+[\fB\-S\fR, \fB\-\-include\-siblings\fR]
+Also show sibling nodes that share a power supply with the requested nodes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta get images"
+List IMS images (filter by id, name regex, or recency; sorted most\-recent first)
+.TP
+[\fB\-i\fR, \fB\-\-id\fR] \fI<IMAGE_ID>\fR
+Show only the image with this exact ID
+.TP
+[\fB\-p\fR, \fB\-\-pattern\fR] \fI<PATTERN>\fR
+Regex matched against image name (applied client\-side)
+.TP
+[\fB\-m\fR, \fB\-\-most\-recent\fR]
+Return only the most recent (equivalent to \-\-limit 1)
+.TP
+[\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
+Return only the <VALUE> most recent images
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get boot-parameters"
+Show the BSS boot parameters (kernel, initrd, params) for nodes or a group
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Show boot parameters for every node in this group
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get kernel-parameters"
+Show kernel parameters for nodes or a group
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Show kernel parameters for all nodes in this group
+.TP
+[\fB\-f\fR, \fB\-\-filter\fR] \fI<VALUE>\fR
+Comma\-separated list of parameter names to show.
+eg: \*(Aqconsole,bad_page,crashkernel,hugepagelist,root\*(Aq
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get redfish-endpoints"
+List the BMCs / controllers the hardware state manager has registered as Redfish endpoints
+.TP
+[\fB\-i\fR, \fB\-\-id\fR] \fI<VALUE>\fR
+Filter by xname (can be specified multiple times)
+.TP
+[\fB\-f\fR, \fB\-\-fqdn\fR] \fI<VALUE>\fR
+Filter by FQDN
+.TP
+[\fB\-u\fR, \fB\-\-uuid\fR] \fI<VALUE>\fR
+Filter by UUID
+.TP
+[\fB\-m\fR, \fB\-\-macaddr\fR] \fI<VALUE>\fR
+Filter by MAC address
+.TP
+[\fB\-I\fR, \fB\-\-ipaddress\fR] \fI<VALUE>\fR
+Filter by IP address (empty string matches endpoints without an IP)
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta add"
 Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints
 .TP
-manta\-apply(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta add node"
+Register a new node in the hardware state manager.
+.PP
+Use this for nodes that don\*(Aqt exist yet. To attach existing nodes to a group, use `manta add nodes` (plural).
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Xname to register
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Group to put the new node into
+.TP
+[\fB\-H\fR, \fB\-\-hardware\fR] \fI<FILE>\fR
+File containing hardware information
+.TP
+[\fB\-a\fR, \fB\-\-arch\fR] \fI<VALUE>\fR
+Node architecture
+.TP
+[\fB\-d\fR, \fB\-\-disabled\fR]
+Register the node as disabled
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta add nodes"
+Add existing nodes to a group\*(Aqs membership.
+.PP
+Differs from `manta add node` (singular), which registers a brand\-new node in the inventory; this command operates on nodes that already exist and just changes which group(s) they belong to.
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Group to add the nodes to
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta add group"
+Create a node group
+.TP
+\fB\-l\fR, \fB\-\-label\fR \fI<NAME>\fR
+Group name
+.TP
+[\fB\-d\fR, \fB\-\-description\fR] \fI<VALUE>\fR
+Group description
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta add hardware"
+[experimental] Add hardware components to a group
+.TP
+[\fB\-P\fR, \fB\-\-pattern\fR] \fI<PATTERN>\fR
+Hardware component pattern
+.TP
+[\fB\-t\fR, \fB\-\-target\-group\fR] \fI<NAME>\fR
+Group to add components to
+.TP
+[\fB\-p\fR, \fB\-\-parent\-group\fR] \fI<NAME>\fR
+Group that donates the components
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-c\fR, \fB\-\-create\-group\fR]
+Create the target group if it does not exist
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta add boot-parameters"
+Create a BSS boot\-parameters entry (kernel, initrd, params, cloud\-init) for one or more nodes
+.TP
+\fB\-H\fR, \fB\-\-hosts\fR \fI<XNAMES>\fR
+Xnames of the nodes
+.TP
+[\fB\-n\fR, \fB\-\-nids\fR] \fI<VALUE>\fR
+Comma\-separated NIDs of the nodes
+.TP
+[\fB\-m\fR, \fB\-\-macs\fR] \fI<VALUE>\fR
+Comma\-separated MAC addresses of the nodes
+.TP
+[\fB\-p\fR, \fB\-\-params\fR] \fI<VALUE>\fR
+Kernel parameters
+.TP
+[\fB\-k\fR, \fB\-\-kernel\fR] \fI<VALUE>\fR
+S3 path to the kernel file
+.TP
+[\fB\-i\fR, \fB\-\-initrd\fR] \fI<VALUE>\fR
+S3 path to the initrd file
+.TP
+[\fB\-c\fR, \fB\-\-cloud\-init\fR] \fI<VALUE>\fR
+Cloud\-init script
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta add kernel-parameters"
+Append kernel parameters to nodes (leaves existing parameters untouched unless \-\-overwrite is set)
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Append kernel parameters to every node in this group
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-O\fR, \fB\-\-overwrite\fR]
+Overwrite the value if the parameter already exists
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-do\-not\-reboot\fR]
+Do not reboot nodes after applying changes
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIPARAMS\fR
+Space\-separated kernel parameters to append.
+eg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M
+.SS "manta add redfish-endpoints"
+Register a new Redfish endpoint
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Xname of the BMC or controller
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<VALUE>\fR
+Arbitrary user\-provided name for the endpoint
+.TP
+[\fB\-H\fR, \fB\-\-hostname\fR] \fI<VALUE>\fR
+Hostname (FQDN host portion); normally identical to the xname
+.TP
+[\fB\-d\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
+Domain (FQDN domain portion)
+.TP
+[\fB\-f\fR, \fB\-\-fqdn\fR] \fI<VALUE>\fR
+Fully\-qualified domain name on the management network (derived from hostname + domain)
+.TP
+[\fB\-e\fR, \fB\-\-enabled\fR]
+Enable the endpoint upon creation
+.TP
+[\fB\-u\fR, \fB\-\-user\fR] \fI<VALUE>\fR
+Username for endpoint authentication
+.TP
+[\fB\-p\fR, \fB\-\-password\fR] \fI<VALUE>\fR
+Password for endpoint authentication
+.TP
+[\fB\-U\fR, \fB\-\-use\-ssdp\fR]
+Use SSDP for discovery if the endpoint supports it
+.TP
+[\fB\-m\fR, \fB\-\-mac\-required\fR]
+Require a MAC address for geolocation
+.TP
+[\fB\-M\fR, \fB\-\-macaddr\fR] \fI<VALUE>\fR
+MAC address of the Redfish endpoint on the management network
+.TP
+[\fB\-I\fR, \fB\-\-ipaddress\fR] \fI<VALUE>\fR
+IP address of the Redfish endpoint on the management network (IPv4 or IPv6)
+.TP
+[\fB\-r\fR, \fB\-\-rediscover\-on\-update\fR]
+Trigger rediscovery when endpoint information is updated
+.TP
+[\fB\-t\fR, \fB\-\-template\-id\fR] \fI<VALUE>\fR
+Discovery template ID
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply"
 Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .TP
-manta\-delete(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply hardware"
+[experimental] Rescale a group\*(Aqs hardware allocation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply hardware group"
+[experimental] Upscale or downscale a group by specifying a hardware component pattern.
+.PP
+If the group does not exist it will be created; otherwise its node assignment is updated.
+.PP
+Pattern format: <component>:<quantity>[:<component>:<quantity>...]
+eg: \*(Aqa100:12:epyc:5\*(Aq  — assign nodes with 12 A100 GPUs and 5 EPYC CPUs total
+.TP
+\fB\-P\fR, \fB\-\-pattern\fR \fI<PATTERN>\fR
+Hardware pattern: <component>:<qty>[:<component>:<qty>...].
+eg: \*(Aqa100:12:epyc:5\*(Aq
+.TP
+\fB\-t\fR, \fB\-\-target\-group\fR \fI<TARGET_GROUP_NAME>\fR
+Group to rescale
+.TP
+\fB\-p\fR, \fB\-\-parent\-group\fR \fI<PARENT_GROUP_NAME>\fR
+Group that donates or receives the redistributed nodes
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-c\fR, \fB\-\-create\-target\-group\fR]
+Create the target group if it does not exist
+.TP
+[\fB\-D\fR, \fB\-\-delete\-empty\-parent\-group\fR]
+Delete the parent group if empty after this operation
+.TP
+[\fB\-u\fR, \fB\-\-unpin\-nodes\fR]
+Allow any available nodes to be selected
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta apply sat-file"
+Process a SAT file containing up to three sections:
+.PP
+\- `configurations`:   configurations to create
+\- `images`:           images to build from those configurations
+\- `session_templates`: session templates to create
+.PP
+Use \-\-image\-only to process only configurations and images.
+Use \-\-sessiontemplate\-only to process only configurations and session templates.
+.TP
+\fB\-t\fR, \fB\-\-sat\-template\-file\fR \fI<FILE>\fR
+SAT file path (may be a jinja2 template)
+.TP
+[\fB\-f\fR, \fB\-\-values\-file\fR] \fI<FILE>\fR
+Values file to expand jinja2 variables in the SAT file
+.TP
+[\fB\-V\fR, \fB\-\-values\fR] \fI<VALUE>\fR
+Inline values to expand jinja2 variables (overrides \-\-values\-file)
+.TP
+[\fB\-\-reboot\fR]
+Reboot nodes after applying session templates
+.TP
+[\fB\-v\fR, \fB\-\-ansible\-verbosity\fR] \fI<VALUE>\fR
+Ansible verbosity level (1 = \-v, 2 = \-vv, …, max 4)
+.TP
+[\fB\-P\fR, \fB\-\-ansible\-passthrough\fR] \fI<VALUE>\fR
+Additional Ansible flags (limited to \-\-extra\-vars, \-\-forks, \-\-skip\-tags, \-\-start\-at\-task, \-\-tags)
+.TP
+[\fB\-o\fR, \fB\-\-overwrite\-configuration\fR]
+Overwrite an existing configuration with the same name
+.TP
+[\fB\-w\fR, \fB\-\-watch\-logs\fR]
+Stream session logs to stdout
+.TP
+[\fB\-T\fR, \fB\-\-timestamps\fR]
+Show log timestamps
+.TP
+[\fB\-i\fR, \fB\-\-image\-only\fR]
+Process only the `configurations` and `images` sections
+.TP
+[\fB\-s\fR, \fB\-\-sessiontemplate\-only\fR]
+Process only the `configurations` and `session_templates` sections
+.TP
+[\fB\-p\fR, \fB\-\-pre\-hook\fR] \fI<SCRIPT>\fR
+Command to run before processing.
+eg: \-\-pre\-hook "echo hello"
+.TP
+[\fB\-a\fR, \fB\-\-post\-hook\fR] \fI<SCRIPT>\fR
+Command to run after successful processing.
+eg: \-\-post\-hook "echo hello"
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta apply boot"
+Update boot parameters and runtime configuration
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply boot nodes"
+Update the boot parameters (image, runtime configuration, and kernel parameters) for a set of nodes.
+.PP
+The boot image can be specified by image ID or by the configuration name used to build it (the most recent matching image is used).
+.PP
+eg:
+  manta apply boot nodes \\
+    \-\-boot\-image\-configuration <config\-name> \\
+    \-\-runtime\-configuration <config\-name> <nodes>
+.TP
+[\fB\-i\fR, \fB\-\-boot\-image\fR] \fI<IMAGE_ID>\fR
+Image ID to boot the nodes
+.TP
+[\fB\-b\fR, \fB\-\-boot\-image\-configuration\fR] \fI<NAME>\fR
+Configuration name used to build the boot image (uses the most recent matching image)
+.TP
+[\fB\-r\fR, \fB\-\-runtime\-configuration\fR] \fI<NAME>\fR
+Configuration to apply to nodes after booting
+.TP
+[\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
+Kernel parameters to assign to the nodes
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-do\-not\-reboot\fR]
+Suppress the automatic reboot after updating boot parameters
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta apply boot group"
+Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a group.
+.PP
+The boot image can be specified by image ID or by the configuration name used to build it (the most recent matching image is used).
+.PP
+eg:
+  manta apply boot group \\
+    \-\-boot\-image\-configuration <config\-name> \\
+    \-\-runtime\-configuration <config\-name> <group\-name>
+.TP
+[\fB\-i\fR, \fB\-\-boot\-image\fR] \fI<IMAGE_ID>\fR
+Image ID to boot the nodes
+.TP
+[\fB\-b\fR, \fB\-\-boot\-image\-configuration\fR] \fI<NAME>\fR
+Configuration name used to build the boot image (uses the most recent matching image)
+.TP
+[\fB\-r\fR, \fB\-\-runtime\-configuration\fR] \fI<NAME>\fR
+Configuration to apply to nodes after booting
+.TP
+[\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
+Kernel parameters to assign to all group members
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-do\-not\-reboot\fR]
+Suppress the automatic reboot after updating boot parameters
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fICLUSTER_NAME\fR
+Group name
+.SS "manta apply boot-parameters"
+Update boot parameters for nodes
+.TP
+\fB\-H\fR, \fB\-\-hosts\fR \fI<XNAMES>\fR
+Xnames of the nodes to update
+.TP
+[\fB\-p\fR, \fB\-\-params\fR] \fI<VALUE>\fR
+Kernel parameters
+.TP
+[\fB\-k\fR, \fB\-\-kernel\fR] \fI<VALUE>\fR
+S3 path to the kernel file
+.TP
+[\fB\-i\fR, \fB\-\-initrd\fR] \fI<VALUE>\fR
+S3 path to the initrd file
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply redfish-endpoints"
+Update an existing Redfish endpoint
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Xname of the endpoint to update
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<VALUE>\fR
+Arbitrary user\-provided name for the endpoint
+.TP
+[\fB\-H\fR, \fB\-\-hostname\fR] \fI<VALUE>\fR
+Hostname (FQDN host portion)
+.TP
+[\fB\-d\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
+Domain (FQDN domain portion)
+.TP
+[\fB\-f\fR, \fB\-\-fqdn\fR] \fI<VALUE>\fR
+Fully\-qualified domain name on the management network
+.TP
+[\fB\-e\fR, \fB\-\-enabled\fR]
+Enable the endpoint
+.TP
+[\fB\-u\fR, \fB\-\-user\fR] \fI<VALUE>\fR
+Username for endpoint authentication
+.TP
+[\fB\-p\fR, \fB\-\-password\fR] \fI<VALUE>\fR
+Password for endpoint authentication
+.TP
+[\fB\-U\fR, \fB\-\-use\-ssdp\fR]
+Use SSDP for discovery if the endpoint supports it
+.TP
+[\fB\-m\fR, \fB\-\-mac\-required\fR]
+Require a MAC address for geolocation
+.TP
+[\fB\-M\fR, \fB\-\-macaddr\fR] \fI<VALUE>\fR
+MAC address of the Redfish endpoint on the management network
+.TP
+[\fB\-I\fR, \fB\-\-ipaddress\fR] \fI<VALUE>\fR
+IP address of the Redfish endpoint on the management network (IPv4 or IPv6)
+.TP
+[\fB\-r\fR, \fB\-\-rediscover\-on\-update\fR]
+Trigger rediscovery when endpoint information is updated
+.TP
+[\fB\-t\fR, \fB\-\-template\-id\fR] \fI<VALUE>\fR
+Discovery template ID
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta apply kernel-parameters"
+Replace the full kernel\-parameters string on nodes (drops any existing parameters not listed)
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Replace kernel parameters on every node in this group
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-do\-not\-reboot\fR]
+Do not reboot nodes after applying changes
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIPARAMS\fR
+Space\-separated kernel parameters to apply.
+eg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M
+.SS "manta apply ephemeral-environment"
+Launch an ephemeral SSH environment from an image.
+.PP
+Returns an SSH hostname once the environment is ready (usually within a few seconds).
+.TP
+\fB\-i\fR, \fB\-\-image\-id\fR \fI<IMAGE_ID>\fR
+Image ID to use
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta apply template"
+Boot nodes using an existing session template
+.TP
+[\fB\-n\fR, \fB\-\-name\fR] \fI<VALUE>\fR
+Name of the boot session to create
+.TP
+[\fB\-o\fR, \fB\-\-operation\fR] \fI<VALUE>\fR
+Boot operation to perform
+.TP
+\fB\-t\fR, \fB\-\-template\fR \fI<VALUE>\fR
+Session template name
+.TP
+\fB\-l\fR, \fB\-\-limit\fR \fI<VALUE>\fR
+Limit to specific nodes, groups, or roles (OR by default; prefix with \*(Aq&\*(Aq for AND or \*(Aq!\*(Aq for NOT)
+.TP
+[\fB\-i\fR, \fB\-\-include\-disabled\fR]
+Include nodes marked as disabled in the hardware state manager
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta delete"
 Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints
 .TP
-manta\-migrate(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta delete group"
+Delete a node group.
+.PP
+The group must be empty before deletion. Move its members to another group with \*(Aqmigrate nodes\*(Aq first.
+.TP
+[\fB\-f\fR, \fB\-\-force\fR]
+Force deletion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fIGROUP_NAME\fR
+Name of the group to delete
+.SS "manta delete node"
+Remove a node from the hardware state manager (the node disappears from the inventory). To only remove it from a group\*(Aqs membership without deleting it, use `manta delete nodes` (plural).
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fIXNAME\fR
+Xname of the node to remove
+.SS "manta delete nodes"
+Remove nodes from a group\*(Aqs membership.
+.PP
+Differs from `manta delete node` (singular), which removes a node from the system inventory entirely; this command leaves the nodes in place and only changes which group(s) they belong to.
+.TP
+\fB\-g\fR, \fB\-\-group\fR \fI<NAME>\fR
+Group to remove the nodes from
+.TP
+\fB\-n\fR, \fB\-\-nodes\fR \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta delete kernel-parameters"
+Remove kernel parameters from nodes (parameter values are ignored — match is by name)
+.TP
+[\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Remove the listed kernel parameters from every node in this group
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-do\-not\-reboot\fR]
+Do not reboot nodes after applying changes
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIPARAMS\fR
+Comma\-separated kernel parameter names to remove.
+eg: console,bad_page,crashkernel,hugepagelist,quiet
+.SS "manta delete boot-parameters"
+Delete boot parameters for nodes
+.TP
+[\fB\-H\fR, \fB\-\-hosts\fR] \fI<XNAMES>\fR
+Xnames of the nodes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta delete configurations"
+Delete configurations and all associated data (sessions, session templates, boot sessions, and images).
+.PP
+Use \-\-since and/or \-\-until to filter by the configuration\*(Aqs last\-updated date (format: %Y\-%m\-%d).
+.PP
+eg:
+  \-\-since 2023\-01\-01 \-\-until 2023\-10\-01
+    Deletes all configurations last updated between 2023\-01\-01 and 2023\-10\-01.
+.TP
+[\fB\-n\fR, \fB\-\-configuration\-name\fR] \fI<VALUE>\fR
+Glob pattern to filter by name.
+eg: my\-config*, my\-config\-v[1,2]
+.TP
+[\fB\-s\fR, \fB\-\-since\fR] \fI<DATE>\fR
+Delete configurations last updated after this date (format: %Y\-%m\-%d)
+.TP
+[\fB\-u\fR, \fB\-\-until\fR] \fI<DATE>\fR
+Delete configurations last updated before this date (format: %Y\-%m\-%d)
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta delete session"
+Delete a configuration session.
+.PP
+For image\-building sessions, the associated image is also removed.
+For dynamic (runtime) sessions, the error count is set to its maximum value.
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fISESSION_NAME\fR
+Name of the session to delete
+.SS "manta delete images"
+[experimental] Delete IMS images by ID (refuses to delete images currently booting a node)
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIIMAGE_IDS\fR
+Comma\-separated image IDs to delete.
+eg: e2ce82f0\-e7ba\-4f36\-9f5c\-750346599600,59e0180a\-3fdd\-4936\-bba7\-14ba914ffd34
+.SS "manta delete hardware"
+[experimental] Remove hardware components from a group
+.TP
+[\fB\-P\fR, \fB\-\-pattern\fR] \fI<PATTERN>\fR
+Hardware component pattern
+.TP
+[\fB\-t\fR, \fB\-\-target\-group\fR] \fI<TARGET_GROUP_NAME>\fR
+Group to remove components from
+.TP
+[\fB\-p\fR, \fB\-\-parent\-group\fR] \fI<PARENT_GROUP_NAME>\fR
+Group that receives the freed components
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-D\fR, \fB\-\-delete\-group\fR]
+Delete the group if empty after this operation
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta delete redfish-endpoints"
+Delete a Redfish endpoint
+.TP
+\fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
+Xname of the Redfish endpoint to delete
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta migrate"
 Move nodes between groups
 .TP
-manta\-backup(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta migrate nodes"
+Move nodes between clusters
+.TP
+[\fB\-f\fR, \fB\-\-from\fR] \fI<NAME>\fR
+Source cluster to move nodes from
+.TP
+\fB\-t\fR, \fB\-\-to\fR \fI<NAME>\fR
+Destination cluster to move nodes to
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fIXNAMES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq
+.SS "manta backup"
 Back up a virtual cluster (images, boot settings, group membership) to disk
 .TP
-manta\-restore(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta backup vcluster"
+Back up a virtual cluster\*(Aqs configuration: images, boot settings, and group membership.
+.PP
+The backup is derived from the specified session template.
+.TP
+[\fB\-b\fR, \fB\-\-bos\fR] \fI<SESSIONTEMPLATE>\fR
+Session template to derive the backup from
+.TP
+[\fB\-d\fR, \fB\-\-destination\fR] \fI<FOLDER>\fR
+Destination directory for the backup files
+.TP
+[\fB\-p\fR, \fB\-\-pre\-hook\fR] \fI<SCRIPT>\fR
+Command to run before the backup.
+eg: \-\-pre\-hook "echo hello"
+.TP
+[\fB\-a\fR, \fB\-\-post\-hook\fR] \fI<SCRIPT>\fR
+Command to run after a successful backup.
+eg: \-\-post\-hook "echo hello"
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta restore"
 Restore a virtual cluster from a backup bundle
 .TP
-manta\-run(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta restore vcluster"
+Restore a virtual cluster from a backup bundle
+.TP
+[\fB\-b\fR, \fB\-\-bos\-file\fR] \fI<FILE>\fR
+Session template backup file
+.TP
+[\fB\-c\fR, \fB\-\-cfs\-file\fR] \fI<FILE>\fR
+Configuration backup file
+.TP
+[\fB\-j\fR, \fB\-\-hsm\-file\fR] \fI<FILE>\fR
+Group description backup file
+.TP
+[\fB\-m\fR, \fB\-\-ims\-file\fR] \fI<FILE>\fR
+Image metadata backup file
+.TP
+[\fB\-i\fR, \fB\-\-image\-dir\fR] \fI<PATH>\fR
+Directory containing the image files
+.TP
+[\fB\-p\fR, \fB\-\-pre\-hook\fR] \fI<SCRIPT>\fR
+Command to run before the restore.
+eg: \-\-pre\-hook "echo hello"
+.TP
+[\fB\-a\fR, \fB\-\-post\-hook\fR] \fI<SCRIPT>\fR
+Command to run after a successful restore.
+eg: \-\-post\-hook "echo hello"
+.TP
+[\fB\-o\fR, \fB\-\-overwrite\fR]
+Overwrite existing data
+.TP
+[\fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta run"
 Create and run a configuration session from a local Ansible repo
 .TP
-manta\-power(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta run session"
+Create and run a configuration session from a local git repo.
+.PP
+The repo must already exist in the system\*(Aqs VCS. The session runs the specified Ansible playbook against the target nodes or group.
+.TP
+\fB\-n\fR, \fB\-\-name\fR \fI<VALUE>\fR
+Session name
+.TP
+[\fB\-p\fR, \fB\-\-playbook\-name\fR] \fI<VALUE>\fR
+Ansible playbook filename
+.TP
+\fB\-r\fR, \fB\-\-repo\-path\fR \fI<REPO_PATH>\fR
+Path to the local git repo containing the Ansible playbook
+.TP
+[\fB\-w\fR, \fB\-\-watch\-logs\fR]
+Stream session logs to stdout
+.TP
+[\fB\-t\fR, \fB\-\-timestamps\fR]
+Show log timestamps
+.TP
+[\fB\-v\fR, \fB\-\-ansible\-verbosity\fR] \fI<VALUE>\fR
+Ansible verbosity level (1 = \-v, 2 = \-vv, …, max 4)
+.TP
+[\fB\-P\fR, \fB\-\-ansible\-passthrough\fR] \fI<VALUE>\fR
+Additional Ansible flags (limited to \-\-extra\-vars, \-\-forks, \-\-skip\-tags, \-\-start\-at\-task, \-\-tags)
+.TP
+\fB\-l\fR, \fB\-\-ansible\-limit\fR \fI<VALUE>\fR
+Limit the session to specific nodes (must be a subset of \-\-group if both are provided)
+.TP
+[\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
+Run the session against every node in this group
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta power"
 Power nodes on, off, or reset (reboot); waits for the transition unless \-\-no\-wait is set
 .TP
-manta\-log(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta power on"
+Power on nodes or a group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta power on group"
+Power on all nodes in a group
+.TP
+[\fB\-R\fR, \fB\-\-reason\fR] \fI<TEXT>\fR
+Reason for the power operation
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fICLUSTER_NAME\fR
+Group name
+.SS "manta power on nodes"
+Power on a set of nodes
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta power off"
+Power off nodes or a group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta power off group"
+Power off all nodes in a group
+.TP
+[\fB\-g\fR, \fB\-\-graceful\fR]
+Perform a graceful shutdown
+.TP
+[\fB\-R\fR, \fB\-\-reason\fR] \fI<TEXT>\fR
+Reason for the power operation
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fICLUSTER_NAME\fR
+Group name
+.SS "manta power off nodes"
+Power off a set of nodes
+.TP
+[\fB\-g\fR, \fB\-\-graceful\fR]
+Perform a graceful shutdown
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta power reset"
+Reset (reboot) nodes or a group
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta power reset group"
+Reset all nodes in a group
+.TP
+[\fB\-g\fR, \fB\-\-graceful\fR]
+Perform a graceful reboot
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-r\fR, \fB\-\-reason\fR] \fI<TEXT>\fR
+Reason for the power operation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fICLUSTER_NAME\fR
+Group name
+.SS "manta power reset nodes"
+Reset a set of nodes
+.TP
+[\fB\-g\fR, \fB\-\-graceful\fR]
+Perform a graceful reboot
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip confirmation prompts
+.TP
+[\fB\-\-no\-wait\fR]
+Return as soon as the transition is queued; don\*(Aqt poll for completion
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fINODES\fR
+Xnames, NIDs, or a hostlist expression.
+eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
+\*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.SS "manta log"
 Stream configuration session logs to stdout (accepts session, node, group, or NID)
 .TP
-manta\-console(1)
+[\fB\-t\fR, \fB\-\-timestamps\fR]
+Show log timestamps
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+[\fITARGET\fR]
+Session name, node group, xname, or NID.
+eg: x1003c1s7b0n0, nid001313, zinal, batcher\-64d35a81\-d0e1\-496d\-9eda\-0010e502f2a3
+.SS "manta console"
 Attach to a node\*(Aqs serial console, or to a configuration session\*(Aqs Ansible container
 .TP
-manta\-gen\-autocomplete(1)
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta console node"
+Connect to a node\*(Aqs serial console.
+.PP
+Accepts an xname or NID.
+eg: \*(Aqx1003c1s7b0n0\*(Aq or \*(Aqnid001313\*(Aq
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.TP
+\fIXNAME\fR
+Node xname or NID
+.SS "manta console target-ansible"
+Connect to the Ansible target container of a configuration session
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fISESSION_NAME\fR
+Configuration session name
+.SS "manta gen-autocomplete"
 Generate shell completion scripts
 .TP
-manta\-gen\-man(1)
-Generate and install manta man pages
+[\fB\-s\fR, \fB\-\-shell\fR] \fI<SHELL>\fR
+Shell type (guessed from $SHELL if omitted)
 .TP
-manta\-upgrade(1)
-Replace this `manta` binary with the latest release
-.SH VERSION
-v2.0.0\-beta.32
+[\fB\-p\fR, \fB\-\-path\fR] \fI<PATH>\fR
+Directory to write the script (prints to stdout if omitted)
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta gen-man"
+Generate one man\-page (`.1`) per subcommand from the running binary\*(Aqs clap tree and write them into the target directory.
+.PP
+Defaults to `$XDG_DATA_HOME/man/man1` (i.e. `~/.local/share/man/man1`) when `\-\-path` is omitted. The directory is created if it doesn\*(Aqt exist.
+.PP
+After install, configure your shell so `man` finds the new location — on Linux this directory is searched by default; on macOS you may need `export MANPATH="$HOME/.local/share/man:$MANPATH"`.
+.TP
+[\fB\-p\fR, \fB\-\-path\fR] \fI<PATH>\fR
+Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)
+.SS "manta upgrade"
+Fetch the highest `manta\-cli\-v*` tag from https://github.com/eth\-cscs/manta/releases, compare against the current version, and (if newer) download the right platform tarball and atomically replace the running binary.
+.PP
+Use `brew upgrade manta\-cli` instead if you installed via Homebrew — this command will warn but not block in that case.
+.TP
+[\fB\-c\fR, \fB\-\-check\fR]
+Check for a newer version and print it, but don\*(Aqt apply
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Show what would happen without downloading or replacing
+.TP
+[\fB\-y\fR, \fB\-\-assume\-yes\fR]
+Skip the confirmation prompt before replacing the binary
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help (see a summary with \*(Aq\-h\*(Aq)

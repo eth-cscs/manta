@@ -573,7 +573,9 @@ auto-detected from `$SHELL` if `--shell` is also omitted.
 manta gen-man
 ```
 
-After this, `man manta`, `man manta-get-sessions`, etc. all work.
+After this, `man manta` opens the consolidated reference: top-level
+options + a SUBCOMMANDS section with one entry per (sub)subcommand
+(use `/sessions` inside the page to jump to a specific verb).
 On Linux, `man` auto-searches `~/.local/share/man`. On macOS, add
 the directory to `MANPATH` once:
 

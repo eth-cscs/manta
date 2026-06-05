@@ -191,8 +191,9 @@ The new completion script reflects the current v2 command tree.
 The deprecated v1 forms have been removed and no longer
 autocomplete — see §1.4 for the full mapping.
 
-While you're regenerating, also install the man pages so
-`man manta`, `man manta-get-sessions`, etc. work:
+While you're regenerating, also install the consolidated
+`man manta` page (every subcommand is a `/sessions`-searchable
+section inside it):
 
 ```bash
 manta gen-man

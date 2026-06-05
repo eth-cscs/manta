@@ -939,11 +939,12 @@ manta gen-autocomplete --shell fish --path ~/.config/fish/completions
 
 ## gen-man
 
-Generate one man page (`.1` file) per subcommand from the running
-binary's clap tree and write them into a directory. Useful when you
+Generate a single consolidated `manta.1` man page from the running
+binary's clap tree and write it into a directory. Useful when you
 installed manta via the shell installer (or built from source) and
-want `man manta`, `man manta-apply-sat-file`, etc. to work locally
-without juggling source-tree paths.
+want `man manta` to work locally without juggling source-tree paths.
+The page has a `SUBCOMMANDS` section with one entry per (sub)subcommand,
+so `/<verb>` inside the page jumps to the relevant flag table.
 
 | Flag | Type | Description |
 |------|------|-------------|

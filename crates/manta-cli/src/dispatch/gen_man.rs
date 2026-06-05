@@ -2,22 +2,22 @@
 //!
 //! Mirrors what `build.rs` does at compile time when
 //! `MANTA_REGENERATE_DOCS=1` is set, but driven from the live clap
-//! tree at runtime so end users can produce up-to-date pages for
+//! tree at runtime so end users can produce an up-to-date page for
 //! whichever binary they have installed — without needing the manta
 //! source tree.
 
 use std::ffi::OsString;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::fs::{self, File};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result, anyhow};
 use clap::Command;
-use clap_mangen::generate_to;
 use serde_json::json;
 
+use crate::build::manpage;
 use crate::output::action_result;
 
-/// Generate and install the manta man pages.
+/// Generate and install the consolidated `manta.1` man page.
 pub fn exec(
   cli: Command,
   target: Option<PathBuf>,
@@ -35,15 +35,16 @@ pub fn exec(
     format!("failed to create destination directory {}", dest.display())
   })?;
 
-  generate_to(cli, &dest).with_context(|| {
-    format!("failed to generate man pages into {}", dest.display())
+  let path = dest.join("manta.1");
+  let mut f = File::create(&path)
+    .with_context(|| format!("failed to create {}", path.display()))?;
+  manpage::render_consolidated(cli, &mut f).with_context(|| {
+    format!("failed to render manta.1 into {}", path.display())
   })?;
 
-  let count = count_files(&dest)?;
-
   action_result::print_with_data(
-    &format!("Installed {count} man page(s) to {}.", dest.display()),
-    &json!({"path": dest.to_string_lossy(), "count": count}),
+    &format!("Installed manta.1 to {}.", dest.display()),
+    &json!({"path": dest.to_string_lossy()}),
     output_opt,
   )?;
 
@@ -67,24 +68,6 @@ fn default_user_man_dir(
       )
     })?;
   Ok(base.join("man").join("man1"))
-}
-
-/// Count `.1` files in `dir` so we can report a meaningful "Installed
-/// N pages" message. `clap_mangen::generate_to` returns `()` (no
-/// per-file accounting), so we read it back from the filesystem.
-fn count_files(dir: &Path) -> Result<usize> {
-  let entries = fs::read_dir(dir)
-    .with_context(|| format!("failed to read {}", dir.display()))?;
-  let mut n = 0;
-  for entry in entries {
-    let entry = entry?;
-    if entry.file_type()?.is_file()
-      && entry.path().extension().and_then(|e| e.to_str()) == Some("1")
-    {
-      n += 1;
-    }
-  }
-  Ok(n)
 }
 
 #[cfg(test)]
@@ -111,15 +94,5 @@ mod tests {
   fn error_when_both_unset() {
     let r = default_user_man_dir(None, None);
     assert!(r.is_err());
-  }
-
-  #[test]
-  fn count_files_counts_only_dot1_files() {
-    let dir = tempfile::tempdir().unwrap();
-    fs::write(dir.path().join("foo.1"), "x").unwrap();
-    fs::write(dir.path().join("bar.1"), "y").unwrap();
-    fs::write(dir.path().join("baz.txt"), "z").unwrap();
-    fs::create_dir(dir.path().join("subdir")).unwrap();
-    assert_eq!(count_files(dir.path()).unwrap(), 2);
   }
 }

@@ -41,7 +41,7 @@ three commands handle the day-to-day install plumbing:
 # Install shell tab completion (substitute bash / fish for zsh)
 manta gen-autocomplete --shell zsh --path ~/.zsh/completions
 
-# Install man pages — `man manta`, `man manta-get-sessions`, etc.
+# Install the consolidated `man manta` page (use `/sessions` to search)
 # Defaults to $XDG_DATA_HOME/man/man1 (`~/.local/share/man/man1`)
 manta gen-man
 

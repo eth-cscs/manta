@@ -20,9 +20,9 @@
 //! PRs with stale generated docs fail loudly.
 
 use clap_complete::{Shell, generate_to};
-use clap_mangen::generate_to as generate_man_to;
 use std::fs;
 use std::io::Error;
+use std::path::Path;
 
 #[path = "src/build/mod.rs"]
 mod cli;
@@ -35,11 +35,15 @@ fn main() -> Result<(), Error> {
     return Ok(());
   }
 
-  // ── Man pages ─────────────────────────────────────────────────────────────
+  // ── Man page ──────────────────────────────────────────────────────────────
+  // One consolidated `manta.1` covers the top-level page + every
+  // (sub)subcommand inline. See `src/build/manpage.rs`.
   let man_dir = "man";
   fs::create_dir_all(man_dir)?;
-  generate_man_to(cli::build_cli(), man_dir)?;
-  println!("cargo:warning=man pages regenerated in {man_dir}/");
+  let man_path = Path::new(man_dir).join("manta.1");
+  let mut f = fs::File::create(&man_path)?;
+  cli::manpage::render_consolidated(cli::build_cli(), &mut f)?;
+  println!("cargo:warning=man page regenerated at {}", man_path.display());
 
   // ── Shell completions ──────────────────────────────────────────────────────
   let completion_dir = "autocomplete_shell_scripts";
