@@ -181,4 +181,3 @@ pub fn subcommand_add_nodes() -> Command {
     )
     .arg(output_flag())
 }
-

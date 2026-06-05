@@ -34,4 +34,3 @@ pub fn subcommand_backup() -> Command {
         ),
     )
 }
-

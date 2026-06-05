@@ -265,9 +265,11 @@ mod tests {
     // deserialization fails — surface that as a clear error rather
     // than panicking.
     let payload = json!({ "hsm_group_name": "x" });
-    let err =
-      print_cluster(&payload, "summary").unwrap_err().to_string();
-    assert!(err.contains("node summaries") || err.contains("missing"), "got: {err}");
+    let err = print_cluster(&payload, "summary").unwrap_err().to_string();
+    assert!(
+      err.contains("node summaries") || err.contains("missing"),
+      "got: {err}"
+    );
   }
 
   #[test]

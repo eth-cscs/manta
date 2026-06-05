@@ -8,8 +8,8 @@ use std::path::PathBuf;
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::dispatch::gen_man;
 use crate::common::app_context::AppContext;
+use crate::dispatch::gen_man;
 
 /// Dispatch `manta gen-man`.
 pub async fn handle_gen_man(

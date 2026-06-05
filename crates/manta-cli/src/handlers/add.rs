@@ -1,14 +1,14 @@
 //! Routes `manta add *` subcommands to their exec functions.
 
+use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
+use crate::common::clap_ext::ArgMatchesExt;
 use crate::dispatch::add::{
   boot_parameters as add_boot_parameters, group as add_group,
   hardware as add_hardware, kernel_parameters as add_kernel_parameters,
   node as add_node, nodes as add_nodes,
   redfish_endpoint as add_redfish_endpoint,
 };
-use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
-use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::path::PathBuf;

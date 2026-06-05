@@ -6,8 +6,8 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::dispatch::gen_autocomplete;
 use crate::common::app_context::AppContext;
+use crate::dispatch::gen_autocomplete;
 
 /// Dispatch `manta gen-autocomplete`.
 pub async fn handle_gen_autocomplete(

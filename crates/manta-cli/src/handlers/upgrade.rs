@@ -7,8 +7,8 @@
 use anyhow::Error;
 use clap::ArgMatches;
 
-use crate::dispatch::upgrade;
 use crate::common::app_context::AppContext;
+use crate::dispatch::upgrade;
 
 /// Dispatch the `manta upgrade` command.
 pub async fn handle_upgrade(
@@ -18,7 +18,8 @@ pub async fn handle_upgrade(
   let check_only = cli_upgrade.get_flag("check");
   let dry_run = cli_upgrade.get_flag("dry-run");
   let assume_yes = cli_upgrade.get_flag("assume-yes");
-  let output_owned: Option<String> = cli_upgrade.get_one::<String>("output").cloned();
+  let output_owned: Option<String> =
+    cli_upgrade.get_one::<String>("output").cloned();
 
   // The upgrade flow uses blocking I/O (reqwest::blocking +
   // xz2 + tar + fs::rename); off-load to a blocking thread to

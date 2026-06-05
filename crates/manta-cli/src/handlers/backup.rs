@@ -1,9 +1,9 @@
 //! Routes `manta backup *` subcommands to their exec functions.
 
-use crate::dispatch::backup::vcluster as backup_vcluster;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
+use crate::dispatch::backup::vcluster as backup_vcluster;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 

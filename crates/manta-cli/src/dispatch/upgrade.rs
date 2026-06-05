@@ -54,8 +54,9 @@ pub fn exec(
   output_opt: Option<&str>,
 ) -> Result<()> {
   let current_str = env!("CARGO_PKG_VERSION");
-  let current = Version::parse(current_str)
-    .with_context(|| format!("could not parse current version '{current_str}'"))?;
+  let current = Version::parse(current_str).with_context(|| {
+    format!("could not parse current version '{current_str}'")
+  })?;
 
   let target = self_update::get_target();
   ensure_supported_target(target)?;
@@ -86,9 +87,8 @@ pub fn exec(
     return Ok(());
   }
 
-  let message = format!(
-    "A newer manta is available: v{current_str} → v{latest}"
-  );
+  let message =
+    format!("A newer manta is available: v{current_str} → v{latest}");
   render_version_info(&message, &info, output_opt)?;
 
   if check_only || dry_run {
@@ -97,7 +97,8 @@ pub fn exec(
 
   // Warn (don't block) when the binary path looks brew-managed; brew
   // will simply overwrite our replacement on its next `brew upgrade`.
-  let exe_path = env::current_exe().context("could not locate the running manta binary")?;
+  let exe_path =
+    env::current_exe().context("could not locate the running manta binary")?;
   if looks_like_homebrew_path(&exe_path) {
     eprintln!(
       "warning: this `manta` binary appears to be Homebrew-managed \
@@ -180,7 +181,8 @@ fn ensure_supported_target(target: &str) -> Result<()> {
 /// Hit the GitHub releases API, filter to `manta-cli-v*` tags, and
 /// return the highest semver.
 fn fetch_latest_cli_version() -> Result<Version> {
-  let url = format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases");
+  let url =
+    format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases");
   // Need a `User-Agent` — GitHub rejects API requests without one.
   let ua = concat!("manta-cli/", env!("CARGO_PKG_VERSION"));
   let resp: Vec<Value> = reqwest::blocking::Client::new()
@@ -237,14 +239,16 @@ fn download_and_extract(
     let path = entry.path().context("tar entry has no path")?.to_path_buf();
     if path.to_str() == Some(&inner_path) {
       let parent = exe_path.parent().ok_or_else(|| {
-        anyhow!("current exe path {} has no parent directory", exe_path.display())
+        anyhow!(
+          "current exe path {} has no parent directory",
+          exe_path.display()
+        )
       })?;
-      let tmp = parent.join(format!(
-        ".manta.upgrade.{}.tmp",
-        std::process::id()
-      ));
-      let mut out = File::create(&tmp)
-        .with_context(|| format!("failed to create temp file {}", tmp.display()))?;
+      let tmp =
+        parent.join(format!(".manta.upgrade.{}.tmp", std::process::id()));
+      let mut out = File::create(&tmp).with_context(|| {
+        format!("failed to create temp file {}", tmp.display())
+      })?;
       let mut buf = Vec::new();
       entry
         .read_to_end(&mut buf)
@@ -292,17 +296,15 @@ mod tests {
 
   #[test]
   fn brew_path_detection_matches_arm_cellar() {
-    let p = PathBuf::from(
-      "/opt/homebrew/Cellar/manta-cli/2.0.0-beta.27/bin/manta",
-    );
+    let p =
+      PathBuf::from("/opt/homebrew/Cellar/manta-cli/2.0.0-beta.27/bin/manta");
     assert!(looks_like_homebrew_path(&p));
   }
 
   #[test]
   fn brew_path_detection_matches_intel_cellar() {
-    let p = PathBuf::from(
-      "/usr/local/Cellar/manta-cli/2.0.0-beta.27/bin/manta",
-    );
+    let p =
+      PathBuf::from("/usr/local/Cellar/manta-cli/2.0.0-beta.27/bin/manta");
     assert!(looks_like_homebrew_path(&p));
   }
 

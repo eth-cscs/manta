@@ -1,9 +1,9 @@
 //! Routes `manta migrate *` subcommands to their exec functions.
 
-use crate::dispatch::migrate::nodes as migrate_nodes;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
+use crate::dispatch::migrate::nodes as migrate_nodes;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;

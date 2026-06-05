@@ -46,4 +46,3 @@ pub fn subcommand_restore() -> Command {
         .about("Restore a virtual cluster from a backup bundle"),
     )
 }
-

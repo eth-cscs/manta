@@ -209,7 +209,8 @@ mod tests {
       enabled: "true".to_string(),
       error_count: "0".to_string(),
       boot_image_id: "abcd1234".to_string(),
-      kernel_params: "ip=dhcp console=ttyS0,115200 crashkernel=512M".to_string(),
+      kernel_params: "ip=dhcp console=ttyS0,115200 crashkernel=512M"
+        .to_string(),
       boot_configuration: "boot-cos".to_string(),
     }
   }

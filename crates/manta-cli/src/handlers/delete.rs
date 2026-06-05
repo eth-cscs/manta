@@ -1,5 +1,8 @@
 //! Routes `manta delete *` subcommands to their exec functions.
 
+use crate::common::app_context::AppContext;
+use crate::common::authentication::get_api_token;
+use crate::common::clap_ext::ArgMatchesExt;
 use crate::dispatch::delete::{
   boot_parameters as delete_boot_parameters,
   configurations_and_derivatives as delete_configurations_and_derivatives,
@@ -8,9 +11,6 @@ use crate::dispatch::delete::{
   nodes as delete_nodes, redfish_endpoint as delete_redfish_endpoint,
   session as delete_session,
 };
-use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
-use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 

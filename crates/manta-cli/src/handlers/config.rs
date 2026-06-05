@@ -1,9 +1,9 @@
 //! Routes `manta config *` subcommands to their exec functions.
 
-use crate::dispatch;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
+use crate::dispatch;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
