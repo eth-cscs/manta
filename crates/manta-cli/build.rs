@@ -43,7 +43,10 @@ fn main() -> Result<(), Error> {
   let man_path = Path::new(man_dir).join("manta.1");
   let mut f = fs::File::create(&man_path)?;
   cli::manpage::render_consolidated(cli::build_cli(), &mut f)?;
-  println!("cargo:warning=man page regenerated at {}", man_path.display());
+  println!(
+    "cargo:warning=man page regenerated at {}",
+    man_path.display()
+  );
 
   // ── Shell completions ──────────────────────────────────────────────────────
   let completion_dir = "autocomplete_shell_scripts";

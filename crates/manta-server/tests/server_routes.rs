@@ -545,9 +545,7 @@ async fn all_put_routes_are_registered() {
   // redfish-endpoints. Both are stacked onto the existing POST
   // route, so a missed `.put(...)` registration would silently
   // fall through to a 405 here.
-  for uri in
-    &["/api/v1/boot-parameters", "/api/v1/redfish-endpoints"]
-  {
+  for uri in &["/api/v1/boot-parameters", "/api/v1/redfish-endpoints"] {
     assert_route_exists(Method::PUT, uri).await;
   }
 }
@@ -804,4 +802,3 @@ fn to_handler_error_uncategorized_variants_become_500() {
     );
   }
 }
-

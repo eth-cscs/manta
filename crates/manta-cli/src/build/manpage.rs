@@ -39,7 +39,10 @@ pub fn render_consolidated(
   // depth-first.
   let mut sub_roff = Roff::default();
   sub_roff.control("SH", ["SUBCOMMANDS"]);
-  let top_name = cli.get_bin_name().unwrap_or_else(|| cli.get_name()).to_owned();
+  let top_name = cli
+    .get_bin_name()
+    .unwrap_or_else(|| cli.get_name())
+    .to_owned();
   walk_subcommands(&cli, &mut sub_roff, &[top_name.as_str()]);
   sub_roff.to_writer(w)?;
 
@@ -140,7 +143,11 @@ fn render_args(cmd: &Command, roff: &mut Roff) {
 }
 
 fn option_markers(arg: &Arg) -> (&'static str, &'static str) {
-  if arg.is_required_set() { ("", "") } else { ("[", "]") }
+  if arg.is_required_set() {
+    ("", "")
+  } else {
+    ("[", "]")
+  }
 }
 
 fn has_visible_args(cmd: &Command) -> bool {
@@ -157,13 +164,11 @@ mod tests {
       .about("Toy CLI for testing the consolidated man page")
       .arg(arg!(-v --verbose "Enable verbose output"))
       .subcommand(
-        Command::new("get")
-          .about("Read-only queries")
-          .subcommand(
-            Command::new("sessions")
-              .about("List sessions")
-              .arg(arg!(-n --name <NAME> "Session name filter")),
-          ),
+        Command::new("get").about("Read-only queries").subcommand(
+          Command::new("sessions")
+            .about("List sessions")
+            .arg(arg!(-n --name <NAME> "Session name filter")),
+        ),
       )
   }
 
@@ -176,7 +181,10 @@ mod tests {
     // Top-level page sections present. `roff` only quotes args
     // that contain spaces, so single-word `.SH` headers are bare.
     assert!(text.contains(".SH NAME"), "missing NAME header: {text}");
-    assert!(text.contains(".SH OPTIONS"), "missing OPTIONS header: {text}");
+    assert!(
+      text.contains(".SH OPTIONS"),
+      "missing OPTIONS header: {text}"
+    );
 
     // SUBCOMMANDS section appears exactly once.
     assert_eq!(

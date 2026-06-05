@@ -462,7 +462,10 @@ mod tests {
 
   #[test]
   fn format_with_causes_single_error_has_no_caused_by() {
-    let e = Chain { msg: "boom", src: None };
+    let e = Chain {
+      msg: "boom",
+      src: None,
+    };
     assert_eq!(format_with_causes(&e), "boom");
   }
 
@@ -470,7 +473,10 @@ mod tests {
   fn format_with_causes_two_level_chain_is_indented() {
     let e = Chain {
       msg: "outer",
-      src: Some(Box::new(Chain { msg: "inner", src: None })),
+      src: Some(Box::new(Chain {
+        msg: "inner",
+        src: None,
+      })),
     };
     assert_eq!(format_with_causes(&e), "outer\n  caused by: inner");
   }
@@ -482,7 +488,10 @@ mod tests {
       msg: "top",
       src: Some(Box::new(Chain {
         msg: "middle",
-        src: Some(Box::new(Chain { msg: "root", src: None })),
+        src: Some(Box::new(Chain {
+          msg: "root",
+          src: None,
+        })),
       })),
     };
     assert_eq!(

@@ -34,8 +34,7 @@ fn json_envelope_with_data<T: serde::Serialize>(
 ) -> Result<String> {
   let data_value = serde_json::to_value(data)
     .context("Failed to convert data payload to JSON")?;
-  let value =
-    json!({"status": "ok", "message": message, "data": data_value});
+  let value = json!({"status": "ok", "message": message, "data": data_value});
   serde_json::to_string(&value)
     .context("Failed to serialize action result to JSON")
 }
@@ -93,8 +92,7 @@ mod tests {
   #[test]
   fn json_envelope_with_data_attaches_payload() {
     let payload = json!({"id": "x3000c0s1b0", "enabled": true});
-    let rendered =
-      json_envelope_with_data("endpoint added", &payload).unwrap();
+    let rendered = json_envelope_with_data("endpoint added", &payload).unwrap();
     let parsed: Value = serde_json::from_str(&rendered).unwrap();
     assert_eq!(parsed["status"], "ok");
     assert_eq!(parsed["message"], "endpoint added");

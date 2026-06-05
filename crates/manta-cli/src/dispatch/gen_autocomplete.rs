@@ -18,11 +18,9 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::output::action_result;
 
 /// Generate (and by default install) the shell completion script.
-pub fn exec(
-  mut cli: Command,
-  cli_gen_autocomplete: &ArgMatches,
-) -> Result<()> {
-  let shell_opt: Option<String> = cli_gen_autocomplete.opt_str("shell").map(str::to_owned);
+pub fn exec(mut cli: Command, cli_gen_autocomplete: &ArgMatches) -> Result<()> {
+  let shell_opt: Option<String> =
+    cli_gen_autocomplete.opt_str("shell").map(str::to_owned);
   let path_opt: Option<PathBuf> = cli_gen_autocomplete.get_one("path").cloned();
   let print: bool = cli_gen_autocomplete.get_flag("print");
   let output_opt: Option<&str> = cli_gen_autocomplete.opt_str("output");
@@ -48,9 +46,10 @@ pub fn exec(
     format!("failed to create destination directory {}", dir.display())
   })?;
 
-  let path = generate_to(shell, &mut cli, "manta", &dir).with_context(|| {
-    format!("failed to write completion script under {}", dir.display())
-  })?;
+  let path =
+    generate_to(shell, &mut cli, "manta", &dir).with_context(|| {
+      format!("failed to write completion script under {}", dir.display())
+    })?;
 
   let extra = post_install_hint(shell, &dir);
   let message = match extra {
@@ -175,30 +174,20 @@ mod tests {
 
   #[test]
   fn default_install_dir_bash_falls_back_to_home() {
-    let p = default_install_dir(
-      Shell::Bash,
-      None,
-      None,
-      Some("/Users/alice".into()),
-    )
-    .unwrap();
+    let p =
+      default_install_dir(Shell::Bash, None, None, Some("/Users/alice".into()))
+        .unwrap();
     assert_eq!(
       p,
-      PathBuf::from(
-        "/Users/alice/.local/share/bash-completion/completions"
-      )
+      PathBuf::from("/Users/alice/.local/share/bash-completion/completions")
     );
   }
 
   #[test]
   fn default_install_dir_zsh_lands_in_site_functions() {
-    let p = default_install_dir(
-      Shell::Zsh,
-      None,
-      None,
-      Some("/Users/bob".into()),
-    )
-    .unwrap();
+    let p =
+      default_install_dir(Shell::Zsh, None, None, Some("/Users/bob".into()))
+        .unwrap();
     assert_eq!(
       p,
       PathBuf::from("/Users/bob/.local/share/zsh/site-functions")
@@ -219,13 +208,9 @@ mod tests {
 
   #[test]
   fn default_install_dir_fish_falls_back_to_dot_config() {
-    let p = default_install_dir(
-      Shell::Fish,
-      None,
-      None,
-      Some("/Users/carol".into()),
-    )
-    .unwrap();
+    let p =
+      default_install_dir(Shell::Fish, None, None, Some("/Users/carol".into()))
+        .unwrap();
     assert_eq!(p, PathBuf::from("/Users/carol/.config/fish/completions"));
   }
 
