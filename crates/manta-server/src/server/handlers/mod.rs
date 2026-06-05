@@ -431,3 +431,63 @@ async fn resolve_xnames_from_request(
     }),
   ))
 }
+
+#[cfg(test)]
+mod tests {
+  //! Pure-logic locks for the helpers in this module that don't need
+  //! a live router. Route- and error-mapping coverage lives in
+  //! `crates/manta-server/tests/server_routes.rs`.
+
+  use super::format_with_causes;
+  use std::error::Error;
+  use std::fmt;
+
+  /// Toy error whose `source()` returns the inner error, so we can
+  /// build a fixed-depth `Display + Error` chain for the walk test.
+  #[derive(Debug)]
+  struct Chain {
+    msg: &'static str,
+    src: Option<Box<Chain>>,
+  }
+  impl fmt::Display for Chain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+      f.write_str(self.msg)
+    }
+  }
+  impl Error for Chain {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+      self.src.as_deref().map(|s| s as &(dyn Error + 'static))
+    }
+  }
+
+  #[test]
+  fn format_with_causes_single_error_has_no_caused_by() {
+    let e = Chain { msg: "boom", src: None };
+    assert_eq!(format_with_causes(&e), "boom");
+  }
+
+  #[test]
+  fn format_with_causes_two_level_chain_is_indented() {
+    let e = Chain {
+      msg: "outer",
+      src: Some(Box::new(Chain { msg: "inner", src: None })),
+    };
+    assert_eq!(format_with_causes(&e), "outer\n  caused by: inner");
+  }
+
+  #[test]
+  fn format_with_causes_walks_to_the_root() {
+    // Deeply nested chain — emulates anyhow's `with_context()` stack.
+    let e = Chain {
+      msg: "top",
+      src: Some(Box::new(Chain {
+        msg: "middle",
+        src: Some(Box::new(Chain { msg: "root", src: None })),
+      })),
+    };
+    assert_eq!(
+      format_with_causes(&e),
+      "top\n  caused by: middle\n  caused by: root"
+    );
+  }
+}
