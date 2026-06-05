@@ -13,9 +13,8 @@ use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 use std::path::PathBuf;
 
-/// Dispatch `manta add` subcommands (node, group,
-/// kernel-parameters, hardware cluster, boot-parameters,
-/// redfish-endpoint).
+/// Dispatch `manta add` subcommands (node, nodes, group, hardware,
+/// boot-parameters, kernel-parameters, redfish-endpoints).
 pub async fn handle_add(
   cli_add: &ArgMatches,
   ctx: &AppContext<'_>,

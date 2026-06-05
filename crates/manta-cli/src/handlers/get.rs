@@ -12,9 +12,9 @@ use crate::dispatch::get::{
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch `manta get` subcommands (groups, session,
-/// configuration, template, images, cluster, hardware, nodes,
-/// boot-parameters, kernel-parameters, redfish-endpoint).
+/// Dispatch `manta get` subcommands (groups, hardware, sessions,
+/// configurations, templates, group-nodes, group-hardware, nodes,
+/// images, boot-parameters, kernel-parameters, redfish-endpoints).
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
