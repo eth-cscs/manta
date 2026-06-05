@@ -19,16 +19,14 @@ install-path = "CARGO_HOME"
 publish-jobs = ["homebrew"]
 # Whether to install an updater program
 install-updater = false
-# Bundle manta-cli's committed man pages and shell completions into
-# release tarballs. The files live at stable workspace-relative
-# paths so dist can reference them literally (its `include` does
-# not glob — `manta-cli-*` would be treated as a literal directory
-# name). The build script regenerates them on `MANTA_REGENERATE_DOCS=1`
-# and CI fails if a PR leaves them stale.
-include = [
-  "crates/manta-cli/man",
-  "crates/manta-cli/autocomplete_shell_scripts",
-]
+# Bundling of manta-cli's committed man pages and shell completions
+# into the release tarball is configured per-package under
+# `crates/manta-cli/Cargo.toml`'s `[package.metadata.dist]` block.
+# Keeping it there (instead of here at workspace level) is what
+# stops the same files from also landing in the manta-server
+# tarball under the unified-release setup. The build script
+# regenerates them on `MANTA_REGENERATE_DOCS=1` and CI fails if a
+# PR leaves them stale.
 
 # 19-04-2026 - fix https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269661 and https://github.com/eth-cscs/manta/actions/runs/24638911170/job/72039269657
 [dist.dependencies.apt]

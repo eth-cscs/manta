@@ -92,7 +92,14 @@ toml = "0.9"
 # Config for `cargo release`. The hook runs from this crate's manifest
 # directory, so the workspace CHANGELOG and cliff config are referenced
 # via `../../` to keep them at the workspace root.
+#
+# `tag-name` overrides cargo-release's default `{{crate_name}}-v{{version}}`
+# template so this crate cuts a workspace-wide tag (e.g. `v2.0.0-beta.33`)
+# instead of `manta-cli-v...`. Paired with `tag = false` on the other two
+# crates, this leaves exactly one tag per workspace bump — which dist then
+# announces as a single GitHub Release containing both binaries.
 [package.metadata.release]
+tag-name = "v{{version}}"
 pre-release-hook = [
   "git",
   "cliff",
@@ -105,3 +112,13 @@ pre-release-hook = [
   "--tag",
   "{{version}}",
 ] # [Generates CHANGELOG automatically] (https://github.com/crate-ci/cargo-release/blob/master/docs/faq.md#maintaining-changelog) using [git cliff](https://github.com/orhun/git-cliff) as a dependency
+
+# Per-package dist config. The man pages and shell-completion scripts live
+# under this crate and only belong in the manta-cli tarball, so we attach
+# the `include` here rather than at workspace level (where they would also
+# end up in the manta-server tarball under the unified release).
+[package.metadata.dist]
+include = [
+  "man",
+  "autocomplete_shell_scripts",
+]
