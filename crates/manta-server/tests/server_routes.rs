@@ -466,7 +466,12 @@ async fn all_get_routes_are_registered() {
   for uri in &[
     "/api/v1/sessions",
     "/api/v1/configurations",
+    "/api/v1/nodes",
     "/api/v1/groups",
+    "/api/v1/groups/available",
+    "/api/v1/groups/all",
+    "/api/v1/groups/nodes",
+    "/api/v1/groups/hardware",
     "/api/v1/images",
     "/api/v1/templates",
     "/api/v1/boot-parameters",
@@ -475,6 +480,8 @@ async fn all_get_routes_are_registered() {
     "/api/v1/clusters",
     "/api/v1/hardware-clusters",
     "/api/v1/hardware-nodes-list",
+    "/api/v1/power/transitions/abcd-1234",
+    "/api/v1/sessions/my-session/logs",
     "/api/v1/health",
     "/api/v1/nodes/x3000c0s1b0n0/console",
     "/api/v1/sessions/my-session/console",
@@ -502,8 +509,13 @@ async fn all_post_routes_are_registered() {
     "/api/v1/power",
     "/api/v1/templates/my-template/sessions",
     "/api/v1/sat-file",
+    "/api/v1/sat-file/configurations",
+    "/api/v1/sat-file/images",
+    "/api/v1/sat-file/session-templates",
     "/api/v1/hardware-clusters/my-cluster/members",
     "/api/v1/hardware-clusters/my-cluster/configuration",
+    "/api/v1/auth/token",
+    "/api/v1/auth/validate",
   ] {
     assert_route_exists(Method::POST, uri).await;
   }
@@ -524,6 +536,19 @@ async fn all_delete_routes_are_registered() {
     "/api/v1/hardware-clusters/my-cluster/members",
   ] {
     assert_route_exists(Method::DELETE, uri).await;
+  }
+}
+
+#[tokio::test]
+async fn all_put_routes_are_registered() {
+  // Only two endpoints currently accept PUT — boot-parameters and
+  // redfish-endpoints. Both are stacked onto the existing POST
+  // route, so a missed `.put(...)` registration would silently
+  // fall through to a 405 here.
+  for uri in
+    &["/api/v1/boot-parameters", "/api/v1/redfish-endpoints"]
+  {
+    assert_route_exists(Method::PUT, uri).await;
   }
 }
 
