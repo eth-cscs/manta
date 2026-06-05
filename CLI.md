@@ -613,8 +613,8 @@ Create and run a CFS session from one or more local git repositories.
 |------|------|----------|---------|-------------|
 | `-n/--name` | string | **yes** | — | Session name |
 | `-r/--repo-path` | path… | **yes** | — | Path(s) to local git repos (repeatable) |
-| `-l/--ansible-limit` | string | **yes** | — | Target xnames |
-| `-H/--group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
+| `-H/--group` | string | one of† | — | Run the session against every node in this HSM group |
+| `-l/--ansible-limit` | string | one of† | — | Limit to specific xnames (must be a subset of `--group` if both given) |
 | `-p/--playbook-name` | string | no | `site.yml` | Ansible playbook filename |
 | `-w/--watch-logs` | flag | no | — | Stream session logs |
 | `-t/--timestamps` | flag | no | — | Show timestamps in logs |
@@ -622,7 +622,10 @@ Create and run a CFS session from one or more local git repositories.
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
 | `-o/--output` | string | no | `table` | Output format: `table`, `json` |
 
+> † At least one of `--group` / `--ansible-limit` must be set.
+
 ```
+manta run session -n my-session -r ~/repos/csm-config --group compute
 manta run session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
 ```
 
