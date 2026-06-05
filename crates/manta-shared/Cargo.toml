@@ -45,11 +45,15 @@ tempfile = "3"
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
-# Suppress cargo-release's per-crate git tag for this crate. The shared
-# workspace tag is owned by manta-cli (see its [package.metadata.release]
-# block); without `tag = false` here, cargo-release would also cut a
-# `manta-shared-v*` tag and dist would announce a second GitHub Release
-# for the same commit. crates.io publishing is unaffected (`publish = true`
-# is set above and `tag = false` only suppresses the git tag step).
-[package.metadata.release]
-tag = false
+# manta-shared participates in the workspace release with the default
+# cargo-release tag scheme (`manta-shared-v{{version}}`). We previously
+# set `tag = false` here hoping to collapse to a single tag, but in
+# practice cargo-release treats `tag = false` as "exclude this crate
+# from the release pipeline entirely" — manta-shared never got
+# uploaded to crates.io, and manta-cli's `=manta-shared` dep pin
+# failed at publish time.
+#
+# Instead the manta-shared-v* tag is left alone in git history (still
+# useful for `git checkout manta-shared-v...`) but the release.yml
+# workflow trigger filters strictly to `v*` so only manta-cli's
+# workspace tag fires dist. See .github/workflows/release.yml.

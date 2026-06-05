@@ -1,14 +1,22 @@
 //! Implements the `manta upgrade` command.
 //!
-//! Fetches the highest `manta-cli-v*` tag from
+//! Fetches the highest `v*` workspace tag from
 //! <https://github.com/eth-cscs/manta/releases>, compares against the
 //! currently running binary's version (`env!("CARGO_PKG_VERSION")`),
 //! and replaces the binary with the platform-appropriate tarball.
 //!
-//! The repo ships three crate tags per workspace bump
-//! (`manta-cli-v*`, `manta-server-v*`, `manta-shared-v*`), so this
-//! command filters strictly to `manta-cli-v*` rather than relying on
-//! GitHub's "latest release" pointer.
+//! Workspace releases land under a single `v{{version}}` tag that
+//! cargo-release cuts from manta-cli (see
+//! `crates/manta-cli/Cargo.toml`'s `[package.metadata.release]
+//! tag-name = "v{{version}}"`). manta-shared also cuts its own
+//! `manta-shared-v*` tag, but the release.yml workflow trigger
+//! filters strictly to `v*` — so for the GitHub-Releases purposes
+//! that this command consults, only `v*` tags exist.
+//!
+//! Legacy per-crate `manta-cli-v*` tags from before the
+//! consolidation are deliberately not matched here; an operator on
+//! that line picks up the next `v*` release directly without going
+//! through stale per-crate tags.
 //!
 //! Archive format is `.tar.xz` (cargo-dist default for Unix targets),
 //! containing `manta-cli-{target}/manta` plus docs/completions. We
@@ -34,7 +42,7 @@ use crate::output::action_result;
 
 const REPO_OWNER: &str = "eth-cscs";
 const REPO_NAME: &str = "manta";
-const TAG_PREFIX: &str = "manta-cli-v";
+const TAG_PREFIX: &str = "v";
 
 /// Result of the version check; serialised under `data` when
 /// `--output json` is requested.
@@ -196,17 +204,28 @@ fn fetch_latest_cli_version() -> Result<Version> {
     .json()
     .context("failed to parse GitHub releases response as JSON")?;
 
+  // Anchor the search to the current major so historical `v0.X` /
+  // `v1.X` tags from before the consolidated tag scheme don't get
+  // picked as "latest" while we wait for the next same-major bump
+  // to ship. Auto-adapts when v3 lands.
+  let current_major = Version::parse(env!("CARGO_PKG_VERSION"))
+    .map(|v| v.major)
+    .unwrap_or(0);
+
   let mut versions: Vec<Version> = resp
     .iter()
     .filter_map(|r| r.get("tag_name").and_then(Value::as_str))
     .filter_map(|tag| tag.strip_prefix(TAG_PREFIX))
     .filter_map(|ver| Version::parse(ver).ok())
+    .filter(|v| v.major >= current_major)
     .collect();
 
   versions.sort();
-  versions
-    .pop()
-    .ok_or_else(|| anyhow!("no '{TAG_PREFIX}*' releases found at {url}"))
+  versions.pop().ok_or_else(|| {
+    anyhow!(
+      "no '{TAG_PREFIX}*' releases with major >= {current_major} found at {url}"
+    )
+  })
 }
 
 /// Download the tarball, extract the `manta` binary into a tempfile

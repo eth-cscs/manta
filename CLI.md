@@ -983,7 +983,8 @@ export MANPATH="$HOME/.local/share/man:$MANPATH"
 ## upgrade
 
 Replace this `manta` binary with the latest release. Fetches the
-highest `manta-cli-v*` tag from <https://github.com/eth-cscs/manta/releases>,
+highest `v*` workspace tag (filtered to the same major version as
+the running binary) from <https://github.com/eth-cscs/manta/releases>,
 compares against the running version, downloads the right
 platform tarball, and atomically swaps the binary in place. The
 manta-server is untouched — server installs are infrastructure-managed.

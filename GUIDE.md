@@ -605,7 +605,8 @@ manta upgrade -y            # download + atomically replace
 manta upgrade --dry-run     # show what would happen, don't apply
 ```
 
-`manta upgrade` fetches the highest `manta-cli-v*` tag from
+`manta upgrade` fetches the highest `v*` workspace tag (matching
+the running binary's major version) from
 [github.com/eth-cscs/manta/releases](https://github.com/eth-cscs/manta/releases),
 downloads the right platform tarball, and atomically swaps the
 binary at `current_exe()`. If you installed via Homebrew, prefer

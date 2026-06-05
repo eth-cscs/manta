@@ -56,8 +56,9 @@ manta upgrade --check
 manta upgrade -y
 ```
 
-`manta upgrade` reads the latest `manta-cli-v*` tag from GitHub
-releases and atomically swaps the binary in place. If you installed
+`manta upgrade` reads the latest `v*` workspace tag from GitHub
+releases (filtered to the same major version as the running binary)
+and atomically swaps the binary in place. If you installed
 via Homebrew, prefer `brew upgrade manta-cli` — `manta upgrade` will
 warn (but not block) when it detects a Homebrew-managed install
 path. See [CLI.md#gen-autocomplete](CLI.md#gen-autocomplete),
