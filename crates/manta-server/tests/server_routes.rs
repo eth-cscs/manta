@@ -777,17 +777,31 @@ fn to_handler_error_unprocessable_variants() {
 }
 
 #[test]
-fn to_handler_error_unmapped_variant_defaults_to_500() {
+fn to_handler_error_uncategorized_variants_become_500() {
+  // The catch-all arm in `to_handler_error` maps every error variant
+  // not explicitly listed above to 500. Anything client-facing
+  // (4xx) must be mapped explicitly — a new error variant landing
+  // in the dispatcher silently 500ing is the bug class this pins.
   use axum::http::StatusCode;
   use manta_backend_dispatcher::error::Error;
   use manta_server::server::handlers::to_handler_error;
 
-  // `Message` is the catch-all for anything not explicitly mapped;
-  // anything else not in the match arms above falls through here too.
-  // Pinning this so future variant additions are caught by tests if
-  // they get accidentally bucketed into the default 500.
-  assert_eq!(
-    to_handler_error(Error::Message("something broke".into())).0,
-    StatusCode::INTERNAL_SERVER_ERROR
-  );
+  for err in [
+    Error::Message("oops".into()),
+    Error::ConsoleError("ws broken".into()),
+    Error::K8sError("apiserver unreachable".into()),
+    Error::TemplateError("jinja boom".into()),
+    Error::MissingField("name".into()),
+    Error::KafkaError("broker gone".into()),
+    Error::HookError("script failed".into()),
+    Error::LocalGitError("no repo".into()),
+  ] {
+    let label = format!("{err:?}");
+    assert_eq!(
+      to_handler_error(err).0,
+      StatusCode::INTERNAL_SERVER_ERROR,
+      "expected 500 for {label}"
+    );
+  }
 }
+
