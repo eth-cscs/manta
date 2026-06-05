@@ -157,9 +157,10 @@ Flag renames (all old spellings kept as visible aliases):
 | `--create-target-hsm-group` | `--create-target-group` |
 | `--delete-empty-parent-hsm-group` | `--delete-empty-parent-group` |
 
-The deprecated forms will be **removed in the next major release**
-(`v3.0.0`). Use the deprecation grace period to fix your shell
-history and any aliases / wrapper scripts.
+The flag aliases above will be **removed in the next major release**
+(`v3.0.0`). Use the grace period to fix your shell history and any
+aliases / wrapper scripts. (The subcommand renames in the previous
+table have already been removed — no grace period there.)
 
 ### 1.5 New things worth knowing
 
