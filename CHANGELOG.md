@@ -2,11 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.40] - 2026-06-05
+## [2.0.0-beta.41] - 2026-06-05
 
 ### Miscellaneous Tasks
 
+- Regenerate man pages + shell completions [skip ci]
 - Publish container images to GHCR
+
+### Styling
+
+- Apply rustfmt [skip ci]
 
 ## [2.0.0-beta.39] - 2026-06-05
 
