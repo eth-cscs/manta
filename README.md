@@ -20,14 +20,19 @@ git clone https://github.com/eth-cscs/manta && cd manta
 # 2. build both binaries
 cargo build -p manta-cli -p manta-server
 
-# 3. copy the example configs into manta's config directory
-#    Linux: ~/.config/manta/
-#    macOS: ~/Library/Application Support/local.cscs.manta/
+# 3. drop a minimal cli.toml into manta's config directory.
+#    Linux: ~/.config/manta/   macOS: ~/Library/Application Support/local.cscs.manta/
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/manta"             # Linux
 # CONFIG_DIR="$HOME/Library/Application Support/local.cscs.manta" # macOS
 mkdir -p "$CONFIG_DIR"
-cp cli.toml.example    "$CONFIG_DIR/cli.toml"      # edit
-cp server.toml.example "$CONFIG_DIR/server.toml"   # edit
+cat > "$CONFIG_DIR/cli.toml" <<'EOF'
+log              = "info"
+site             = "ochami"
+parent_hsm_group = "nodes_free"
+manta_server_url = "https://manta-server.example.com:8443"   # required
+EOF
+# server.toml is site-specific (TLS certs + per-site backend URLs) —
+# see the Configuration files section below for the full schema.
 
 # 4. start the server, then drive it with the CLI
 ./target/debug/manta-server &
@@ -284,7 +289,7 @@ base_url = "https://vault.cscs.ch:8200"          # also used by sat-file/session
 
 The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
 
-See `cli.toml.example` and `server.toml.example` at the workspace root for fully-commented templates.
+The `cat > "$CONFIG_DIR/cli.toml" <<EOF` block in [Copy configuration file](#copy-configuration-file) is the minimum a workstation needs; for `server.toml`, the `[sites.<name>]` sub-blocks above are the canonical reference (TLS, k8s, Vault, backend URLs all have their own subsection above).
 
 **Migrating from the pre-split `config.toml`**
 
