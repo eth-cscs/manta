@@ -1,0 +1,32 @@
+name: Cleanup GHCR
+
+# Each push of `:main` (or a re-pushed tag, though that's rare) leaves
+# the prior image untagged in GHCR. Without periodic pruning the
+# package storage grows monotonically. This workflow keeps the most
+# recent N untagged versions and deletes the rest; tagged versions
+# (`:main`, `:2.0.0`, `:latest`, …) are never touched.
+on:
+  schedule:
+    - cron: '0 4 * * 0'  # weekly, Sunday 04:00 UTC
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [manta-cli, manta-server]
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ matrix.package }}
+          package-type: container
+          # Belt-and-braces: only delete untagged versions, AND keep
+          # the last 20 of them. 20 ≈ a week of `:main` rolls plus a
+          # buffer if someone needs to debug a regression from the
+          # recent past.
+          min-versions-to-keep: 20
+          delete-only-untagged-versions: true

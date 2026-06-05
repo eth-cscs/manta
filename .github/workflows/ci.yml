@@ -170,28 +170,72 @@ jobs:
   docker:
     name: docker (${{ matrix.image }})
     runs-on: ubuntu-latest
+    # packages: write is required by the GHCR push step on main; PRs
+    # still run with read-only effective permissions because the login
+    # + push steps are gated on `github.event_name == 'push'`.
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
         include:
           - image: cli
             dockerfile: crates/manta-cli/Dockerfile
-            tag: manta-cli:ci
           - image: server
             dockerfile: crates/manta-server/Dockerfile
-            tag: manta-server:ci
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: docker/setup-buildx-action@v3
-      - name: Build image
+      # Log in to GHCR only on push events. Fork PRs can't push to the
+      # base repo's packages anyway, so we skip login and just build
+      # locally for the smoke-test.
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Compute image tags. On push to main this resolves to
+      # `ghcr.io/eth-cscs/manta-<image>:main`. On PR it resolves to
+      # nothing, which is fine — the PR build path uses its own local
+      # `:ci` tag below.
+      - name: Compute image metadata
+        if: github.event_name == 'push'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}
+          tags: |
+            type=ref,event=branch
+      # PR path: build into the local docker daemon so we can smoke-
+      # test below. No registry push.
+      - name: Build image (PR)
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           load: true
-          tags: ${{ matrix.tag }}
+          tags: manta-${{ matrix.image }}:ci
+          cache-from: type=gha,scope=manta-${{ matrix.image }}
+          cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
+      # Push path: emit straight to GHCR. The smoke-test below only
+      # runs on PRs (where the image is loaded locally); we trust the
+      # most-recent PR's smoke-test to have caught any runtime-lib
+      # regression before merge.
+      - name: Build and push image (main)
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
       # Smoke-test: the binary inside the image must at least produce
@@ -199,4 +243,5 @@ jobs:
       # (librdkafka1, ca-certificates, …) that wouldn't surface from a
       # successful `cargo build` step.
       - name: Smoke-test --help
-        run: docker run --rm ${{ matrix.tag }} --help
+        if: github.event_name == 'pull_request'
+        run: docker run --rm manta-${{ matrix.image }}:ci --help

@@ -33,6 +33,12 @@ COPY . .
 RUN cargo install --path crates/manta-cli --root /usr/local
 
 FROM debian:bookworm-slim
+# OCI image-spec labels. `image.source` lets GHCR auto-link this
+# package to the repo (inherited visibility + permissions); the rest
+# show up in the ghcr.io package UI.
+LABEL org.opencontainers.image.source="https://github.com/eth-cscs/manta"
+LABEL org.opencontainers.image.description="manta CLI — terminal client for the manta backend"
+LABEL org.opencontainers.image.licenses="MIT"
 # Runtime libraries:
 #   ca-certificates — HTTPS verification against manta-server
 #   librdkafka1     — dynamically linked by the rdkafka crate
