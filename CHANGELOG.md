@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.43] - 2026-06-05
+
+### Bug Fixes
+
+- Use multi-line block form for docker tags input
+
 ## [2.0.0-beta.42] - 2026-06-05
 
 ### Bug Fixes
