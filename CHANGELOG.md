@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.42] - 2026-06-05
+
+### Bug Fixes
+
+- Hardcode :main tag in docker push, drop metadata-action
+
 ## [2.0.0-beta.41] - 2026-06-05
 
 ### Miscellaneous Tasks
