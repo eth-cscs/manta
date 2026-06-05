@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.38] - 2026-06-05
+
+### Features
+
+- Add image_session module for CFS-derived IMS image metadata
+
+### Miscellaneous Tasks
+
+- Regenerate tag glob to match cargo-dist's expectation
+
 ## [2.0.0-beta.37] - 2026-06-05
 
 ### Documentation
