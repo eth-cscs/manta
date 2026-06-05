@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - Remove dead `manta apply configuration` clap def
 - Add missing dispatch/run/mod.rs from the session-move commit
+- Repair the cargo-release config so manta-shared still publishes
 
 ### Documentation
 
