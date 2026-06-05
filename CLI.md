@@ -284,6 +284,8 @@ List IMS images, sorted by creation time.
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return last N images |
 
+> Images built by `manta apply sat-file` carry CFS provenance under their `metadata` map: `manta.image_session.base` (source image id), `manta.image_session.groups` (JSON-encoded HSM group names), `manta.image_session.configuration` (CFS configuration name). See GUIDE.md §3.
+
 ### get boot-parameters
 
 Get BSS boot parameters.
@@ -480,6 +482,8 @@ manta apply sat-file -t my-cluster.yaml -f values.yaml --watch-logs
 manta apply sat-file -t deploy.yaml -i   # configurations + images only
 manta apply sat-file -t deploy.yaml -s   # configurations + session templates only
 ```
+
+> After each image is built, manta auto-stamps the CFS provenance onto the IMS image's `metadata` map as `manta.image_session.{base,groups,configuration}`. See GUIDE.md §3 for details. Skipped on `--dry-run`.
 
 ### apply template
 

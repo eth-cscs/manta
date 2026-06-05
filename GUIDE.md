@@ -178,6 +178,20 @@ manta apply sat-file -t cluster.yaml \
 
 > The post-hook only runs on success.
 
+**Provenance metadata on built images:**
+
+Every image built by `manta apply sat-file` is automatically annotated with the CFS facts that produced it, written to the IMS image's `metadata` map:
+
+| Key | Value |
+|-----|-------|
+| `manta.image_session.base` | source/base image id the new image was built on top of |
+| `manta.image_session.groups` | JSON-encoded array of HSM group names the image targets |
+| `manta.image_session.configuration` | CFS configuration name that was applied |
+
+These are written after the CFS session completes successfully and survive subsequent rebuilds. You can read them with `manta get images -i <image-id>` (the keys appear in the JSON `metadata` field). A failure to write the metadata after a successful build is logged at warn level but does **not** fail the apply — the image is still produced, only the annotation is missing.
+
+> Metadata is not written in `--dry-run` mode, since no real image is produced. It is also not written to images created by side-paths that don't go through `apply sat-file` (e.g. direct IMS image uploads, or the bulk `apply` flow for SAT files with a `hardware:` section).
+
 ---
 
 ## 4. Running a CFS session from a local repo
