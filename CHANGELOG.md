@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.36] - 2026-06-05
+
+### Bug Fixes
+
+- Set verify = false on manta-cli to unblock batch publish
+- Remove verify = false
+
+### Styling
+
+- Apply rustfmt [skip ci]
+
 ## [2.0.0-beta.34] - 2026-06-05
 
 ### Bug Fixes
