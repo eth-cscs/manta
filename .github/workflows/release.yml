@@ -42,15 +42,7 @@ on:
   pull_request:
   push:
     tags:
-      # Only fire on the workspace-wide `v*` tag that manta-cli's
-      # cargo-release config produces (see crates/manta-cli/Cargo.toml's
-      # `[package.metadata.release] tag-name = "v{{version}}"`).
-      # The per-crate `manta-shared-v*` tag that cargo-release also
-      # cuts on every bump is intentionally left out of this glob so
-      # we get exactly one dist run + one GitHub Release per workspace
-      # version. The `manta-cli-v*` historical tags are not matched
-      # either, which is fine — those are legacy.
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - '**[0-9]+.[0-9]+.[0-9]+*'
 
 jobs:
   # Run 'dist plan' (or host) to determine what tasks we need to do
