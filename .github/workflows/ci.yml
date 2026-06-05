@@ -199,18 +199,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # Compute image tags. On push to main this resolves to
-      # `ghcr.io/eth-cscs/manta-<image>:main`. On PR it resolves to
-      # nothing, which is fine — the PR build path uses its own local
-      # `:ci` tag below.
-      - name: Compute image metadata
-        if: github.event_name == 'push'
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}
-          tags: |
-            type=ref,event=branch
       # PR path: build into the local docker daemon so we can smoke-
       # test below. No registry push.
       - name: Build image (PR)
@@ -223,9 +211,12 @@ jobs:
           tags: manta-${{ matrix.image }}:ci
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
-      # Push path: emit straight to GHCR. The smoke-test below only
-      # runs on PRs (where the image is loaded locally); we trust the
-      # most-recent PR's smoke-test to have caught any runtime-lib
+      # Push path: emit straight to GHCR with a hardcoded `:main` tag.
+      # The workflow only triggers on push to main (see `on:` block at
+      # top), so the tag never varies — using docker/metadata-action
+      # here would just be ceremony. The smoke-test below only runs on
+      # PRs (where the image is loaded locally); we trust the most-
+      # recent PR's smoke-test to have caught any runtime-lib
       # regression before merge.
       - name: Build and push image (main)
         if: github.event_name == 'push'
@@ -234,8 +225,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}:main
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
       # Smoke-test: the binary inside the image must at least produce
