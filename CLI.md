@@ -20,7 +20,7 @@ Every command takes one of the top-level verbs:
 | [`restore`](#restore) | Restore cluster state from a backup |
 | [`migrate`](#migrate) | Move nodes between groups |
 | [`power`](#power) | Power on/off/reset nodes or groups |
-| [`log-value`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
+| [`log`](#log-value) | Stream CFS session logs (alias: `manta logs`) |
 | [`console`](#console) | Open a WebSocket console to a node or running CFS session |
 | [`gen-autocomplete`](#gen-autocomplete) | Generate shell completion scripts |
 | [`gen-man`](#gen-man) | Generate and install man pages |
@@ -481,27 +481,6 @@ manta apply sat-file -t deploy.yaml -i   # configurations + images only
 manta apply sat-file -t deploy.yaml -s   # configurations + session templates only
 ```
 
-### run session
-
-Create and run a CFS session from one or more local git repositories.
-
-| Flag | Type | Required | Default | Description |
-|------|------|----------|---------|-------------|
-| `-n/--name` | string | **yes** | — | Session name |
-| `-r/--repo-path` | path… | **yes** | — | Path(s) to local git repos (repeatable) |
-| `-l/--ansible-limit` | string | **yes** | — | Target xnames |
-| `-H/--group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
-| `-p/--playbook-name` | string | no | `site.yml` | Ansible playbook filename |
-| `-w/--watch-logs` | flag | no | — | Stream session logs |
-| `-t/--timestamps` | flag | no | — | Show timestamps in logs |
-| `-v/--ansible-verbosity` | 0–4 | no | `2` | Ansible verbosity |
-| `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
-| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
-
-```
-manta run session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
-```
-
 ### apply template
 
 Create a BOS session from an existing BOS session template.
@@ -619,6 +598,33 @@ Upscale or downscale hardware resources in an HSM group.
 | `-D/--delete-empty-parent-group` | flag | no | Delete parent group if it becomes empty |
 | `-u/--unpin-nodes` | flag | no | Allow any available nodes instead of pinned ones |
 | `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
+
+---
+
+## run
+
+Create and run jobs against the backend.
+
+### run session
+
+Create and run a CFS session from one or more local git repositories.
+
+| Flag | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| `-n/--name` | string | **yes** | — | Session name |
+| `-r/--repo-path` | path… | **yes** | — | Path(s) to local git repos (repeatable) |
+| `-l/--ansible-limit` | string | **yes** | — | Target xnames |
+| `-H/--group` | string | no | — | HSM group scope (must be a superset of `--ansible-limit` if both are given) |
+| `-p/--playbook-name` | string | no | `site.yml` | Ansible playbook filename |
+| `-w/--watch-logs` | flag | no | — | Stream session logs |
+| `-t/--timestamps` | flag | no | — | Show timestamps in logs |
+| `-v/--ansible-verbosity` | 0–4 | no | `2` | Ansible verbosity |
+| `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
+| `-o/--output` | string | no | `table` | Output format: `table`, `json` |
+
+```
+manta run session -n my-session -r ~/repos/csm-config -l x3000c0s1b0n0
+```
 
 ---
 
