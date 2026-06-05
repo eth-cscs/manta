@@ -52,7 +52,7 @@ pub async fn get_groups_hardware(
   })))
 }
 
-/// DEPRECATED alias for `GET /hardware-clusters`. Logs a server-side
+/// DEPRECATED alias for `GET /groups/hardware`. Logs a server-side
 /// warning and delegates to the canonical handler. Old path kept for
 /// one release.
 #[utoipa::path(get, path = "/hardware-clusters", tag = "hardware",

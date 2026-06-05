@@ -51,7 +51,7 @@ pub async fn get_groups_nodes(
   Ok(Json(nodes))
 }
 
-/// DEPRECATED alias for `GET /clusters`. Logs a server-side warning,
+/// DEPRECATED alias for `GET /groups/nodes`. Logs a server-side warning,
 /// then delegates to the canonical handler. Old path kept for one
 /// release.
 #[utoipa::path(get, path = "/clusters", tag = "clusters",
