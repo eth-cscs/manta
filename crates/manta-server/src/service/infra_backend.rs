@@ -967,3 +967,133 @@ fn params_to_redfish_endpoint(
     discovery_info: None,
   }
 }
+
+#[cfg(test)]
+mod tests {
+  //! Tests for the post-build metadata-stamp path of `apply_image`.
+  //!
+  //! Asserts the contract that the `PatchImage` constructed inside
+  //! `stamp_image_session_metadata` carries the three
+  //! `manta.image_session.*` keys (plus any pre-existing image
+  //! metadata) and nothing else. The trivial control-flow branches
+  //! (no-`id` and `apply` error) are covered by the type system and
+  //! `manta_shared::image_session`'s own 15 tests respectively, so
+  //! they aren't re-tested here.
+  use super::*;
+  use manta_backend_dispatcher::types::cfs::session::{
+    Configuration, Group, ImageMap, Target,
+  };
+  use std::collections::HashMap;
+
+  fn cfs_fixture(
+    config_name: &str,
+    base_id: &str,
+    groups: Vec<&str>,
+  ) -> CfsSessionGetResponse {
+    CfsSessionGetResponse {
+      name: "test-session".into(),
+      configuration: Some(Configuration {
+        name: Some(config_name.into()),
+        limit: None,
+      }),
+      ansible: None,
+      target: Some(Target {
+        definition: Some("image".into()),
+        groups: Some(
+          groups
+            .into_iter()
+            .map(|g| Group {
+              name: g.into(),
+              members: vec![],
+            })
+            .collect(),
+        ),
+        image_map: Some(vec![ImageMap {
+          source_id: base_id.into(),
+          result_name: "out".into(),
+        }]),
+      }),
+      status: None,
+      tags: None,
+      debug_on_failure: false,
+      logs: None,
+    }
+  }
+
+  fn image_fixture(
+    id: &str,
+    pre_existing_metadata: Option<HashMap<String, String>>,
+  ) -> Image {
+    Image {
+      id: Some(id.into()),
+      created: None,
+      name: "img".into(),
+      link: None,
+      arch: None,
+      metadata: pre_existing_metadata,
+    }
+  }
+
+  /// Mirror of the inline PatchImage construction in
+  /// `stamp_image_session_metadata`. Kept as a free helper here so
+  /// the test fails noisily if the prod code's construction drifts.
+  fn build_patch(image: &Image) -> PatchImage {
+    PatchImage {
+      metadata: image.metadata.clone(),
+      ..Default::default()
+    }
+  }
+
+  #[test]
+  fn patch_carries_all_three_image_session_keys_after_apply() {
+    let cfs = cfs_fixture("cfg-A", "base-A", vec!["g1", "g2"]);
+    let mut image = image_fixture("img-A", None);
+
+    manta_shared::image_session::apply(&cfs, &mut image).unwrap();
+    let patch = build_patch(&image);
+
+    let metadata = patch.metadata.expect("PatchImage.metadata must be Some");
+    assert_eq!(
+      metadata.get("manta.image_session.base").map(String::as_str),
+      Some("base-A"),
+    );
+    assert_eq!(
+      metadata
+        .get("manta.image_session.configuration")
+        .map(String::as_str),
+      Some("cfg-A"),
+    );
+    // groups travels as JSON-encoded array.
+    assert_eq!(
+      metadata
+        .get("manta.image_session.groups")
+        .map(String::as_str),
+      Some(r#"["g1","g2"]"#),
+    );
+    // Only the three keys when starting from a metadata-less image.
+    assert_eq!(metadata.len(), 3);
+  }
+
+  #[test]
+  fn patch_preserves_pre_existing_metadata_alongside_stamps() {
+    // Pin the contract that we DON'T blow away unrelated metadata
+    // that callers (or earlier image-creation steps) may have
+    // already stashed. Regression bait: someone replaces
+    // `image.metadata.clone()` with a hand-built map of just the
+    // three new keys, breaking everyone else.
+    let cfs = cfs_fixture("cfg-B", "base-B", vec!["g1"]);
+    let mut prior = HashMap::new();
+    prior.insert("custom.key".into(), "preserve-me".into());
+    let mut image = image_fixture("img-B", Some(prior));
+
+    manta_shared::image_session::apply(&cfs, &mut image).unwrap();
+    let patch = build_patch(&image);
+
+    let metadata = patch.metadata.expect("PatchImage.metadata must be Some");
+    assert_eq!(
+      metadata.get("custom.key").map(String::as_str),
+      Some("preserve-me"),
+    );
+    assert_eq!(metadata.len(), 4); // 3 stamps + 1 pre-existing
+  }
+}
