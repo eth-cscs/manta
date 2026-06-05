@@ -3535,7 +3535,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__gen__subcmd__autocomplete)
-            opts="-s -p -h --shell --path --help"
+            opts="-s -p -o -h --shell --path --print --output --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 2 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3561,6 +3561,14 @@ _manta() {
                     if [[ "${BASH_VERSINFO[0]}" -ge 4 ]]; then
                         compopt -o plusdirs
                     fi
+                    return 0
+                    ;;
+                --output)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
+                    return 0
+                    ;;
+                -o)
+                    COMPREPLY=($(compgen -W "table json" -- "${cur}"))
                     return 0
                     ;;
                 *)

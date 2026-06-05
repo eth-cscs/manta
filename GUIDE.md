@@ -549,22 +549,33 @@ without a running backend.
 
 ### 13.1 Installing shell completion
 
-Generate a completion script for your shell and drop it into the
-location your shell auto-loads from:
+`manta gen-autocomplete` installs the completion script into the
+shell's standard XDG user directory by default:
 
 ```bash
-# zsh
-manta gen-autocomplete --shell zsh --path ~/.zsh/completions
-
-# bash
-manta gen-autocomplete --shell bash --path /etc/bash_completion.d
-
-# fish
-manta gen-autocomplete --shell fish --path ~/.config/fish/completions
+manta gen-autocomplete --shell zsh   # → $XDG_DATA_HOME/zsh/site-functions/_manta
+manta gen-autocomplete --shell bash  # → $XDG_DATA_HOME/bash-completion/completions/manta
+manta gen-autocomplete --shell fish  # → $XDG_CONFIG_HOME/fish/completions/manta.fish
 ```
 
-Omit `--path` to print the script to stdout. The shell is
-auto-detected from `$SHELL` if `--shell` is also omitted.
+The shell is auto-detected from `$SHELL` if `--shell` is omitted.
+Pass `--path <DIR>` to install elsewhere (e.g. a system-wide
+location or a directory already on your shell's load path), or
+`--print` to emit the script to stdout for
+`eval "$(manta gen-autocomplete --shell zsh --print)"`-style
+dynamic loading.
+
+For **zsh** specifically, after install make sure the install
+directory is on your `$fpath` before `compinit`:
+
+```zsh
+# ~/.zshrc
+fpath+=(~/.local/share/zsh/site-functions)
+autoload -Uz compinit && compinit
+```
+
+bash (with `bash-completion` loaded) and fish pick up the XDG
+paths automatically — no extra setup required.
 
 ### 13.2 Installing man pages
 

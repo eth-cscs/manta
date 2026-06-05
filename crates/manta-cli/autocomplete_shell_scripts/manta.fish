@@ -39,8 +39,8 @@ complete -c manta -n "__fish_manta_needs_command" -f -a "run" -d 'Create and run
 complete -c manta -n "__fish_manta_needs_command" -f -a "power" -d 'Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set'
 complete -c manta -n "__fish_manta_needs_command" -f -a "log" -d 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
 complete -c manta -n "__fish_manta_needs_command" -f -a "console" -d 'Attach to a node\'s serial console, or to a configuration session\'s Ansible container'
-complete -c manta -n "__fish_manta_needs_command" -f -a "gen-autocomplete" -d 'Generate shell completion scripts'
-complete -c manta -n "__fish_manta_needs_command" -f -a "gen-man" -d 'Generate and install manta man pages'
+complete -c manta -n "__fish_manta_needs_command" -f -a "gen-autocomplete" -d 'Generate and install shell completion scripts'
+complete -c manta -n "__fish_manta_needs_command" -f -a "gen-man" -d 'Generate and install the manta man page'
 complete -c manta -n "__fish_manta_needs_command" -f -a "upgrade" -d 'Replace this `manta` binary with the latest release'
 complete -c manta -n "__fish_manta_needs_command" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand config; and not __fish_seen_subcommand_from show set unset help" -s h -l help -d 'Print help'
@@ -574,9 +574,12 @@ complete -c manta -n "__fish_manta_using_subcommand console; and __fish_seen_sub
 complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s s -l shell -d 'Shell type (guessed from $SHELL if omitted)' -r -f -a "bash\t''
 zsh\t''
 fish\t''"
-complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s p -l path -d 'Directory to write the script (prints to stdout if omitted)' -r -f -a "(__fish_complete_directories)"
-complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand gen-man" -s p -l path -d 'Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)' -r -f -a "(__fish_complete_directories)"
+complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s p -l path -d 'Override the default install directory' -r -f -a "(__fish_complete_directories)"
+complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s o -l output -d 'Output format' -r -f -a "table\t''
+json\t''"
+complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -l print -d 'Emit the script to stdout instead of installing it'
+complete -c manta -n "__fish_manta_using_subcommand gen-autocomplete" -s h -l help -d 'Print help (see more with \'--help\')'
+complete -c manta -n "__fish_manta_using_subcommand gen-man" -s p -l path -d 'Directory to write `manta.1` into (defaults to $XDG_DATA_HOME/man/man1)' -r -f -a "(__fish_complete_directories)"
 complete -c manta -n "__fish_manta_using_subcommand gen-man" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand gen-man" -s h -l help -d 'Print help (see more with \'--help\')'
@@ -598,8 +601,8 @@ complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_su
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "power" -d 'Power nodes on, off, or reset (reboot); waits for the transition unless --no-wait is set'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "log" -d 'Stream configuration session logs to stdout (accepts session, node, group, or NID)'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "console" -d 'Attach to a node\'s serial console, or to a configuration session\'s Ansible container'
-complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "gen-autocomplete" -d 'Generate shell completion scripts'
-complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "gen-man" -d 'Generate and install manta man pages'
+complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "gen-autocomplete" -d 'Generate and install shell completion scripts'
+complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "gen-man" -d 'Generate and install the manta man page'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "upgrade" -d 'Replace this `manta` binary with the latest release'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from config" -f -a "show" -d 'Show current configuration values'

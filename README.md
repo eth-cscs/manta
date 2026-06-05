@@ -38,8 +38,9 @@ cp server.toml.example "$CONFIG_DIR/server.toml"   # edit
 three commands handle the day-to-day install plumbing:
 
 ```bash
-# Install shell tab completion (substitute bash / fish for zsh)
-manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+# Install shell tab completion to the shell's standard XDG dir
+# (substitute bash / fish for zsh; pass --path <DIR> to override)
+manta gen-autocomplete --shell zsh
 
 # Install the consolidated `man manta` page (use `/sessions` to search)
 # Defaults to $XDG_DATA_HOME/man/man1 (`~/.local/share/man/man1`)

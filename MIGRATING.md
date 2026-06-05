@@ -178,10 +178,14 @@ table have already been removed — no grace period there.)
 
 ### 1.6 Regenerate your shell completion
 
+`manta gen-autocomplete` now installs the completion script into
+the shell's standard XDG user directory by default — no `--path`
+needed for the common case:
+
 ```bash
-manta gen-autocomplete --shell zsh --path ~/.zsh/completions
-manta gen-autocomplete --shell bash --path /etc/bash_completion.d
-manta gen-autocomplete --shell fish --path ~/.config/fish/completions
+manta gen-autocomplete --shell zsh   # → $XDG_DATA_HOME/zsh/site-functions/_manta
+manta gen-autocomplete --shell bash  # → $XDG_DATA_HOME/bash-completion/completions/manta
+manta gen-autocomplete --shell fish  # → $XDG_CONFIG_HOME/fish/completions/manta.fish
 ```
 
 > The legacy `manta config gen-autocomplete` form has been removed —

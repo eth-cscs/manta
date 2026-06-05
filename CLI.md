@@ -920,20 +920,33 @@ manta console target-ansible my-session
 
 ## gen-autocomplete
 
-Generate a shell autocompletion script. Print it to stdout, or write
-it to a directory. The CLI guesses the shell from `$SHELL` if `-s` is
-omitted.
+Generate **and install** the shell completion script. By default
+the script lands in the shell's standard XDG user directory:
+
+| Shell | Default install path |
+|------|-------------|
+| bash | `$XDG_DATA_HOME/bash-completion/completions/manta` |
+| zsh  | `$XDG_DATA_HOME/zsh/site-functions/_manta` |
+| fish | `$XDG_CONFIG_HOME/fish/completions/manta.fish` |
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `-s/--shell` | string | Shell: `bash`, `zsh`, `fish` (auto-detected from `$SHELL` if omitted) |
-| `-p/--path` | dir | Write the script to this directory; prints to stdout if omitted |
+| `-s/--shell` | string | `bash`, `zsh`, `fish` (auto-detected from `$SHELL` if omitted) |
+| `-p/--path` | dir | Override the default install directory |
+| `--print` | flag | Emit to stdout instead of installing (mutually exclusive with `--path`) |
+| `-o/--output {table,json}` | enum | Format the result message (default `table`) |
 
 ```
-manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+manta gen-autocomplete --shell zsh                          # install to default
 manta gen-autocomplete --shell bash --path /etc/bash_completion.d
-manta gen-autocomplete --shell fish --path ~/.config/fish/completions
+manta gen-autocomplete --shell zsh --print > _manta         # capture to file
+eval "$(manta gen-autocomplete --shell zsh --print)"        # load dynamically
 ```
+
+For **zsh** the install message includes a `$fpath` setup hint —
+the directory needs to be on `$fpath` before `compinit` runs. bash
+(with `bash-completion` loaded) and fish auto-load from the XDG
+paths above, so no extra setup is required after install.
 
 ---
 

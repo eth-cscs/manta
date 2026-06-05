@@ -1407,25 +1407,37 @@ Print help
 \fISESSION_NAME\fR
 Configuration session name
 .SS "manta gen-autocomplete"
-Generate shell completion scripts
+Generate the shell completion script and install it into the shell\*(Aqs standard XDG user completion directory:
+.PP
+  bash → $XDG_DATA_HOME/bash\-completion/completions/manta
+  zsh  → $XDG_DATA_HOME/zsh/site\-functions/_manta
+  fish → $XDG_CONFIG_HOME/fish/completions/manta.fish
+.PP
+Pass `\-\-path <DIR>` to install elsewhere (e.g. a system\-wide location or a directory already on your `$fpath`), or `\-\-print` to emit the script to stdout without touching the filesystem.
 .TP
 [\fB\-s\fR, \fB\-\-shell\fR] \fI<SHELL>\fR
 Shell type (guessed from $SHELL if omitted)
 .TP
 [\fB\-p\fR, \fB\-\-path\fR] \fI<PATH>\fR
-Directory to write the script (prints to stdout if omitted)
+Override the default install directory
+.TP
+[\fB\-\-print\fR]
+Emit the script to stdout instead of installing it
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
-Print help
+Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta gen-man"
-Generate one man\-page (`.1`) per subcommand from the running binary\*(Aqs clap tree and write them into the target directory.
+Generate the consolidated `manta.1` man page from the running binary\*(Aqs clap tree and write it into the target directory. The page has a top\-level reference plus one SUBCOMMANDS subsection per (sub)subcommand, so `/<verb>` inside `man manta` jumps to the relevant flag table.
 .PP
 Defaults to `$XDG_DATA_HOME/man/man1` (i.e. `~/.local/share/man/man1`) when `\-\-path` is omitted. The directory is created if it doesn\*(Aqt exist.
 .PP
 After install, configure your shell so `man` finds the new location — on Linux this directory is searched by default; on macOS you may need `export MANPATH="$HOME/.local/share/man:$MANPATH"`.
 .TP
 [\fB\-p\fR, \fB\-\-path\fR] \fI<PATH>\fR
-Directory to write the `.1` files into (defaults to $XDG_DATA_HOME/man/man1)
+Directory to write `manta.1` into (defaults to $XDG_DATA_HOME/man/man1)
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
