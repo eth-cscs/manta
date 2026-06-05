@@ -24,6 +24,7 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 10. [Cleaning up old configurations](#10-cleaning-up-old-configurations)
 11. [Working with multiple sites](#11-working-with-multiple-sites)
 12. [Non-interactive and scripted use](#12-non-interactive-and-scripted-use)
+13. [Installation maintenance](#13-installation-maintenance)
 
 ---
 
@@ -536,3 +537,64 @@ curl -sk -H "Authorization: Bearer $TOKEN" \
 ```
 
 `manta-server` is a separate binary; it reads `~/.config/manta/server.toml` (override path with `MANTA_SERVER_CONFIG`). See [API.md](API.md) for the full HTTP API reference and [README.md](README.md) for the per-binary config files.
+
+---
+
+## 13. Installation maintenance
+
+The CLI ships three self-care commands for the install plumbing:
+shell completion, man pages, and self-update. All three are local
+operations — none talks to `manta-server`, so they work even
+without a running backend.
+
+### 13.1 Installing shell completion
+
+Generate a completion script for your shell and drop it into the
+location your shell auto-loads from:
+
+```bash
+# zsh
+manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+
+# bash
+manta gen-autocomplete --shell bash --path /etc/bash_completion.d
+
+# fish
+manta gen-autocomplete --shell fish --path ~/.config/fish/completions
+```
+
+Omit `--path` to print the script to stdout. The shell is
+auto-detected from `$SHELL` if `--shell` is also omitted.
+
+### 13.2 Installing man pages
+
+```bash
+# Defaults to $XDG_DATA_HOME/man/man1 (== ~/.local/share/man/man1)
+manta gen-man
+```
+
+After this, `man manta`, `man manta-get-sessions`, etc. all work.
+On Linux, `man` auto-searches `~/.local/share/man`. On macOS, add
+the directory to `MANPATH` once:
+
+```bash
+export MANPATH="$HOME/.local/share/man:$MANPATH"
+```
+
+Pass `--path <DIR>` to install elsewhere (e.g. a system-wide
+`/usr/local/share/man/man1` for a shared host).
+
+### 13.3 Upgrading the binary
+
+```bash
+manta upgrade --check       # see current vs. latest release
+manta upgrade -y            # download + atomically replace
+manta upgrade --dry-run     # show what would happen, don't apply
+```
+
+`manta upgrade` fetches the highest `manta-cli-v*` tag from
+[github.com/eth-cscs/manta/releases](https://github.com/eth-cscs/manta/releases),
+downloads the right platform tarball, and atomically swaps the
+binary at `current_exe()`. If you installed via Homebrew, prefer
+`brew upgrade manta-cli` — the command warns (but doesn't block)
+when it detects a Homebrew-managed install path.

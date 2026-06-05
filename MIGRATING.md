@@ -186,9 +186,19 @@ manta gen-autocomplete --shell fish --path ~/.config/fish/completions
 > The legacy `manta config gen-autocomplete` form has been removed —
 > use the top-level `manta gen-autocomplete` shown above.
 
-The new completion script reflects the v2 command tree (and the
-deprecated forms still autocomplete so old habits work during the
-grace period).
+The new completion script reflects the current v2 command tree.
+The deprecated v1 forms have been removed and no longer
+autocomplete — see §1.4 for the full mapping.
+
+While you're regenerating, also install the man pages so
+`man manta`, `man manta-get-sessions`, etc. work:
+
+```bash
+manta gen-man
+```
+
+Defaults to `$XDG_DATA_HOME/man/man1` (== `~/.local/share/man/man1`).
+On macOS you'll need to add that path to `MANPATH` once.
 
 ---
 

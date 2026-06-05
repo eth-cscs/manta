@@ -34,6 +34,30 @@ cp server.toml.example "$CONFIG_DIR/server.toml"   # edit
 ./target/debug/manta get sessions
 ```
 
+**Staying current.** Once you have a working `manta` binary,
+three commands handle the day-to-day install plumbing:
+
+```bash
+# Install shell tab completion (substitute bash / fish for zsh)
+manta gen-autocomplete --shell zsh --path ~/.zsh/completions
+
+# Install man pages — `man manta`, `man manta-get-sessions`, etc.
+# Defaults to $XDG_DATA_HOME/man/man1 (`~/.local/share/man/man1`)
+manta gen-man
+
+# Check for a newer release; then apply it
+manta upgrade --check
+manta upgrade -y
+```
+
+`manta upgrade` reads the latest `manta-cli-v*` tag from GitHub
+releases and atomically swaps the binary in place. If you installed
+via Homebrew, prefer `brew upgrade manta-cli` — `manta upgrade` will
+warn (but not block) when it detects a Homebrew-managed install
+path. See [CLI.md#gen-autocomplete](CLI.md#gen-autocomplete),
+[#gen-man](CLI.md#gen-man), and [#upgrade](CLI.md#upgrade) for the
+full flag reference.
+
 | Where to look next | For |
 |---|---|
 | [GUIDE.md](GUIDE.md) | common workflows ("how do I deploy a SAT file?") |
