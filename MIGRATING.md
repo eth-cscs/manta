@@ -191,6 +191,20 @@ manta gen-autocomplete --shell fish  # → $XDG_CONFIG_HOME/fish/completions/man
 > The legacy `manta config gen-autocomplete` form has been removed —
 > use the top-level `manta gen-autocomplete` shown above.
 
+For **zsh**, make sure the install directory is on your `$fpath`
+before `compinit` runs — if you were previously installing into
+`~/.zsh/completions` or similar, point your existing `fpath`
+entry at the new XDG location (or move the `_manta` file across):
+
+```zsh
+# ~/.zshrc
+fpath+=(~/.local/share/zsh/site-functions)
+autoload -Uz compinit && compinit
+```
+
+bash (with `bash-completion` loaded) and fish auto-load from the
+XDG paths above with no extra setup.
+
 The new completion script reflects the current v2 command tree.
 The deprecated v1 forms have been removed and no longer
 autocomplete — see §1.4 for the full mapping.
