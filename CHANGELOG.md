@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.33] - 2026-06-05
+
+### Bug Fixes
+
+- Remove dead `manta apply configuration` clap def
+- Add missing dispatch/run/mod.rs from the session-move commit
+
+### Documentation
+
+- Fix three stale references after the recent removals + rename
+- Fix four stale Rust source docstrings
+- Fix three stale apply-session references after the run/ move
+- Surface the new self-care commands in user-facing docs
+- Lift `run session` into its own `## run` section + fix two misnomers
+- Fix run-session required-flag table (one of --group/--ansible-limit)
+- Clarify which v1→v2 renames still have a grace period
+- Refresh stale module/function doc comments
+- Sync handler-doc subcommand lists with current clap tree
+- Flip backwards "DEPRECATED alias for" doc lines
+- Consolidate the 84 per-subcommand man pages into a single manta.1
+
+### Features
+
+- Gen-autocomplete now installs by default
+
+### Miscellaneous Tasks
+
+- Pin cargo-audit version + fix stale path in anyhow-boundary check
+- Collapse the per-crate releases into one unified workspace release
+
+### Refactor
+
+- Move dispatch/apply/session/ to dispatch/run/session/
+
+### Testing
+
+- Cover four high-value gaps in the test surface
+- Cover the remaining four output renderers
+- Close route-registration coverage gaps
+- Broaden to_handler_error 500-fallback coverage
+- Cover format_with_causes error-chain walker
+- Make action_result JSON-shape tests actually test the renderer
+
 ## [2.0.0-beta.32] - 2026-06-04
 
 ### Bug Fixes
