@@ -50,7 +50,7 @@ pub async fn get_available_groups(
 
 /// GET /groups/all — list every HSM group in the system.
 ///
-/// Backs CLI commands (e.g. `config_set_hsm_common`) that need the full
+/// Backs CLI commands (e.g. `manta config set hsm`) that need the full
 /// catalogue, not just the accessible-to-this-token subset.
 #[utoipa::path(get, path = "/groups/all", tag = "groups",
   params(SiteHeader),

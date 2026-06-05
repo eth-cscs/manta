@@ -72,7 +72,7 @@ fn build_details_table(
 }
 
 // ---------------------------------------------------------------------------
-// Cluster renderers
+// Group renderers
 // ---------------------------------------------------------------------------
 
 fn print_to_terminal_cluster_hw_pattern(

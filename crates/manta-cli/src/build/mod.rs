@@ -2,8 +2,9 @@
 //!
 //! Top-level `build_cli()` lives here. Each top-level verb has its own
 //! sibling module (`add`, `apply`, `backup`, `config`, `console`,
-//! `delete`, `get`, `log`, `migrate`, `power`, `restore`, `run`,
-//! `update`) so each file covers one slice of the user-facing tree.
+//! `delete`, `gen_autocomplete`, `gen_man`, `get`, `log`, `migrate`,
+//! `power`, `restore`, `run`, `upgrade`) so each file covers one
+//! slice of the user-facing tree.
 
 use clap::{Command, arg};
 

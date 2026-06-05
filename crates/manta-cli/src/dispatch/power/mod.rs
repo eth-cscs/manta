@@ -104,8 +104,7 @@ pub async fn exec_nodes(
   dispatch_and_wait(ctx, token, &opts, "nodes").await
 }
 
-/// Execute a power action against all nodes in an HSM group
-/// (cluster).
+/// Execute a power action against all nodes in an HSM group.
 pub async fn exec_cluster(
   ctx: &AppContext<'_>,
   token: &str,
@@ -113,7 +112,7 @@ pub async fn exec_cluster(
 ) -> Result<(), Error> {
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
-  println!("Cluster: {}", opts.target);
+  println!("Group: {}", opts.target);
   if !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
   {
     bail!("Operation cancelled by user");

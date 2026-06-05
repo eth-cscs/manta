@@ -133,9 +133,11 @@ pub async fn resolve_hosts_expression(
   Ok(xname_vec)
 }
 
-/// Translates and filters a 'host expression' into a list of xnames.
-/// a host expression is a comma separated list of NIDs or XNAMEs, a regex or a hostlist
-/// NOTE: user can provice a host expression and expand the list to all siblings
+/// Translates a 'host expression' into a list of xnames.
+///
+/// A host expression is a comma-separated list of NIDs or xnames, a regex,
+/// or a hostlist. When `is_include_siblings` is true, the resulting xnames
+/// are expanded to include all siblings (other nodes on the same BMC).
 pub async fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,

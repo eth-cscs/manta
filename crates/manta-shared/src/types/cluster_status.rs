@@ -1,9 +1,9 @@
 //! Pure helpers for summarizing node and cluster status.
 //!
 //! Both the CLI (table rendering) and the server (`service::hardware`,
-//! `service::hw_cluster`) call into these. Living in `shared/` keeps the
-//! CLI from importing `crate::service::*` for what are really data-only
-//! helpers.
+//! `service::hw_cluster`) call into these. Living in `manta-shared`
+//! keeps the CLI from importing `crate::service::*` for what are
+//! really data-only helpers.
 
 use std::collections::HashMap;
 
