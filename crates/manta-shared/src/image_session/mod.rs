@@ -88,9 +88,7 @@ pub fn apply(
       MantaError::MissingField("cfs.target.image_map[0].source_id".into())
     })?;
 
-  let groups = cfs
-    .get_target_hsm()
-    .unwrap_or_default();
+  let groups = cfs.get_target_hsm().unwrap_or_default();
 
   let configuration = cfs
     .get_configuration_name()
@@ -357,7 +355,10 @@ mod tests {
     let cfs = sample_cfs(Some("c"), Some("b"), vec!["only"]);
     let mut ims = sample_image(Some("img-1"));
     apply(&cfs, &mut ims).unwrap();
-    assert_eq!(read("img-1", &ims).unwrap().groups, vec!["only".to_string()]);
+    assert_eq!(
+      read("img-1", &ims).unwrap().groups,
+      vec!["only".to_string()]
+    );
   }
 
   #[test]
