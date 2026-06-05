@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.40] - 2026-06-05
+
+### Miscellaneous Tasks
+
+- Publish container images to GHCR
+
 ## [2.0.0-beta.39] - 2026-06-05
 
 ### Features
