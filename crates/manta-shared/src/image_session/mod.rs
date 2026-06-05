@@ -63,6 +63,11 @@ pub struct ImageSessionMetadata {
 /// Initializes `ims.metadata` to `Some(HashMap::new())` first if it was
 /// `None`, so the writes are never silently dropped.
 ///
+/// The mutation is in-memory only. Callers that need the stamped
+/// metadata to survive the request must PATCH `ims` back to IMS
+/// themselves (manta-server's `InfraContext::apply_image` does this
+/// via `InfraContext::update_image`).
+///
 /// # Errors
 ///
 /// - [`MantaError::MissingField`] if `ims.id` is `None`, if
