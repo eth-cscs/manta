@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.33] - 2026-06-05
+## [2.0.0-beta.34] - 2026-06-05
 
 ### Bug Fixes
 
@@ -22,6 +22,8 @@ All notable changes to this project will be documented in this file.
 - Sync handler-doc subcommand lists with current clap tree
 - Flip backwards "DEPRECATED alias for" doc lines
 - Consolidate the 84 per-subcommand man pages into a single manta.1
+- Drop references to nonexistent example config files
+- Add zsh fpath note to §1.6 completion-regen section
 
 ### Features
 
@@ -35,6 +37,10 @@ All notable changes to this project will be documented in this file.
 ### Refactor
 
 - Move dispatch/apply/session/ to dispatch/run/session/
+
+### Styling
+
+- Apply rustfmt [skip ci]
 
 ### Testing
 
