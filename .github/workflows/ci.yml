@@ -100,14 +100,18 @@ jobs:
             crates/manta-server/src/config.rs \
             crates/manta-shared/src/common/ \
             2>/dev/null; then
-          echo "ERROR: anyhow found outside crates/manta-cli/src/cli/ — only the CLI may use anyhow"
+          echo "ERROR: anyhow found outside crates/manta-cli/src/ — only the CLI may use anyhow"
           exit 1
         fi
     # Fail on known RustSec advisories against Cargo.lock. Cheap
     # insurance against landing a CVE-flagged dep. Ignored advisories
-    # are documented in `.cargo/audit.toml`.
+    # are documented in `.cargo/audit.toml`. Pinning the cargo-audit
+    # version (rather than always-latest) matches the cargo-machete
+    # step below; a new cargo-audit release could change behaviour or
+    # the format of `.cargo/audit.toml`, and we'd rather find out
+    # via an intentional version bump than a surprise CI failure.
     - name: Install cargo-audit
-      run: cargo install cargo-audit --locked
+      run: cargo install cargo-audit --version 0.22.1 --locked
     - name: Run cargo audit
       run: cargo audit
     # Fail if any crate's Cargo.toml declares a dependency it never
