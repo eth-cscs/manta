@@ -18,7 +18,7 @@ use anyhow::{Context, Result};
 use serde_json::json;
 
 /// Format a single status message as the JSON envelope. Pure helper
-/// extracted from [`print`] so unit tests can assert the schema
+/// extracted from [`print()`] so unit tests can assert the schema
 /// without capturing stdout.
 fn json_envelope(message: &str) -> Result<String> {
   let value = json!({"status": "ok", "message": message});
