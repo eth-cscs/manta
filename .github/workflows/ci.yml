@@ -225,7 +225,15 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}:main
+          # Multi-line block scalar — build-push-action's `tags` input
+          # is documented as a list, and the inline single-string form
+          # with an embedded `${{ }}` expression and a `:` separator
+          # produced an empty `--tag` flag at the buildx layer (see
+          # the prior failed CI run on a75836ad). The block form is
+          # the form every example in docker/build-push-action's
+          # README uses.
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}:main
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
       # Smoke-test: the binary inside the image must at least produce
