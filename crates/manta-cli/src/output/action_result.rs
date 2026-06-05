@@ -17,18 +17,34 @@
 use anyhow::{Context, Result};
 use serde_json::json;
 
+/// Format a single status message as the JSON envelope. Pure helper
+/// extracted from [`print`] so unit tests can assert the schema
+/// without capturing stdout.
+fn json_envelope(message: &str) -> Result<String> {
+  let value = json!({"status": "ok", "message": message});
+  serde_json::to_string(&value)
+    .context("Failed to serialize action result to JSON")
+}
+
+/// Format a status message + structured payload as the JSON envelope.
+/// Pure helper extracted from [`print_with_data`].
+fn json_envelope_with_data<T: serde::Serialize>(
+  message: &str,
+  data: &T,
+) -> Result<String> {
+  let data_value = serde_json::to_value(data)
+    .context("Failed to convert data payload to JSON")?;
+  let value =
+    json!({"status": "ok", "message": message, "data": data_value});
+  serde_json::to_string(&value)
+    .context("Failed to serialize action result to JSON")
+}
+
 /// Print a single status message. Plain text by default, JSON object
 /// `{"status":"ok","message":"..."}` when `output_opt` is `Some("json")`.
 pub fn print(message: &str, output_opt: Option<&str>) -> Result<()> {
   match output_opt {
-    Some("json") => {
-      let value = json!({"status": "ok", "message": message});
-      println!(
-        "{}",
-        serde_json::to_string(&value)
-          .context("Failed to serialize action result to JSON")?
-      );
-    }
+    Some("json") => println!("{}", json_envelope(message)?),
     _ => println!("{message}"),
   }
   Ok(())
@@ -44,15 +60,7 @@ pub fn print_with_data<T: serde::Serialize>(
 ) -> Result<()> {
   match output_opt {
     Some("json") => {
-      let data_value = serde_json::to_value(data)
-        .context("Failed to convert data payload to JSON")?;
-      let value =
-        json!({"status": "ok", "message": message, "data": data_value});
-      println!(
-        "{}",
-        serde_json::to_string(&value)
-          .context("Failed to serialize action result to JSON")?
-      );
+      println!("{}", json_envelope_with_data(message, data)?);
     }
     _ => {
       println!("{message}");
@@ -71,31 +79,27 @@ mod tests {
   use super::*;
   use serde_json::Value;
 
-  /// Render to JSON and verify the shape.
-  fn json_of(message: &str) -> Value {
-    let v = json!({"status": "ok", "message": message});
-    serde_json::from_str(&serde_json::to_string(&v).unwrap()).unwrap()
+  #[test]
+  fn json_envelope_has_status_and_message() {
+    // Round-trip the rendered string so we're asserting against the
+    // actual output of `json_envelope`, not a hand-built `json!{...}`
+    // we hope matches it.
+    let rendered = json_envelope("Group 'foo' added").unwrap();
+    let parsed: Value = serde_json::from_str(&rendered).unwrap();
+    assert_eq!(parsed["status"], "ok");
+    assert_eq!(parsed["message"], "Group 'foo' added");
   }
 
   #[test]
-  fn json_shape_for_plain_message() {
-    let v = json_of("Group 'foo' added");
-    assert_eq!(v["status"], "ok");
-    assert_eq!(v["message"], "Group 'foo' added");
-  }
-
-  #[test]
-  fn print_with_data_includes_payload() {
-    // Just verify the schema we build; the actual stdout write isn't
-    // worth capturing in this unit test (already covered structurally).
+  fn json_envelope_with_data_attaches_payload() {
     let payload = json!({"id": "x3000c0s1b0", "enabled": true});
-    let combined = json!({
-      "status": "ok",
-      "message": "endpoint added",
-      "data": payload,
-    });
-    assert_eq!(combined["data"]["id"], "x3000c0s1b0");
-    assert_eq!(combined["data"]["enabled"], true);
+    let rendered =
+      json_envelope_with_data("endpoint added", &payload).unwrap();
+    let parsed: Value = serde_json::from_str(&rendered).unwrap();
+    assert_eq!(parsed["status"], "ok");
+    assert_eq!(parsed["message"], "endpoint added");
+    assert_eq!(parsed["data"]["id"], "x3000c0s1b0");
+    assert_eq!(parsed["data"]["enabled"], true);
   }
 
   #[test]
