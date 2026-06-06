@@ -43,11 +43,6 @@ manta-backend-dispatcher = "1.0.0-beta.8"
 csm-rs                   = { version = "1.0.0-beta.10", features = ["commands-admin"] }
 ochami-rs                = "1.0.0-beta.8"
 
-[patch.crates-io]
-manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
-csm-rs                   = { path = "../csm-rs", features = ["commands-admin"] }
-ochami-rs                = { path = "../ochami-rs" }
-
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
 chrono             = { version = "0.4.41", default-features = false }
@@ -82,3 +77,8 @@ debug     = 1
 [profile.dist]
 inherits = "release"
 lto      = "thin"
+
+[patch.crates-io]
+manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
+csm-rs                   = { path = "../csm-rs" }
+ochami-rs                = { path = "../ochami-rs" }
