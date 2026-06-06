@@ -155,8 +155,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .query(query);
     Self::log_request_as_curl(&builder);
-    let resp =
-      builder.send().await.map_err(|e| self.map_send_error(e, "GET"))?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "GET"))?;
     Self::parse_json(resp).await
   }
 
@@ -174,8 +176,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp =
-      builder.send().await.map_err(|e| self.map_send_error(e, "POST"))?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "POST"))?;
     Self::parse_json(resp).await
   }
 
@@ -193,8 +197,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp =
-      builder.send().await.map_err(|e| self.map_send_error(e, "PUT"))?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "PUT"))?;
     Self::parse_no_content(resp).await
   }
 

@@ -912,4 +912,3 @@ fn params_to_redfish_endpoint(
     discovery_info: None,
   }
 }
-

@@ -314,9 +314,8 @@ mod tests {
     )
     .unwrap();
 
-    let result: anyhow::Result<serde_json::Value> = client
-      .get_json("test-token", "/health", &[])
-      .await;
+    let result: anyhow::Result<serde_json::Value> =
+      client.get_json("test-token", "/health", &[]).await;
 
     let err = result.expect_err("connect to closed port must error");
     let msg = format!("{err:#}");

@@ -87,9 +87,8 @@ impl MantaClient {
         .context("Invalid site-name header value")?,
     );
 
-    let (ws_stream, _) = tokio_tungstenite::connect_async(req)
-      .await
-      .map_err(|e| {
+    let (ws_stream, _) =
+      tokio_tungstenite::connect_async(req).await.map_err(|e| {
         // tungstenite reports connect-level failures as `Io(io_err)`;
         // surface those as the same "cannot reach manta server"
         // message the HTTP helpers use so the operator sees one
