@@ -211,13 +211,30 @@ jobs:
           tags: manta-${{ matrix.image }}:ci
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
-      # Push path: emit straight to GHCR with a hardcoded `:main` tag.
+      # Push path: build + push to GHCR with a hardcoded `:main` tag.
       # The workflow only triggers on push to main (see `on:` block at
-      # top), so the tag never varies — using docker/metadata-action
-      # here would just be ceremony. The smoke-test below only runs on
-      # PRs (where the image is loaded locally); we trust the most-
-      # recent PR's smoke-test to have caught any runtime-lib
-      # regression before merge.
+      # top), so the tag never varies.
+      #
+      # The tag is pre-computed in a shell step instead of passed
+      # inline as `tags: ghcr.io/${{ ... }}:main`. Earlier attempts
+      # using both the inline single-string form and the multi-line
+      # block form reached buildx with no `--tag` flag and failed
+      # with "tag is needed when pushing to registry". Pre-computing
+      # in shell — where we can `echo` the value and inspect it in
+      # the GHA logs — sidesteps whatever interaction was eating the
+      # interpolated value inside the action input.
+      #
+      # `${owner,,}` lowercases the owner: GHCR rejects uppercase in
+      # image references, and `github.repository_owner` preserves the
+      # original repo-owner casing.
+      - name: Compute GHCR image tag
+        if: github.event_name == 'push'
+        id: imgtag
+        run: |
+          owner_lc="${GITHUB_REPOSITORY_OWNER,,}"
+          tag="ghcr.io/${owner_lc}/manta-${{ matrix.image }}:main"
+          echo "Computed image tag: ${tag}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
       - name: Build and push image (main)
         if: github.event_name == 'push'
         uses: docker/build-push-action@v6
@@ -225,15 +242,7 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          # Multi-line block scalar — build-push-action's `tags` input
-          # is documented as a list, and the inline single-string form
-          # with an embedded `${{ }}` expression and a `:` separator
-          # produced an empty `--tag` flag at the buildx layer (see
-          # the prior failed CI run on a75836ad). The block form is
-          # the form every example in docker/build-push-action's
-          # README uses.
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}:main
+          tags: ${{ steps.imgtag.outputs.tag }}
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
       # Smoke-test: the binary inside the image must at least produce

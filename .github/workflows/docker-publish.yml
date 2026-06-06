@@ -36,21 +36,52 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       # Tag strategy:
-      #   stable tag (e.g. v2.0.0)        → :2.0.0, :2.0, :2, :latest
-      #   prerelease (e.g. v2.0.0-beta.39) → :2.0.0-beta.39 only
-      # The `latest` enable expression guards on the absence of a `-`
-      # in the ref name (semver prerelease marker), matching cargo-
-      # dist's prerelease detection.
-      - name: Compute image metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository_owner }}/manta-${{ matrix.image }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}},enable=${{ !contains(github.ref_name, '-') }}
-            type=semver,pattern={{major}},enable=${{ !contains(github.ref_name, '-') }}
-            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+      #   stable tag (e.g. v2.0.0)         → :2.0.0, :2.0, :2, :latest
+      #   prerelease (e.g. v2.0.0-beta.44) → :2.0.0-beta.44 only
+      #
+      # The tags are pre-computed in a shell step (instead of via
+      # docker/metadata-action) so we can `echo` them and inspect the
+      # value in the GHA logs. metadata-action previously produced
+      # empty output on a release run here, which reached buildx with
+      # no `--tag` flag and failed with "tag is needed when pushing
+      # to registry"; the shell-based path is more transparent.
+      #
+      # Stable / pre-release split: a `-` anywhere in the ref name
+      # marks it a semver prerelease (e.g. `-beta.44`). Stable tags
+      # get the full ladder + `:latest`; prereleases only get the
+      # exact version tag so `:latest` never moves to a beta.
+      #
+      # `${owner,,}` lowercases the owner because GHCR rejects
+      # uppercase in image references.
+      - name: Compute GHCR image tags
+        id: imgtags
+        run: |
+          owner_lc="${GITHUB_REPOSITORY_OWNER,,}"
+          image="ghcr.io/${owner_lc}/manta-${{ matrix.image }}"
+          ref="${GITHUB_REF_NAME}"
+          # Strip leading `v` if present (e.g. `v2.0.0-beta.44` → `2.0.0-beta.44`).
+          version="${ref#v}"
+
+          tags="${image}:${version}"
+
+          if [[ "${version}" != *-* ]]; then
+            # Stable release: extract major and major.minor from the SemVer
+            # x.y.z prefix, then add :latest. `||true` so a non-conforming
+            # version doesn't fail the cut step.
+            major="$(printf '%s' "${version}" | cut -d. -f1)"
+            minor="$(printf '%s' "${version}" | cut -d. -f2)"
+            tags="${tags}"$'\n'"${image}:${major}.${minor}"
+            tags="${tags}"$'\n'"${image}:${major}"
+            tags="${tags}"$'\n'"${image}:latest"
+          fi
+
+          echo "Computed image tags:"
+          printf '  %s\n' "${tags}"
+          {
+            echo 'tags<<EOF'
+            echo "${tags}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
       # Reuses the same GHA cache scope as the CI docker job. The tag
       # commit is typically the same SHA as the last main push, so
       # cache hit rate should be ~100% and this job mostly just re-
@@ -61,7 +92,6 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.imgtags.outputs.tags }}
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
