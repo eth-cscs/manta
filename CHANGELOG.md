@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.47] - 2026-06-06
+## [2.0.0-beta.48] - 2026-06-06
+
+### Miscellaneous Tasks
+
+- Regenerate man pages + shell completions [skip ci]
 
 ### Refactor
 
