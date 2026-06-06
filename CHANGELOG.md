@@ -2,11 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.45] - 2026-06-06
+## [2.0.0-beta.46] - 2026-06-06
 
 ### Bug Fixes
 
 - Pre-compute GHCR image tags in shell, not via interpolation
+
+### Styling
+
+- Apply rustfmt [skip ci]
 
 ## [2.0.0-beta.44] - 2026-06-06
 
