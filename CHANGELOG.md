@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.49] - 2026-06-06
+
+### Bug Fixes
+
+- Move [patch.crates-io] out of [workspace.dependencies]
+
+### Build
+
+- Enable csm-rs commands-admin feature and patch siblings locally
+- Enable commands-admin feature on patched csm-rs path
+
+### Miscellaneous Tasks
+
+- Bump manta-backend-dispatch
+
 ## [2.0.0-beta.48] - 2026-06-06
 
 ### Miscellaneous Tasks
