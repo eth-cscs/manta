@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.44] - 2026-06-06
+
+### Documentation
+
+- Document auto-stamped manta.image_session.* metadata
+- Note callers must PATCH to persist
+
+### Features
+
+- Stamp manta.image_session.* on freshly-built IMS images
+- Fail fast with a meaningful error when manta server is down
+
+### Miscellaneous Tasks
+
+- Regenerate man pages + shell completions [skip ci]
+- Bump manta dependencies
+
+### Refactor
+
+- [**breaking**] Drop ImageSessionMetadata wrapper and read()
+- [**breaking**] Move image_session metadata stamp out of manta-server
+
+### Testing
+
+- Cover image_session patch construction after apply
+
 ## [2.0.0-beta.43] - 2026-06-05
 
 ### Bug Fixes
