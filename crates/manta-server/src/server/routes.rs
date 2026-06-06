@@ -33,7 +33,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // --- GET endpoints ---
     .route("/sessions", get(handlers::get_sessions))
     .route("/configurations", get(handlers::get_configurations))
-    .route("/nodes", get(handlers::get_nodes))
     .route("/groups", get(handlers::get_groups))
     .route("/groups/available", get(handlers::get_available_groups))
     .route("/groups/all", get(handlers::get_all_groups))
@@ -43,11 +42,9 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/kernel-parameters", get(handlers::get_kernel_parameters))
     .route("/redfish-endpoints", get(handlers::get_redfish_endpoints))
     // Canonical (group-centric) read endpoints
-    .route("/groups/nodes", get(handlers::get_groups_nodes))
     .route("/groups/hardware", get(handlers::get_groups_hardware))
     // Deprecated aliases retained for one release. Each handler logs
     // a server-side warning and forwards to the canonical impl.
-    .route("/clusters", get(handlers::get_clusters_deprecated))
     .route(
       "/hardware-clusters",
       get(handlers::get_hardware_clusters_deprecated),
@@ -109,8 +106,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     // Migrate
     .route("/migrate/nodes", post(handlers::migrate_nodes))
-    .route("/migrate/backup", post(handlers::migrate_backup))
-    .route("/migrate/restore", post(handlers::migrate_restore))
     // Ephemeral environment
     .route("/ephemeral-env", post(handlers::create_ephemeral_env))
     // Power management — POST starts a PCS transition and returns
@@ -127,17 +122,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     // CFS session logs (SSE)
     .route("/sessions/{name}/logs", get(handlers::get_session_logs))
-    // SAT file apply — per-element endpoints. The CLI's `build_plan`
-    // walks the SAT file and dispatches one POST per artifact.
-    .route(
-      "/sat-file/configurations",
-      post(handlers::post_sat_configuration),
-    )
-    .route("/sat-file/images", post(handlers::post_sat_image))
-    .route(
-      "/sat-file/session-templates",
-      post(handlers::post_sat_session_template),
-    )
     // Health check
     .route("/health", get(handlers::health))
     // Hardware cluster member management

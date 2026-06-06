@@ -2,62 +2,15 @@
 
 use axum::{
   Json,
-  extract::{Path, Query},
+  extract::Path,
   http::StatusCode,
   response::IntoResponse,
 };
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
-
-// ---------------------------------------------------------------------------
-// GET /api/v1/nodes
-// ---------------------------------------------------------------------------
-
-/// Query parameters for `GET /nodes`.
-#[derive(Deserialize, IntoParams)]
-pub struct NodesQuery {
-  /// Comma-separated xnames, NIDs, or hostlist expression
-  /// (e.g. `x3000c0s1b0n[0-3]`).
-  pub xname: String,
-  /// Expand results to include nodes sharing the same power supply.
-  pub include_siblings: Option<bool>,
-  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
-  pub status: Option<String>,
-}
-
-/// GET /nodes — fetch node details for a given xname expression.
-#[utoipa::path(get, path = "/nodes", tag = "nodes",
-  params(NodesQuery, SiteHeader),
-  security(("bearerAuth" = [])),
-  responses(
-    (status = 200, description = "Node details",  body = serde_json::Value),
-    (status = 400, description = "Bad request",   body = ErrorResponse),
-    (status = 401, description = "Unauthorized",  body = ErrorResponse),
-    (status = 500, description = "Internal error", body = ErrorResponse),
-  )
-)]
-#[tracing::instrument(skip_all)]
-pub async fn get_nodes(
-  ctx: RequestCtx,
-  Query(q): Query<NodesQuery>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let infra = ctx.infra();
-
-  let params = service::node::GetNodesParams {
-    xname: q.xname,
-    include_siblings: q.include_siblings.unwrap_or(false),
-    status_filter: q.status,
-  };
-
-  let nodes = service::node::get_nodes(&infra, &ctx.token, &params)
-    .await
-    .map_err(to_handler_error)?;
-
-  Ok(Json(nodes))
-}
 
 // ---------------------------------------------------------------------------
 // DELETE /api/v1/nodes/{id}

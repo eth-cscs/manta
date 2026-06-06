@@ -4,7 +4,6 @@
 pub mod auth;
 pub mod authorization;
 pub mod boot_parameters;
-pub mod cluster;
 pub mod configuration;
 pub mod ephemeral_env;
 pub mod group;

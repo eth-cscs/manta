@@ -16,6 +16,5 @@ pub mod kernel_parameters;
 pub mod node;
 pub mod power;
 pub mod redfish_endpoints;
-pub mod sat_file;
 pub mod session;
 pub mod template;
