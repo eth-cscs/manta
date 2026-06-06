@@ -33,6 +33,7 @@ mod sessions;
 mod templates;
 mod vcluster;
 
+pub use auth::AuthServerUnreachable;
 pub use client::MantaClient;
 pub(super) use query::QueryBuilder;
 pub(super) use wire::ws_base_url;
@@ -254,6 +255,83 @@ mod tests {
     let c = MantaClient::new_with_timeout("stub.invalid:8080", "alps", None)
       .expect("scheme-less host must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid:8080/api/v1");
+  }
+
+  /// When the auth path against an unreachable server fails, the
+  /// error chain MUST contain the [`AuthServerUnreachable`] marker.
+  /// `common::authentication::get_api_token` downcasts looking for
+  /// this to short-circuit instead of falling through to the next
+  /// auth source (env-var → file → interactive prompt loop). If
+  /// `get_token`/`validate_token` ever stops attaching the marker
+  /// on connect/timeout, the CLI silently regresses to "ask for
+  /// credentials repeatedly against a dead server".
+  #[tokio::test]
+  async fn unreachable_server_attaches_auth_marker_to_error_chain() {
+    use super::AuthServerUnreachable;
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    drop(listener);
+
+    let client = MantaClient::new_with_timeout(
+      &format!("http://{addr}"),
+      "test-site",
+      Some(2),
+    )
+    .unwrap();
+
+    let err = client
+      .get_token("u", "p")
+      .await
+      .expect_err("auth against closed port must error");
+    assert!(
+      err.downcast_ref::<AuthServerUnreachable>().is_some(),
+      "auth error must be downcastable to AuthServerUnreachable; \
+       got: {err:#}",
+    );
+  }
+
+  /// When the configured manta server URL points at a closed port,
+  /// the helper-shaped HTTP call must fail with the meaningful
+  /// "cannot reach manta server at <url>" message, NOT a raw reqwest
+  /// "error sending request" string. Pinned because the message is
+  /// what the operator sees in the terminal when their server is
+  /// down or misconfigured.
+  #[tokio::test]
+  async fn unreachable_server_produces_meaningful_error_message() {
+    // Grab a port from the OS, then drop the listener so the
+    // address is reachable (route exists) but nothing is bound to
+    // it — TCP connect returns ECONNREFUSED. More deterministic
+    // than picking a static port.
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    drop(listener);
+
+    let client = MantaClient::new_with_timeout(
+      &format!("http://{addr}"),
+      "test-site",
+      Some(2),
+    )
+    .unwrap();
+
+    let result: anyhow::Result<serde_json::Value> = client
+      .get_json("test-token", "/health", &[])
+      .await;
+
+    let err = result.expect_err("connect to closed port must error");
+    let msg = format!("{err:#}");
+    assert!(
+      msg.contains("cannot reach manta server"),
+      "error must name the unreachability, got: {msg}",
+    );
+    assert!(
+      msg.contains(&format!("http://{addr}")),
+      "error must include the configured server URL, got: {msg}",
+    );
+    assert!(
+      msg.contains("manta_server_url"),
+      "error must hint at the config knob, got: {msg}",
+    );
   }
 
   /// Behavioural test: when a timeout is set, an outbound call against

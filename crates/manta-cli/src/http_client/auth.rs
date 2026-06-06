@@ -7,9 +7,54 @@
 
 use std::time::Instant;
 
-use anyhow::Context;
-
 use super::MantaClient;
+
+/// Marker error attached as anyhow context whenever an `/auth/*`
+/// HTTP call fails at the TCP/timeout layer (i.e., the manta server
+/// — and therefore the auth path through it — is unreachable, not
+/// "wrong credentials"). Lets [`crate::common::authentication`] tell
+/// the two cases apart so an unreachable server short-circuits
+/// instead of triggering the re-prompt loop.
+#[derive(Debug)]
+pub struct AuthServerUnreachable {
+  /// The base manta server URL (without `/api/v1`) that was tried.
+  /// Surfaced in the error message and recoverable by the loop via
+  /// `downcast_ref` if a caller needs to log it separately.
+  pub url: String,
+}
+
+impl std::fmt::Display for AuthServerUnreachable {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "cannot reach manta server at {} for authentication. \
+       Is the server running, and is `manta_server_url` in your \
+       config correct?",
+      self.url,
+    )
+  }
+}
+
+impl std::error::Error for AuthServerUnreachable {}
+
+impl MantaClient {
+  /// Map a `reqwest::Error` from an `/auth/*` send into an
+  /// `anyhow::Error`. Connect-level / timeout failures get the typed
+  /// [`AuthServerUnreachable`] as context so the interactive-login
+  /// loop can detect "server unreachable" without string-matching.
+  fn map_auth_send_error(
+    &self,
+    e: reqwest::Error,
+    method_and_path: &str,
+  ) -> anyhow::Error {
+    if e.is_connect() || e.is_timeout() {
+      let url = self.base_url().trim_end_matches("/api/v1").to_string();
+      anyhow::Error::new(e).context(AuthServerUnreachable { url })
+    } else {
+      anyhow::Error::new(e).context(format!("{method_and_path} failed"))
+    }
+  }
+}
 
 impl MantaClient {
   /// `POST /api/v1/auth/token` — exchange Keycloak credentials for a CSM
@@ -37,7 +82,7 @@ impl MantaClient {
     let resp = builder
       .send()
       .await
-      .context("HTTP POST /auth/token failed")?;
+      .map_err(|e| self.map_auth_send_error(e, "HTTP POST /auth/token"))?;
     tracing::debug!(
       status = %resp.status(),
       elapsed_ms = started.elapsed().as_millis() as u64,
@@ -65,7 +110,7 @@ impl MantaClient {
     let resp = builder
       .send()
       .await
-      .context("HTTP POST /auth/validate failed")?;
+      .map_err(|e| self.map_auth_send_error(e, "HTTP POST /auth/validate"))?;
     tracing::debug!(
       status = %resp.status(),
       elapsed_ms = started.elapsed().as_millis() as u64,

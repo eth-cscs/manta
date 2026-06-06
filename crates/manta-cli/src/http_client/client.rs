@@ -87,6 +87,33 @@ impl MantaClient {
   // are the only places that touch `reqwest` directly; sub-module methods
   // build a URL fragment + query/body and delegate here.
 
+  /// User-facing one-liner used when an outbound request fails before
+  /// the server can respond (TCP refused, DNS failure, request timeout).
+  /// Names the server URL the CLI tried and hints at the two most
+  /// common causes — server not running, or wrong `manta_server_url`.
+  pub(super) fn unreachable_server_msg(&self) -> String {
+    let server_url = self.base_url.trim_end_matches("/api/v1");
+    format!(
+      "cannot reach manta server at {server_url}. Is the server \
+       running, and is `manta_server_url` in your config correct?"
+    )
+  }
+
+  /// Map a `reqwest::Error` from `.send().await` into an
+  /// `anyhow::Error`. Connect-level and timeout failures get the
+  /// human-readable [`Self::unreachable_server_msg`] as the
+  /// top-level context; everything else falls back to a generic
+  /// `HTTP <METHOD> failed`. The underlying reqwest error is kept
+  /// in the cause chain so `manta -v` still surfaces the low-level
+  /// detail.
+  fn map_send_error(&self, e: reqwest::Error, method: &str) -> anyhow::Error {
+    if e.is_connect() || e.is_timeout() {
+      anyhow::Error::new(e).context(self.unreachable_server_msg())
+    } else {
+      anyhow::Error::new(e).context(format!("HTTP {method} failed"))
+    }
+  }
+
   pub(super) async fn parse_json<T: DeserializeOwned>(
     resp: reqwest::Response,
   ) -> anyhow::Result<T> {
@@ -128,7 +155,8 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .query(query);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP GET failed")?;
+    let resp =
+      builder.send().await.map_err(|e| self.map_send_error(e, "GET"))?;
     Self::parse_json(resp).await
   }
 
@@ -146,7 +174,8 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP POST failed")?;
+    let resp =
+      builder.send().await.map_err(|e| self.map_send_error(e, "POST"))?;
     Self::parse_json(resp).await
   }
 
@@ -164,7 +193,8 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP PUT failed")?;
+    let resp =
+      builder.send().await.map_err(|e| self.map_send_error(e, "PUT"))?;
     Self::parse_no_content(resp).await
   }
 
@@ -180,7 +210,10 @@ impl MantaClient {
       .bearer_auth(token)
       .header("X-Manta-Site", &self.site_name);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP DELETE failed")?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "DELETE"))?;
     Self::parse_no_content(resp).await
   }
 
@@ -198,7 +231,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .query(query);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP DELETE failed")?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "DELETE"))?;
     Self::parse_no_content(resp).await
   }
 
@@ -216,7 +252,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP DELETE failed")?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "DELETE"))?;
     Self::parse_no_content(resp).await
   }
 
@@ -234,7 +273,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .json(body);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP DELETE failed")?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "DELETE"))?;
     Self::parse_json(resp).await
   }
 
@@ -252,7 +294,10 @@ impl MantaClient {
       .header("X-Manta-Site", &self.site_name)
       .query(query);
     Self::log_request_as_curl(&builder);
-    let resp = builder.send().await.context("HTTP DELETE failed")?;
+    let resp = builder
+      .send()
+      .await
+      .map_err(|e| self.map_send_error(e, "DELETE"))?;
     Self::parse_json(resp).await
   }
 

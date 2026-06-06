@@ -89,7 +89,29 @@ impl MantaClient {
 
     let (ws_stream, _) = tokio_tungstenite::connect_async(req)
       .await
-      .context("WebSocket connection failed")?;
+      .map_err(|e| {
+        // tungstenite reports connect-level failures as `Io(io_err)`;
+        // surface those as the same "cannot reach manta server"
+        // message the HTTP helpers use so the operator sees one
+        // consistent error regardless of which subcommand they ran.
+        let unreachable = matches!(
+          &e,
+          tokio_tungstenite::tungstenite::Error::Io(io_err)
+            if matches!(
+              io_err.kind(),
+              std::io::ErrorKind::ConnectionRefused
+                | std::io::ErrorKind::TimedOut
+                | std::io::ErrorKind::ConnectionAborted
+                | std::io::ErrorKind::ConnectionReset
+                | std::io::ErrorKind::NotFound
+            )
+        );
+        if unreachable {
+          anyhow::Error::new(e).context(self.unreachable_server_msg())
+        } else {
+          anyhow::Error::new(e).context("WebSocket connection failed")
+        }
+      })?;
 
     let (mut ws_sink, mut ws_source) = ws_stream.split();
 

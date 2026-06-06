@@ -6,7 +6,7 @@
 //! directly.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{AuthServerUnreachable, MantaClient};
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
@@ -16,6 +16,21 @@ use std::{
   io::{self, IsTerminal, Read, Write},
   os::unix::fs::OpenOptionsExt,
 };
+
+/// `true` if `err`'s typed-context chain contains
+/// [`AuthServerUnreachable`] — the marker we attach in
+/// `http_client::auth` whenever the auth-bearing send fails at
+/// TCP/timeout level. Used by every stage of `get_api_token`
+/// (env var, cached file, interactive prompt) to bail out instead
+/// of falling through or re-prompting.
+///
+/// Uses `downcast_ref` rather than `chain().any(is::<...>())`
+/// because anyhow stores contexts behind an internal wrapper type;
+/// `downcast_ref` knows how to look through it, but the chain
+/// iterator yields the wrapper's concrete type.
+fn is_auth_server_unreachable(err: &anyhow::Error) -> bool {
+  err.downcast_ref::<AuthServerUnreachable>().is_some()
+}
 
 /// Environment variable name for the API authentication token.
 const AUTH_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
@@ -45,6 +60,13 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
       return Ok(token);
     }
     Err(err) => {
+      // Short-circuit when the server is unreachable: validating the
+      // file token or prompting interactively would just hit the
+      // same dead endpoint. The user needs to fix the server or
+      // their config before any auth path can succeed.
+      if is_auth_server_unreachable(&err) {
+        return Err(err);
+      }
       tracing::warn!(
         error = %err,
         "env-var auth failed, trying cached token file"
@@ -58,6 +80,9 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
       return Ok(token);
     }
     Err(err) => {
+      if is_auth_server_unreachable(&err) {
+        return Err(err);
+      }
       let stdin = io::stdin();
       if !stdin.is_terminal() {
         tracing::warn!(
@@ -173,6 +198,17 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
 
   while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
     if let Err(ref err) = shasta_token_rslt {
+      // If the failure is "server unreachable" rather than "wrong
+      // credentials", re-prompting is pointless — the next attempt
+      // would hit the same dead endpoint. Bail out and let the
+      // operator see the meaningful message immediately.
+      if is_auth_server_unreachable(err) {
+        tracing::warn!(
+          error = %err,
+          "auth server unreachable; aborting interactive retries"
+        );
+        return shasta_token_rslt;
+      }
       tracing::warn!(
         attempt = attempts + 1,
         max_attempts = MAX_LOGIN_ATTEMPTS,
