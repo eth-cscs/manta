@@ -23,7 +23,4 @@
 #![deny(missing_docs)]
 
 pub mod common;
-/// Provenance metadata written to an IMS image after a successful CFS
-/// session (`base`, `groups`, `configuration`).
-pub mod image_session;
 pub mod types;

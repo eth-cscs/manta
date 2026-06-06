@@ -1281,7 +1281,7 @@ impl SatTrait for StaticBackendDispatcher {
   async fn apply_image(
     &self,
     params: ApplyImageParams<'_>,
-  ) -> Result<(Image, CfsSessionGetResponse), Error> {
+  ) -> Result<Image, Error> {
     dispatch!(self, apply_image, params)
   }
 
