@@ -43,9 +43,9 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
 # csm-rs                   = { path = "../csm-rs" }
 # ochami-rs                = { path = "../ochami-rs" }
-manta-backend-dispatcher = "1.0.0-beta.5"
-csm-rs                   = "1.0.0-beta.6"
-ochami-rs                = "1.0.0-beta.5"
+manta-backend-dispatcher = "1.0.0-beta.6"
+csm-rs                   = "1.0.0-beta.7"
+ochami-rs                = "1.0.0-beta.6"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
