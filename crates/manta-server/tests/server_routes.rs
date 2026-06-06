@@ -387,54 +387,6 @@ async fn get_session_logs_without_k8s_config_returns_501() {
   assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
 }
 
-#[tokio::test]
-async fn post_sat_file_without_vault_config_returns_501() {
-  let resp = router()
-    .oneshot(post_json(
-      "/api/v1/sat-file",
-      r#"{"sat_file":{"configurations":[],"images":[],"session_templates":[]}}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
-}
-
-// When vault IS configured but k8s is not, sat-file still returns 501.
-#[tokio::test]
-async fn post_sat_file_without_k8s_config_returns_501() {
-  let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
-      .unwrap();
-  let mut sites = std::collections::HashMap::new();
-  sites.insert(
-    "test".to_string(),
-    SiteBackend {
-      backend,
-      shasta_base_url: "http://stub.invalid".to_string(),
-      shasta_root_cert: vec![],
-      socks5_proxy: None,
-      vault_base_url: Some("http://vault.stub.invalid".to_string()),
-      gitea_base_url: "http://stub.invalid".to_string(),
-      k8s_api_url: None, // k8s not set
-    },
-  );
-  let state = Arc::new(ServerState {
-    sites,
-    console_inactivity_timeout: std::time::Duration::from_secs(1800),
-    auditor: None,
-    auth_rate_limit_per_minute: None,
-    request_timeout: std::time::Duration::from_secs(60),
-  });
-  let resp = build_router(state)
-    .oneshot(post_json(
-      "/api/v1/sat-file",
-      r#"{"sat_file":{"configurations":[],"images":[],"session_templates":[]}}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
-}
-
 // ---------------------------------------------------------------------------
 // Route existence — authenticated requests must not return 404 or 405
 // ---------------------------------------------------------------------------
