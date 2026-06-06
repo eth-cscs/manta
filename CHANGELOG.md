@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.47] - 2026-06-06
+
+### Refactor
+
+- [**breaking**] Remove legacy whole-file POST /sat-file endpoint
+- [**breaking**] Drop backend methods removed in csm-rs 1.0.0-beta.8
+
 ## [2.0.0-beta.46] - 2026-06-06
 
 ### Bug Fixes
