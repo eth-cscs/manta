@@ -39,9 +39,9 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # in `../manta-backend-dispatcher` propagate to `../csm-rs` /
 # `../ochami-rs` impls during inner-loop development. Drop this block
 # (or move it to a per-user `.cargo/config.toml`) before publishing.
-manta-backend-dispatcher = "1.0.0-beta.6"
-csm-rs                   = { version = "1.0.0-beta.7", features = ["commands-admin"] }
-ochami-rs                = "1.0.0-beta.6"
+manta-backend-dispatcher = "1.0.0-beta.8"
+csm-rs                   = { version = "1.0.0-beta.10", features = ["commands-admin"] }
+ochami-rs                = "1.0.0-beta.8"
 
 [patch.crates-io]
 manta-backend-dispatcher = { path = "../manta-backend-dispatcher" }
