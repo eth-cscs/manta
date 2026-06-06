@@ -12,6 +12,12 @@ use manta_backend_dispatcher::types::HsmActionResponse;
 use chrono::NaiveDateTime;
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::apply_sat_file::{
+  ApplyConfigurationParams as BackendApplyConfigurationParams,
+  ApplyImageParams as BackendApplyImageParams,
+  ApplySatFileParams as BackendApplySatFileParams,
+  ApplySessionTemplateParams as BackendApplySessionTemplateParams, SatTrait,
+};
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 use manta_backend_dispatcher::interfaces::bos::{
@@ -25,6 +31,8 @@ use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
+use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
+use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::{Component as HsmComponent, Group};
 use manta_backend_dispatcher::types::bos::session::BosSession;
@@ -46,6 +54,8 @@ use manta_backend_dispatcher::types::{
 use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
+use manta_shared::types::params::sat_file::ApplySatFileParams;
+
 use crate::server::common::app_context::InfraContext;
 
 /// Data gathered for deletion review and execution.
@@ -194,6 +204,42 @@ impl InfraContext<'_> {
         parent_hsm_name,
         xnames,
         dry_run,
+      )
+      .await
+  }
+
+  /// Backup a vCluster (CFS / IMS / BSS / BOS / HSM artefacts).
+  pub async fn migrate_backup(
+    &self,
+    token: &str,
+    bos: Option<&str>,
+    destination: Option<&str>,
+  ) -> Result<(), Error> {
+    self.backend.migrate_backup(token, bos, destination).await
+  }
+
+  /// Restore a vCluster from backup files.
+  ///
+  /// The backend trait exposes four independent overwrite flags
+  /// (group/configuration/image/template). The HTTP/CLI APIs expose a
+  /// single `overwrite` knob that fans out here. Expose them
+  /// individually if callers need per-resource control in the future.
+  #[allow(clippy::too_many_arguments)]
+  pub async fn migrate_restore(
+    &self,
+    token: &str,
+    bos_file: Option<&str>,
+    cfs_file: Option<&str>,
+    hsm_file: Option<&str>,
+    ims_file: Option<&str>,
+    image_dir: Option<&str>,
+    overwrite: bool,
+  ) -> Result<(), Error> {
+    self
+      .backend
+      .migrate_restore(
+        token, bos_file, cfs_file, hsm_file, ims_file, image_dir, overwrite,
+        overwrite, overwrite, overwrite,
       )
       .await
   }
@@ -534,6 +580,116 @@ impl InfraContext<'_> {
     self.backend.get_group_name_available(token).await
   }
 
+  /// Apply a whole SAT file via the backend (used for files containing a `hardware:` section).
+  pub async fn apply_sat_file(
+    &self,
+    token: &str,
+    gitea_token: &str,
+    vault_base_url: &str,
+    k8s_api_url: &str,
+    params: ApplySatFileParams<'_>,
+  ) -> Result<
+    (
+      Vec<CfsConfigurationResponse>,
+      Vec<Image>,
+      Vec<BosSessionTemplate>,
+      Vec<BosSession>,
+    ),
+    Error,
+  > {
+    let hsm_group_available_vec = self.get_group_name_available(token).await?;
+    self
+      .backend
+      .apply_sat_file(BackendApplySatFileParams {
+        shasta_token: token,
+        vault_base_url,
+        site_name: self.site_name,
+        k8s_api_url,
+        sat_file: params.sat_file,
+        hsm_group_available_vec: &hsm_group_available_vec,
+        ansible_verbosity: params.ansible_verbosity,
+        ansible_passthrough: params.ansible_passthrough,
+        gitea_base_url: self.gitea_base_url,
+        gitea_token,
+        reboot: params.reboot,
+        watch_logs: params.watch_logs,
+        timestamps: params.timestamps,
+        debug_on_failure: true,
+        overwrite: params.overwrite,
+        dry_run: params.dry_run,
+      })
+      .await
+  }
+
+  /// Apply a single SAT `configurations[]` entry.
+  #[allow(clippy::too_many_arguments)]
+  pub async fn apply_configuration(
+    &self,
+    token: &str,
+    gitea_token: &str,
+    vault_base_url: &str,
+    k8s_api_url: &str,
+    configuration: serde_json::Value,
+    dry_run: bool,
+    overwrite: bool,
+  ) -> Result<CfsConfigurationResponse, Error> {
+    self
+      .backend
+      .apply_configuration(BackendApplyConfigurationParams {
+        shasta_token: token,
+        vault_base_url,
+        site_name: self.site_name,
+        k8s_api_url,
+        gitea_base_url: self.gitea_base_url,
+        gitea_token,
+        configuration,
+        dry_run,
+        overwrite,
+      })
+      .await
+  }
+
+  /// Apply a single SAT `images[]` entry.
+  ///
+  /// The backend handles the full image-build flow including stamping
+  /// any provenance metadata onto the produced image (csm-rs writes
+  /// `manta.image_session.*` keys; see csm-rs's
+  /// `i_create_image_from_sat_file_serde_yaml`).
+  #[allow(clippy::too_many_arguments)]
+  pub async fn apply_image(
+    &self,
+    token: &str,
+    vault_base_url: &str,
+    k8s_api_url: &str,
+    image: serde_json::Value,
+    ref_lookup: HashMap<String, String>,
+    ansible_verbosity: Option<u8>,
+    ansible_passthrough: Option<&str>,
+    watch_logs: bool,
+    timestamps: bool,
+    dry_run: bool,
+  ) -> Result<Image, Error> {
+    let hsm_group_available_vec = self.get_group_name_available(token).await?;
+    self
+      .backend
+      .apply_image(BackendApplyImageParams {
+        shasta_token: token,
+        vault_base_url,
+        site_name: self.site_name,
+        k8s_api_url,
+        image,
+        ref_lookup,
+        hsm_group_available_vec: &hsm_group_available_vec,
+        ansible_verbosity,
+        ansible_passthrough,
+        debug_on_failure: true,
+        watch_logs,
+        timestamps,
+        dry_run,
+      })
+      .await
+  }
+
   /// Fetch metadata for every HSM node the caller can access.
   pub async fn get_node_metadata_available(
     &self,
@@ -651,6 +807,29 @@ impl InfraContext<'_> {
     transition_id: &str,
   ) -> Result<TransitionResponse, Error> {
     self.backend.pcs_transitions_get(token, transition_id).await
+  }
+
+  /// Apply a single SAT `session_templates[]` entry.
+  pub async fn apply_session_template(
+    &self,
+    token: &str,
+    session_template: serde_json::Value,
+    ref_lookup: HashMap<String, String>,
+    reboot: bool,
+    dry_run: bool,
+  ) -> Result<(BosSessionTemplate, Option<BosSession>), Error> {
+    let hsm_group_available_vec = self.get_group_name_available(token).await?;
+    self
+      .backend
+      .apply_session_template(BackendApplySessionTemplateParams {
+        shasta_token: token,
+        session_template,
+        ref_lookup,
+        hsm_group_available_vec: &hsm_group_available_vec,
+        reboot,
+        dry_run,
+      })
+      .await
   }
 
   /// Fetch Redfish endpoint registrations matching the filters.

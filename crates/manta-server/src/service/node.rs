@@ -1,5 +1,6 @@
-//! HSM node registration and deletion, with rollback on partial failure.
+//! HSM node queries, registration, and deletion, with rollback on partial failure.
 
+use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList,
@@ -7,6 +8,54 @@ use manta_backend_dispatcher::types::{
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::server::common::app_context::InfraContext;
+use crate::service::node_ops;
+pub use manta_shared::types::params::node::GetNodesParams;
+
+/// Fetch node details for the given xname expression.
+pub async fn get_nodes(
+  infra: &InfraContext<'_>,
+  token: &str,
+  params: &GetNodesParams,
+) -> Result<Vec<NodeDetails>, Error> {
+  let node_list = node_ops::resolve_hosts_expression(
+    infra,
+    token,
+    &params.xname,
+    params.include_siblings,
+  )
+  .await?;
+
+  if node_list.is_empty() {
+    return Err(Error::BadRequest(
+      "The list of nodes to operate is empty. Nothing to do".to_string(),
+    ));
+  }
+
+  let mut node_details_list = csm_rs::node::utils::get_node_details(
+    token,
+    infra.shasta_base_url,
+    infra.shasta_root_cert,
+    infra.socks5_proxy,
+    node_list.to_vec(),
+  )
+  .await
+  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
+
+  // Apply status filter
+  if let Some(ref status) = params.status_filter {
+    node_details_list.retain(|nd| {
+      nd.power_status.eq_ignore_ascii_case(status)
+        || nd.configuration_status.eq_ignore_ascii_case(status)
+    });
+  }
+
+  node_details_list.sort_by(|a, b| a.xname.cmp(&b.xname));
+
+  Ok(node_details_list)
+}
+
+// `compute_summary_status` moved to `manta_shared::types::cluster_status` —
+// only CLI display code calls it.
 
 /// Delete a node by its xname/ID.
 pub async fn delete_node(

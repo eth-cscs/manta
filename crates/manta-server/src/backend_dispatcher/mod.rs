@@ -17,6 +17,11 @@ use serde_json::Value;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPin;
+use manta_backend_dispatcher::interfaces::apply_sat_file::{
+  ApplyConfigurationParams, ApplyImageParams, ApplySatFileParams,
+  ApplySessionTemplateParams, SatTrait,
+};
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 use manta_backend_dispatcher::interfaces::bos::{
@@ -33,6 +38,8 @@ use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpoint
 use manta_backend_dispatcher::interfaces::ims::{
   GetImagesAndDetailsTrait, ImsTrait,
 };
+use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
+use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::{
   self, Component, ComponentArrayPostArray, Group, HWInventory,
@@ -90,6 +97,35 @@ macro_rules! dispatch {
       OCHAMI(b) => b.$method($($arg),*),
     }
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ApplyHwClusterPin
+// ─────────────────────────────────────────────────────────────────────────────
+
+impl ApplyHwClusterPin for StaticBackendDispatcher {
+  async fn apply_hw_cluster_pin(
+    &self,
+    shasta_token: &str,
+    target_hsm_group_name: &str,
+    parent_hsm_group_name: &str,
+    pattern: &str,
+    nodryrun: bool,
+    create_target_hsm_group: bool,
+    delete_empty_parent_hsm_group: bool,
+  ) -> Result<(), Error> {
+    dispatch!(
+      self,
+      apply_hw_cluster_pin,
+      shasta_token,
+      target_hsm_group_name,
+      parent_hsm_group_name,
+      pattern,
+      nodryrun,
+      create_target_hsm_group,
+      delete_empty_parent_hsm_group
+    )
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1075,6 +1111,56 @@ impl ImsTrait for StaticBackendDispatcher {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MigrateBackupTrait
+// ─────────────────────────────────────────────────────────────────────────────
+
+impl MigrateBackupTrait for StaticBackendDispatcher {
+  async fn migrate_backup(
+    &self,
+    shasta_token: &str,
+    bos: Option<&str>,
+    destination: Option<&str>,
+  ) -> Result<(), Error> {
+    dispatch!(self, migrate_backup, shasta_token, bos, destination)
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MigrateRestoreTrait
+// ─────────────────────────────────────────────────────────────────────────────
+
+impl MigrateRestoreTrait for StaticBackendDispatcher {
+  async fn migrate_restore(
+    &self,
+    shasta_token: &str,
+    bos_file: Option<&str>,
+    cfs_file: Option<&str>,
+    hsm_file: Option<&str>,
+    ims_file: Option<&str>,
+    image_dir: Option<&str>,
+    overwrite_group: bool,
+    overwrite_configuration: bool,
+    overwrite_image: bool,
+    overwrite_template: bool,
+  ) -> Result<(), Error> {
+    dispatch!(
+      self,
+      migrate_restore,
+      shasta_token,
+      bos_file,
+      cfs_file,
+      hsm_file,
+      ims_file,
+      image_dir,
+      overwrite_group,
+      overwrite_configuration,
+      overwrite_image,
+      overwrite_template
+    )
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // PCSTrait — power control
 //
 // `POST /power` returns immediately with a transition id (via
@@ -1165,3 +1251,44 @@ impl RedfishEndpointTrait for StaticBackendDispatcher {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SatTrait
+// ─────────────────────────────────────────────────────────────────────────────
+
+impl SatTrait for StaticBackendDispatcher {
+  async fn apply_sat_file(
+    &self,
+    params: ApplySatFileParams<'_>,
+  ) -> Result<
+    (
+      Vec<CfsConfigurationResponse>,
+      Vec<Image>,
+      Vec<BosSessionTemplate>,
+      Vec<BosSession>,
+    ),
+    Error,
+  > {
+    dispatch!(self, apply_sat_file, params)
+  }
+
+  async fn apply_configuration(
+    &self,
+    params: ApplyConfigurationParams<'_>,
+  ) -> Result<CfsConfigurationResponse, Error> {
+    dispatch!(self, apply_configuration, params)
+  }
+
+  async fn apply_image(
+    &self,
+    params: ApplyImageParams<'_>,
+  ) -> Result<Image, Error> {
+    dispatch!(self, apply_image, params)
+  }
+
+  async fn apply_session_template(
+    &self,
+    params: ApplySessionTemplateParams<'_>,
+  ) -> Result<(BosSessionTemplate, Option<BosSession>), Error> {
+    dispatch!(self, apply_session_template, params)
+  }
+}
