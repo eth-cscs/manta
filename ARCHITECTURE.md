@@ -62,7 +62,7 @@ flowchart LR
   Service -.-> K8s[(Kubernetes API)]
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering) are used by the CLI; SAT-file processing (the `serde_json::Value`-walking `image_only`/`session_template_only` filter, the topological sort by `base.image_ref`, and the dispatch loop that POSTs one element at a time to per-section endpoints) lives in `manta-cli`'s `apply_sat_file::plan` / `apply_sat_file::dispatch` modules. The server is a pass-through for each SAT entry. The canonical SAT-file schema lives in csm-rs — the CLI carries each SAT element as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering) are used by the CLI; SAT-file processing (the `serde_json::Value`-walking `image_only`/`session_template_only` filter, the topological sort by `base.image_ref`, and the dispatch loop that POSTs one element at a time to per-section endpoints) lives in `manta-cli`'s `apply_sat_file::plan` / `apply_sat_file::dispatch` modules. The server is a pass-through for each SAT entry. Each `images[]` entry is further driven as a three-step sub-pipeline (`apply_sat_file::image_pipeline`): create CFS session → monitor (status poll or SSE log stream depending on `--watch-logs`) → stamp `manta.image_session.*` onto the produced IMS image. The canonical SAT-file schema lives in csm-rs — the CLI carries each SAT element as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
 
 ---
 
@@ -297,7 +297,7 @@ A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/s
 There's no per-route override on the server. Long-running work runs CLI-side:
 
 - **Power transitions:** `POST /power` returns immediately with the PCS transition id; the CLI polls `GET /power/transitions/{id}` every 3s (matching csm-rs's historical poll interval) until the transition reports `completed`. See `crates/manta-cli/src/dispatch/power/mod.rs::poll_until_done`.
-- **SAT-file apply:** the CLI dispatches the execution plan one element at a time to per-section endpoints (see [SAT files](API.md#sat-files)). Each per-element call fits well under the default timeout.
+- **SAT-file apply:** the CLI dispatches the execution plan one element at a time to per-section endpoints (see [SAT files](API.md#sat-files)). Each per-element call fits well under the default timeout. Image builds are further split into discrete create-session / monitor / stamp HTTP calls, so the long-running CFS session work never blocks a single request — the monitor loop runs in the CLI.
 
 This also means the `MantaClient` constructor stays simple — no per-request timeout override is needed for any current command path. `MantaClient::from_app_ctx(&AppContext<'_>)` is available for future opt-in if any command needs to honour `cli.toml`'s optional `request_timeout_secs`.
 

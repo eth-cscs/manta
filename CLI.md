@@ -468,7 +468,7 @@ Process a SAT (System Admin Toolkit) file. This is the primary workflow for depl
 | `-v/--ansible-verbosity` | 1–4 | no | `2` | Ansible verbosity level |
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters (`--extra-vars`, `--forks`, etc.) |
 | `-o/--overwrite-configuration` | flag | no | — | Overwrite existing CFS configurations |
-| `-w/--watch-logs` | flag | no | — | Stream Ansible logs to stdout |
+| `-w/--watch-logs` | flag | no | — | Stream Ansible logs to stdout while each image builds (default: poll image-build status every 10s instead) |
 | `-T/--timestamps` | flag | no | — | Include timestamps in log output |
 | `-i/--image-only` | flag | no | — | Process only `configurations` + `images` sections |
 | `-s/--sessiontemplate-only` | flag | no | — | Process only `configurations` + `session_templates` sections |
