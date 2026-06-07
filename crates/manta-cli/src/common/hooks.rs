@@ -28,6 +28,23 @@ pub fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
   }
 }
 
+/// Run a hook script if one was provided, prefixing user-visible
+/// output and logs with `label` ("pre" / "post" by convention).
+///
+/// `None` is a no-op success; the caller doesn't have to gate on the
+/// `Option`. Errors propagate `Err` from [`run_hook`] unchanged.
+pub fn run_hook_if_present(
+  hook_opt: Option<&str>,
+  label: &str,
+) -> Result<(), Error> {
+  if let Some(hook) = hook_opt {
+    println!("Running the {label}-hook '{hook}'");
+    let code = run_hook(hook_opt)?;
+    tracing::debug!("{label}-hook script completed ok. RT={code}");
+  }
+  Ok(())
+}
+
 /// Checks that the hook exists and is executable
 /// returns Ok if all good, an error message otherwise
 pub fn check_hook_perms(hook_opt: Option<&str>) -> Result<(), Error> {

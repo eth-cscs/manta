@@ -71,19 +71,6 @@ fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
   Ok(())
 }
 
-/// Run a hook script if one was provided.
-fn run_hook_if_present(
-  hook_opt: Option<&str>,
-  label: &str,
-) -> Result<(), Error> {
-  if let Some(hook) = hook_opt {
-    println!("Running the {label}-hook '{hook}'");
-    let code = crate::common::hooks::run_hook(hook_opt)?;
-    tracing::debug!("{}-hook script completed ok. RT={}", label, code);
-  }
-  Ok(())
-}
-
 /// Process and apply a SAT file to the system.
 pub async fn exec(
   ctx: &AppContext<'_>,
@@ -160,7 +147,7 @@ pub async fn exec(
   );
 
   // 7. Pre-hook -> server call -> post-hook.
-  run_hook_if_present(opts.prehook_opt, "pre")?;
+  crate::common::hooks::run_hook_if_present(opts.prehook_opt, "pre")?;
 
   // 7a. Dispatch the plan element-by-element. The CLI accumulates
   //     `ref_name → image_id` across calls and builds the same
@@ -168,7 +155,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   let result = dispatch::dispatch_plan(&client, token, plan, opts).await?;
 
-  run_hook_if_present(opts.posthook_opt, "post")?;
+  crate::common::hooks::run_hook_if_present(opts.posthook_opt, "post")?;
 
   let message = if opts.dry_run {
     "Dry-run enabled. No changes persisted into the system."

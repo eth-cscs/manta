@@ -61,34 +61,14 @@ pub async fn exec(
     }
   }
 
-  if let Some(prehook_path) = prehook {
-    println!("Running the pre-hook {prehook_path}");
-    match crate::common::hooks::run_hook(Some(prehook_path)) {
-      Ok(_code) => {
-        tracing::debug!("Pre-hook script completed ok. RT={}", _code)
-      }
-      Err(_error) => {
-        bail!("Pre-hook script failed. Error: {_error}");
-      }
-    }
-  }
+  crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
   MantaClient::from_app_ctx(ctx)?
     .backup_vcluster(token, bos, destination)
     .await?;
   tracing::debug!("Migrate backup completed successfully.");
 
-  if let Some(posthook_path) = posthook {
-    println!("Running the post-hook {posthook_path}");
-    match crate::common::hooks::run_hook(posthook) {
-      Ok(_code) => {
-        tracing::debug!("Post-hook script completed ok. RT={}", _code);
-      }
-      Err(_error) => {
-        bail!("Post-hook script failed. Error: {_error}");
-      }
-    }
-  }
+  crate::common::hooks::run_hook_if_present(posthook, "post")?;
 
   action_result::print("Backup completed", output_opt)?;
 

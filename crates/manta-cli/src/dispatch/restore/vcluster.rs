@@ -73,17 +73,7 @@ pub async fn exec(
   }
 
   println!();
-  if let Some(prehook_path) = prehook {
-    println!("Running the pre-hook {prehook_path}");
-    match crate::common::hooks::run_hook(prehook) {
-      Ok(_code) => {
-        tracing::debug!("Pre-hook script completed ok. RT={}", _code)
-      }
-      Err(_error) => {
-        bail!("Pre-hook script failed. Error: {_error}");
-      }
-    }
-  }
+  crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
   MantaClient::from_app_ctx(ctx)?
     .restore_vcluster(
@@ -99,17 +89,7 @@ pub async fn exec(
     )
     .await?;
 
-  if let Some(posthook_path) = posthook {
-    println!("Running the post-hook {posthook_path}");
-    match crate::common::hooks::run_hook(posthook) {
-      Ok(_code) => {
-        tracing::debug!("Post-hook script completed ok. RT={}", _code)
-      }
-      Err(_error) => {
-        bail!("Post-hook script failed. Error: {_error}");
-      }
-    }
-  }
+  crate::common::hooks::run_hook_if_present(posthook, "post")?;
 
   action_result::print(
     "Done, the image bundle, HSM group, CFS configuration and BOS sessiontemplate have been restored.",
