@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.50] - 2026-06-07
+
+### Build
+
+- Bump sibling deps to mbd 1.0.0-beta.9, csm-rs 1.0.0-beta.11; drop [patch.crates-io]
+
+### Features
+
+- Show configuration, base, and groups columns in image table
+
 ## [2.0.0-beta.49] - 2026-06-06
 
 ### Bug Fixes
