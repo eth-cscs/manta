@@ -248,7 +248,7 @@ async fn run_console_bridge<S: ConsoleSocket>(
           Some(Err(_)) | None => break,
         }
       }
-      _ = tokio::time::sleep_until(deadline) => {
+      () = tokio::time::sleep_until(deadline) => {
         tracing::warn!("Console session idle for {:?}, closing", inactivity_timeout);
         break;
       }
@@ -359,7 +359,7 @@ mod tests {
   ) -> bool {
     tokio::select! {
       _ = handle => true,
-      _ = tokio::time::sleep(cap) => false,
+      () = tokio::time::sleep(cap) => false,
     }
   }
 

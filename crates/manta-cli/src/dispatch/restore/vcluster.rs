@@ -53,8 +53,8 @@ pub async fn exec(
 
   if let Some(prehook_path) = prehook {
     match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
-      Ok(_) => {
-        tracing::debug!("Pre-hook script exists and is executable.")
+      Ok(()) => {
+        tracing::debug!("Pre-hook script exists and is executable.");
       }
       Err(e) => {
         bail!("{e}. File: {prehook_path}");
@@ -63,8 +63,8 @@ pub async fn exec(
   }
   if let Some(posthook_path) = posthook {
     match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
-      Ok(_) => {
-        tracing::debug!("Post-hook script exists and is executable.")
+      Ok(()) => {
+        tracing::debug!("Post-hook script exists and is executable.");
       }
       Err(e) => {
         bail!("{e}. File: {posthook_path}");

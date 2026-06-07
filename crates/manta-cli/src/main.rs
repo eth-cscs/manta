@@ -99,8 +99,5 @@ async fn run_cli(
   let cli_result =
     crate::handlers::process::process_cli(&cli_matches, &app_context).await;
 
-  match cli_result {
-    Ok(_) => Ok(()),
-    Err(e) => Err(e.into()),
-  }
+  cli_result.map_err(Into::into)
 }

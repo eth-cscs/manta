@@ -116,7 +116,7 @@ pub async fn delete_images(
   let mut deleted = Vec::new();
   for image_id in image_id_vec {
     match infra.delete_image(token, image_id).await {
-      Ok(_) => {
+      Ok(()) => {
         tracing::info!("Image {} deleted successfully", image_id);
         deleted.push((*image_id).to_string());
       }
