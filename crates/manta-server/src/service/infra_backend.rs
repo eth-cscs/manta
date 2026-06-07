@@ -672,7 +672,6 @@ impl InfraContext<'_> {
     ansible_passthrough: Option<&str>,
     dry_run: bool,
   ) -> Result<CfsSessionGetResponse, Error> {
-    let hsm_group_available_vec = self.get_group_name_available(token).await?;
     self
       .backend
       .apply_sat_image_create_session(BackendApplyImageCreateSessionParams {
@@ -682,7 +681,6 @@ impl InfraContext<'_> {
         k8s_api_url,
         image,
         ref_lookup,
-        hsm_group_available_vec: &hsm_group_available_vec,
         ansible_verbosity,
         ansible_passthrough,
         dry_run,

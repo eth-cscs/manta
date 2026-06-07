@@ -3,7 +3,7 @@
 //! `mod.rs` keeps:
 //! - request extractors (`BearerToken`, `SiteName`, `RequestCtx`, `SiteHeader`)
 //! - the `ErrorResponse` body type + error mappers (`to_handler_error`,
-//!   `display_error`, `serialize_or_500`)
+//!   `serialize_or_500`)
 //! - guard helpers (`require_vault`, `require_k8s_url`,
 //!   `validate_repo_list_lengths`, `parse_iso_datetime`)
 //! - the cross-handler `resolve_xnames_from_request` helper
@@ -267,23 +267,6 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
   )
 }
 
-/// Convert any error (typically `BackendError` or `anyhow::Error`) into
-/// a 500 HTTP response while logging the full `source()` chain.
-///
-/// The response body carries only the top-level `Display` rendering;
-/// nested cause detail stays in the server log so it doesn't leak
-/// internals to clients.
-pub(super) fn display_error<E: std::error::Error + 'static>(
-  e: E,
-) -> (StatusCode, Json<ErrorResponse>) {
-  let body_msg = e.to_string();
-  tracing::error!("Internal error: {}", format_with_causes(&e));
-  (
-    StatusCode::INTERNAL_SERVER_ERROR,
-    Json(ErrorResponse { error: body_msg }),
-  )
-}
-
 pub(super) fn serialize_or_500<T: Serialize>(
   v: &T,
 ) -> Result<serde_json::Value, (StatusCode, Json<ErrorResponse>)> {
@@ -410,7 +393,7 @@ async fn resolve_xnames_from_request(
       infra, token, expr, false,
     )
     .await
-    .map_err(display_error);
+    .map_err(to_handler_error);
   }
   if let Some(group) = hsm_group {
     return crate::service::node_ops::resolve_target_nodes(
@@ -421,7 +404,7 @@ async fn resolve_xnames_from_request(
       None,
     )
     .await
-    .map_err(display_error);
+    .map_err(to_handler_error);
   }
   Err((
     StatusCode::BAD_REQUEST,

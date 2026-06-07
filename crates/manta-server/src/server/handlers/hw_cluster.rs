@@ -5,8 +5,7 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, default_true, display_error,
-  to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, default_true, to_handler_error,
 };
 use crate::service;
 
@@ -75,7 +74,7 @@ pub async fn add_hw_component(
     body.create_hsm_group,
   )
   .await
-  .map_err(display_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -152,7 +151,7 @@ pub async fn delete_hw_component(
     body.delete_hsm_group,
   )
   .await
-  .map_err(display_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
@@ -253,7 +252,7 @@ pub async fn apply_hw_configuration(
     body.delete_empty_parent_hsm_group,
   )
   .await
-  .map_err(display_error)?;
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({
     "dry_run": body.dry_run,
