@@ -5,6 +5,14 @@
 //! accumulation are the CLI's responsibility; the server is a thin
 //! shell that forwards each element to csm-rs's per-element creator.
 //! See `plan::build_plan` for the ordering guarantees.
+//!
+//! For `SatElement::Image` entries the loop delegates to
+//! [`super::image_pipeline::run_image_pipeline`], which itself splits the
+//! image build across three HTTP calls (create CFS session → monitor
+//! → stamp) so the operator can observe progress instead of blocking
+//! on one long server call. `dispatch_plan` only sees the final
+//! `Image` value and records its `id` into `ref_lookup` for any
+//! downstream images / session_templates that reference it.
 
 use std::collections::HashMap;
 
@@ -16,8 +24,9 @@ use super::{
 use crate::http_client::MantaClient;
 
 /// Dispatch every element in the plan in order. For each `Image`, the
-/// response's `id` (or, on dry-run, a synthetic key) is recorded under
-/// `image.ref_name.or(image.name)` so subsequent images and
+/// resulting `Image` value (from `run_image_pipeline`) carries an `id`
+/// (real, or `DRYRUN-…` synthetic in dry-run mode) which is recorded
+/// under `image.ref_name.or(image.name)` so subsequent images and
 /// session_templates can resolve their `image_ref` references.
 ///
 /// Returns a `Value` shaped exactly like the legacy `POST /sat-file`

@@ -11,6 +11,11 @@
 //! - [`dispatch`] — walks the plan element-by-element, POSTing each
 //!   to the corresponding per-element server endpoint and
 //!   accumulating the CLI's `ref_name → image_id` lookup.
+//! - [`image_pipeline`] — per-image orchestrator the dispatcher calls
+//!   for every `SatElement::Image`: drives the three HTTP steps
+//!   (create CFS session → monitor → stamp) so the operator can
+//!   observe the image build instead of blocking on one long server
+//!   call.
 
 pub mod dispatch;
 pub mod exec;

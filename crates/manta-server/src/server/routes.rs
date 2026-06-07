@@ -128,7 +128,11 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // CFS session logs (SSE)
     .route("/sessions/{name}/logs", get(handlers::get_session_logs))
     // SAT file apply — per-element endpoints. The CLI's `build_plan`
-    // walks the SAT file and dispatches one POST per artifact.
+    // walks the SAT file and dispatches one POST per artifact;
+    // `images[]` further splits into the three-step
+    // cfs-session/monitor/stamp pipeline that the CLI orchestrates
+    // (the monolithic `/sat-file/images` endpoint is kept for callers
+    // that prefer one round-trip per image).
     .route(
       "/sat-file/configurations",
       post(handlers::post_sat_configuration),

@@ -1,7 +1,20 @@
 //! SAT file apply endpoints.
 //!
-//! The three `apply_sat_*` methods POST one SAT element at a time and
-//! drive the CLI's plan-based dispatcher.
+//! One method per SAT element kind plus the image-build sub-flow:
+//!
+//! - [`MantaClient::apply_sat_configuration`] →
+//!   `POST /sat-file/configurations`
+//! - [`MantaClient::create_image_cfs_session`] →
+//!   `POST /sat-file/images/cfs-session` (start the CFS session)
+//! - [`MantaClient::stamp_image_from_session`] →
+//!   `POST /sat-file/images/stamp` (after the CLI has driven the
+//!   session to terminal-complete via the existing session endpoints)
+//! - [`MantaClient::apply_sat_session_template`] →
+//!   `POST /sat-file/session-templates`
+//!
+//! The monolithic `POST /sat-file/images` is not represented here:
+//! the CLI no longer uses it, the new image-build pipeline replaces
+//! it. The server still exposes it for external callers.
 
 use std::collections::HashMap;
 

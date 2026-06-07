@@ -1,28 +1,47 @@
 //! SAT-file HTTP handlers.
 //!
-//! Three per-element endpoints. The CLI's [`apply_sat_file`] plan
-//! builder produces a typed sequence of elements; its dispatcher walks
-//! the plan and POSTs each element to the section-specific endpoint
-//! here:
+//! Per-element endpoints. The CLI's [`apply_sat_file`] plan builder
+//! produces a typed sequence of elements; its dispatcher walks the
+//! plan and POSTs each element to the section-specific endpoint here.
+//!
+//! Configuration + session-template entries take one call each:
 //!
 //! - `POST /api/v1/sat-file/configurations` →
-//!   [`post_sat_configuration`] — one `configurations[]` entry per
-//!   call. Body: [`PostSatConfigurationRequest`]; response: a
-//!   `CfsConfigurationResponse` as JSON.
-//! - `POST /api/v1/sat-file/images` → [`post_sat_image`] — one
-//!   `images[]` entry per call, plus the CLI's accumulated
-//!   `ref_lookup`. Body: [`PostSatImageRequest`]; response: an
-//!   `Image` as JSON.
+//!   [`post_sat_configuration`] — Body: [`PostSatConfigurationRequest`];
+//!   response: a `CfsConfigurationResponse` as JSON.
 //! - `POST /api/v1/sat-file/session-templates` →
-//!   [`post_sat_session_template`] — one `session_templates[]` entry
-//!   per call. Body: [`PostSatSessionTemplateRequest`]; response:
+//!   [`post_sat_session_template`] — Body:
+//!   [`PostSatSessionTemplateRequest`]; response:
 //!   [`PostSatSessionTemplateResponse`].
 //!
-//! The CLI deserialises each response into `serde_json::Value` and
-//! pretty-prints the assembled four-list summary, so any rename of a
-//! field on either side of the wire is user-visible. The
-//! wire-format-lock tests at the bottom of this module catch that
-//! drift; mirror them when you add a new field.
+//! Image entries are split across three calls so the CLI can monitor
+//! the build instead of blocking on one long server round-trip:
+//!
+//! - `POST /api/v1/sat-file/images/cfs-session` →
+//!   [`post_sat_image_cfs_session`] — translate one `images[]` entry
+//!   into a CFS session payload and create it. Body:
+//!   [`CreateImageCfsSessionRequest`]; response: the freshly-created
+//!   [`CfsSessionGetResponse`] (still pending/running).
+//! - Monitor via the existing `GET /sessions?name=…` or
+//!   `GET /sessions/{name}/logs` (SSE) endpoints — the CLI picks
+//!   which based on `--watch-logs`.
+//! - `POST /api/v1/sat-file/images/stamp` → [`post_sat_image_stamp`] —
+//!   once the session is terminal-complete, the server fetches it,
+//!   derives `manta.image_session.{base,groups,configuration}`, and
+//!   PATCHes them onto the produced IMS image. Body:
+//!   [`StampImageFromSessionRequest`]; response: the patched [`Image`].
+//!   Fails fast with 400 when the session produced no `result_id`.
+//!
+//! The monolithic `POST /api/v1/sat-file/images` → [`post_sat_image`]
+//! is retained for external callers that prefer one round-trip per
+//! image — it composes the same csm-rs helpers in sequence inside the
+//! backend, so there's a single source of truth for the per-image
+//! flow.
+//!
+//! The CLI deserialises each response and pretty-prints the assembled
+//! four-list summary, so any rename of a field on either side of the
+//! wire is user-visible. The wire-format-lock tests at the bottom of
+//! this module catch that drift; mirror them when you add a new field.
 //!
 //! Each handler calls the matching `InfraContext` method on
 //! `&infra` directly — the per-trait service shim was removed once the

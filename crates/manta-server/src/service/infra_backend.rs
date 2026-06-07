@@ -712,12 +712,16 @@ impl InfraContext<'_> {
       .await
   }
 
-  /// Apply a single SAT `images[]` entry.
+  /// Apply a single SAT `images[]` entry in one synchronous call.
   ///
   /// The backend handles the full image-build flow including stamping
   /// any provenance metadata onto the produced image (csm-rs writes
   /// `manta.image_session.*` keys; see csm-rs's
-  /// `i_create_image_from_sat_file_serde_yaml`).
+  /// `i_create_image_from_sat_file_serde_yaml`). This is the legacy
+  /// one-round-trip path. The CLI now uses
+  /// [`Self::create_image_cfs_session`] +
+  /// [`Self::stamp_image_from_cfs_session`] to drive the same flow
+  /// itself; both paths compose the same csm-rs helpers internally.
   #[allow(clippy::too_many_arguments)]
   pub async fn apply_image(
     &self,
