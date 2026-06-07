@@ -93,6 +93,13 @@ fn resolve_shell(shell_opt: Option<String>) -> Result<Shell> {
 /// Standard XDG location for the chosen shell's user completions.
 /// Pure — env values are passed in so tests don't have to mutate
 /// global state.
+//
+// `home` is cloned three times below to thread it into the per-shell
+// branches. Taking it by reference would cascade into `data_home` /
+// `config_home`'s signatures too, which moves `xdg`. Net wins are
+// three small `OsString` clones avoided once per CLI invocation —
+// not worth the cascading API churn.
+#[allow(clippy::needless_pass_by_value)]
 fn default_install_dir(
   shell: Shell,
   xdg_data_home: Option<OsString>,

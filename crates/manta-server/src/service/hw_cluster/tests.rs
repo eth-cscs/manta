@@ -538,7 +538,7 @@ pub async fn test_hsm_hw_management_pin_1() {
       HwClusterMode::Pin,
       hsm_zinal_hw_counters,
       hsm_nodes_free_hw_conters,
-      user_request_hw_summary.clone(),
+      &user_request_hw_summary,
     )
     .unwrap();
 
@@ -712,7 +712,7 @@ pub async fn test_hsm_hw_management_pin_2() {
       HwClusterMode::Pin,
       hsm_zinal_hw_counters.clone(),
       hsm_nodes_free_hw_conters,
-      user_request_hw_summary.clone(),
+      &user_request_hw_summary,
     )
     .unwrap();
 
@@ -970,7 +970,7 @@ pub async fn test_hsm_hw_management_unpin_1() {
       HwClusterMode::Unpin,
       hsm_zinal_hw_counters,
       hsm_nodes_free_hw_conters,
-      user_request_hw_summary.clone(),
+      &user_request_hw_summary,
     )
     .unwrap();
 
@@ -1144,7 +1144,7 @@ pub async fn test_hsm_hw_management_unpin_2() {
       HwClusterMode::Unpin,
       hsm_zinal_hw_counters,
       hsm_nodes_free_hw_conters,
-      user_request_hw_summary.clone(),
+      &user_request_hw_summary,
     )
     .unwrap();
 

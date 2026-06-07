@@ -82,7 +82,7 @@ pub async fn apply_hw_configuration(
     mode,
     target_hsm_node_hw_component_count_vec,
     parent_hsm_node_hw_component_count_vec,
-    user_defined_hw_component_count_hashmap,
+    &user_defined_hw_component_count_hashmap,
   )?;
 
   let target_hsm_node_vec: Vec<String> = target_hsm_node_hw_component_count_vec

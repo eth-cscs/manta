@@ -77,7 +77,7 @@ fn build_details_table(
 
 fn print_to_terminal_cluster_hw_pattern(
   hsm_group_name: &str,
-  pattern: HashMap<String, usize>,
+  pattern: &HashMap<String, usize>,
 ) {
   println!(
     "{}:{}",
@@ -184,7 +184,7 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
       let pattern = manta_shared::types::cluster_status::get_cluster_hw_pattern(
         node_summaries,
       );
-      print_to_terminal_cluster_hw_pattern(&hsm_group_name, pattern);
+      print_to_terminal_cluster_hw_pattern(&hsm_group_name, &pattern);
     }
     other => bail!("unsupported output format '{other}'"),
   }

@@ -477,7 +477,7 @@ pub fn resolve_hw_description_to_xnames(
     String,
     HashMap<String, usize>,
   )>,
-  user_defined_target_hsm_hw_component_count_hashmap: HashMap<String, usize>,
+  user_defined_target_hsm_hw_component_count_hashmap: &HashMap<String, usize>,
 ) -> Result<
   (
     Vec<(String, HashMap<String, usize>)>,

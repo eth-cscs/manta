@@ -8,11 +8,11 @@ use manta_shared::types::dto::BootParameters;
 /// Print kernel boot parameters grouped by common
 /// parameter sets.
 pub fn print_table(
-  boot_parameters_vec: Vec<BootParameters>,
+  boot_parameters_vec: &[BootParameters],
   kernel_params_key_to_filter_opt: Option<&str>,
 ) {
   let kernel_param_node_map = group_boot_params_by_kernel_params(
-    &boot_parameters_vec,
+    boot_parameters_vec,
     kernel_params_key_to_filter_opt,
   );
 

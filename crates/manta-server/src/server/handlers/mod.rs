@@ -237,6 +237,15 @@ fn format_with_causes(e: &(dyn std::error::Error + 'static)) -> String {
 ///
 /// `pub` (rather than `pub(crate)`) so the integration tests in
 /// `crates/manta-server/tests/` can exercise the mapping directly.
+//
+// `e` is consumed via `e.to_string()` at the end; technically it could
+// take `&BackendError`, but the canonical call shape is
+// `.map_err(to_handler_error)?` which threads the value through.
+// Switching to a reference would force every site to write
+// `.map_err(|e| to_handler_error(&e))?` — losing the point-free form
+// across hundreds of handler call sites is a worse trade than the
+// ineffectual `Drop` here.
+#[allow(clippy::needless_pass_by_value)]
 pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
   let status = match &e {
     BackendError::NotFound(_)

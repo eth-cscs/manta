@@ -11,9 +11,9 @@ use tracing_subscriber::EnvFilter;
 /// the local time. The long-running server enables this so operators can
 /// correlate events across requests; the interactive CLI disables it to
 /// keep terminal output uncluttered.
-pub fn configure(log_level: String, with_timestamps: bool) {
+pub fn configure(log_level: &str, with_timestamps: bool) {
   let filter =
-    EnvFilter::try_new(&log_level).unwrap_or_else(|_| EnvFilter::new("error"));
+    EnvFilter::try_new(log_level).unwrap_or_else(|_| EnvFilter::new("error"));
 
   let builder = tracing_subscriber::fmt()
     .with_env_filter(filter)

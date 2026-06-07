@@ -170,7 +170,7 @@ async fn run_server(
   configuration: ServerConfiguration,
   cli: clap::ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
-  log_ops::configure(configuration.log.clone(), true);
+  log_ops::configure(&configuration.log, true);
 
   // Resolution precedence for each setting: CLI flag > config file > fallback.
   // cert/key are resolved first so the port fallback can branch on whether
