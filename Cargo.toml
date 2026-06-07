@@ -35,12 +35,20 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # registry", so the path form broke `cargo metadata` in any
 # environment without the sibling layout.
 #
-# For inner-loop work that spans these repos, add an uncommitted
-# `[patch.crates-io]` block at the bottom of this file redirecting
-# each crate to its sibling checkout (`../manta-backend-dispatcher`,
-# `../csm-rs`, `../ochami-rs`). Don't commit it — CI runners don't
-# have the siblings checked out, and a committed patch block breaks
-# every cargo command at dep-resolution time.
+# For inner-loop work that spans these repos, use the uncommitted
+# `.cargo/config.toml` `paths = ["../manta-backend-dispatcher", …]`
+# override (the file is in `.gitignore`). It activates whenever the
+# sibling checkouts exist and is silently skipped otherwise, so the
+# same manifest works for both CI and sibling-aware contributors.
+# Do NOT add a committed `[patch.crates-io]` block here — that breaks
+# `cargo metadata` everywhere the siblings aren't checked out.
+#
+# This branch carries code that depends on unreleased SatTrait
+# additions in manta-backend-dispatcher and csm-rs (see
+# `crates/manta-cli/src/dispatch/apply/sat_file/image_pipeline.rs`).
+# Until those additions ship in published versions, building manta
+# requires the sibling checkouts + the `.cargo/config.toml` override
+# above.
 manta-backend-dispatcher = "1.0.0-beta.9"
 csm-rs                   = { version = "1.0.0-beta.11", features = ["commands-admin"] }
 ochami-rs                = "1.0.0-beta.8"
