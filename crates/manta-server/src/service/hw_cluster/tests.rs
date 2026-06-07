@@ -540,7 +540,6 @@ pub async fn test_hsm_hw_management_pin_1() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await
     .unwrap();
 
   let target_hsm_hw_summary: HashMap<String, usize> =
@@ -715,7 +714,6 @@ pub async fn test_hsm_hw_management_pin_2() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await
     .unwrap();
 
   let target_hsm_hw_summary: HashMap<String, usize> =
@@ -974,7 +972,6 @@ pub async fn test_hsm_hw_management_unpin_1() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await
     .unwrap();
 
   let target_hsm_hw_summary: HashMap<String, usize> =
@@ -1149,7 +1146,6 @@ pub async fn test_hsm_hw_management_unpin_2() {
       hsm_nodes_free_hw_conters,
       user_request_hw_summary.clone(),
     )
-    .await
     .unwrap();
 
   let target_hsm_hw_summary: HashMap<String, usize> =

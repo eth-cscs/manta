@@ -29,7 +29,7 @@ use crate::server::common::app_context::InfraContext;
 // the largest realistic site); 2^52 ≈ 4.5e15 covers any plausible fleet
 // size by many orders of magnitude.
 #[allow(clippy::cast_precision_loss)]
-pub async fn calculate_hw_component_scarcity_scores(
+pub fn calculate_hw_component_scarcity_scores(
   hsm_node_hw_component_count: &[(String, HashMap<String, usize>)],
 ) -> HashMap<String, f64> {
   let total_num_hw_components: usize = hsm_node_hw_component_count
@@ -460,7 +460,14 @@ pub fn get_best_candidate_in_target_and_parent_hsm(
 
 /// Resolves a hardware description pattern into concrete xnames.
 /// Returns (new_target, remaining_parent).
-pub async fn resolve_hw_description_to_xnames(
+//
+// `type_complexity`: the tuple-of-vecs-of-tuples shape is exactly
+// what this function negotiates and renaming the parts behind a
+// `type` alias would just push the same shape one level down. Keeping
+// the structural type at the signature is more honest about the data
+// flow.
+#[allow(clippy::type_complexity)]
+pub fn resolve_hw_description_to_xnames(
   mode: HwClusterMode,
   mut target_hsm_node_hw_component_count_vec: Vec<(
     String,
@@ -498,8 +505,7 @@ pub async fn resolve_hw_description_to_xnames(
   let hw_component_scarcity_scores_hashmap: HashMap<String, f64> =
     calculate_hw_component_scarcity_scores(
       &combined_target_parent_hsm_node_hw_component_count_vec,
-    )
-    .await;
+    );
 
   let mut final_combined_target_parent_hsm_hw_component_summary =
     user_defined_target_hsm_hw_component_count_hashmap.clone();

@@ -47,7 +47,7 @@ fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
 
 /// Resolve a NID hostlist expression to xnames by
 /// cross-referencing available node metadata.
-pub async fn get_xname_from_nid_hostlist(
+pub fn get_xname_from_nid_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
 ) -> Result<Vec<String>, Error> {
@@ -77,7 +77,7 @@ pub async fn get_xname_from_nid_hostlist(
 
 /// Filter available node metadata to only those xnames
 /// present in `node_vec`.
-pub async fn get_xname_from_xname_hostlist(
+pub fn get_xname_from_xname_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
 ) -> Result<Vec<String>, Error> {
@@ -124,8 +124,7 @@ pub async fn resolve_hosts_expression(
     hosts_expression,
     is_include_siblings,
     node_metadata_available_vec,
-  )
-  .await?;
+  )?;
 
   xname_vec.sort();
   xname_vec.dedup();
@@ -138,7 +137,7 @@ pub async fn resolve_hosts_expression(
 /// A host expression is a comma-separated list of NIDs or xnames, a regex,
 /// or a hostlist. When `is_include_siblings` is true, the resulting xnames
 /// are expanded to include all siblings (other nodes on the same BMC).
-pub async fn from_hosts_expression_to_xname_vec(
+pub fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,
   node_metadata_available_vec: Vec<Component>,
@@ -154,15 +153,13 @@ pub async fn from_hosts_expression_to_xname_vec(
         tracing::debug!("hostlist Nids: {}", user_input);
         tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
 
-        get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)
-          .await?
+        get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)?
       } else if validate_xname_format_vec(&node_vec) {
         tracing::debug!("XNAME format is valid");
         tracing::debug!("hostlist XNAMEs: {}", user_input);
         tracing::debug!("hostlist XNAMEs expanded: {:?}", node_vec);
 
-        get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)
-          .await?
+        get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)?
       } else {
         return Err(Error::BadRequest(
           "Could not parse user input as a list of nodes from a hostlist expression."

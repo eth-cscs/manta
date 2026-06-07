@@ -83,8 +83,7 @@ pub async fn apply_hw_configuration(
     target_hsm_node_hw_component_count_vec,
     parent_hsm_node_hw_component_count_vec,
     user_defined_hw_component_count_hashmap,
-  )
-  .await?;
+  )?;
 
   let target_hsm_node_vec: Vec<String> = target_hsm_node_hw_component_count_vec
     .into_iter()
@@ -242,8 +241,7 @@ pub async fn add_hw_component(
 
   let scarcity_scores = scoring::calculate_hw_component_scarcity_scores(
     &parent_hsm_node_hw_component_count_vec,
-  )
-  .await;
+  );
 
   let hw_counters_to_move = pin_unpin::calculate_target_hsm_unpin(
     &final_parent_hsm_hw_component_summary,
@@ -485,7 +483,7 @@ pub async fn delete_hw_component(
   ]
   .concat();
   let scarcity_scores =
-    scoring::calculate_hw_component_scarcity_scores(&combined).await;
+    scoring::calculate_hw_component_scarcity_scores(&combined);
 
   let final_target_summary = compute_delete_final_summary(
     &target_hsm_hw_component_summary,
