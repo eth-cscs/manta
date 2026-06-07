@@ -21,8 +21,7 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .migrate_nodes(
       token,
       p.target_groups,

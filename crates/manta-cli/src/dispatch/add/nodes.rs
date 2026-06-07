@@ -16,7 +16,6 @@ pub async fn exec(
   dryrun: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
 
   if !common::confirm::confirm(
     &format!(
@@ -37,7 +36,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let (_added, updated_members) = MantaClient::new(server_url, ctx.site_name)?
+  let (_added, updated_members) = MantaClient::from_app_ctx(ctx)?
     .add_nodes_to_group(token, target_hsm_name, hosts_expression)
     .await?;
 

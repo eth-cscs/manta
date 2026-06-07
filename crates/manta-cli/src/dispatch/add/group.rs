@@ -23,7 +23,6 @@ pub async fn exec(
   auth_token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
   let grp = Group {
     label: p.label.to_string(),
     description: p.description.map(String::from),
@@ -52,7 +51,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let client = MantaClient::new(server_url, ctx.site_name)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client.create_group(auth_token, grp).await?;
 
   if let Some(expr) = p.hosts_expression {

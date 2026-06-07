@@ -20,10 +20,9 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
-  let server_url = ctx.manta_server_url;
   let since_str = p.since.map(|d| d.to_string());
   let until_str = p.until.map(|d| d.to_string());
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .delete_configurations(
       token,
       p.configuration_name_pattern,

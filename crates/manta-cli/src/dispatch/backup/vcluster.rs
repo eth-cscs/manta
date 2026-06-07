@@ -73,8 +73,7 @@ pub async fn exec(
     }
   }
 
-  let server_url = ctx.manta_server_url;
-  MantaClient::new(server_url, ctx.site_name)?
+  MantaClient::from_app_ctx(ctx)?
     .backup_vcluster(token, bos, destination)
     .await?;
   tracing::debug!("Migrate backup completed successfully.");

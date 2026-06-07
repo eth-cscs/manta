@@ -38,7 +38,6 @@ pub async fn exec(
   };
   let pattern = cli_apply_hw_group.req_str("pattern")?;
 
-  let server_url = ctx.manta_server_url;
   let target = target_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No target HSM group specified")?;
@@ -49,7 +48,7 @@ pub async fn exec(
     HwClusterMode::Pin => "pin",
     HwClusterMode::Unpin => "unpin",
   };
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .apply_hw_configuration(
       token,
       target,

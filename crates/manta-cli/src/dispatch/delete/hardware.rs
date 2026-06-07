@@ -21,7 +21,6 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
   let target = p
     .target_group
     .or(ctx.settings_hsm_group_name_opt)
@@ -30,7 +29,7 @@ pub async fn exec(
     .parent_group
     .or(ctx.settings_hsm_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .delete_hw_component(
       token,
       target,

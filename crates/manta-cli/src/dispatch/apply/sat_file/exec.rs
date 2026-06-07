@@ -90,7 +90,6 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
   validate_hook(opts.prehook_opt, "Pre")?;
   validate_hook(opts.posthook_opt, "Post")?;
 
@@ -166,7 +165,7 @@ pub async fn exec(
   // 7a. Dispatch the plan element-by-element. The CLI accumulates
   //     `ref_name → image_id` across calls and builds the same
   //     four-list response the legacy endpoint used to return.
-  let client = MantaClient::new(server_url, ctx.site_name)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = dispatch::dispatch_plan(&client, token, plan, opts).await?;
 
   run_hook_if_present(opts.posthook_opt, "post")?;

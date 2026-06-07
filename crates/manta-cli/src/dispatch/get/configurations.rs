@@ -39,8 +39,7 @@ pub async fn exec(
   let params =
     parse_configuration_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let server_url = ctx.manta_server_url;
-  let cfs_configuration_vec = MantaClient::new(server_url, ctx.site_name)?
+  let cfs_configuration_vec = MantaClient::from_app_ctx(ctx)?
     .get_configurations(token, &params)
     .await?;
 

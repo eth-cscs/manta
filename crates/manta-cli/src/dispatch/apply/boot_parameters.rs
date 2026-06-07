@@ -48,8 +48,7 @@ pub async fn exec(
     initrd: p.initrd.unwrap_or_default().to_string(),
   };
 
-  let server_url = ctx.manta_server_url;
-  MantaClient::new(server_url, ctx.site_name)?
+  MantaClient::from_app_ctx(ctx)?
     .update_boot_parameters(token, &params)
     .await?;
 

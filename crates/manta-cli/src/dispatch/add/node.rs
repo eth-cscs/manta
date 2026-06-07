@@ -23,8 +23,7 @@ pub async fn exec(
   p: ExecParams<'_>,
 ) -> Result<()> {
   let _ = p.hardware_file;
-  let server_url = ctx.manta_server_url;
-  MantaClient::new(server_url, ctx.site_name)?
+  MantaClient::from_app_ctx(ctx)?
     .add_node(token, p.id, p.group, p.enabled, p.arch)
     .await?;
 

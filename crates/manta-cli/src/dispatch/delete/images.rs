@@ -19,8 +19,7 @@ pub async fn exec(
     image_id_vec.join(", "),
   );
 
-  let server_url = ctx.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .delete_images(token, image_id_vec, dry_run)
     .await?;
   if dry_run {

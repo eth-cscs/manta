@@ -5,14 +5,13 @@ use csm_rs::backend_connector::Csm;
 use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
-#[derive(Clone)]
-#[allow(clippy::upper_case_acronyms)]
 /// Routes API calls to either a CSM or OCHAMI backend.
 ///
 /// All backend-specific trait methods are dispatched via
 /// the `dispatch!` macro defined in the
 /// [`crate::backend_dispatcher`] module.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum StaticBackendDispatcher {
   /// HPE Cray System Management (CSM) backend, used by Alps-style
   /// deployments. Wraps a `csm-rs` HTTP client.

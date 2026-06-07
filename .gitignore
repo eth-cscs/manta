@@ -24,3 +24,4 @@ baseline.json
 lcov.info
 cli.toml.example
 server.toml.example
+/.cargo/config.toml

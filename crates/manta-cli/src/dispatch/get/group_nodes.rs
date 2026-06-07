@@ -33,8 +33,7 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
   let summary_status = cli_args.get_flag("summary-status");
 
-  let server_url = ctx.manta_server_url;
-  let node_details_list = MantaClient::new(server_url, ctx.site_name)?
+  let node_details_list = MantaClient::from_app_ctx(ctx)?
     .get_group_nodes(token, &params)
     .await?;
 

@@ -30,8 +30,7 @@ pub async fn exec(
   let params = parse_redfish_endpoints_params(cli_args);
   let output = cli_args.opt_str("output").unwrap_or("table");
 
-  let server_url = ctx.manta_server_url;
-  let endpoints = MantaClient::new(server_url, ctx.site_name)?
+  let endpoints = MantaClient::from_app_ctx(ctx)?
     .get_redfish_endpoints(token, &params)
     .await?;
 

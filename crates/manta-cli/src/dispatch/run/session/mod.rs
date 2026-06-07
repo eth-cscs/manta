@@ -101,7 +101,6 @@ async fn run_session(
   let watch_logs = p.watch_logs;
   let timestamps = p.timestamps;
   let output_opt = p.output;
-  let server_url = ctx.manta_server_url;
 
   // Check local repos (user interaction: confirm dialogs)
   let (repo_name_vec, repo_last_commit_id_vec) =
@@ -113,7 +112,7 @@ async fn run_session(
   let repo_commits: Vec<&str> =
     repo_last_commit_id_vec.iter().map(String::as_str).collect();
   let (cfs_configuration_name, cfs_session_name) =
-    MantaClient::new(server_url, ctx.site_name)?
+    MantaClient::from_app_ctx(ctx)?
       .create_session(
         shasta_token,
         &crate::http_client::CreateSessionRequest {
@@ -134,7 +133,7 @@ async fn run_session(
     tracing::info!("Fetching logs ...");
 
     use tokio::io::AsyncBufReadExt as _;
-    let client = MantaClient::new(server_url, ctx.site_name)?;
+    let client = MantaClient::from_app_ctx(ctx)?;
     let reader = client
       .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
       .await

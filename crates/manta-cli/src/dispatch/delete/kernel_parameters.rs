@@ -20,9 +20,8 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
   let xnames_expression = if p.hsm_group.is_none() { p.nodes } else { None };
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .delete_kernel_parameters(
       token,
       p.kernel_params,

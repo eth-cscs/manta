@@ -30,8 +30,7 @@ pub async fn exec(
     .get_one::<String>("output")
     .map_or("summary", String::as_str);
 
-  let server_url = ctx.manta_server_url;
-  let json = MantaClient::new(server_url, ctx.site_name)?
+  let json = MantaClient::from_app_ctx(ctx)?
     .get_hardware_clusters(token, &params)
     .await?;
 

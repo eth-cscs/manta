@@ -14,8 +14,7 @@ pub async fn exec(
   force: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
-  MantaClient::new(server_url, ctx.site_name)?
+  MantaClient::from_app_ctx(ctx)?
     .delete_group(token, label, force)
     .await?;
 

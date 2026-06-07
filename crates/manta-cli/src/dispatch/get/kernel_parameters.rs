@@ -29,8 +29,7 @@ pub async fn exec(
   let params =
     parse_kernel_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let server_url = ctx.manta_server_url;
-  let boot_parameters = MantaClient::new(server_url, ctx.site_name)?
+  let boot_parameters = MantaClient::from_app_ctx(ctx)?
     .get_kernel_parameters(token, &params)
     .await?;
 

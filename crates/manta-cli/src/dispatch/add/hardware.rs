@@ -19,8 +19,7 @@ pub async fn exec(
   shasta_token: &str,
   p: ExecParams<'_>,
 ) -> anyhow::Result<()> {
-  let server_url = ctx.manta_server_url;
-  let result = MantaClient::new(server_url, ctx.site_name)?
+  let result = MantaClient::from_app_ctx(ctx)?
     .add_hw_component(
       shasta_token,
       p.target_group,

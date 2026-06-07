@@ -22,10 +22,9 @@ pub struct AppContext<'a> {
   pub settings_hsm_group_name_opt: Option<&'a str>,
   /// Optional per-request HTTP timeout (seconds) for outbound
   /// `MantaClient` calls — read from `cli.toml`'s
-  /// `request_timeout_secs`. Honoured by commands that build their
-  /// `MantaClient` via `MantaClient::new_with_timeout`. Other commands
-  /// keep the default no-timeout behaviour.
-  #[allow(dead_code)]
+  /// `request_timeout_secs`. Threaded into every
+  /// [`crate::http_client::MantaClient::from_app_ctx`] call. `None`
+  /// keeps the default no-timeout behaviour.
   pub request_timeout_secs: Option<u64>,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)

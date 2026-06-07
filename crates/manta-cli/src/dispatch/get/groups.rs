@@ -26,8 +26,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_group_params(cli_args, ctx.settings_hsm_group_name_opt);
 
-  let server_url = ctx.manta_server_url;
-  let groups = MantaClient::new(server_url, ctx.site_name)?
+  let groups = MantaClient::from_app_ctx(ctx)?
     .get_groups(token, &params)
     .await?;
 

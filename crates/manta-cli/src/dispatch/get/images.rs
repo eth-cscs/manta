@@ -31,8 +31,7 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_images_params(cli_args);
 
-  let server_url = ctx.manta_server_url;
-  let images = MantaClient::new(server_url, ctx.site_name)?
+  let images = MantaClient::from_app_ctx(ctx)?
     .get_images(token, &params)
     .await?;
 

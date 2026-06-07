@@ -13,8 +13,7 @@ pub async fn exec(
   id: &str,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  let server_url = ctx.manta_server_url;
-  MantaClient::new(server_url, ctx.site_name)?
+  MantaClient::from_app_ctx(ctx)?
     .delete_node(token, id)
     .await?;
   action_result::print(&format!("Node deleted '{id}'"), output_opt)?;
