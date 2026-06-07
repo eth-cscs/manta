@@ -32,6 +32,36 @@ pub async fn validate_hsm_group_access(
   Ok(())
 }
 
+/// Validate that every group name in `group_names` is in the set this
+/// token can access. Empty `group_names` is a no-op success.
+///
+/// Single round-trip to the backend regardless of slice length, in
+/// contrast to calling [`validate_hsm_group_access`] in a loop. Used by
+/// SAT-file per-element handlers that need to gate on the set of
+/// groups named inside a single SAT entry before delegating.
+pub async fn validate_hsm_group_access_many(
+  infra: &InfraContext<'_>,
+  token: &str,
+  group_names: &[String],
+) -> Result<(), Error> {
+  if group_names.is_empty() {
+    return Ok(());
+  }
+  let accessible = infra.get_group_name_available(token).await?;
+  if let Some(unauthorized) =
+    group_names.iter().find(|name| !accessible.contains(name))
+  {
+    let mut accessible = accessible;
+    accessible.sort();
+    return Err(Error::BadRequest(format!(
+      "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
+      unauthorized,
+      accessible.join(", ")
+    )));
+  }
+  Ok(())
+}
+
 /// Fetch HSM groups from the backend.
 pub async fn get_groups(
   infra: &InfraContext<'_>,

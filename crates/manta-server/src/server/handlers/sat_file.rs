@@ -51,8 +51,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, display_error, require_k8s_url,
-  require_vault, to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
+  to_handler_error,
 };
 
 // ---------------------------------------------------------------------------
@@ -106,7 +106,7 @@ pub async fn post_sat_configuration(
       infra.site_name,
     )
     .await
-    .map_err(display_error)?;
+    .map_err(to_handler_error)?;
 
   let cfg = infra
     .apply_configuration(
@@ -119,7 +119,7 @@ pub async fn post_sat_configuration(
       body.overwrite,
     )
     .await
-    .map_err(display_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(cfg))
 }
@@ -180,6 +180,16 @@ pub async fn post_sat_image_cfs_session(
   let vault_base_url = require_vault(infra.vault_base_url)?;
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
 
+  let target_groups =
+    crate::service::sat_groups::extract_image_groups(&body.image);
+  crate::service::group::validate_hsm_group_access_many(
+    &infra,
+    &ctx.token,
+    &target_groups,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
   let session = infra
     .create_image_cfs_session(
       &ctx.token,
@@ -192,7 +202,7 @@ pub async fn post_sat_image_cfs_session(
       body.dry_run,
     )
     .await
-    .map_err(display_error)?;
+    .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json::<CfsSessionGetResponse>(session)))
 }
@@ -256,7 +266,7 @@ pub async fn post_sat_image_stamp(
   let image = infra
     .stamp_image_from_cfs_session(&ctx.token, &body.cfs_session_name)
     .await
-    .map_err(display_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json::<Image>(image))
 }
@@ -325,6 +335,18 @@ pub async fn post_sat_session_template(
   );
   let infra = ctx.infra();
 
+  let target_groups =
+    crate::service::sat_groups::extract_session_template_groups(
+      &body.session_template,
+    );
+  crate::service::group::validate_hsm_group_access_many(
+    &infra,
+    &ctx.token,
+    &target_groups,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
   let (template, session) = infra
     .apply_session_template(
       &ctx.token,
@@ -334,7 +356,7 @@ pub async fn post_sat_session_template(
       body.dry_run,
     )
     .await
-    .map_err(display_error)?;
+    .map_err(to_handler_error)?;
 
   Ok(Json(PostSatSessionTemplateResponse { template, session }))
 }

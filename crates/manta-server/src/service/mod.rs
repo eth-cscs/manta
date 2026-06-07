@@ -18,5 +18,6 @@ pub mod migrate;
 pub mod node;
 pub mod node_ops;
 pub mod power;
+pub mod sat_groups;
 pub mod session;
 pub mod template;

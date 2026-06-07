@@ -29,10 +29,12 @@ use crate::http_client::MantaClient;
 /// under `image.ref_name.or(image.name)` so subsequent images and
 /// session_templates can resolve their `image_ref` references.
 ///
-/// Returns a `Value` shaped exactly like the legacy `POST /sat-file`
-/// response — `{ configurations, images, session_templates,
-/// bos_sessions }` — so the existing `print_with_data` helper produces
-/// the same user-visible output.
+/// Returns a `Value` with the four-list shape
+/// (`{ configurations, images, session_templates, bos_sessions }`) the
+/// existing `print_with_data` helper expects — the same shape the
+/// whole-file `POST /sat-file` endpoint still uses for SAT files with
+/// a `hardware:` section, so output looks identical to users mixing
+/// the two paths.
 pub async fn dispatch_plan(
   client: &MantaClient,
   token: &str,
