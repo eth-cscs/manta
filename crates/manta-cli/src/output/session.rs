@@ -34,6 +34,11 @@ fn cfs_session_struct_to_vec(
       .unwrap_or_else(|| "Unknown".to_string())
   };
 
+  // CFS session durations are bounded by real-world time spans
+  // (hours, occasionally days). The f64→i64 cast can't realistically
+  // truncate or lose sign; Rust's saturating `as` semantics handle
+  // any non-finite edge cases.
+  #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
   let duration_in_minutes =
     if let Some(completion_time_utc) = completion_time_utc_opt {
       let start_complete_diff = completion_time_utc - start_time_utc;

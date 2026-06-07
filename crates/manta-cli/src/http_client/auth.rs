@@ -85,7 +85,7 @@ impl MantaClient {
       .map_err(|e| self.map_auth_send_error(e, "HTTP POST /auth/token"))?;
     tracing::debug!(
       status = %resp.status(),
-      elapsed_ms = started.elapsed().as_millis() as u64,
+      elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
       "/auth/token response"
     );
     let body: AuthTokenResponse = Self::parse_json(resp).await?;
@@ -113,7 +113,7 @@ impl MantaClient {
       .map_err(|e| self.map_auth_send_error(e, "HTTP POST /auth/validate"))?;
     tracing::debug!(
       status = %resp.status(),
-      elapsed_ms = started.elapsed().as_millis() as u64,
+      elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
       "/auth/validate response"
     );
     Self::parse_no_content(resp).await

@@ -37,14 +37,14 @@ pub async fn get_api_token(
     .inspect(|_| {
       tracing::debug!(
         user = %username,
-        elapsed_ms = started.elapsed().as_millis() as u64,
+        elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
         "backend: token issued"
       );
     })
     .inspect_err(|e| {
       tracing::warn!(
         user = %username,
-        elapsed_ms = started.elapsed().as_millis() as u64,
+        elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
         error = %e,
         "backend: token request rejected"
       );
@@ -71,13 +71,13 @@ pub async fn validate_api_token(
     .await
     .inspect(|()| {
       tracing::debug!(
-        elapsed_ms = started.elapsed().as_millis() as u64,
+        elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
         "backend: token accepted"
       );
     })
     .inspect_err(|e| {
       tracing::warn!(
-        elapsed_ms = started.elapsed().as_millis() as u64,
+        elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX),
         error = %e,
         "backend: token validation rejected"
       );

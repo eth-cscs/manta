@@ -165,6 +165,13 @@ async fn ensure_add_target_group_exists(
 }
 
 /// Compute the final parent HSM hw component summary after subtracting user-requested deltas.
+//
+// `deltas` carries signed counters (`isize`) because callers compute
+// the difference between current and target counts; in practice the
+// values are non-negative HW component subtractions. The
+// `*counter as usize` cast is guarded by the explicit
+// `if *counter > current as isize` overflow check above each call site.
+#[allow(clippy::cast_sign_loss)]
 fn compute_final_parent_summary(
   current_summary: &HashMap<String, usize>,
   deltas: &HashMap<String, isize>,
@@ -174,7 +181,7 @@ fn compute_final_parent_summary(
 
   for (hw_component, counter) in deltas {
     let current = *current_summary.get(hw_component).unwrap_or(&0);
-    if *counter > current as isize {
+    if *counter > current.cast_signed() {
       return Err(Error::InsufficientResources(format!(
         "Cannot remove more hw component '{}' \
          ({}) than available in parent group \
@@ -341,6 +348,10 @@ async fn handle_empty_target(
 }
 
 /// Compute the final target HSM hw component summary after subtracting deltas.
+//
+// Same `isize → usize` cast rationale as `compute_final_parent_summary`:
+// callers compute non-negative HW deltas; the cast preserves intent.
+#[allow(clippy::cast_sign_loss)]
 fn compute_delete_final_summary(
   current_summary: &HashMap<String, usize>,
   deltas: &HashMap<String, isize>,

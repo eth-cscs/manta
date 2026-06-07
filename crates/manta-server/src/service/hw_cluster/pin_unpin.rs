@@ -13,6 +13,12 @@ use crate::server::common::app_context::InfraContext;
 
 /// Node selection algorithm for PIN mode — keeps as many existing target nodes
 /// as possible, pulling from parent only when needed.
+//
+// Scores are HW-component scarcity ratios — always non-negative, always
+// well within `usize` range. The `f64 as usize` casts used as hashmap
+// keys for bucketing nodes are intentional truncation; Rust's saturating
+// `as` semantics handle any non-finite edge case.
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn calculate_target_hsm_pin(
   user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>,
   user_defined_hw_component_vec: &[String],
