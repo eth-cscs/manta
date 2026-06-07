@@ -12,10 +12,7 @@ use axum::{
   },
 };
 use futures::{AsyncBufReadExt, StreamExt};
-use manta_backend_dispatcher::{
-  interfaces::cfs::CfsTrait,
-  types::{K8sAuth, K8sDetails},
-};
+use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use serde::Deserialize;
 use utoipa::{IntoParams, ToSchema};
 
@@ -307,14 +304,7 @@ pub async fn get_session_logs(
   };
 
   let logs_stream = infra
-    .backend
-    .get_session_logs_stream(
-      &ctx.token,
-      infra.site_name,
-      &name,
-      q.timestamps,
-      &k8s,
-    )
+    .get_session_logs_stream(&ctx.token, &name, q.timestamps, &k8s)
     .await
     .map_err(to_handler_error)?;
 

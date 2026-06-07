@@ -346,11 +346,9 @@ pub async fn get_hsm_node_hw_component_counter(
     let shasta_token_string = shasta_token.to_string();
     let user_defined_hw_component_vec =
       user_defined_hw_component_vec.to_owned();
-    // Owned clone needed for `tokio::spawn` below: the spawned future
-    // must be `'static`, but `InfraContext<'a>` is borrowed. Cloning
-    // the dispatcher (cheap — it's an `Arc` under the hood) yields an
-    // owned `StaticBackendDispatcher` that can cross the lifetime.
-    let backend_clone = infra.backend.clone();
+    // Owned clone needed for `tokio::spawn` below — see
+    // `InfraContext::backend_clone`'s docstring for the lifetime story.
+    let backend_clone = infra.backend_clone();
     let hsm_member = hsm_member.clone();
 
     let permit = Arc::clone(&sem).acquire_owned().await;

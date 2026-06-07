@@ -45,6 +45,7 @@ use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::hsm::inventory::{
   RedfishEndpoint, RedfishEndpointArray,
 };
+use manta_backend_dispatcher::types::K8sDetails;
 use manta_backend_dispatcher::types::ims::{Image, PatchImage};
 use manta_backend_dispatcher::types::pcs::transitions::types::{
   TransitionResponse, TransitionStartOutput,
@@ -80,6 +81,47 @@ impl InfraContext<'_> {
   /// Stable label for the active backend (`csm`, `ochami`, ...).
   pub fn backend_kind(&self) -> &'static str {
     self.backend.backend_kind()
+  }
+
+  /// Return an owned clone of the backend dispatcher.
+  ///
+  /// `InfraContext<'a>` is borrowed, so it can't cross into a
+  /// `'static`-bound spawned future (`tokio::spawn`, `JoinSet::spawn`).
+  /// Service code that fans out per-node work needs an owned dispatcher
+  /// inside each spawned task — that's what this returns. Cloning is
+  /// cheap because `StaticBackendDispatcher` is `Arc`-shaped under the
+  /// hood.
+  ///
+  /// This is the only sanctioned way for code outside this module to
+  /// touch the dispatcher; everything else should call the named
+  /// `InfraContext::<verb>` methods so per-call site doesn't re-pass
+  /// `shasta_base_url` / `shasta_root_cert`.
+  pub fn backend_clone(&self) -> crate::dispatcher::StaticBackendDispatcher {
+    self.backend.clone()
+  }
+
+  /// Stream a CFS session's pod logs from the backend.
+  ///
+  /// Thin wrapper over the backend's `get_session_logs_stream` so the
+  /// SSE handler doesn't have to reach into `infra.backend` directly.
+  pub async fn get_session_logs_stream(
+    &self,
+    token: &str,
+    cfs_session_name: &str,
+    timestamps: bool,
+    k8s: &K8sDetails,
+  ) -> Result<impl futures::io::AsyncBufRead + Send + Sized + use<>, Error>
+  {
+    self
+      .backend
+      .get_session_logs_stream(
+        token,
+        self.site_name,
+        cfs_session_name,
+        timestamps,
+        k8s,
+      )
+      .await
   }
 
   /// List IMS images, optionally restricted to a single id.
