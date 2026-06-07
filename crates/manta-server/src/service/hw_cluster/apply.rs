@@ -414,7 +414,7 @@ async fn apply_node_moves(
          delete empty groups has NOT been selected, \
          will not remove it.",
         target_group
-      )
+      );
     }
   }
 

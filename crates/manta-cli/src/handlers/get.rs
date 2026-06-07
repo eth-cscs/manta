@@ -25,7 +25,7 @@ pub async fn handle_get(
     Some(("groups", m)) => get_groups::exec(ctx, &token, m).await?,
     Some(("group-nodes", m)) => get_group_nodes::exec(ctx, &token, m).await?,
     Some(("group-hardware", m)) => {
-      get_group_hardware::exec(ctx, &token, m).await?
+      get_group_hardware::exec(ctx, &token, m).await?;
     }
     Some(("hardware", m)) => match m.subcommand() {
       Some(("nodes", m)) => get_hardware_nodes::exec(ctx, &token, m).await?,
@@ -33,20 +33,20 @@ pub async fn handle_get(
       None => bail!("No 'get hardware' subcommand provided"),
     },
     Some(("configurations", m)) => {
-      get_configurations::exec(ctx, &token, m).await?
+      get_configurations::exec(ctx, &token, m).await?;
     }
     Some(("sessions", m)) => get_sessions::exec(ctx, &token, m).await?,
     Some(("templates", m)) => get_templates::exec(ctx, &token, m).await?,
     Some(("nodes", m)) => get_nodes::exec(ctx, &token, m).await?,
     Some(("images", m)) => get_images::exec(ctx, &token, m).await?,
     Some(("boot-parameters", m)) => {
-      get_boot_parameters::exec(ctx, &token, m).await?
+      get_boot_parameters::exec(ctx, &token, m).await?;
     }
     Some(("kernel-parameters", m)) => {
-      get_kernel_parameters::exec(ctx, &token, m).await?
+      get_kernel_parameters::exec(ctx, &token, m).await?;
     }
     Some(("redfish-endpoints", m)) => {
-      crate::dispatch::get::redfish_endpoints::exec(ctx, &token, m).await?
+      crate::dispatch::get::redfish_endpoints::exec(ctx, &token, m).await?;
     }
     Some((other, _)) => bail!("Unknown 'get' subcommand: {other}"),
     None => bail!("No 'get' subcommand provided"),

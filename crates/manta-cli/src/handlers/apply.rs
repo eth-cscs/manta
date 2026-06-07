@@ -19,7 +19,7 @@ pub async fn handle_apply(
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
       Some(("group", m)) => {
-        dispatch::apply::hardware_group::exec(m, ctx, &token).await?
+        dispatch::apply::hardware_group::exec(m, ctx, &token).await?;
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),

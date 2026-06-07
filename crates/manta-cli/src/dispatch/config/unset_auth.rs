@@ -21,7 +21,7 @@ fn unset_auth() -> Result<(), Error> {
   for entry in fs::read_dir(&path_to_manta_authentication_token_file)
     .context("Failed to read authentication token directory")?
   {
-    auth_token_list.push(entry.context("Failed to read entry")?.path())
+    auth_token_list.push(entry.context("Failed to read entry")?.path());
   }
 
   if auth_token_list.is_empty() {

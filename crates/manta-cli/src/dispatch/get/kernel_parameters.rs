@@ -43,7 +43,7 @@ pub async fn exec(
         .context("Failed to serialize boot parameters to JSON")?
     ),
     "table" => {
-      output::kernel_parameters::print_table(&boot_parameters, filter_opt)
+      output::kernel_parameters::print_table(&boot_parameters, filter_opt);
     }
     _ => {
       bail!("'output' argument value missing or not supported");

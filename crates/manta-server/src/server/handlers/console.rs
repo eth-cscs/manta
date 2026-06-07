@@ -376,7 +376,7 @@ mod tests {
         console_out,
         Duration::from_secs(60),
       )
-      .await
+      .await;
     });
 
     // Just before the deadline — bridge should still be alive.
@@ -404,7 +404,7 @@ mod tests {
         console_out,
         Duration::from_secs(60),
       )
-      .await
+      .await;
     });
 
     // At t≈59s send a binary frame — that resets the deadline to t+60.
@@ -445,7 +445,7 @@ mod tests {
         console_out,
         Duration::from_secs(60),
       )
-      .await
+      .await;
     });
 
     tokio::time::sleep(Duration::from_secs(59)).await;
@@ -483,7 +483,7 @@ mod tests {
         console_out,
         Duration::from_secs(3600),
       )
-      .await
+      .await;
     });
 
     in_tx.send(Ok(Message::Close(None))).unwrap();
@@ -518,7 +518,7 @@ mod tests {
         console_out,
         Duration::from_secs(60),
       )
-      .await
+      .await;
     });
 
     // Drain whatever the bridge forwards so its `send` doesn't block.

@@ -600,7 +600,7 @@ pub async fn apply_group_updates(
          the option to delete empty groups has \
          NOT been selected, will not remove it.",
         parent_group
-      )
+      );
     }
   }
 

@@ -554,7 +554,7 @@ pub async fn test_hsm_hw_management_pin_1() {
     }
   }
 
-  assert!(success)
+  assert!(success);
 }
 
 #[tokio::test]
@@ -738,7 +738,7 @@ pub async fn test_hsm_hw_management_pin_2() {
       },
     );
 
-  assert!(success)
+  assert!(success);
 }
 
 #[tokio::test]
@@ -986,7 +986,7 @@ pub async fn test_hsm_hw_management_unpin_1() {
     }
   }
 
-  assert!(success)
+  assert!(success);
 }
 
 #[tokio::test]
@@ -1160,5 +1160,5 @@ pub async fn test_hsm_hw_management_unpin_2() {
     }
   }
 
-  assert!(success)
+  assert!(success);
 }

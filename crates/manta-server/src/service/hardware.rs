@@ -97,7 +97,7 @@ async fn fetch_node_summaries(
     match res {
       Ok(s) => summaries.push(s),
       Err(e) => {
-        tracing::error!("Failed fetching node hardware information: {}", e)
+        tracing::error!("Failed fetching node hardware information: {}", e);
       }
     }
   }

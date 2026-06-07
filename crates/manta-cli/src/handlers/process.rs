@@ -30,7 +30,7 @@ pub async fn process_cli(
     Some(("run", m)) => run::handle_run(m, ctx).await?,
     Some(("delete", m)) => delete::handle_delete(m, ctx).await?,
     Some(("gen-autocomplete", m)) => {
-      gen_autocomplete::handle_gen_autocomplete(m, ctx).await?
+      gen_autocomplete::handle_gen_autocomplete(m, ctx).await?;
     }
     Some(("gen-man", m)) => gen_man::handle_gen_man(m, ctx).await?,
     Some(("upgrade", m)) => upgrade::handle_upgrade(m, ctx).await?,
