@@ -10,7 +10,15 @@ pub fn print(image_detail_vec: &[Image]) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
 
-  table.set_header(vec!["Image ID", "Name", "Creation time", "Tags"]);
+  table.set_header(vec![
+    "Image ID",
+    "Name",
+    "Creation time",
+    "Configuration",
+    "Base",
+    "Groups",
+    "Tags",
+  ]);
 
   for image_details in image_detail_vec {
     let unknown = String::from("unknown");
@@ -25,11 +33,22 @@ pub fn print(image_detail_vec: &[Image]) {
     } else {
       creation_date.to_string()
     };
+    let configuration_name =
+      image_details.configuration.as_ref().unwrap_or(&unknown);
+    let base = image_details.base.as_ref().unwrap_or(&unknown);
+    let groups = image_details
+      .groups
+      .as_ref()
+      .map(|group_vec| group_vec.join(", "))
+      .unwrap_or(unknown.clone());
 
     table.add_row(vec![
-      image_details.id.as_deref().unwrap_or("unknown"),
+      image_details.id.as_deref().unwrap_or(&unknown),
       &image_details.name,
       &creation_date,
+      &configuration_name,
+      &base,
+      &groups,
       &image_details
         .metadata
         .clone()
