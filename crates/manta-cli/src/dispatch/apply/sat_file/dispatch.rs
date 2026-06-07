@@ -16,6 +16,7 @@
 
 use std::collections::HashMap;
 
+use anyhow::Context as _;
 use serde_json::Value;
 
 use super::{
@@ -57,9 +58,15 @@ pub async fn dispatch_plan(
       }
       SatElement::Image(body) => {
         let label = image_label(&body);
+        let display_name = body
+          .get("name")
+          .and_then(Value::as_str)
+          .unwrap_or("<unnamed>")
+          .to_string();
 
-        let img =
-          run_image_pipeline(client, token, &body, &ref_lookup, opts).await?;
+        let img = run_image_pipeline(client, token, &body, &ref_lookup, opts)
+          .await
+          .with_context(|| format!("building SAT image '{display_name}'"))?;
 
         if let Some(lab) = label {
           let id = resolve_image_id(&img, &lab);

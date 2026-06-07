@@ -125,7 +125,7 @@ impl MantaClient {
     } else {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("Server returned {status}: {body}")
+      bail!("Server returned {status}: {}", unwrap_error_body(&body))
     }
   }
 
@@ -137,7 +137,7 @@ impl MantaClient {
     } else {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("Server returned {status}: {body}")
+      bail!("Server returned {status}: {}", unwrap_error_body(&body))
     }
   }
 
@@ -317,5 +317,55 @@ impl MantaClient {
   }
   pub(super) fn site_name(&self) -> &str {
     &self.site_name
+  }
+}
+
+/// Try to read the server's standard `{"error": "..."}` body and
+/// return the inner message. Falls back to the raw body for non-
+/// conforming error responses (e.g. axum's default 405 body, an
+/// upstream reverse proxy's error page) so we never lose information.
+///
+/// Keeps the user-facing error short and human — "Server returned 400
+/// Bad Request: Can't access HSM group 'compute-2'." instead of
+/// "Server returned 400 Bad Request: {\"error\":\"Can't access HSM
+/// group 'compute-2'.\"}".
+fn unwrap_error_body(body: &str) -> String {
+  #[derive(serde::Deserialize)]
+  struct ServerErrorBody {
+    error: String,
+  }
+  serde_json::from_str::<ServerErrorBody>(body)
+    .map(|e| e.error)
+    .unwrap_or_else(|_| body.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+  use super::unwrap_error_body;
+
+  #[test]
+  fn unwrap_error_body_extracts_error_field_from_standard_body() {
+    let body = r#"{"error":"Can't access HSM group 'compute-2'."}"#;
+    assert_eq!(
+      unwrap_error_body(body),
+      "Can't access HSM group 'compute-2'."
+    );
+  }
+
+  #[test]
+  fn unwrap_error_body_falls_back_to_raw_for_non_json() {
+    let body = "Method Not Allowed";
+    assert_eq!(unwrap_error_body(body), "Method Not Allowed");
+  }
+
+  #[test]
+  fn unwrap_error_body_falls_back_to_raw_for_json_without_error_field() {
+    let body = r#"{"detail":"something"}"#;
+    assert_eq!(unwrap_error_body(body), body);
+  }
+
+  #[test]
+  fn unwrap_error_body_falls_back_to_raw_for_empty_body() {
+    assert_eq!(unwrap_error_body(""), "");
   }
 }
