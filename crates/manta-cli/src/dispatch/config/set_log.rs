@@ -25,14 +25,13 @@ fn set_log(new_log_level_opt: &str) -> Result<(), Error> {
 
   write_config_toml(&path, &doc)?;
 
-  match doc.get("log") {
-    Some(log_level) => {
-      action_result::print(&format!("log verbosity set to {log_level}"), None)?
-    }
-    None => tracing::error!(
+  if let Some(log_level) = doc.get("log") {
+    action_result::print(&format!("log verbosity set to {log_level}"), None)?;
+  } else {
+    tracing::error!(
       "'log' key missing from config after \
        writing — this should not happen"
-    ),
+    );
   }
 
   Ok(())

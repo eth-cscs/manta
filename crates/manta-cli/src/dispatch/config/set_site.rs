@@ -41,14 +41,13 @@ fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
 
   write_config_toml(&path, &doc)?;
 
-  match doc.get("site") {
-    Some(hsm_value) => {
-      action_result::print(&format!("site set to {hsm_value}"), None)?
-    }
-    None => tracing::error!(
+  if let Some(hsm_value) = doc.get("site") {
+    action_result::print(&format!("site set to {hsm_value}"), None)?;
+  } else {
+    tracing::error!(
       "'site' key missing from config after \
        writing — this should not happen"
-    ),
+    );
   }
 
   Ok(())

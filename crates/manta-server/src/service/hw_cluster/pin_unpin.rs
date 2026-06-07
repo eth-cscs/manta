@@ -426,48 +426,48 @@ pub async fn ensure_target_group_exists(
   dryrun: bool,
   create_target_hsm_group: bool,
 ) -> Result<(), Error> {
-  match infra.get_group(shasta_token, target_hsm_group_name).await {
-    Ok(_) => {
-      tracing::debug!(
-        "Target HSM group '{}' exists, good.",
-        target_hsm_group_name
-      );
-      Ok(())
-    }
-    Err(_) => {
-      if !create_target_hsm_group {
-        return Err(Error::NotFound(format!(
-          "Target HSM group '{target_hsm_group_name}' does not exist, \
-           but the option to create the group was \
-           NOT specified, cannot continue.",
-        )));
-      }
-      tracing::info!(
-        "Target HSM group '{}' does not exist, \
-         but the option to create the group has \
-         been selected, creating it now.",
-        target_hsm_group_name
-      );
-      if dryrun {
-        return Err(Error::BadRequest(
-          "Dryrun selected, cannot create the \
-           new group and continue."
-            .to_string(),
-        ));
-      }
-      let group = Group {
-        label: target_hsm_group_name.to_string(),
-        description: None,
-        tags: None,
-        members: None,
-        exclusive_group: Some("false".to_string()),
-      };
-      let _ = infra.add_group(shasta_token, group).await.map_err(|e| {
-        Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
-      })?;
-      Ok(())
-    }
+  if infra
+    .get_group(shasta_token, target_hsm_group_name)
+    .await
+    .is_ok()
+  {
+    tracing::debug!(
+      "Target HSM group '{}' exists, good.",
+      target_hsm_group_name
+    );
+    return Ok(());
   }
+  if !create_target_hsm_group {
+    return Err(Error::NotFound(format!(
+      "Target HSM group '{target_hsm_group_name}' does not exist, \
+       but the option to create the group was \
+       NOT specified, cannot continue.",
+    )));
+  }
+  tracing::info!(
+    "Target HSM group '{}' does not exist, \
+     but the option to create the group has \
+     been selected, creating it now.",
+    target_hsm_group_name
+  );
+  if dryrun {
+    return Err(Error::BadRequest(
+      "Dryrun selected, cannot create the \
+       new group and continue."
+        .to_string(),
+    ));
+  }
+  let group = Group {
+    label: target_hsm_group_name.to_string(),
+    description: None,
+    tags: None,
+    members: None,
+    exclusive_group: Some("false".to_string()),
+  };
+  let _ = infra.add_group(shasta_token, group).await.map_err(|e| {
+    Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
+  })?;
+  Ok(())
 }
 
 /// Validate that combined target+parent resources can fulfil the user request.

@@ -125,43 +125,43 @@ async fn ensure_add_target_group_exists(
   dryrun: bool,
   create_hsm_group: bool,
 ) -> Result<(), Error> {
-  match infra.get_group(shasta_token, target_hsm_group_name).await {
-    Ok(_) => {
-      tracing::debug!("The group '{}' exists, good.", target_hsm_group_name);
-      Ok(())
-    }
-    Err(_) => {
-      if !create_hsm_group {
-        return Err(Error::NotFound(format!(
-          "Group '{target_hsm_group_name}' does not exist, but the \
-           option to create the group was NOT \
-           specified, cannot continue."
-        )));
-      }
-      tracing::info!(
-        "Group '{}' does not exist, but the option \
-         to create the group has been selected, \
-         creating it now.",
-        target_hsm_group_name
-      );
-      if dryrun {
-        return Err(Error::BadRequest(
-          "Dryrun selected, cannot create \
-           the new group and continue."
-            .to_string(),
-        ));
-      }
-      let group = Group {
-        label: target_hsm_group_name.to_string(),
-        description: None,
-        tags: None,
-        members: None,
-        exclusive_group: Some("false".to_string()),
-      };
-      infra.add_group(shasta_token, group).await?;
-      Ok(())
-    }
+  if infra
+    .get_group(shasta_token, target_hsm_group_name)
+    .await
+    .is_ok()
+  {
+    tracing::debug!("The group '{}' exists, good.", target_hsm_group_name);
+    return Ok(());
   }
+  if !create_hsm_group {
+    return Err(Error::NotFound(format!(
+      "Group '{target_hsm_group_name}' does not exist, but the \
+       option to create the group was NOT \
+       specified, cannot continue."
+    )));
+  }
+  tracing::info!(
+    "Group '{}' does not exist, but the option \
+     to create the group has been selected, \
+     creating it now.",
+    target_hsm_group_name
+  );
+  if dryrun {
+    return Err(Error::BadRequest(
+      "Dryrun selected, cannot create \
+       the new group and continue."
+        .to_string(),
+    ));
+  }
+  let group = Group {
+    label: target_hsm_group_name.to_string(),
+    description: None,
+    tags: None,
+    members: None,
+    exclusive_group: Some("false".to_string()),
+  };
+  infra.add_group(shasta_token, group).await?;
+  Ok(())
 }
 
 /// Compute the final parent HSM hw component summary after subtracting user-requested deltas.

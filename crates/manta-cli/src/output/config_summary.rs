@@ -36,27 +36,24 @@ pub struct ConfigSummary {
 /// field, in the historical order); structured JSON when
 /// `output_opt` is `Some("json")`.
 pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
-  match output_opt {
-    Some("json") => {
-      println!(
-        "{}",
-        serde_json::to_string(summary)
-          .context("Failed to serialize config summary to JSON")?
-      );
-    }
-    _ => {
-      println!("Configuration file: {}", summary.config_file);
-      println!("Log level: {}", summary.log_level);
-      println!("Sites: {}", summary.sites.join(", "));
-      println!("Current site: {}", summary.current_site);
-      let groups = summary.groups_available.as_ref().map_or_else(
-        || "Could not get list of groups available".to_string(),
-        |v| v.join(", "),
-      );
-      println!("Groups available: {groups}");
-      println!("Current HSM: {}", summary.current_hsm);
-      println!("Parent HSM: {}", summary.parent_hsm);
-    }
+  if let Some("json") = output_opt {
+    println!(
+      "{}",
+      serde_json::to_string(summary)
+        .context("Failed to serialize config summary to JSON")?
+    );
+  } else {
+    println!("Configuration file: {}", summary.config_file);
+    println!("Log level: {}", summary.log_level);
+    println!("Sites: {}", summary.sites.join(", "));
+    println!("Current site: {}", summary.current_site);
+    let groups = summary.groups_available.as_ref().map_or_else(
+      || "Could not get list of groups available".to_string(),
+      |v| v.join(", "),
+    );
+    println!("Groups available: {groups}");
+    println!("Current HSM: {}", summary.current_hsm);
+    println!("Parent HSM: {}", summary.parent_hsm);
   }
   Ok(())
 }

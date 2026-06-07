@@ -57,18 +57,15 @@ pub fn print_with_data<T: serde::Serialize>(
   data: &T,
   output_opt: Option<&str>,
 ) -> Result<()> {
-  match output_opt {
-    Some("json") => {
-      println!("{}", json_envelope_with_data(message, data)?);
-    }
-    _ => {
-      println!("{message}");
-      println!(
-        "{}",
-        serde_json::to_string_pretty(data)
-          .context("Failed to pretty-print data payload")?
-      );
-    }
+  if let Some("json") = output_opt {
+    println!("{}", json_envelope_with_data(message, data)?);
+  } else {
+    println!("{message}");
+    println!(
+      "{}",
+      serde_json::to_string_pretty(data)
+        .context("Failed to pretty-print data payload")?
+    );
   }
   Ok(())
 }
