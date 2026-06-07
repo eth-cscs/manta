@@ -120,8 +120,11 @@ pub async fn run_image_pipeline(
 }
 
 /// `--watch-logs` branch: stream the SSE log feed to stdout until the
-/// stream ends, then poll the session once to confirm its terminal
-/// status and surface a `failed`-state error.
+/// stream ends, then poll until the session reports terminal status.
+/// The poll fallback covers the race between the CFS pod's log
+/// channel closing and the session resource flipping to `complete` —
+/// without it we would sometimes call the stamp endpoint against a
+/// still-running session and 400 on the missing `result_id`.
 async fn stream_session_until_terminal(
   client: &MantaClient,
   token: &str,
@@ -146,9 +149,7 @@ async fn stream_session_until_terminal(
     }
   }
 
-  let session = fetch_session(client, token, session_name).await?;
-  check_terminal_status(&session, session_name)?;
-  Ok(())
+  poll_session_until_terminal(client, token, session_name).await
 }
 
 /// Default branch: poll session status until terminal.
@@ -194,21 +195,6 @@ async fn poll_session_until_terminal(
   }
 }
 
-/// Pull the session by name; treat "not found" as an error (the
-/// session_name came from the just-created session, so missing means
-/// something went badly wrong).
-async fn fetch_session(
-  client: &MantaClient,
-  token: &str,
-  session_name: &str,
-) -> anyhow::Result<CfsSessionGetResponse> {
-  fetch_session_opt(client, token, session_name)
-    .await?
-    .with_context(|| {
-      format!("CFS session '{session_name}' disappeared from CFS")
-    })
-}
-
 /// Pull the session by name. `None` is "not yet visible" (poll path
 /// retries); the caller decides whether to error or wait.
 async fn fetch_session_opt(
@@ -233,19 +219,3 @@ async fn fetch_session_opt(
   Ok(sessions.into_iter().next())
 }
 
-/// Surface a terminal-failed session as an error.
-fn check_terminal_status(
-  session: &CfsSessionGetResponse,
-  session_name: &str,
-) -> anyhow::Result<()> {
-  let status = session
-    .status()
-    .with_context(|| format!("CFS session '{session_name}' has no status"))?;
-  match status.as_str() {
-    "complete" | "succeeded" | "success" => Ok(()),
-    other => bail!(
-      "CFS session '{session_name}' did not complete successfully \
-       (status: '{other}')"
-    ),
-  }
-}
