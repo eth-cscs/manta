@@ -32,12 +32,6 @@
 //!   [`StampImageFromSessionRequest`]; response: the patched [`Image`].
 //!   Fails fast with 400 when the session produced no `result_id`.
 //!
-//! The monolithic `POST /api/v1/sat-file/images` → [`post_sat_image`]
-//! is retained for external callers that prefer one round-trip per
-//! image — it composes the same csm-rs helpers in sequence inside the
-//! backend, so there's a single source of truth for the per-image
-//! flow.
-//!
 //! The CLI deserialises each response and pretty-prints the assembled
 //! four-list summary, so any rename of a field on either side of the
 //! wire is user-visible. The wire-format-lock tests at the bottom of
@@ -58,7 +52,7 @@ use utoipa::ToSchema;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, display_error, require_k8s_url,
-  require_vault,
+  require_vault, to_handler_error,
 };
 
 // ---------------------------------------------------------------------------
@@ -128,81 +122,6 @@ pub async fn post_sat_configuration(
     .map_err(display_error)?;
 
   Ok(Json(cfg))
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/v1/sat-file/images — Apply one SAT image entry
-// ---------------------------------------------------------------------------
-
-/// Request body for `POST /sat-file/images` — one entry from the SAT
-/// file's `images` section, the CLI's accumulated ref_lookup, and
-/// per-call flags.
-#[derive(Deserialize, ToSchema)]
-pub struct PostSatImageRequest {
-  /// One SAT `images[]` entry as a structured value.
-  #[schema(value_type = serde_json::Value)]
-  pub image: serde_json::Value,
-  /// `ref_name.or(name) -> image_id` map for previously-created images;
-  /// the backend uses it to resolve `base.image_ref`.
-  #[serde(default)]
-  pub ref_lookup: std::collections::HashMap<String, String>,
-  /// Ansible verbosity level (0–4) for the CFS session that builds
-  /// the image.
-  pub ansible_verbosity: Option<u8>,
-  /// Extra arguments forwarded verbatim to `ansible-playbook`.
-  pub ansible_passthrough: Option<String>,
-  /// Stream CFS session logs while the image builds.
-  #[serde(default)]
-  pub watch_logs: bool,
-  /// Prefix streamed log lines with timestamps.
-  #[serde(default)]
-  pub timestamps: bool,
-  /// Validate without creating; the response contains a mock image.
-  #[serde(default)]
-  pub dry_run: bool,
-}
-
-#[utoipa::path(post, path = "/sat-file/images", tag = "sat-file",
-  params(SiteHeader),
-  request_body = PostSatImageRequest,
-  security(("bearerAuth" = [])),
-  responses(
-    (status = 200, description = "Image applied",               body = serde_json::Value),
-    (status = 401, description = "Unauthorized",                body = ErrorResponse),
-    (status = 500, description = "Internal error",              body = ErrorResponse),
-    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
-  )
-)]
-/// `POST /api/v1/sat-file/images` — apply a single SAT image entry.
-/// Returns the created `Image`.
-#[tracing::instrument(skip_all)]
-pub async fn post_sat_image(
-  ctx: RequestCtx,
-  Json(body): Json<PostSatImageRequest>,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!("post_sat_image dry_run={}", body.dry_run);
-  let infra = ctx.infra();
-
-  let vault_base_url = require_vault(infra.vault_base_url)?;
-  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
-
-  let image = infra
-    .apply_image(
-      &ctx.token,
-      vault_base_url,
-      k8s_api_url,
-      body.image,
-      body.ref_lookup,
-      body.ansible_verbosity,
-      body.ansible_passthrough.as_deref(),
-      body.watch_logs,
-      body.timestamps,
-      body.dry_run,
-    )
-    .await
-    .map_err(display_error)?;
-
-  Ok(Json(image))
 }
 
 // ---------------------------------------------------------------------------
@@ -306,6 +225,12 @@ pub struct StampImageFromSessionRequest {
 )]
 /// `POST /api/v1/sat-file/images/stamp` — fetch the named CFS session,
 /// derive the provenance stamp, and PATCH the produced IMS image.
+///
+/// Performs two boundary checks before delegating to the backend:
+/// the caller must have access to every HSM group the session
+/// targets, and the session must have produced a result image. See
+/// [`crate::service::session::validate_session_access`] +
+/// [`crate::service::session::require_result_image`].
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_image_stamp(
   ctx: RequestCtx,
@@ -316,6 +241,17 @@ pub async fn post_sat_image_stamp(
     body.cfs_session_name
   );
   let infra = ctx.infra();
+
+  let session = crate::service::session::validate_session_access(
+    &infra,
+    &ctx.token,
+    &body.cfs_session_name,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
+  crate::service::session::require_result_image(&session)
+    .map_err(to_handler_error)?;
 
   let image = infra
     .stamp_image_from_cfs_session(&ctx.token, &body.cfs_session_name)
@@ -412,8 +348,8 @@ mod tests {
 
   use super::{
     CreateImageCfsSessionRequest, PostSatConfigurationRequest,
-    PostSatImageRequest, PostSatSessionTemplateRequest,
-    PostSatSessionTemplateResponse, StampImageFromSessionRequest,
+    PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+    StampImageFromSessionRequest,
   };
 
   /// Lock the shape of the CLI's POST /sat-file/configurations body.
@@ -442,45 +378,6 @@ mod tests {
     let req: PostSatConfigurationRequest =
       serde_json::from_value(cli_body).unwrap();
     assert!(!req.overwrite);
-    assert!(!req.dry_run);
-  }
-
-  /// Lock the shape of the CLI's POST /sat-file/images body, including
-  /// the `ref_lookup` map the CLI accumulates.
-  #[test]
-  fn cli_image_body_deserialises() {
-    let cli_body = serde_json::json!({
-      "image": { "name": "img-v1", "ref_name": "base", "configuration": "cfg-v1" },
-      "ref_lookup": { "earlier-ref": "abc-123" },
-      "ansible_verbosity": 2,
-      "ansible_passthrough": "--check",
-      "watch_logs": true,
-      "timestamps": false,
-      "dry_run": false,
-    });
-    let req: PostSatImageRequest = serde_json::from_value(cli_body).unwrap();
-    assert_eq!(req.image["name"].as_str(), Some("img-v1"));
-    assert_eq!(
-      req.ref_lookup.get("earlier-ref").map(String::as_str),
-      Some("abc-123")
-    );
-    assert_eq!(req.ansible_verbosity, Some(2));
-    assert_eq!(req.ansible_passthrough.as_deref(), Some("--check"));
-    assert!(req.watch_logs);
-    assert!(!req.timestamps);
-    assert!(!req.dry_run);
-  }
-
-  /// Empty `ref_lookup` is the common case (first image in the plan).
-  #[test]
-  fn cli_image_body_with_empty_ref_lookup_deserialises() {
-    let cli_body = serde_json::json!({
-      "image": { "name": "img-v1" },
-    });
-    let req: PostSatImageRequest = serde_json::from_value(cli_body).unwrap();
-    assert!(req.ref_lookup.is_empty());
-    assert_eq!(req.ansible_verbosity, None);
-    assert!(!req.watch_logs);
     assert!(!req.dry_run);
   }
 

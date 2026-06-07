@@ -6,7 +6,7 @@
 //!   `POST /sat-file/configurations`
 //! - [`MantaClient::create_image_cfs_session`] →
 //!   `POST /sat-file/images/cfs-session` (start the CFS session)
-//! - [`MantaClient::stamp_image_from_session`] →
+//! - [`MantaClient::stamp_image_from_cfs_session`] →
 //!   `POST /sat-file/images/stamp` (after the CLI has driven the
 //!   session to terminal-complete via the existing session endpoints)
 //! - [`MantaClient::apply_sat_session_template`] →
@@ -76,7 +76,7 @@ impl MantaClient {
   /// `POST /api/v1/sat-file/images/cfs-session` — translate one SAT
   /// `images[]` entry into a CFS session and create it. Returns the
   /// freshly-created session resource — caller must drive it to
-  /// completion before calling [`Self::stamp_image_from_session`].
+  /// completion before calling [`Self::stamp_image_from_cfs_session`].
   pub async fn create_image_cfs_session(
     &self,
     token: &str,
@@ -92,7 +92,7 @@ impl MantaClient {
   /// `manta.image_session.{base,groups,configuration}` from it and
   /// PATCHes them onto the produced IMS image. Returns the patched
   /// image. Errors when the session has no `result_id`.
-  pub async fn stamp_image_from_session(
+  pub async fn stamp_image_from_cfs_session(
     &self,
     token: &str,
     cfs_session_name: &str,

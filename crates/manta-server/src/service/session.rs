@@ -173,6 +173,78 @@ pub async fn create_cfs_session(
     .await
 }
 
+/// Fetch a session by name and validate that the caller is allowed
+/// to act on it.
+///
+/// Access is granted when every HSM group named in the session's
+/// `target.groups` overlaps the caller's accessible groups (the union
+/// returned by `InfraContext::get_group_name_available`). A session
+/// that targets no HSM groups (e.g. a runtime session) is treated as
+/// not gated by group access.
+///
+/// Returns the fetched session so the caller doesn't double-GET.
+/// `NotFound` when the session doesn't exist; `BadRequest` when any
+/// target group is outside the accessible set — matching the existing
+/// access-denial shape used by
+/// [`crate::service::authorization::get_groups_names_available`].
+pub async fn validate_session_access(
+  infra: &InfraContext<'_>,
+  token: &str,
+  session_name: &str,
+) -> Result<CfsSessionGetResponse, Error> {
+  let sessions = infra
+    .get_and_filter_sessions(
+      token,
+      Vec::new(),
+      Vec::new(),
+      None,
+      None,
+      None,
+      None,
+      Some(&session_name.to_string()),
+      None,
+      None,
+    )
+    .await?;
+
+  let session = sessions.into_iter().next().ok_or_else(|| {
+    Error::NotFound(format!("CFS session '{session_name}'"))
+  })?;
+
+  let target_groups = session.get_target_hsm().unwrap_or_default();
+  if !target_groups.is_empty() {
+    let accessible = infra.get_group_name_available(token).await?;
+    if let Some(unauthorized) =
+      target_groups.iter().find(|g| !accessible.contains(g))
+    {
+      return Err(Error::BadRequest(format!(
+        "Can't access CFS session '{session_name}': it targets HSM \
+         group '{unauthorized}' which is not in your accessible set"
+      )));
+    }
+  }
+
+  Ok(session)
+}
+
+/// Reject sessions that didn't produce a result image.
+///
+/// `BadRequest` when the session has no `result_id` — callers
+/// shouldn't try to PATCH a non-existent image. csm-rs's deeper check
+/// inside `collect_and_stamp_image` remains as a defence-in-depth
+/// safety net.
+pub fn require_result_image(
+  session: &CfsSessionGetResponse,
+) -> Result<(), Error> {
+  if session.get_first_result_id().is_none() {
+    return Err(Error::BadRequest(format!(
+      "CFS session '{}' produced no image (no result_id); refusing to stamp",
+      session.name
+    )));
+  }
+  Ok(())
+}
+
 /// Validate that a CFS session is suitable for attaching a console.
 ///
 /// Returns `NotFound` if the session doesn't exist, `BadRequest` if the
@@ -234,4 +306,72 @@ pub async fn validate_console_session(
   }
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  //! Function-level tests for the boundary-check helpers. The
+  //! `InfraContext`-touching helpers (`validate_session_access`,
+  //! `get_sessions`, etc.) are exercised through integration tests
+  //! against `router()` — see `crates/manta-server/tests/`.
+
+  use super::{Error, require_result_image};
+  use manta_backend_dispatcher::types::cfs::session::{
+    Artifact, CfsSessionGetResponse, Status,
+  };
+
+  fn session_with_result_id(name: &str, result_id: Option<&str>) -> CfsSessionGetResponse {
+    CfsSessionGetResponse {
+      name: name.to_string(),
+      configuration: None,
+      ansible: None,
+      target: None,
+      status: Some(Status {
+        artifacts: Some(vec![Artifact {
+          image_id: None,
+          result_id: result_id.map(str::to_string),
+          r#type: None,
+        }]),
+        session: None,
+      }),
+      tags: None,
+      debug_on_failure: false,
+      logs: None,
+    }
+  }
+
+  #[test]
+  fn require_result_image_accepts_session_with_result_id() {
+    let session =
+      session_with_result_id("sat-img-v1", Some("ims-image-abc"));
+    assert!(require_result_image(&session).is_ok());
+  }
+
+  #[test]
+  fn require_result_image_rejects_session_without_result_id() {
+    let session = session_with_result_id("sat-img-v1", None);
+    let err = require_result_image(&session).unwrap_err();
+    assert!(
+      matches!(err, Error::BadRequest(_)),
+      "expected BadRequest, got {err:?}"
+    );
+    assert!(err.to_string().contains("sat-img-v1"));
+    assert!(err.to_string().contains("no result_id"));
+  }
+
+  #[test]
+  fn require_result_image_rejects_session_with_no_artifacts() {
+    let session = CfsSessionGetResponse {
+      name: "sat-img-v1".to_string(),
+      configuration: None,
+      ansible: None,
+      target: None,
+      status: None,
+      tags: None,
+      debug_on_failure: false,
+      logs: None,
+    };
+    let err = require_result_image(&session).unwrap_err();
+    assert!(matches!(err, Error::BadRequest(_)));
+  }
 }

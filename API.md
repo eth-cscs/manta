@@ -1530,7 +1530,7 @@ The SAT (Shasta Artifact Template) workflow is split across per-element endpoint
 - `POST /sat-file/images/stamp` — once the session is terminal-complete, stamp the produced IMS image with provenance metadata
 - `POST /sat-file/session-templates` — one per `session_templates[]` entry
 
-The monolithic `POST /sat-file/images` is retained for callers that prefer one round-trip per image (the legacy CLI flow); the new CLI splits it into the three-step pipeline above so progress is observable. The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
+The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
 
 > All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
@@ -1681,50 +1681,6 @@ curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/stamp" \
   -H "Authorization: Bearer $MANTA_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{ "cfs_session_name": "sat-img-v1" }'
-```
-
-### POST /sat-file/images (legacy)
-
-Apply one entry from the SAT file's `images` section in a single round-trip: the server creates the CFS session, blocks until it completes, stamps `manta.image_session.*` onto the produced IMS image, and returns the IMS image. The CLI no longer uses this endpoint — `manta apply sat-file` drives the three-step flow above so progress is observable. The endpoint is retained for external callers that prefer one round-trip per image.
-
-The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains.
-
-**Request body**
-
-```json
-{
-  "image": { "name": "img-v1", "ref_name": "base", "base": {/* ... */}, "configuration": "cfg-v1" },
-  "ref_lookup": { "earlier-ref": "<image-id>" },
-  "ansible_verbosity": 0,
-  "ansible_passthrough": null,
-  "watch_logs": false,
-  "timestamps": false,
-  "dry_run": false
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `image` | object | **yes** | One SAT `images[]` entry. |
-| `ref_lookup` | object | no | `ref_name → image_id` for images created earlier in the apply (default: empty). |
-| `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 for the CFS session that builds the image. |
-| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook`. |
-| `watch_logs` | bool | no | Stream CFS session logs while the image builds (default: `false`). |
-| `timestamps` | bool | no | Prefix streamed log lines with timestamps (default: `false`). |
-| `dry_run` | bool | no | Validate without building; response carries a mock `Image` with a `DRYRUN_<uuid>` id (default: `false`). |
-
-**Response `200`** — the created IMS `Image` (with `id`, `name`, `link.path`/`link.etag`/`link.type` for the S3 manifest).
-
-```bash
-curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H "Authorization: Bearer $MANTA_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "image": { "name": "img-v1", "configuration": "cfg-v1" },
-    "ref_lookup": {},
-    "dry_run": true
-  }'
 ```
 
 ### POST /sat-file/session-templates

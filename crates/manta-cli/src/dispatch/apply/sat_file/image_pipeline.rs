@@ -110,7 +110,7 @@ pub async fn run_image_pipeline(
   // 3. Stamp + PATCH the produced IMS image (server does the fetch +
   //    derive + PATCH).
   let stamped = client
-    .stamp_image_from_session(token, &session_name)
+    .stamp_image_from_cfs_session(token, &session_name)
     .await
     .with_context(|| {
       format!("stamp image from CFS session '{session_name}'")

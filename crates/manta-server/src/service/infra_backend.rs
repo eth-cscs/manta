@@ -15,7 +15,6 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ApplyConfigurationParams as BackendApplyConfigurationParams,
   ApplyImageCreateSessionParams as BackendApplyImageCreateSessionParams,
-  ApplyImageParams as BackendApplyImageParams,
   ApplyImageStampParams as BackendApplyImageStampParams,
   ApplySatFileParams as BackendApplySatFileParams,
   ApplySessionTemplateParams as BackendApplySessionTemplateParams, SatTrait,
@@ -659,8 +658,8 @@ impl InfraContext<'_> {
   /// endpoints, then calling [`Self::stamp_image_from_cfs_session`] to
   /// PATCH `manta.image_session.*` onto the produced IMS image.
   ///
-  /// This is the first half of the work [`Self::apply_image`] does in
-  /// one shot.
+  /// This is the first half of the per-image flow; the second half is
+  /// [`Self::stamp_image_from_cfs_session`].
   #[allow(clippy::too_many_arguments)]
   pub async fn create_image_cfs_session(
     &self,
@@ -712,50 +711,6 @@ impl InfraContext<'_> {
       .await
   }
 
-  /// Apply a single SAT `images[]` entry in one synchronous call.
-  ///
-  /// The backend handles the full image-build flow including stamping
-  /// any provenance metadata onto the produced image (csm-rs writes
-  /// `manta.image_session.*` keys; see csm-rs's
-  /// `i_create_image_from_sat_file_serde_yaml`). This is the legacy
-  /// one-round-trip path. The CLI now uses
-  /// [`Self::create_image_cfs_session`] +
-  /// [`Self::stamp_image_from_cfs_session`] to drive the same flow
-  /// itself; both paths compose the same csm-rs helpers internally.
-  #[allow(clippy::too_many_arguments)]
-  pub async fn apply_image(
-    &self,
-    token: &str,
-    vault_base_url: &str,
-    k8s_api_url: &str,
-    image: serde_json::Value,
-    ref_lookup: HashMap<String, String>,
-    ansible_verbosity: Option<u8>,
-    ansible_passthrough: Option<&str>,
-    watch_logs: bool,
-    timestamps: bool,
-    dry_run: bool,
-  ) -> Result<Image, Error> {
-    let hsm_group_available_vec = self.get_group_name_available(token).await?;
-    self
-      .backend
-      .apply_image(BackendApplyImageParams {
-        shasta_token: token,
-        vault_base_url,
-        site_name: self.site_name,
-        k8s_api_url,
-        image,
-        ref_lookup,
-        hsm_group_available_vec: &hsm_group_available_vec,
-        ansible_verbosity,
-        ansible_passthrough,
-        debug_on_failure: true,
-        watch_logs,
-        timestamps,
-        dry_run,
-      })
-      .await
-  }
 
   /// Fetch metadata for every HSM node the caller can access.
   pub async fn get_node_metadata_available(
