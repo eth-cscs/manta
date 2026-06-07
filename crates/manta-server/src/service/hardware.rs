@@ -53,7 +53,7 @@ async fn fetch_node_summaries(
 
     let backend_cp = infra.backend_clone();
     let token_str = token.to_string();
-    let xname_str = xname.to_string();
+    let xname_str = xname.clone();
     let permit = Arc::clone(&sem).acquire_owned().await;
 
     tasks.spawn(async move {

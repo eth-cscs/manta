@@ -128,7 +128,7 @@ pub async fn handle_delete(
     Some(("configurations", m)) => {
       let since_opt = if let Some(since) = m.get_one::<String>("since") {
         let date_time = chrono::NaiveDateTime::parse_from_str(
-          &(since.to_string() + "T00:00:00"),
+          &(since.clone() + "T00:00:00"),
           "%Y-%m-%dT%H:%M:%S",
         )
         .context(format!(
@@ -140,7 +140,7 @@ pub async fn handle_delete(
       };
       let until_opt = if let Some(until) = m.get_one::<String>("until") {
         let date_time = chrono::NaiveDateTime::parse_from_str(
-          &(until.to_string() + "T00:00:00"),
+          &(until.clone() + "T00:00:00"),
           "%Y-%m-%dT%H:%M:%S",
         )
         .context(format!(

@@ -57,7 +57,7 @@ pub fn calculate_target_hsm_pin(
   for (node, score) in &target_hsm_node_score_tuple_vec {
     group_target_hsm_node_by_score_hashmap
       .entry(*score as usize)
-      .and_modify(|node_vec| node_vec.push(node.to_string()))
+      .and_modify(|node_vec| node_vec.push(node.clone()))
       .or_insert(vec![node.clone()]);
   }
 
@@ -66,7 +66,7 @@ pub fn calculate_target_hsm_pin(
   for (node, score) in &parent_hsm_node_score_tuple_vec {
     group_parent_hsm_node_by_score_hashmap
       .entry(*score as usize)
-      .and_modify(|node_vec| node_vec.push(node.to_string()))
+      .and_modify(|node_vec| node_vec.push(node.clone()))
       .or_insert(vec![node.clone()]);
   }
 
@@ -174,7 +174,7 @@ pub fn calculate_target_hsm_pin(
     for (node, score) in &target_hsm_node_score_tuple_vec {
       group_target_hsm_node_by_score_hashmap
         .entry(*score as usize)
-        .and_modify(|node_vec| node_vec.push(node.to_string()))
+        .and_modify(|node_vec| node_vec.push(node.clone()))
         .or_insert(vec![node.clone()]);
     }
 
@@ -185,7 +185,7 @@ pub fn calculate_target_hsm_pin(
     for (node, score) in &parent_hsm_node_score_tuple_vec {
       group_parent_hsm_node_by_score_hashmap
         .entry(*score as usize)
-        .and_modify(|node_vec| node_vec.push(node.to_string()))
+        .and_modify(|node_vec| node_vec.push(node.clone()))
         .or_insert(vec![node.clone()]);
     }
 

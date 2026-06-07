@@ -31,7 +31,7 @@ pub fn print(image_detail_vec: &[Image]) {
     } else if let Ok(v) = creation_date.parse::<DateTime<Local>>() {
       v.naive_local().format(DATETIME_FORMAT).to_string()
     } else {
-      creation_date.to_string()
+      creation_date.clone()
     };
     let configuration_name =
       image_details.configuration.as_ref().unwrap_or(&unknown);

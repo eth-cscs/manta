@@ -184,7 +184,7 @@ fn compute_final_parent_summary(
       )));
     }
     let new_counter = current - *counter as usize;
-    final_summary.insert(hw_component.to_string(), new_counter);
+    final_summary.insert(hw_component.clone(), new_counter);
   }
 
   Ok(final_summary)
@@ -357,7 +357,7 @@ fn compute_delete_final_summary(
       ))
     })?;
 
-    final_summary.insert(hw_component.to_string(), current - *counter as usize);
+    final_summary.insert(hw_component.clone(), current - *counter as usize);
   }
 
   Ok(final_summary)

@@ -97,7 +97,7 @@ pub fn calculate_hsm_hw_component_summary(
     for artifact_summary in &node_summary.processors {
       if let Some(info) = artifact_summary.info.as_ref() {
         node_hw_component_summary
-          .entry(info.to_string())
+          .entry(info.clone())
           .and_modify(|qty| *qty += 1)
           .or_insert(1);
       }
@@ -105,7 +105,7 @@ pub fn calculate_hsm_hw_component_summary(
     for artifact_summary in &node_summary.node_accels {
       if let Some(info) = artifact_summary.info.as_ref() {
         node_hw_component_summary
-          .entry(info.to_string())
+          .entry(info.clone())
           .and_modify(|qty| *qty += 1)
           .or_insert(1);
       }
@@ -130,7 +130,7 @@ pub fn calculate_hsm_hw_component_summary(
     for artifact_summary in &node_summary.node_hsn_nics {
       if let Some(info) = artifact_summary.info.as_ref() {
         node_hw_component_summary
-          .entry(info.to_string())
+          .entry(info.clone())
           .and_modify(|qty| *qty += 1)
           .or_insert(1);
       }

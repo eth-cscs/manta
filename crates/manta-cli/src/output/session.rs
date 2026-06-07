@@ -86,7 +86,7 @@ fn cfs_session_struct_to_vec(
       .map(|groups| {
         groups
           .iter()
-          .map(|group| group.name.to_string())
+          .map(|group| group.name.clone())
           .collect::<Vec<String>>()
       })
       .unwrap_or_default();

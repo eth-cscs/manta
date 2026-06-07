@@ -20,7 +20,7 @@ pub fn string_vec_to_multi_line_string(
   match nodes {
     Some(nodes) if !nodes.is_empty() => {
       // Safe: guarded by !is_empty()
-      members = nodes[0].to_string();
+      members = nodes[0].clone();
 
       for (i, node) in nodes.iter().enumerate().skip(1) {
         // iterate for the rest of the list

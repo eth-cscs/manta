@@ -241,7 +241,7 @@ fn check_local_repos(
 
     layers_summary.push(vec![
       i.to_string(),
-      repo_name_raw.to_string(),
+      repo_name_raw.clone(),
       all_committed.to_string(),
     ]);
 

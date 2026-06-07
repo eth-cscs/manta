@@ -61,7 +61,7 @@ pub async fn calculate_hw_component_scarcity_scores(
     }
 
     hw_component_scarcity_score_hashmap.insert(
-      hw_component.to_string(),
+      hw_component.clone(),
       (total_num_hw_components as f64) / (hsm_hw_component_count as f64),
     );
   }
@@ -114,7 +114,7 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
         }
       }
     }
-    node_score_vec.push((xname.to_string(), node_score));
+    node_score_vec.push((xname.clone(), node_score));
   }
 
   node_score_vec
@@ -148,7 +148,7 @@ pub fn calculate_hsm_hw_component_summary(
   {
     for (hw_component, &qty) in node_hw_component_count_hashmap {
       hsm_hw_component_count_hashmap
-        .entry(hw_component.to_string())
+        .entry(hw_component.clone())
         .and_modify(|qty_aux| *qty_aux += qty)
         .or_insert(qty);
     }
@@ -187,7 +187,7 @@ fn get_node_hw_properties_from_value(
       .iter()
       .find(|&hw_component| actual_hw_component_pattern.contains(hw_component))
     {
-      node_hw_component_pattern_vec.push(hw_component_pattern.to_string());
+      node_hw_component_pattern_vec.push(hw_component_pattern.clone());
     } else {
       node_hw_component_pattern_vec.push(actual_hw_component_pattern);
     }
@@ -304,7 +304,7 @@ pub fn print_score_table(
       }
     }
 
-    let default_score = (xname.to_string(), 0.0);
+    let default_score = (xname.clone(), 0.0);
     let node_score = hsm_score_vec
       .iter()
       .find(|(node_name, _)| node_name.eq(xname))

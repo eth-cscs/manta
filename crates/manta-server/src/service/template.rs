@@ -112,7 +112,7 @@ pub async fn validate_and_prepare_template_session(
     tracing::info!("Check if limit value '{}', is an xname", limit_value);
     if validate_xname_format(limit_value) {
       tracing::info!("limit value '{}' is an xname", limit_value);
-      xnames_to_validate_access_vec.push(limit_value.to_string());
+      xnames_to_validate_access_vec.push(limit_value.clone());
     } else {
       let hsm_members_vec_rslt = infra
         .get_member_vec_from_group_name_vec(
