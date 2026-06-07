@@ -1523,11 +1523,18 @@ curl -k -X POST "$MANTA_HOST/api/v1/ephemeral-env" \
 
 ## SAT files
 
-The SAT (Shasta Artifact Template) workflow is split across four endpoints. `manta apply sat-file` walks the parsed SAT file into an ordered execution plan on the **client** side and dispatches one element per HTTP call — `POST /sat-file/configurations`, `POST /sat-file/images`, `POST /sat-file/session-templates`. The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
+The SAT (Shasta Artifact Template) workflow is split across per-element endpoints. `manta apply sat-file` walks the parsed SAT file into an ordered execution plan on the **client** side and dispatches one HTTP call per artifact:
+
+- `POST /sat-file/configurations` — one per `configurations[]` entry
+- `POST /sat-file/images/cfs-session` — start the CFS session for one `images[]` entry (CLI then monitors via `GET /sessions?name=…` or `GET /sessions/{name}/logs`)
+- `POST /sat-file/images/stamp` — once the session is terminal-complete, stamp the produced IMS image with provenance metadata
+- `POST /sat-file/session-templates` — one per `session_templates[]` entry
+
+The monolithic `POST /sat-file/images` is retained for callers that prefer one round-trip per image (the legacy CLI flow); the new CLI splits it into the three-step pipeline above so progress is observable. The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
 
 > All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
-**Client responsibility.** Jinja2 rendering, parsing the rendered YAML into a structured value, the `image_only` / `session_template_only` filters (drop top-level sections + prune unreferenced configurations/images), the topological sort of images by `base.image_ref`, and validation of in-file cross-references (no dangling `image_ref`, no cycles) all run client-side. The server accepts each SAT entry as a `serde_json::Value`, threads it through the backend's per-element `SatTrait` method, and returns the created wire artifact. The canonical SAT schema lives in csm-rs — neither the CLI nor the server embed it.
+**Client responsibility.** Jinja2 rendering, parsing the rendered YAML into a structured value, the `image_only` / `session_template_only` filters (drop top-level sections + prune unreferenced configurations/images), the topological sort of images by `base.image_ref`, and validation of in-file cross-references (no dangling `image_ref`, no cycles) all run client-side. The CLI also owns the image-build monitor loop (polling or log streaming). The server accepts each SAT entry as a `serde_json::Value`, threads it through the backend's per-element `SatTrait` method, and returns the created wire artifact. The canonical SAT schema lives in csm-rs — neither the CLI nor the server embed it.
 
 ```mermaid
 sequenceDiagram
@@ -1548,9 +1555,24 @@ sequenceDiagram
   end
 
   loop per Image element (in dependency order)
-    CLI->>Srv: POST /sat-file/images { image, ref_lookup, flags }
-    Srv->>BE: SatTrait::apply_image
-    Srv-->>CLI: 200 Image (id captured into CLI's ref_lookup)
+    CLI->>Srv: POST /sat-file/images/cfs-session { image, ref_lookup, flags }
+    Srv->>BE: SatTrait::apply_sat_image_create_session
+    Srv-->>CLI: 201 CfsSessionGetResponse (name, status: pending/running)
+
+    alt --watch-logs
+      CLI->>Srv: GET /sessions/{name}/logs (SSE)
+      Srv-->>CLI: log lines stream until pod terminates
+    else default
+      loop until terminal status
+        CLI->>Srv: GET /sessions?name={name}
+        Srv-->>CLI: 200 [CfsSessionGetResponse]
+        CLI-->>CLI: sleep 10s
+      end
+    end
+
+    CLI->>Srv: POST /sat-file/images/stamp { cfs_session_name }
+    Srv->>BE: SatTrait::apply_sat_image_stamp_from_session
+    Srv-->>CLI: 200 Image (id captured into CLI's ref_lookup; manta.image_session.* now patched)
   end
 
   loop per SessionTemplate element
@@ -1595,9 +1617,77 @@ curl -k -X POST "$MANTA_HOST/api/v1/sat-file/configurations" \
   }'
 ```
 
-### POST /sat-file/images
+### POST /sat-file/images/cfs-session
 
-Apply one entry from the SAT file's `images` section. The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains; the CLI inserts `image.ref_name.or(image.name) → image.id` into the map after each successful image POST.
+Translate one SAT `images[]` entry into a CFS session and create it. This is the first of the three CLI-driven steps that replace the monolithic `POST /sat-file/images`: the server does the SAT-image → CFS-session translation and POSTs the session, but does **not** wait for it to finish or stamp the result. The CLI drives monitor + stamp itself.
+
+The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains.
+
+**Request body**
+
+```json
+{
+  "image": { "name": "img-v1", "ref_name": "base", "base": {/* ... */}, "configuration": "cfg-v1" },
+  "ref_lookup": { "earlier-ref": "<image-id>" },
+  "ansible_verbosity": 0,
+  "ansible_passthrough": null,
+  "dry_run": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image` | object | **yes** | One SAT `images[]` entry. |
+| `ref_lookup` | object | no | `ref_name → image_id` for images created earlier in the apply (default: empty). |
+| `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 for the CFS session that builds the image. |
+| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook`. |
+| `dry_run` | bool | no | Validate without creating; response is a mocked complete session with a `DRYRUN-<uuid>` `result_id` (default: `false`). |
+
+**Response `201`** — the freshly-created `CfsSessionGetResponse` (same wire type as `GET /sessions`). `status.session.status` will be `pending` or `running`; the CLI drives it to completion via `GET /sessions?name=…` or `GET /sessions/{name}/logs`.
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/cfs-session" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "image": { "name": "img-v1", "configuration": "cfg-v1" },
+    "ref_lookup": {},
+    "dry_run": true
+  }'
+```
+
+### POST /sat-file/images/stamp
+
+Given a CFS session name, the server fetches the session, derives `manta.image_session.{base,groups,configuration}` from it, and PATCHes them onto the IMS image the session produced. This is the third CLI-driven step (the second is the monitor loop on `GET /sessions?name=…` or `GET /sessions/{name}/logs`).
+
+Fails fast with `400 Bad Request` when the named session has no `result_id` — i.e. produced no image; no PATCH is attempted in that case.
+
+**Request body**
+
+```json
+{ "cfs_session_name": "sat-img-v1" }
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `cfs_session_name` | string | **yes** | Name of the (terminal-complete) CFS session whose result image should be stamped. |
+
+**Response `200`** — the patched IMS `Image` (with `metadata.manta.image_session.{base,groups,configuration}` set).
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/stamp" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{ "cfs_session_name": "sat-img-v1" }'
+```
+
+### POST /sat-file/images (legacy)
+
+Apply one entry from the SAT file's `images` section in a single round-trip: the server creates the CFS session, blocks until it completes, stamps `manta.image_session.*` onto the produced IMS image, and returns the IMS image. The CLI no longer uses this endpoint — `manta apply sat-file` drives the three-step flow above so progress is observable. The endpoint is retained for external callers that prefer one round-trip per image.
+
+The body includes the CLI's accumulated `ref_lookup` so the backend can resolve `base.image_ref` chains.
 
 **Request body**
 

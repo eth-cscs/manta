@@ -116,6 +116,8 @@ The CLI renders Jinja2, parses the SAT file into a structured value, applies the
 
 The CLI then dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
 
+Image builds are driven as three discrete HTTP steps per image — the CLI creates the CFS session, monitors it (streaming logs with `--watch-logs` or polling status every 10s otherwise), and then asks the server to stamp the produced IMS image with `manta.image_session.*` provenance. This means progress is visible from the CLI in real time rather than blocking on one long server call.
+
 ```mermaid
 flowchart LR
   A[sat.yaml + values.yaml] --> B[render Jinja2]
@@ -124,9 +126,21 @@ flowchart LR
   D --> E{preview<br/>+ confirm}
   E -->|no| X((cancel))
   E -->|yes| F[POST /sat-file/configurations<br/>× N, in SAT order]
-  F --> G[POST /sat-file/images<br/>× N, in dependency order]
+  F --> G[per image:<br/>cfs-session → monitor → stamp]
   G --> H[POST /sat-file/session-templates<br/>× N, in SAT order]
   H --> I[4-list summary]
+```
+
+For each image (in dependency order):
+
+```mermaid
+flowchart LR
+  S[POST /sat-file/images/cfs-session<br/>creates CFS session] --> M{--watch-logs?}
+  M -->|yes| L[GET /sessions/&#123;name&#125;/logs SSE]
+  M -->|no| P[GET /sessions?name=…<br/>poll every 10s]
+  L --> T[terminal status]
+  P --> T
+  T --> Z[POST /sat-file/images/stamp<br/>PATCH manta.image_session.&#42;]
 ```
 
 **Full deployment** (build image, then apply to nodes):
@@ -188,7 +202,7 @@ Every image built by `manta apply sat-file` is automatically annotated with the 
 | `manta.image_session.groups` | JSON-encoded array of HSM group names the image targets |
 | `manta.image_session.configuration` | CFS configuration name that was applied |
 
-These are written after the CFS session completes successfully and survive subsequent rebuilds. You can read them with `manta get images -i <image-id>` (the keys appear in the JSON `metadata` field). A failure to write the metadata after a successful build is logged at warn level but does **not** fail the apply — the image is still produced, only the annotation is missing.
+These are written as an explicit step after the CFS session reaches a terminal-complete state: the CLI hands the session name to `POST /sat-file/images/stamp` and the server derives + PATCHes the three keys onto the produced IMS image. You can read them with `manta get images -i <image-id>` (the keys appear in the JSON `metadata` field). If the CFS session ends without producing an image (no `result_id`), the stamp step refuses with an explicit error so the apply fails fast instead of patching a non-existent image.
 
 > Metadata is not written in `--dry-run` mode, since no real image is produced. It is also not written to images created by side-paths that don't go through `apply sat-file` (e.g. direct IMS image uploads, or the bulk `apply` flow for SAT files with a `hardware:` section).
 
