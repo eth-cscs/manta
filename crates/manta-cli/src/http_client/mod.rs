@@ -43,7 +43,7 @@ pub use hardware_clusters::ApplyHwConfigurationRequest;
 pub use kernel_parameters::{
   AddKernelParametersRequest, ApplyKernelParametersRequest,
 };
-pub use sat_file::ApplySatImageRequest;
+pub use sat_file::CreateImageCfsSessionRequest;
 pub use sessions::CreateSessionRequest;
 pub use templates::ApplyTemplateSessionRequest;
 pub use vcluster::RestoreVclusterRequest;

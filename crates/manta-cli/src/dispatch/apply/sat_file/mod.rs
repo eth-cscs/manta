@@ -14,6 +14,7 @@
 
 pub mod dispatch;
 pub mod exec;
+pub mod image_pipeline;
 pub mod plan;
 pub mod render;
 // -- TESTS --

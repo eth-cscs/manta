@@ -32,6 +32,8 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::types::bos::{
   session::BosSession, session_template::BosSessionTemplate,
 };
+use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
+use manta_backend_dispatcher::types::ims::Image;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -185,6 +187,126 @@ pub async fn post_sat_image(
 }
 
 // ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/images/cfs-session — Create the CFS session that
+// will build the image, but do not wait for it or stamp the result. The
+// CLI drives the monitor + stamp steps via the existing session endpoints
+// and the companion `/sat-file/images/stamp` endpoint below.
+// ---------------------------------------------------------------------------
+
+/// Request body for `POST /sat-file/images/cfs-session` — one entry
+/// from the SAT file's `images` section, the CLI's accumulated
+/// `ref_lookup`, and the ansible knobs the CFS session needs.
+#[derive(Deserialize, ToSchema)]
+pub struct CreateImageCfsSessionRequest {
+  /// One SAT `images[]` entry as a structured value.
+  #[schema(value_type = serde_json::Value)]
+  pub image: serde_json::Value,
+  /// `ref_name.or(name) -> image_id` map for previously-created images.
+  #[serde(default)]
+  pub ref_lookup: std::collections::HashMap<String, String>,
+  /// Ansible verbosity level (0–4) for the CFS session.
+  pub ansible_verbosity: Option<u8>,
+  /// Extra arguments forwarded verbatim to `ansible-playbook`.
+  pub ansible_passthrough: Option<String>,
+  /// Validate without creating; the response contains a mock session.
+  #[serde(default)]
+  pub dry_run: bool,
+}
+
+#[utoipa::path(post, path = "/sat-file/images/cfs-session", tag = "sat-file",
+  params(SiteHeader),
+  request_body = CreateImageCfsSessionRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 201, description = "CFS session created",         body = serde_json::Value),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/images/cfs-session` — translate one SAT
+/// `images[]` entry into a CFS session payload and create it. Returns
+/// the freshly-created [`CfsSessionGetResponse`] so the CLI can drive
+/// the monitor + stamp steps itself.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_image_cfs_session(
+  ctx: RequestCtx,
+  Json(body): Json<CreateImageCfsSessionRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!(
+    "post_sat_image_cfs_session dry_run={}",
+    body.dry_run
+  );
+  let infra = ctx.infra();
+
+  let vault_base_url = require_vault(infra.vault_base_url)?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
+
+  let session = infra
+    .create_image_cfs_session(
+      &ctx.token,
+      vault_base_url,
+      k8s_api_url,
+      body.image,
+      body.ref_lookup,
+      body.ansible_verbosity,
+      body.ansible_passthrough.as_deref(),
+      body.dry_run,
+    )
+    .await
+    .map_err(display_error)?;
+
+  Ok((StatusCode::CREATED, Json::<CfsSessionGetResponse>(session)))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/images/stamp — Given a (terminal-complete) CFS
+// session name, fetch it, derive `manta.image_session.{base,groups,
+// configuration}` from it, and PATCH them onto the IMS image the session
+// produced. Fails fast when the session has no result image.
+// ---------------------------------------------------------------------------
+
+/// Request body for `POST /sat-file/images/stamp`.
+#[derive(Deserialize, ToSchema)]
+pub struct StampImageFromSessionRequest {
+  /// Name of the (already terminal-complete) CFS session whose result
+  /// image should be stamped with `manta.image_session.*` provenance.
+  pub cfs_session_name: String,
+}
+
+#[utoipa::path(post, path = "/sat-file/images/stamp", tag = "sat-file",
+  params(SiteHeader),
+  request_body = StampImageFromSessionRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Image stamped",               body = serde_json::Value),
+    (status = 400, description = "Session not complete / no image", body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/images/stamp` — fetch the named CFS session,
+/// derive the provenance stamp, and PATCH the produced IMS image.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_image_stamp(
+  ctx: RequestCtx,
+  Json(body): Json<StampImageFromSessionRequest>,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!(
+    "post_sat_image_stamp cfs_session={}",
+    body.cfs_session_name
+  );
+  let infra = ctx.infra();
+
+  let image = infra
+    .stamp_image_from_cfs_session(&ctx.token, &body.cfs_session_name)
+    .await
+    .map_err(display_error)?;
+
+  Ok(Json::<Image>(image))
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/v1/sat-file/session-templates — Apply one SAT session_template
 // ---------------------------------------------------------------------------
 
@@ -270,8 +392,9 @@ mod tests {
   //! the wire boundary.
 
   use super::{
-    PostSatConfigurationRequest, PostSatImageRequest,
-    PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+    CreateImageCfsSessionRequest, PostSatConfigurationRequest,
+    PostSatImageRequest, PostSatSessionTemplateRequest,
+    PostSatSessionTemplateResponse, StampImageFromSessionRequest,
   };
 
   /// Lock the shape of the CLI's POST /sat-file/configurations body.
@@ -340,6 +463,50 @@ mod tests {
     assert_eq!(req.ansible_verbosity, None);
     assert!(!req.watch_logs);
     assert!(!req.dry_run);
+  }
+
+  /// Lock the shape of the CLI's POST /sat-file/images/cfs-session body.
+  #[test]
+  fn cli_create_image_cfs_session_body_deserialises() {
+    let cli_body = serde_json::json!({
+      "image": { "name": "img-v1", "ref_name": "base", "configuration": "cfg-v1" },
+      "ref_lookup": { "earlier-ref": "abc-123" },
+      "ansible_verbosity": 3,
+      "ansible_passthrough": "--check",
+      "dry_run": false,
+    });
+    let req: CreateImageCfsSessionRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert_eq!(req.image["name"].as_str(), Some("img-v1"));
+    assert_eq!(
+      req.ref_lookup.get("earlier-ref").map(String::as_str),
+      Some("abc-123")
+    );
+    assert_eq!(req.ansible_verbosity, Some(3));
+    assert_eq!(req.ansible_passthrough.as_deref(), Some("--check"));
+    assert!(!req.dry_run);
+  }
+
+  /// Minimal create-session body — only `image` is required.
+  #[test]
+  fn cli_create_image_cfs_session_body_with_defaults_deserialises() {
+    let cli_body = serde_json::json!({ "image": { "name": "img-v1" } });
+    let req: CreateImageCfsSessionRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert!(req.ref_lookup.is_empty());
+    assert_eq!(req.ansible_verbosity, None);
+    assert_eq!(req.ansible_passthrough, None);
+    assert!(!req.dry_run);
+  }
+
+  /// Lock the shape of the CLI's POST /sat-file/images/stamp body —
+  /// just the CFS session name.
+  #[test]
+  fn cli_stamp_image_body_deserialises() {
+    let cli_body = serde_json::json!({ "cfs_session_name": "sat-img-v1" });
+    let req: StampImageFromSessionRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert_eq!(req.cfs_session_name, "sat-img-v1");
   }
 
   /// Lock the shape of the CLI's POST /sat-file/session-templates body.

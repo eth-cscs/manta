@@ -135,6 +135,14 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     )
     .route("/sat-file/images", post(handlers::post_sat_image))
     .route(
+      "/sat-file/images/cfs-session",
+      post(handlers::post_sat_image_cfs_session),
+    )
+    .route(
+      "/sat-file/images/stamp",
+      post(handlers::post_sat_image_stamp),
+    )
+    .route(
       "/sat-file/session-templates",
       post(handlers::post_sat_session_template),
     )

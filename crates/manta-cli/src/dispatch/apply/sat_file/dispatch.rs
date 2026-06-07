@@ -10,8 +10,10 @@ use std::collections::HashMap;
 
 use serde_json::Value;
 
-use super::{exec::SatApplyOptions, plan::SatElement};
-use crate::http_client::{ApplySatImageRequest, MantaClient};
+use super::{
+  exec::SatApplyOptions, image_pipeline::run_image_pipeline, plan::SatElement,
+};
+use crate::http_client::MantaClient;
 
 /// Dispatch every element in the plan in order. For each `Image`, the
 /// response's `id` (or, on dry-run, a synthetic key) is recorded under
@@ -45,20 +47,8 @@ pub async fn dispatch_plan(
       SatElement::Image(body) => {
         let label = image_label(&body);
 
-        let img = client
-          .apply_sat_image(
-            token,
-            &ApplySatImageRequest {
-              image: &body,
-              ref_lookup: &ref_lookup,
-              ansible_verbosity: opts.ansible_verbosity_opt,
-              ansible_passthrough: opts.ansible_passthrough_opt,
-              watch_logs: opts.watch_logs,
-              timestamps: opts.timestamps,
-              dry_run: opts.dry_run,
-            },
-          )
-          .await?;
+        let img =
+          run_image_pipeline(client, token, &body, &ref_lookup, opts).await?;
 
         if let Some(lab) = label {
           let id = resolve_image_id(&img, &lab);
@@ -167,5 +157,15 @@ mod tests {
   fn resolve_image_id_passes_through_dryrun_uuid_from_csm_rs() {
     let img = json!({ "id": "DRYRUN_a1b2", "name": "my-image" });
     assert_eq!(resolve_image_id(&img, "base"), "DRYRUN_a1b2");
+  }
+
+  /// In the dry-run branch the image_pipeline synthesises its return
+  /// Value from the mocked CFS session: `{ id: <session.result_id>,
+  /// name: <SAT image name> }`. resolve_image_id picks the synthetic
+  /// id straight off that.
+  #[test]
+  fn resolve_image_id_reads_dryrun_id_synthesised_by_image_pipeline() {
+    let img = json!({ "id": "DRYRUN-build-img-v1", "name": "img-v1" });
+    assert_eq!(resolve_image_id(&img, "img-v1"), "DRYRUN-build-img-v1");
   }
 }
