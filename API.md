@@ -119,8 +119,8 @@ Create a CFS configuration and session from one or more git repositories.
 | `cfs_conf_sess_name` | string | no | Name for the config and session (auto-generated if omitted) |
 | `playbook_yaml_file_name` | string | no | Ansible playbook file (default: `site.yaml`) |
 | `hsm_group` | string | no | Target HSM group |
-| `ansible_limit` | string | no | Comma-separated xnames or group names to limit execution |
-| `ansible_verbosity` | string | no | Ansible verbosity level (`0`–`4`) |
+| `ansible_limit` | string | no | Comma-separated xnames (or NIDs / hostlist) to limit execution. Group names are **not** accepted — pre-resolve them client-side via `GET /groups?name=…`. |
+| `ansible_verbosity` | string | no | Ansible verbosity flag (e.g. `-v`, `-vvv`) — forwarded verbatim to `ansible-playbook` |
 | `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
 
 **Response `201`**
@@ -259,7 +259,7 @@ Get details for one or more nodes.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `xname` | string | **yes** | Node xname (e.g. `x3000c0s1b0n0`) |
+| `xname` | string | **yes** | Comma-separated xnames, NIDs, or hostlist expression (e.g. `x3000c0s1b0n[0-3]` or `nid000001,nid000002`) |
 | `include_siblings` | bool | no | Include sibling nodes in the same blade (default: `false`) |
 | `status` | string | no | Filter by power status |
 
@@ -365,7 +365,7 @@ curl -k "$MANTA_HOST/api/v1/groups/available" \
 
 ### POST /groups
 
-Create a new HSM group.
+Create a new HSM group. **Admin only** — non-admin callers receive `400 BadRequest`: a brand-new group label has no membership to scope against, so there's no meaningful per-group authorization to apply.
 
 **Request body** — HSM group object:
 
@@ -378,6 +378,8 @@ Create a new HSM group.
 ```
 
 **Response `201`** — `{ "created": true }`.
+
+**Response `400`** — caller is not admin (or the body is malformed).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/groups" \
@@ -432,9 +434,11 @@ Add nodes to an HSM group.
 ```json
 {
   "added": ["x3000c0s1b0n0", "x3000c0s2b0n0"],
-  "removed": []
+  "removed": ["x3000c0s1b0n0", "x3000c0s2b0n0", "x3000c0s3b0n0"]
 }
 ```
+
+> **Note on `removed`** — despite the field name, this carries the **final, sorted membership of the group after the update**, not the xnames that were removed. The name is kept for wire stability; expect a `final_members` alias in a future release.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/groups/compute/members" \
@@ -1425,16 +1429,23 @@ curl -k -X POST "$MANTA_HOST/api/v1/migrate/nodes" \
 
 ### POST /migrate/backup
 
-Back up vCluster configuration to files.
+Back up vCluster configuration to files. **Admin only.**
+
+> **Server-side filesystem confinement** — both `/migrate/*` endpoints require the operator to configure `[server] migrate_backup_root` in `server.toml` (an absolute directory). When unset, the endpoints reject every request with `400 BadRequest` even for admins. When set, every `destination` / `*_file` / `image_dir` path in the body is canonicalised and rejected with `400 BadRequest` if it resolves outside that root.
 
 **Request body**
 
 ```json
 {
   "bos": "my-cluster",
-  "destination": "/backups/cluster"
+  "destination": "/var/lib/manta/migrate/cluster"
 }
 ```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `bos` | string | no | BOS session-template name (or filter) to back up; omit to back up every template |
+| `destination` | string | no | Absolute filesystem path under `migrate_backup_root` where backup files are written; omit to use the backend default |
 
 **Response `200`** — `{ "completed": true }`.
 
@@ -1450,17 +1461,17 @@ curl -k -X POST "$MANTA_HOST/api/v1/migrate/backup" \
 
 ### POST /migrate/restore
 
-Restore a vCluster from backup files.
+Restore a vCluster from backup files. **Admin only**, and subject to the same `[server] migrate_backup_root` confinement as `POST /migrate/backup` — every path in the body must resolve under that root or the request is rejected with `400 BadRequest`.
 
 **Request body**
 
 ```json
 {
-  "bos_file": "/backups/bos.yaml",
-  "cfs_file": "/backups/cfs.yaml",
-  "hsm_file": "/backups/hsm.yaml",
-  "ims_file": "/backups/ims.yaml",
-  "image_dir": "/backups/images",
+  "bos_file": "/var/lib/manta/migrate/bos.yaml",
+  "cfs_file": "/var/lib/manta/migrate/cfs.yaml",
+  "hsm_file": "/var/lib/manta/migrate/hsm.yaml",
+  "ims_file": "/var/lib/manta/migrate/ims.yaml",
+  "image_dir": "/var/lib/manta/migrate/images",
   "overwrite": false
 }
 ```
@@ -1475,9 +1486,9 @@ curl -k -X POST "$MANTA_HOST/api/v1/migrate/restore" \
   -H "Authorization: Bearer $MANTA_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
-    "bos_file": "/backups/bos.yaml",
-    "cfs_file": "/backups/cfs.yaml",
-    "hsm_file": "/backups/hsm.yaml"
+    "bos_file": "/var/lib/manta/migrate/bos.yaml",
+    "cfs_file": "/var/lib/manta/migrate/cfs.yaml",
+    "hsm_file": "/var/lib/manta/migrate/hsm.yaml"
   }'
 ```
 
