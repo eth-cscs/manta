@@ -75,6 +75,14 @@ impl PowerAction {
       PowerAction::Reset => "reset",
     }
   }
+
+  fn to_wire(self) -> crate::http_client::PowerAction {
+    match self {
+      PowerAction::On => crate::http_client::PowerAction::On,
+      PowerAction::Off => crate::http_client::PowerAction::Off,
+      PowerAction::Reset => crate::http_client::PowerAction::Reset,
+    }
+  }
 }
 
 /// Options shared by `exec_nodes` and `exec_cluster`.
@@ -101,7 +109,13 @@ pub async fn exec_nodes(
   {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(ctx, token, &opts, "nodes").await
+  dispatch_and_wait(
+    ctx,
+    token,
+    &opts,
+    crate::http_client::PowerTargetType::Nodes,
+  )
+  .await
 }
 
 /// Execute a power action against all nodes in an HSM group.
@@ -117,7 +131,13 @@ pub async fn exec_cluster(
   {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(ctx, token, &opts, "cluster").await
+  dispatch_and_wait(
+    ctx,
+    token,
+    &opts,
+    crate::http_client::PowerTargetType::Cluster,
+  )
+  .await
 }
 
 /// POST `/power` to start the transition, then (unless `no_wait`)
@@ -128,14 +148,18 @@ async fn dispatch_and_wait(
   ctx: &AppContext<'_>,
   token: &str,
   opts: &PowerOpts<'_>,
-  target_type: &str,
+  target_type: crate::http_client::PowerTargetType,
 ) -> Result<(), Error> {
   let action_str = opts.action.wire();
   let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
 
-  let started = client
-    .power(token, action_str, opts.target, target_type, opts.force)
-    .await?;
+  let req = crate::http_client::PowerRequest {
+    action: opts.action.to_wire(),
+    host_expression: opts.target.to_string(),
+    target_type,
+    force: opts.force,
+  };
+  let started = client.power(token, &req).await?;
   let transition_id = started
     .get("transitionID")
     .and_then(Value::as_str)

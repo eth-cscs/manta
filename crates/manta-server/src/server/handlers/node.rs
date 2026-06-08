@@ -7,7 +7,7 @@ use axum::{
   response::IntoResponse,
 };
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -93,21 +93,7 @@ pub async fn delete_node(
 // POST /api/v1/nodes
 // ---------------------------------------------------------------------------
 
-/// Body for `POST /nodes`.
-#[derive(Deserialize, ToSchema)]
-pub struct AddNodeRequest {
-  /// Physical location ID (xname) of the node, e.g. `x3000c0s1b0n0`.
-  pub id: String,
-  /// Initial HSM group the node belongs to.
-  pub group: String,
-  /// Whether to register the node as enabled. Defaults to `false`
-  /// (disabled) per serde's default for `bool`; CLI's
-  /// `manta add node` flips the polarity via `--disabled`.
-  #[serde(default)]
-  pub enabled: bool,
-  /// Optional architecture tag: `"X86"`, `"ARM"`, or `"Other"`.
-  pub arch: Option<String>,
-}
+pub use manta_shared::types::wire::node::AddNodeRequest;
 
 /// POST /nodes — register a new node in HSM and add it to a group.
 #[utoipa::path(post, path = "/nodes", tag = "nodes",

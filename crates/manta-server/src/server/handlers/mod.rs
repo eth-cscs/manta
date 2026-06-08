@@ -336,9 +336,6 @@ pub(super) fn validate_repo_list_lengths(
   Ok(())
 }
 
-pub(super) fn default_true() -> bool {
-  true
-}
 
 pub(super) fn parse_iso_datetime(
   field: &str,

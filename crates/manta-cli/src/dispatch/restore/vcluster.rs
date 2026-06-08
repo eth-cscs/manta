@@ -3,7 +3,7 @@
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{MantaClient, RestoreVclusterRequest};
+use crate::http_client::{MantaClient, MigrateRestoreRequest};
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -78,12 +78,12 @@ pub async fn exec(
   MantaClient::from_app_ctx(ctx)?
     .restore_vcluster(
       token,
-      &RestoreVclusterRequest {
-        bos_file,
-        cfs_file,
-        hsm_file,
-        ims_file,
-        image_dir,
+      &MigrateRestoreRequest {
+        bos_file: bos_file.map(str::to_string),
+        cfs_file: cfs_file.map(str::to_string),
+        hsm_file: hsm_file.map(str::to_string),
+        ims_file: ims_file.map(str::to_string),
+        image_dir: image_dir.map(str::to_string),
         overwrite,
       },
     )

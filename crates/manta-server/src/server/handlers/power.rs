@@ -7,8 +7,6 @@
 //!   of the named transition (status + task counts + per-task detail).
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::ToSchema;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -17,43 +15,9 @@ use crate::service;
 // POST /api/v1/power — Power on/off/reset nodes or cluster
 // ---------------------------------------------------------------------------
 
-/// Power action to apply to the target nodes or cluster.
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum PowerAction {
-  /// Power on the nodes.
-  On,
-  /// Power off the nodes.
-  Off,
-  /// Power-cycle (reset) the nodes.
-  Reset,
-}
-
-/// Whether `host_expression` parses as a node expression
-/// (`nodes`) or a single cluster name (`cluster`).
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum PowerTargetType {
-  /// `host_expression` is a hostlist / NID / xname expression.
-  Nodes,
-  /// `host_expression` is a single HSM group name; every member is targeted.
-  Cluster,
-}
-
-/// Request body for `POST /power`.
-#[derive(Deserialize, ToSchema)]
-pub struct PowerRequest {
-  /// Power operation to perform.
-  pub action: PowerAction,
-  /// For nodes: hosts expression (xnames, nids, or hostlist notation).
-  /// For cluster: the HSM group name.
-  pub host_expression: String,
-  /// Indicates whether `host_expression` is a node expression or a cluster name.
-  pub target_type: PowerTargetType,
-  /// Pass `--force` to the underlying power operation (forceful shutdown/reset).
-  #[serde(default)]
-  pub force: bool,
-}
+pub use manta_shared::types::wire::power::{
+  PowerAction, PowerRequest, PowerTargetType,
+};
 
 /// `POST /api/v1/power` — start a PCS power transition (on / off /
 /// reset) against nodes or all members of a cluster and return the
@@ -88,25 +52,17 @@ pub async fn post_power(
   );
   let infra = ctx.infra();
 
-  let target_type = match body.target_type {
-    PowerTargetType::Cluster => service::power::PowerTargetType::Cluster,
-    PowerTargetType::Nodes => service::power::PowerTargetType::Nodes,
-  };
   let xnames = service::power::resolve_target_xnames(
     &infra,
     &ctx.token,
-    target_type,
+    body.target_type,
     &body.host_expression,
   )
   .await
   .map_err(to_handler_error)?;
 
   let params = service::power::ApplyPowerParams {
-    action: match body.action {
-      PowerAction::On => service::power::PowerAction::On,
-      PowerAction::Off => service::power::PowerAction::Off,
-      PowerAction::Reset => service::power::PowerAction::Reset,
-    },
+    action: body.action,
     xnames,
     force: body.force,
   };

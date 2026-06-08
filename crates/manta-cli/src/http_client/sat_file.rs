@@ -19,36 +19,14 @@
 use std::collections::HashMap;
 
 use manta_shared::types::dto::{CfsSessionGetResponse, Image};
-use serde::Serialize;
+pub use manta_shared::types::wire::sat_file::{
+  CreateImageCfsSessionRequest, PostSatConfigurationRequest,
+  PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+  StampImageFromSessionRequest,
+};
 use serde_json::Value;
 
 use super::MantaClient;
-
-/// Request body for `POST /sat-file/images/cfs-session`.
-///
-/// Wire-compatible with the server's `CreateImageCfsSessionRequest`
-/// (in `manta-server`'s `handlers::sat_file`); fields renamed on
-/// either side would break image builds and are caught by the
-/// wire-format-lock tests next to the server type.
-#[derive(Serialize)]
-pub struct CreateImageCfsSessionRequest<'a> {
-  /// One SAT `images[]` entry as a structured value, borrowed from the
-  /// CLI's parsed SAT plan.
-  pub image: &'a Value,
-  /// `ref_name.or(name) -> image_id` for images created earlier in the
-  /// same `apply sat-file` run; the backend uses it to resolve
-  /// `base.image_ref` chains.
-  pub ref_lookup: &'a HashMap<String, String>,
-  /// Ansible verbosity level (0–4) for the CFS session that builds
-  /// the image.
-  pub ansible_verbosity: Option<u8>,
-  /// Extra arguments forwarded verbatim to `ansible-playbook`.
-  pub ansible_passthrough: Option<&'a str>,
-  /// Validate without creating; the server returns a mocked complete
-  /// session with a `DRYRUN-<uuid>` result id. The image_pipeline
-  /// short-circuits the monitor + stamp steps in this mode.
-  pub dry_run: bool,
-}
 
 impl MantaClient {
   /// `POST /api/v1/sat-file/configurations` — apply one SAT
@@ -80,7 +58,7 @@ impl MantaClient {
   pub async fn create_image_cfs_session(
     &self,
     token: &str,
-    req: &CreateImageCfsSessionRequest<'_>,
+    req: &CreateImageCfsSessionRequest,
   ) -> anyhow::Result<CfsSessionGetResponse> {
     self
       .post_json(token, "/sat-file/images/cfs-session", req)

@@ -79,10 +79,10 @@ pub async fn run_image_pipeline(
     .create_image_cfs_session(
       token,
       &CreateImageCfsSessionRequest {
-        image,
-        ref_lookup,
+        image: image.clone(),
+        ref_lookup: ref_lookup.clone(),
         ansible_verbosity: opts.ansible_verbosity_opt,
-        ansible_passthrough: opts.ansible_passthrough_opt,
+        ansible_passthrough: opts.ansible_passthrough_opt.map(str::to_string),
         dry_run: opts.dry_run,
       },
     )

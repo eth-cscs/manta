@@ -15,6 +15,10 @@
 
 use serde_json::Value;
 
+pub use manta_shared::types::wire::power::{
+  PowerAction, PowerRequest, PowerTargetType,
+};
+
 use super::MantaClient;
 
 impl MantaClient {
@@ -23,26 +27,15 @@ impl MantaClient {
   /// The response carries the PCS `transitionID` the caller then
   /// polls with [`MantaClient::power_transition`].
   ///
-  /// `action` is the lowercase form (`"on"`, `"off"`, `"reset"`)
-  /// that the server's request schema expects; the server maps
-  /// `(action, force)` to the PCS wire-level operation
-  /// (`"on"` / `"soft-off"` / `"force-off"` / `"soft-restart"` /
-  /// `"hard-restart"`).
+  /// The server maps `(action, force)` to the PCS wire-level
+  /// operation (`"on"` / `"soft-off"` / `"force-off"` /
+  /// `"soft-restart"` / `"hard-restart"`).
   pub async fn power(
     &self,
     token: &str,
-    action: &str,
-    targets_expression: &str,
-    target_type: &str,
-    force: bool,
+    req: &PowerRequest,
   ) -> anyhow::Result<Value> {
-    let body = serde_json::json!({
-      "action": action,
-      "targets_expression": targets_expression,
-      "target_type": target_type,
-      "force": force,
-    });
-    self.post_json(token, "/power", &body).await
+    self.post_json(token, "/power", req).await
   }
 
   /// `GET /api/v1/power/transitions/{id}` — snapshot an in-flight

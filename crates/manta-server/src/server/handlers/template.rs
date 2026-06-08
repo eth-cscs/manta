@@ -7,7 +7,7 @@ use axum::{
   response::IntoResponse,
 };
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
@@ -64,44 +64,9 @@ pub async fn get_templates(
 // POST /api/v1/templates/{name}/sessions — Create BOS session from template
 // ---------------------------------------------------------------------------
 
-/// BOS session operation to run against the template's node list.
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum BosOperation {
-  /// Boot nodes that are currently off.
-  Boot,
-  /// Reboot (power-cycle) nodes.
-  Reboot,
-  /// Shut down nodes.
-  Shutdown,
-}
-
-impl BosOperation {
-  fn as_str(&self) -> &'static str {
-    match self {
-      Self::Boot => "boot",
-      Self::Reboot => "reboot",
-      Self::Shutdown => "shutdown",
-    }
-  }
-}
-
-/// Request body for `POST /templates/{name}/sessions`.
-#[derive(Deserialize, ToSchema)]
-pub struct PostTemplateSessionRequest {
-  /// BOS operation to run (boot, reboot, or shutdown).
-  pub operation: BosOperation,
-  /// Ansible limit expression restricting which template nodes are targeted.
-  pub limit: String,
-  /// Optional explicit name for the BOS session.
-  pub session_name: Option<String>,
-  /// When true, include nodes marked as disabled.
-  #[serde(default)]
-  pub include_disabled: bool,
-  /// When true, validates the session parameters without creating a BOS session.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::template::{
+  BosOperation, PostTemplateSessionRequest,
+};
 
 /// `POST /api/v1/templates/{name}/sessions` — create a BOS session from a session template.
 #[utoipa::path(post, path = "/templates/{name}/sessions", tag = "templates",

@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{ApplyTemplateSessionRequest, MantaClient};
+use crate::http_client::{BosOperation, MantaClient, PostTemplateSessionRequest};
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -22,14 +22,22 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
+  let operation = match p.operation {
+    "boot" => BosOperation::Boot,
+    "reboot" => BosOperation::Reboot,
+    "shutdown" => BosOperation::Shutdown,
+    other => anyhow::bail!(
+      "unknown BOS operation '{other}' (expected boot/reboot/shutdown)"
+    ),
+  };
   let result = MantaClient::from_app_ctx(ctx)?
     .apply_template_session(
       token,
       p.template_name,
-      &ApplyTemplateSessionRequest {
-        operation: p.operation,
-        limit: p.limit,
-        session_name: p.session_name,
+      &PostTemplateSessionRequest {
+        operation,
+        limit: p.limit.to_string(),
+        session_name: p.session_name.map(str::to_string),
         include_disabled: p.include_disabled,
         dry_run: p.dry_run,
       },

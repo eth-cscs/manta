@@ -18,5 +18,12 @@
 //!   the OpenAPI spec and the rustdoc the CLI consumes.
 
 pub mod boot_parameters;
+pub mod group;
+pub mod hw_cluster;
 pub mod kernel_parameters;
+pub mod migrate;
+pub mod node;
+pub mod power;
+pub mod sat_file;
 pub mod session;
+pub mod template;

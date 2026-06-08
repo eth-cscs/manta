@@ -6,8 +6,8 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use serde::{Deserialize, Serialize};
-use utoipa::{IntoParams, ToSchema};
+use serde::Deserialize;
+use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -173,24 +173,9 @@ pub async fn create_group(
 // POST /api/v1/groups/{name}/members
 // ---------------------------------------------------------------------------
 
-/// Body for `POST /groups/{name}/members`.
-#[derive(Deserialize, ToSchema)]
-pub struct AddNodesToGroupRequest {
-  /// Hostlist expression (xnames, NIDs, or hostlist notation)
-  /// identifying the new member set for the group.
-  pub hosts_expression: String,
-}
-
-/// Response for `POST /groups/{name}/members`.
-#[derive(Serialize, ToSchema)]
-pub struct AddNodesToGroupResponse {
-  /// Xnames that were added to the group as part of this request.
-  pub added: Vec<String>,
-  /// Final, sorted membership of the group after the update. The CLI
-  /// renders this as the post-operation member list. The field name
-  /// is retained for wire stability.
-  pub removed: Vec<String>,
-}
+pub use manta_shared::types::wire::group::{
+  AddNodesToGroupRequest, AddNodesToGroupResponse, DeleteGroupMembersRequest,
+};
 
 /// POST /groups/{name}/members — replace a group's member list from a host expression.
 #[utoipa::path(post, path = "/groups/{name}/members", tag = "groups",
@@ -237,16 +222,6 @@ pub async fn add_nodes_to_group(
 // ---------------------------------------------------------------------------
 // DELETE /api/v1/groups/{name}/members — Remove nodes from HSM group
 // ---------------------------------------------------------------------------
-
-/// Request body for `DELETE /groups/{name}/members`.
-#[derive(Deserialize, ToSchema)]
-pub struct DeleteGroupMembersRequest {
-  /// Hosts expression (xnames, nids, or hostlist notation) identifying nodes to remove.
-  pub xnames_expression: String,
-  /// When true, validates the request without modifying group membership.
-  #[serde(default)]
-  pub dry_run: bool,
-}
 
 /// `DELETE /api/v1/groups/{name}/members` — remove nodes from an HSM group.
 #[utoipa::path(delete, path = "/groups/{name}/members", tag = "groups",

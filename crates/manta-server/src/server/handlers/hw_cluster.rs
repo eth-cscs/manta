@@ -1,32 +1,14 @@
 //! Hardware cluster add/delete/configuration handlers.
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::ToSchema;
 
-use super::{
-  ErrorResponse, RequestCtx, SiteHeader, default_true, to_handler_error,
-};
+use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
-// ---------------------------------------------------------------------------
-// POST /api/v1/hardware-clusters/{target}/members
-// ---------------------------------------------------------------------------
-
-/// Request body for `POST /hardware-clusters/{target}/members`.
-#[derive(Deserialize, ToSchema)]
-pub struct AddHwComponentRequest {
-  /// Source HSM group that donates nodes matching `pattern`.
-  pub parent_cluster: String,
-  /// Hardware component pattern used to select which nodes to move.
-  pub pattern: String,
-  /// Create the target HSM group if it does not already exist.
-  #[serde(default)]
-  pub create_hsm_group: bool,
-  /// When true, returns the planned changes without modifying group membership.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::hw_cluster::{
+  AddHwComponentRequest, ApplyHwConfigurationRequest, DeleteHwComponentRequest,
+  HwClusterMode,
+};
 
 /// `POST /api/v1/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.
 #[utoipa::path(post, path = "/hardware-clusters/{target}/members", tag = "hardware",
@@ -92,21 +74,6 @@ pub async fn add_hw_component(
 // DELETE /api/v1/hardware-clusters/{target}/members
 // ---------------------------------------------------------------------------
 
-/// Request body for `DELETE /hardware-clusters/{target}/members`.
-#[derive(Deserialize, ToSchema)]
-pub struct DeleteHwComponentRequest {
-  /// Destination HSM group that receives nodes moved out of the target cluster.
-  pub parent_cluster: String,
-  /// Hardware component pattern used to select which nodes to move back.
-  pub pattern: String,
-  /// Delete the target HSM group if it becomes empty after the operation.
-  #[serde(default)]
-  pub delete_hsm_group: bool,
-  /// When true, returns the planned changes without modifying group membership.
-  #[serde(default)]
-  pub dry_run: bool,
-}
-
 /// `DELETE /api/v1/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.
 #[utoipa::path(delete, path = "/hardware-clusters/{target}/members", tag = "hardware",
   params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
@@ -171,38 +138,6 @@ pub async fn delete_hw_component(
 // POST /api/v1/hardware-clusters/{target}/configuration
 // ---------------------------------------------------------------------------
 
-/// Whether to pin nodes to the target cluster or unpin them back to the parent.
-#[derive(Debug, Deserialize, Default, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum HwClusterMode {
-  /// Move nodes from the parent cluster into the target cluster.
-  #[default]
-  Pin,
-  /// Move nodes back from the target cluster to the parent cluster.
-  Unpin,
-}
-
-/// Request body for `POST /hardware-clusters/{target}/configuration`.
-#[derive(Deserialize, ToSchema)]
-pub struct ApplyHwConfigurationRequest {
-  /// Source (parent) HSM group supplying nodes.
-  pub parent_cluster: String,
-  /// Hardware component pattern selecting which nodes to pin/unpin.
-  pub pattern: String,
-  /// Whether to pin nodes into the target cluster or unpin back to parent (default: pin).
-  #[serde(default)]
-  pub mode: HwClusterMode,
-  /// Create the target HSM group if absent (default true).
-  #[serde(default = "default_true")]
-  pub create_target_hsm_group: bool,
-  /// Delete the parent HSM group if it becomes empty (default true).
-  #[serde(default = "default_true")]
-  pub delete_empty_parent_hsm_group: bool,
-  /// When true, returns the planned changes without modifying group membership.
-  #[serde(default)]
-  pub dry_run: bool,
-}
-
 /// `POST /api/v1/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.
 #[utoipa::path(post, path = "/hardware-clusters/{target}/configuration", tag = "hardware",
   params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
@@ -241,14 +176,9 @@ pub async fn apply_hw_configuration(
   .await
   .map_err(to_handler_error)?;
 
-  let mode = match body.mode {
-    HwClusterMode::Pin => crate::service::hw_cluster::HwClusterMode::Pin,
-    HwClusterMode::Unpin => crate::service::hw_cluster::HwClusterMode::Unpin,
-  };
-
   let result = crate::service::hw_cluster::apply_hw_configuration(
     &infra,
-    mode,
+    body.mode,
     &ctx.token,
     &target,
     &body.parent_cluster,

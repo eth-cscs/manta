@@ -44,18 +44,14 @@ pub async fn exec(
   let parent = parent_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No parent HSM group specified")?;
-  let mode_str = match mode {
-    HwClusterMode::Pin => "pin",
-    HwClusterMode::Unpin => "unpin",
-  };
   let result = MantaClient::from_app_ctx(ctx)?
     .apply_hw_configuration(
       token,
       target,
       &ApplyHwConfigurationRequest {
-        parent_cluster: parent,
-        pattern,
-        mode: mode_str,
+        parent_cluster: parent.to_string(),
+        pattern: pattern.to_string(),
+        mode,
         dry_run: dryrun,
         create_target_hsm_group,
         delete_empty_parent_hsm_group,

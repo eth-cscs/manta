@@ -1,22 +1,14 @@
 //! BOS template endpoints: list, create-session.
 
-use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::types::dto::BosSessionTemplate;
 use manta_shared::types::params::template::GetTemplateParams;
+pub use manta_shared::types::wire::template::{
+  BosOperation, PostTemplateSessionRequest,
+};
 
 use super::{MantaClient, QueryBuilder};
-
-/// Request body for `POST /templates/{name}/sessions`.
-#[derive(Serialize)]
-pub struct ApplyTemplateSessionRequest<'a> {
-  pub operation: &'a str,
-  pub limit: &'a str,
-  pub session_name: Option<&'a str>,
-  pub include_disabled: bool,
-  pub dry_run: bool,
-}
 
 impl MantaClient {
   pub async fn get_templates(
@@ -36,7 +28,7 @@ impl MantaClient {
     &self,
     token: &str,
     name: &str,
-    req: &ApplyTemplateSessionRequest<'_>,
+    req: &PostTemplateSessionRequest,
   ) -> anyhow::Result<Value> {
     self
       .post_json(token, &format!("/templates/{name}/sessions"), req)

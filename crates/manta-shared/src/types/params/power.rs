@@ -1,7 +1,11 @@
 //! Parameters for `POST /power`.
 
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
+
 /// The power operation to apply to a list of xnames.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum PowerAction {
   /// Power on (cold start) the listed xnames.
   On,
@@ -15,7 +19,8 @@ pub enum PowerAction {
 /// Whether the caller's `host_expression` is a hosts expression
 /// (xnames / NIDs / hostlist) or a single HSM group name whose
 /// members should be targeted.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
+#[serde(rename_all = "lowercase")]
 pub enum PowerTargetType {
   /// `host_expression` is a hosts expression.
   Nodes,
