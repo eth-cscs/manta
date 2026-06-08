@@ -14,7 +14,7 @@ use axum::{
 use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
@@ -153,26 +153,7 @@ pub async fn delete_session(
 // POST /api/v1/sessions — Create CFS session
 // ---------------------------------------------------------------------------
 
-/// Request body for `POST /sessions`.
-#[derive(Deserialize, ToSchema)]
-pub struct CreateSessionRequest {
-  /// Explicit name for the CFS session and configuration; auto-generated when absent.
-  pub cfs_conf_sess_name: Option<String>,
-  /// Ansible playbook filename inside the repository.
-  pub playbook_yaml_file_name: Option<String>,
-  /// Target HSM group name.
-  pub hsm_group: Option<String>,
-  /// Git repository names (parallel-indexed with `repo_last_commit_ids`).
-  pub repo_names: Vec<String>,
-  /// Git commit SHAs matching each entry in `repo_names`.
-  pub repo_last_commit_ids: Vec<String>,
-  /// Ansible `--limit` expression to restrict which hosts are targeted.
-  pub ansible_limit: Option<String>,
-  /// Ansible verbosity level (e.g. `"-v"`, `"-vvv"`).
-  pub ansible_verbosity: Option<String>,
-  /// Extra arguments forwarded verbatim to `ansible-playbook`.
-  pub ansible_passthrough: Option<String>,
-}
+pub use manta_shared::types::wire::session::CreateSessionRequest;
 
 /// `POST /api/v1/sessions` — create a CFS session from one or more git repositories.
 #[utoipa::path(post, path = "/sessions", tag = "sessions",

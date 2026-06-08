@@ -2,28 +2,15 @@
 
 use anyhow::{Context, bail};
 use futures::TryStreamExt;
-use serde::Serialize;
 use serde_json::Value;
 use tokio::io::{AsyncBufRead, BufReader};
 use tokio_util::io::StreamReader;
 
 use manta_shared::types::dto::CfsSessionGetResponse;
 use manta_shared::types::params::session::GetSessionParams;
+pub use manta_shared::types::wire::session::CreateSessionRequest;
 
 use super::{MantaClient, QueryBuilder};
-
-/// Request body for `POST /sessions`.
-#[derive(Serialize)]
-pub struct CreateSessionRequest<'a> {
-  pub cfs_conf_sess_name: Option<&'a str>,
-  pub playbook_yaml_file_name: Option<&'a str>,
-  pub group_name: Option<&'a str>,
-  pub repo_names: &'a [&'a str],
-  pub repo_last_commit_ids: &'a [&'a str],
-  pub ansible_limit: Option<&'a str>,
-  pub ansible_verbosity: Option<&'a str>,
-  pub ansible_passthrough: Option<&'a str>,
-}
 
 impl MantaClient {
   pub async fn get_sessions(
@@ -47,7 +34,7 @@ impl MantaClient {
   pub async fn create_session(
     &self,
     token: &str,
-    req: &CreateSessionRequest<'_>,
+    req: &CreateSessionRequest,
   ) -> anyhow::Result<(String, String)> {
     let resp: Value = self.post_json(token, "/sessions", req).await?;
     let session_name = resp["session_name"]

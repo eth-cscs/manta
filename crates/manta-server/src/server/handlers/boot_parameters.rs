@@ -176,24 +176,7 @@ pub async fn update_boot_parameters(
 // POST /api/v1/boot-config — Apply boot configuration (with ?dry_run=true)
 // ---------------------------------------------------------------------------
 
-/// Request body for `POST /boot-config`.
-#[derive(Deserialize, ToSchema)]
-pub struct ApplyBootConfigRequest {
-  /// Hosts expression naming the target nodes (xnames, NIDs, or
-  /// hostlist notation). The field name is kept for wire stability.
-  pub xnames: String,
-  /// IMS image ID to set as the boot image.
-  pub boot_image_id: Option<String>,
-  /// CFS configuration name associated with the boot image.
-  pub boot_image_configuration: Option<String>,
-  /// Kernel command-line parameters to apply.
-  pub kernel_parameters: Option<String>,
-  /// CFS configuration to assign as the runtime desired-config.
-  pub runtime_configuration: Option<String>,
-  /// When true, returns the computed changeset without persisting it.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::boot_parameters::ApplyBootConfigRequest;
 
 /// `POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.
 #[utoipa::path(post, path = "/boot-config", tag = "boot-parameters",
@@ -214,7 +197,7 @@ pub async fn apply_boot_config(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
     "apply_boot_config hosts={} dry_run={}",
-    body.xnames,
+    body.hosts_expression,
     body.dry_run
   );
   let infra = ctx.infra();
@@ -222,7 +205,7 @@ pub async fn apply_boot_config(
   let changeset = service::boot_parameters::prepare_boot_config(
     &infra,
     &ctx.token,
-    &body.xnames,
+    &body.hosts_expression,
     body.boot_image_id.as_deref(),
     body.boot_image_configuration.as_deref(),
     body.kernel_parameters.as_deref(),

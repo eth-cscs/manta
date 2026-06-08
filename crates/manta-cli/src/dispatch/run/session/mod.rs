@@ -107,23 +107,20 @@ async fn run_session(
     check_local_repos(repos_paths)?;
 
   // Create CFS session via server
-  let repo_names: Vec<&str> =
-    repo_name_vec.iter().map(String::as_str).collect();
-  let repo_commits: Vec<&str> =
-    repo_last_commit_id_vec.iter().map(String::as_str).collect();
   let (cfs_configuration_name, cfs_session_name) =
     MantaClient::from_app_ctx(ctx)?
       .create_session(
         shasta_token,
         &crate::http_client::CreateSessionRequest {
-          cfs_conf_sess_name,
-          playbook_yaml_file_name: playbook_yaml_file_name_opt,
-          group_name: group_name_opt,
-          repo_names: &repo_names,
-          repo_last_commit_ids: &repo_commits,
-          ansible_limit: ansible_limit_opt,
-          ansible_verbosity,
-          ansible_passthrough,
+          cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
+          playbook_yaml_file_name: playbook_yaml_file_name_opt
+            .map(str::to_string),
+          hsm_group: group_name_opt.map(str::to_string),
+          repo_names: repo_name_vec.clone(),
+          repo_last_commit_ids: repo_last_commit_id_vec.clone(),
+          ansible_limit: ansible_limit_opt.map(str::to_string),
+          ansible_verbosity: ansible_verbosity.map(str::to_string),
+          ansible_passthrough: ansible_passthrough.map(str::to_string),
         },
       )
       .await?;

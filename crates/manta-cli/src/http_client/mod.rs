@@ -41,7 +41,7 @@ pub(super) use wire::ws_base_url;
 pub use boot_parameters::ApplyBootConfigRequest;
 pub use hardware_clusters::ApplyHwConfigurationRequest;
 pub use kernel_parameters::{
-  AddKernelParametersRequest, ApplyKernelParametersRequest,
+  AddKernelParametersRequest, ApplyKernelParametersRequest, KernelParamOp,
 };
 pub use sat_file::CreateImageCfsSessionRequest;
 pub use sessions::CreateSessionRequest;

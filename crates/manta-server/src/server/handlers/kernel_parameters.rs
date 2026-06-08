@@ -2,11 +2,11 @@
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::IntoParams;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, default_true,
-  resolve_xnames_from_request, serialize_or_500, to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, resolve_xnames_from_request,
+  serialize_or_500, to_handler_error,
 };
 use crate::service;
 
@@ -60,39 +60,9 @@ pub async fn get_kernel_parameters(
 // POST /api/v1/kernel-parameters/apply — Apply kernel parameter changes
 // ---------------------------------------------------------------------------
 
-/// Which kernel-parameter mutation to perform (`add`, `apply`, or `delete`).
-#[derive(Debug, Deserialize, ToSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum KernelParamOp {
-  /// Merge new parameters into the existing set.
-  Add,
-  /// Replace the entire parameter set.
-  Apply,
-  /// Remove named parameters from the existing set.
-  Delete,
-}
-
-/// Request body for `POST /kernel-parameters/apply`.
-#[derive(Deserialize, ToSchema)]
-pub struct ApplyKernelParametersRequest {
-  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
-  pub xnames_expression: Option<String>,
-  /// Target HSM group; all members are resolved to xnames.
-  pub hsm_group: Option<String>,
-  /// Which mutation to perform: add, apply (replace), or delete.
-  pub operation: KernelParamOp,
-  /// Space-separated kernel parameter key=value pairs.
-  pub params: String,
-  /// Only relevant for the `add` operation.
-  #[serde(default)]
-  pub overwrite: bool,
-  /// Whether to project SBPS images (default true).
-  #[serde(default = "default_true")]
-  pub project_sbps: bool,
-  /// When true, returns the computed changeset without applying it.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::kernel_parameters::{
+  ApplyKernelParametersRequest, KernelParamOp,
+};
 
 /// `POST /api/v1/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
 #[utoipa::path(post, path = "/kernel-parameters/apply", tag = "kernel-parameters",
@@ -185,25 +155,7 @@ pub async fn apply_kernel_parameters(
 // POST /api/v1/kernel-parameters/add
 // ---------------------------------------------------------------------------
 
-/// Request body for `POST /kernel-parameters/add`.
-#[derive(Deserialize, ToSchema)]
-pub struct AddKernelParametersRequest {
-  /// Space-separated kernel parameter key=value pairs to add.
-  pub params: String,
-  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
-  pub xnames_expression: Option<String>,
-  /// Target HSM group; all members are resolved to xnames.
-  pub hsm_group: Option<String>,
-  /// When true, overwrite parameters that already exist.
-  #[serde(default)]
-  pub overwrite: bool,
-  /// Whether to project SBPS images (default true).
-  #[serde(default = "default_true")]
-  pub project_sbps: bool,
-  /// When true, returns the computed changeset without applying it.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::kernel_parameters::AddKernelParametersRequest;
 
 /// `POST /api/v1/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.
 #[utoipa::path(post, path = "/kernel-parameters/add", tag = "kernel-parameters",
@@ -280,19 +232,7 @@ pub async fn add_kernel_parameters(
 // DELETE /api/v1/kernel-parameters
 // ---------------------------------------------------------------------------
 
-/// Request body for `DELETE /kernel-parameters`.
-#[derive(Deserialize, ToSchema)]
-pub struct DeleteKernelParametersRequest {
-  /// Space-separated kernel parameter names (or key=value pairs) to remove.
-  pub params: String,
-  /// Hosts expression (xnames, nids, or hostlist notation); mutually exclusive with `hsm_group`.
-  pub xnames_expression: Option<String>,
-  /// Target HSM group; all members are resolved to xnames.
-  pub hsm_group: Option<String>,
-  /// When true, returns the computed changeset without applying it.
-  #[serde(default)]
-  pub dry_run: bool,
-}
+pub use manta_shared::types::wire::kernel_parameters::DeleteKernelParametersRequest;
 
 /// `DELETE /api/v1/kernel-parameters` — remove named kernel parameters from node BSS entries.
 #[utoipa::path(delete, path = "/kernel-parameters", tag = "kernel-parameters",

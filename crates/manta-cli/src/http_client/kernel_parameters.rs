@@ -1,35 +1,14 @@
 //! Kernel-parameter endpoints: list, add, apply, delete.
 
-use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::types::dto::BootParameters;
 use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
+pub use manta_shared::types::wire::kernel_parameters::{
+  AddKernelParametersRequest, ApplyKernelParametersRequest, KernelParamOp,
+};
 
 use super::{MantaClient, QueryBuilder};
-
-/// Request body for `POST /kernel-parameters/apply` (replace mode).
-#[derive(Serialize)]
-pub struct ApplyKernelParametersRequest<'a> {
-  pub xnames_expression: Option<&'a str>,
-  pub hsm_group: Option<&'a str>,
-  pub operation: &'a str,
-  pub params: &'a str,
-  pub overwrite: bool,
-  pub project_sbps: bool,
-  pub dry_run: bool,
-}
-
-/// Request body for `POST /kernel-parameters/add` (append/merge mode).
-#[derive(Serialize)]
-pub struct AddKernelParametersRequest<'a> {
-  pub params: &'a str,
-  pub xnames_expression: Option<&'a str>,
-  pub hsm_group: Option<&'a str>,
-  pub overwrite: bool,
-  pub project_sbps: bool,
-  pub dry_run: bool,
-}
 
 impl MantaClient {
   pub async fn get_kernel_parameters(
@@ -45,11 +24,10 @@ impl MantaClient {
   }
 
   /// POST /kernel-parameters/apply — replace/add/delete kernel parameters on nodes.
-  /// `operation` is one of "add", "apply", "delete".
   pub async fn apply_kernel_parameters(
     &self,
     token: &str,
-    req: &ApplyKernelParametersRequest<'_>,
+    req: &ApplyKernelParametersRequest,
   ) -> anyhow::Result<Value> {
     self.post_json(token, "/kernel-parameters/apply", req).await
   }
@@ -58,7 +36,7 @@ impl MantaClient {
   pub async fn add_kernel_parameters(
     &self,
     token: &str,
-    req: &AddKernelParametersRequest<'_>,
+    req: &AddKernelParametersRequest,
   ) -> anyhow::Result<Value> {
     self.post_json(token, "/kernel-parameters/add", req).await
   }

@@ -24,11 +24,18 @@ pub async fn exec(
     .apply_boot_config(
       token,
       &ApplyBootConfigRequest {
-        hosts_expression: p.hsm_group_name,
-        boot_image_id: p.boot_image,
-        boot_image_configuration: p.boot_image_configuration,
-        kernel_parameters: p.kernel_parameters,
-        runtime_configuration: p.runtime_configuration,
+        // NOTE: the server's /boot-config takes a hosts expression,
+        // not a group name. Passing the group label literally as
+        // below relies on the server's hostlist parser; in practice
+        // this codepath needs a separate "resolve group → xnames"
+        // step. Tracked separately from the wire-shape unification.
+        hosts_expression: p.hsm_group_name.to_string(),
+        boot_image_id: p.boot_image.map(str::to_string),
+        boot_image_configuration: p
+          .boot_image_configuration
+          .map(str::to_string),
+        kernel_parameters: p.kernel_parameters.map(str::to_string),
+        runtime_configuration: p.runtime_configuration.map(str::to_string),
         dry_run: p.dry_run,
       },
     )

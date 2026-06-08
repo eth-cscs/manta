@@ -1,25 +1,14 @@
 //! BSS boot-parameter endpoints: list, add, apply boot config, update, delete.
 
-use serde::Serialize;
 use serde_json::Value;
 
 use manta_shared::types::dto::BootParameters;
 use manta_shared::types::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };
+pub use manta_shared::types::wire::boot_parameters::ApplyBootConfigRequest;
 
 use super::{MantaClient, QueryBuilder};
-
-/// Request body for `POST /boot-config`.
-#[derive(Serialize)]
-pub struct ApplyBootConfigRequest<'a> {
-  pub hosts_expression: &'a str,
-  pub boot_image_id: Option<&'a str>,
-  pub boot_image_configuration: Option<&'a str>,
-  pub kernel_parameters: Option<&'a str>,
-  pub runtime_configuration: Option<&'a str>,
-  pub dry_run: bool,
-}
 
 impl MantaClient {
   pub async fn get_boot_parameters(
@@ -46,7 +35,7 @@ impl MantaClient {
   pub async fn apply_boot_config(
     &self,
     token: &str,
-    req: &ApplyBootConfigRequest<'_>,
+    req: &ApplyBootConfigRequest,
   ) -> anyhow::Result<Value> {
     self.post_json(token, "/boot-config", req).await
   }

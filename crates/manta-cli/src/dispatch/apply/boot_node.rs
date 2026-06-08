@@ -26,11 +26,13 @@ pub async fn exec(
     .apply_boot_config(
       token,
       &ApplyBootConfigRequest {
-        hosts_expression: p.hosts_expression,
-        boot_image_id: p.boot_image,
-        boot_image_configuration: p.boot_image_configuration,
-        kernel_parameters: p.kernel_parameters,
-        runtime_configuration: p.runtime_configuration,
+        hosts_expression: p.hosts_expression.to_string(),
+        boot_image_id: p.boot_image.map(str::to_string),
+        boot_image_configuration: p
+          .boot_image_configuration
+          .map(str::to_string),
+        kernel_parameters: p.kernel_parameters.map(str::to_string),
+        runtime_configuration: p.runtime_configuration.map(str::to_string),
         dry_run: p.dry_run,
       },
     )

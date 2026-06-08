@@ -31,9 +31,9 @@ pub async fn exec(
     .add_kernel_parameters(
       token,
       &AddKernelParametersRequest {
-        params: p.kernel_params,
-        xnames_expression,
-        hsm_group: p.hsm_group,
+        params: p.kernel_params.to_string(),
+        xnames_expression: xnames_expression.map(str::to_string),
+        hsm_group: p.hsm_group.map(str::to_string),
         overwrite: p.overwrite,
         project_sbps: false,
         dry_run: p.dry_run,

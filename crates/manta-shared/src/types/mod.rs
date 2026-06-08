@@ -13,3 +13,4 @@ pub mod auth;
 pub mod cluster_status;
 pub mod dto;
 pub mod params;
+pub mod wire;
