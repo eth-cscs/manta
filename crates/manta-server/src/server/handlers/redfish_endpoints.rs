@@ -6,8 +6,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -19,20 +17,7 @@ use manta_shared::types::params::redfish_endpoints::{
 // GET /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /redfish-endpoints`.
-#[derive(Deserialize, IntoParams)]
-pub struct RedfishEndpointsQuery {
-  /// Exact endpoint ID (BMC xname) filter.
-  pub id: Option<String>,
-  /// FQDN substring filter.
-  pub fqdn: Option<String>,
-  /// UUID exact-match filter.
-  pub uuid: Option<String>,
-  /// MAC-address exact-match filter (colon-separated hex).
-  pub macaddr: Option<String>,
-  /// IP-address exact-match filter (IPv4 or IPv6).
-  pub ipaddress: Option<String>,
-}
+pub use manta_shared::types::wire::queries::RedfishEndpointsQuery;
 
 /// GET /redfish-endpoints — list HSM Redfish endpoints with optional filters.
 #[utoipa::path(get, path = "/redfish-endpoints", tag = "redfish-endpoints",

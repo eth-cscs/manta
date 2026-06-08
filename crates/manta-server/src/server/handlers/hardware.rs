@@ -1,8 +1,6 @@
 //! Hardware inventory queries.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -11,13 +9,9 @@ use crate::service;
 // GET /api/v1/groups/hardware (canonical) and /hardware-clusters (deprecated)
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /groups/hardware`.
-#[derive(Deserialize, IntoParams)]
-pub struct HardwareClusterQuery {
-  /// HSM group name to inventory. When omitted the response covers
-  /// every group the bearer token can access.
-  pub hsm_group: Option<String>,
-}
+pub use manta_shared::types::wire::queries::{
+  HardwareClusterQuery, HardwareNodesListQuery,
+};
 
 /// GET /groups/hardware — summarize hardware components per node for a group.
 #[utoipa::path(get, path = "/groups/hardware", tag = "groups",
@@ -79,13 +73,6 @@ pub async fn get_hardware_clusters_deprecated(
 // GET /api/v1/hardware-nodes-list
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /hardware-nodes-list`.
-#[derive(Deserialize, IntoParams)]
-pub struct HardwareNodesListQuery {
-  /// Hosts expression (xnames, NIDs, or hostlist notation).
-  /// The field name is retained for wire stability.
-  pub xnames: String,
-}
 
 /// GET /hardware-nodes-list — hardware details for an explicit list of xnames.
 #[utoipa::path(get, path = "/hardware-nodes-list", tag = "hardware",

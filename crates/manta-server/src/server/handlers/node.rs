@@ -6,8 +6,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -16,17 +14,7 @@ use crate::service;
 // GET /api/v1/nodes
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /nodes`.
-#[derive(Deserialize, IntoParams)]
-pub struct NodesQuery {
-  /// Comma-separated xnames, NIDs, or hostlist expression
-  /// (e.g. `x3000c0s1b0n[0-3]`).
-  pub xname: String,
-  /// Expand results to include nodes sharing the same power supply.
-  pub include_siblings: Option<bool>,
-  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
-  pub status: Option<String>,
-}
+pub use manta_shared::types::wire::queries::NodesQuery;
 
 /// GET /nodes — fetch node details for a given xname expression.
 #[utoipa::path(get, path = "/nodes", tag = "nodes",

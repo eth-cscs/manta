@@ -1,8 +1,6 @@
 //! Kernel-parameters handlers (get/apply/add/delete).
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, resolve_xnames_from_request,
@@ -14,15 +12,7 @@ use crate::service;
 // GET /api/v1/kernel-parameters
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /kernel-parameters`.
-#[derive(Deserialize, IntoParams)]
-pub struct KernelParametersQuery {
-  /// HSM group whose members' kernel parameters should be returned.
-  pub hsm_group: Option<String>,
-  /// Explicit comma-separated xnames; mutually exclusive with
-  /// `hsm_group`.
-  pub nodes: Option<String>,
-}
+pub use manta_shared::types::wire::queries::KernelParametersQuery;
 
 /// GET /kernel-parameters — fetch BSS kernel parameters for a group or node list.
 #[utoipa::path(get, path = "/kernel-parameters", tag = "kernel-parameters",

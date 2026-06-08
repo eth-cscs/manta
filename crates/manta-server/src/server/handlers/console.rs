@@ -14,9 +14,7 @@ use manta_backend_dispatcher::{
   interfaces::console::ConsoleTrait,
   types::{K8sAuth, K8sDetails},
 };
-use serde::Deserialize;
 use tokio::io::AsyncWriteExt;
-use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
@@ -28,23 +26,7 @@ use crate::service;
 // WS /api/v1/nodes/{xname}/console — Interactive node console
 // ---------------------------------------------------------------------------
 
-/// Query parameters for WebSocket console endpoints (initial terminal size).
-#[derive(Deserialize, IntoParams)]
-pub struct ConsoleQuery {
-  /// Initial terminal width in columns (default 80).
-  #[serde(default = "default_cols")]
-  pub cols: u16,
-  /// Initial terminal height in rows (default 24).
-  #[serde(default = "default_rows")]
-  pub rows: u16,
-}
-
-fn default_cols() -> u16 {
-  80
-}
-fn default_rows() -> u16 {
-  24
-}
+pub use manta_shared::types::wire::queries::ConsoleQuery;
 
 /// `WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",

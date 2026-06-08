@@ -1,8 +1,6 @@
 //! GET /api/v1/groups/nodes (canonical) and /clusters (deprecated alias).
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -11,15 +9,7 @@ use crate::service;
 // GET /api/v1/groups/nodes
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /groups/nodes`.
-#[derive(Deserialize, IntoParams)]
-pub struct ClusterQuery {
-  /// HSM group name to list nodes for. When omitted the response covers
-  /// every group the bearer token can access.
-  pub hsm_group: Option<String>,
-  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
-  pub status: Option<String>,
-}
+pub use manta_shared::types::wire::queries::ClusterQuery;
 
 /// GET /groups/nodes — list nodes in a group with optional status filter.
 #[utoipa::path(get, path = "/groups/nodes", tag = "groups",

@@ -6,8 +6,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
@@ -18,16 +16,7 @@ use crate::service;
 // GET /api/v1/templates
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /templates`.
-#[derive(Deserialize, IntoParams)]
-pub struct TemplateQuery {
-  /// Exact template name.
-  pub name: Option<String>,
-  /// HSM group whose associated templates should be returned.
-  pub hsm_group: Option<String>,
-  /// Cap on the number of templates returned (most recent first).
-  pub limit: Option<u8>,
-}
+pub use manta_shared::types::wire::queries::TemplateQuery;
 
 /// GET /templates — list BOS session templates with optional filters.
 #[utoipa::path(get, path = "/templates", tag = "templates",

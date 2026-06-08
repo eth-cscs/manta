@@ -2,7 +2,7 @@
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
@@ -13,15 +13,7 @@ use crate::service;
 // GET /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /boot-parameters`.
-#[derive(Deserialize, IntoParams)]
-pub struct BootParametersQuery {
-  /// HSM group whose members' boot parameters should be returned.
-  pub hsm_group: Option<String>,
-  /// Explicit comma-separated xnames; mutually exclusive with
-  /// `hsm_group`.
-  pub nodes: Option<String>,
-}
+pub use manta_shared::types::wire::queries::BootParametersQuery;
 
 /// GET /boot-parameters — fetch BSS boot parameters for a group or node list.
 #[utoipa::path(get, path = "/boot-parameters", tag = "boot-parameters",

@@ -1,8 +1,6 @@
 //! GET/DELETE /api/v1/images.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -11,18 +9,7 @@ use crate::service;
 // GET /api/v1/images
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /images`.
-#[derive(Deserialize, IntoParams)]
-pub struct ImageQuery {
-  /// Exact IMS image ID; returns just that image when set.
-  pub id: Option<String>,
-  /// Regex matched against image name. Accepted here but applied by
-  /// the CLI after the response is returned — the server does not
-  /// filter on it.
-  pub pattern: Option<String>,
-  /// Cap on the number of images returned (most recent first).
-  pub limit: Option<u8>,
-}
+pub use manta_shared::types::wire::queries::{DeleteImagesQuery, ImageQuery};
 
 /// GET /images — list IMS images sorted by creation time.
 #[utoipa::path(get, path = "/images", tag = "images",
@@ -58,15 +45,6 @@ pub async fn get_images(
 // DELETE /api/v1/images — with ?ids=id1,id2&dry_run=true
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `DELETE /images`.
-#[derive(Deserialize, IntoParams)]
-pub struct DeleteImagesQuery {
-  /// Comma-separated list of IMS image IDs to delete.
-  pub ids: String,
-  /// When true, validates deletion eligibility without removing anything.
-  #[serde(default)]
-  pub dry_run: bool,
-}
 
 /// `DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.
 #[utoipa::path(delete, path = "/images", tag = "images",

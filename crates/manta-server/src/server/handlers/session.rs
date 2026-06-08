@@ -13,8 +13,6 @@ use axum::{
 };
 use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
@@ -26,28 +24,9 @@ use crate::service;
 // GET /api/v1/sessions
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /sessions`.
-#[derive(Deserialize, IntoParams)]
-pub struct SessionQuery {
-  /// HSM group whose sessions should be returned.
-  pub hsm_group: Option<String>,
-  /// Filter to sessions whose `ansible_limit` mentions any of these
-  /// comma-separated xnames.
-  pub xnames: Option<String>,
-  /// Lower-bound session age expressed as a duration string
-  /// (e.g. `"1h"`, `"2d"`).
-  pub min_age: Option<String>,
-  /// Upper-bound session age expressed as a duration string.
-  pub max_age: Option<String>,
-  /// Session type filter: `"image"` or `"runtime"`.
-  pub session_type: Option<String>,
-  /// Status filter: `"pending"`, `"running"`, or `"complete"`.
-  pub status: Option<String>,
-  /// Exact session name.
-  pub name: Option<String>,
-  /// Cap on the number of sessions returned (most recent first).
-  pub limit: Option<u8>,
-}
+pub use manta_shared::types::wire::queries::{
+  DeleteSessionQuery, SessionQuery,
+};
 
 /// GET /sessions — list CFS sessions with optional filters.
 #[utoipa::path(get, path = "/sessions", tag = "sessions",
@@ -100,13 +79,6 @@ pub async fn get_sessions(
 // DELETE /api/v1/sessions/{name} — with ?dry_run=true support
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `DELETE /sessions/{name}`.
-#[derive(Deserialize, IntoParams)]
-pub struct DeleteSessionQuery {
-  /// When true, return deletion context without actually deleting (default: false).
-  #[serde(default)]
-  pub dry_run: bool,
-}
 
 /// DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.
 #[utoipa::path(delete, path = "/sessions/{name}", tag = "sessions",
@@ -249,13 +221,7 @@ pub async fn create_session(
 // GET /api/v1/sessions/{name}/logs — Stream CFS session logs via SSE
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /sessions/{name}/logs`.
-#[derive(Deserialize, IntoParams)]
-pub struct SessionLogsQuery {
-  /// When true, prefix each log line with its timestamp.
-  #[serde(default)]
-  pub timestamps: bool,
-}
+pub use manta_shared::types::wire::queries::SessionLogsQuery;
 
 /// `GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
 #[utoipa::path(get, path = "/sessions/{name}/logs", tag = "sessions",

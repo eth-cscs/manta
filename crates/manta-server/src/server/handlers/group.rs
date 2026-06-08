@@ -6,8 +6,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -16,12 +14,7 @@ use crate::service;
 // GET /api/v1/groups
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /groups`.
-#[derive(Deserialize, IntoParams)]
-pub struct GroupQuery {
-  /// Exact group name; returns all groups when `None`.
-  pub name: Option<String>,
-}
+pub use manta_shared::types::wire::queries::{DeleteGroupQuery, GroupQuery};
 
 /// GET /groups/available — list HSM group names the token can access.
 ///
@@ -81,13 +74,6 @@ pub async fn get_groups(
 // DELETE /api/v1/groups/{label}
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `DELETE /groups/{label}`.
-#[derive(Deserialize, IntoParams)]
-pub struct DeleteGroupQuery {
-  /// Delete even if the group still has members (default: false).
-  #[serde(default)]
-  pub force: bool,
-}
 
 /// DELETE /groups/{label} — remove an HSM group.
 #[utoipa::path(delete, path = "/groups/{label}", tag = "groups",

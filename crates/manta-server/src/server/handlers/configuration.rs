@@ -1,8 +1,6 @@
 //! GET/DELETE /api/v1/configurations.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
-use serde::Deserialize;
-use utoipa::IntoParams;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, parse_iso_datetime, serialize_or_500,
@@ -14,18 +12,9 @@ use crate::service;
 // GET /api/v1/configurations
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `GET /configurations`.
-#[derive(Deserialize, IntoParams)]
-pub struct ConfigurationQuery {
-  /// Exact configuration name to fetch.
-  pub name: Option<String>,
-  /// Glob pattern matched against configuration names.
-  pub pattern: Option<String>,
-  /// HSM group whose associated configurations should be returned.
-  pub hsm_group: Option<String>,
-  /// Cap on the number of configurations returned (most recent first).
-  pub limit: Option<u8>,
-}
+pub use manta_shared::types::wire::queries::{
+  ConfigurationQuery, DeleteConfigurationsQuery,
+};
 
 /// GET /configurations — list CFS configurations with optional name/pattern/group filters.
 #[utoipa::path(get, path = "/configurations", tag = "configurations",
@@ -66,19 +55,6 @@ pub async fn get_configurations(
 // DELETE /api/v1/configurations — with ?pattern=...&since=...&until=...&dry_run=true
 // ---------------------------------------------------------------------------
 
-/// Query parameters for `DELETE /configurations`.
-#[derive(Deserialize, IntoParams)]
-pub struct DeleteConfigurationsQuery {
-  /// Glob pattern to match configuration names.
-  pub pattern: Option<String>,
-  /// ISO-8601 lower bound — only delete configurations created after this date.
-  pub since: Option<String>,
-  /// ISO-8601 upper bound — only delete configurations created before this date.
-  pub until: Option<String>,
-  /// When true, returns deletion candidates without removing anything.
-  #[serde(default)]
-  pub dry_run: bool,
-}
 
 /// `DELETE /api/v1/configurations` — delete CFS configurations and all derived artifacts.
 #[utoipa::path(delete, path = "/configurations", tag = "configurations",
