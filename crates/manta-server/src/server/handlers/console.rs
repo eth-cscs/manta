@@ -64,11 +64,22 @@ pub async fn console_node_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  // Read what we need from the borrowed infra; the borrow ends with the block.
+  // Read what we need from the borrowed infra and authorize the xname;
+  // the borrow ends with the block.
   let (k8s_api_url, vault_base_url, timeout) = {
     let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
+    // Authorization: caller must have group access to this xname.
+    // Without this an authenticated user with any group could open
+    // an interactive PTY on any node in the cluster.
+    service::authorization::validate_user_group_members_access(
+      &infra,
+      &ctx.token,
+      std::slice::from_ref(&xname),
+    )
+    .await
+    .map_err(to_handler_error)?;
     (k, v, ctx.state.console_inactivity_timeout)
   };
 
@@ -131,12 +142,19 @@ pub async fn console_session_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  // Validate vault/k8s presence and session liveness; the borrow ends
-  // with the block.
+  // Validate vault/k8s presence, then authorize the caller against
+  // the session's target groups, then check session liveness.
   let (k8s_api_url, vault_base_url, timeout) = {
     let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
+    // Authorization: the caller's accessible groups must overlap the
+    // session's target.groups. validate_console_session does NOT do
+    // this check (only "is image-type and running"), so without this
+    // call any authenticated user could attach to any image session.
+    service::session::validate_session_access(&infra, &ctx.token, &name)
+      .await
+      .map_err(to_handler_error)?;
     service::session::validate_console_session(&infra, &ctx.token, &name)
       .await
       .map_err(to_handler_error)?;

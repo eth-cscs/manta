@@ -228,15 +228,23 @@ async fn run_server(
       K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
       K8sAuth::Native { .. } => None,
     });
+    // CA cert is required: a missing or unreadable file means every
+    // backend HTTPS call would fall through to the empty-vec branch
+    // which `reqwest::Certificate::from_pem` accepts as "no extra
+    // trust anchors". That silently widens the trust store to the
+    // system default, which on most operator workstations does not
+    // include the CSM/OpenCHAMI internal CA — so calls work but
+    // without the expected pinning. Fail at startup instead.
     let root_cert =
       manta_config::get_csm_root_cert_content(&site.root_ca_cert_file)
-        .unwrap_or_else(|_| {
-          tracing::warn!(
-            "CA cert for site '{}' not found, proceeding without it",
-            name
-          );
-          vec![]
-        });
+        .map_err(|e| {
+          format!(
+            "CA cert for site '{name}' at '{}' could not be read: {e}. \
+             Fix the path under [sites.{name}].root_ca_cert_file in \
+             server.toml or remove the site entry.",
+            site.root_ca_cert_file
+          )
+        })?;
     print_site_summary(
       name,
       site.backend.as_str(),

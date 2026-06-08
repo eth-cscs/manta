@@ -615,7 +615,7 @@ Get BSS boot parameters.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `group_name` | string | no | Filter by HSM group |
+| `hsm_group` | string | no | Filter by HSM group |
 | `nodes` | string | no | Comma-separated xnames |
 
 **Response `200`** — boot parameters object.
@@ -724,7 +724,7 @@ Get kernel parameters for nodes.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `group_name` | string | no | Filter by HSM group |
+| `hsm_group` | string | no | Filter by HSM group |
 | `nodes` | string | no | Comma-separated xnames |
 
 **Response `200`** — kernel parameters object.

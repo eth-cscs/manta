@@ -301,6 +301,15 @@ pub async fn get_session_logs(
   let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
   let vault_base_url = require_vault(infra.vault_base_url)?;
 
+  // Authorization: the caller's accessible groups must overlap the
+  // session's target.groups. Session logs frequently carry
+  // credentials, kernel-cmdline secrets, and ansible variable dumps;
+  // without this check any authenticated user could stream any
+  // session's logs.
+  service::session::validate_session_access(&infra, &ctx.token, &name)
+    .await
+    .map_err(to_handler_error)?;
+
   let k8s = K8sDetails {
     api_url: k8s_api_url.to_string(),
     authentication: K8sAuth::Vault {

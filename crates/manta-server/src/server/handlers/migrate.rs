@@ -111,6 +111,18 @@ pub async fn migrate_backup(
   tracing::info!("migrate_backup");
   let infra = ctx.infra();
 
+  // Authorization: backup writes to a server-side filesystem path
+  // chosen by the caller. Restrict to admin to prevent
+  // non-privileged users from triggering arbitrary writes via the
+  // server process's UID.
+  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
+    return Err(to_handler_error(
+      manta_backend_dispatcher::error::Error::BadRequest(
+        "migrate backup requires admin privileges".to_string(),
+      ),
+    ));
+  }
+
   infra
     .migrate_backup(
       &ctx.token,
@@ -163,6 +175,17 @@ pub async fn migrate_restore(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("migrate_restore overwrite={}", body.overwrite);
   let infra = ctx.infra();
+
+  // Authorization: restore reads from server-side filesystem paths
+  // chosen by the caller and rewrites CFS/HSM/IMS state — high
+  // blast radius. Restrict to admin.
+  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
+    return Err(to_handler_error(
+      manta_backend_dispatcher::error::Error::BadRequest(
+        "migrate restore requires admin privileges".to_string(),
+      ),
+    ));
+  }
 
   infra
     .migrate_restore(

@@ -5,6 +5,25 @@
 //! returns named claims as `String`. All failures map to
 //! [`MantaError::JwtMalformed`] with a structured message; the
 //! HTTP layer maps that to a 401.
+//!
+//! # Security caveat
+//!
+//! These helpers **do not verify the JWT signature**. Claims are
+//! extracted on trust. The signature is verified upstream by the
+//! backend (CSM / OpenCHAMI) on every call that uses the token, so a
+//! forged token with `pa_admin` in `realm_access.roles` will still be
+//! rejected at the first backend round-trip — but the in-process
+//! `is_user_admin` short-circuit means any code path that returns
+//! before the backend call is reached (e.g. a future cached path or
+//! a handler that only checks the local roles) would skip every
+//! group-access check.
+//!
+//! TODO: verify the signature locally against the per-site Keycloak
+//! JWKS, cached in `ServerState` with refresh on `kid` miss. Tracked
+//! as a follow-up because it requires JWKS fetching, key rotation,
+//! and a per-site cache. For now treat `is_user_admin` as advisory:
+//! never grant a privilege based on it alone without a follow-up
+//! call that hits the backend.
 
 use base64::prelude::*;
 use serde_json::Value;

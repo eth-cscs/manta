@@ -17,9 +17,9 @@ use crate::service;
 #[derive(Deserialize, IntoParams)]
 pub struct BootParametersQuery {
   /// HSM group whose members' boot parameters should be returned.
-  pub group_name: Option<String>,
+  pub hsm_group: Option<String>,
   /// Explicit comma-separated xnames; mutually exclusive with
-  /// `group_name`.
+  /// `hsm_group`.
   pub nodes: Option<String>,
 }
 
@@ -41,7 +41,7 @@ pub async fn get_boot_parameters(
   let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
-    group_name: q.group_name,
+    group_name: q.hsm_group,
     host_expression: q.nodes,
     settings_group_name: None,
   };

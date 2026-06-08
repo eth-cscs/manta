@@ -537,7 +537,7 @@ async fn get_images_happy_path() {
   assert_eq!(arr[0]["name"], "compute-my-image");
 }
 
-// GET /api/v1/boot-parameters?group_name=compute
+// GET /api/v1/boot-parameters?hsm_group=compute
 //
 // Call chain:
 //   service::boot_parameters::get_boot_parameters
@@ -561,7 +561,7 @@ async fn get_boot_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/boot-parameters?group_name=compute"))
+    .send(fx.auth_get("/api/v1/boot-parameters?hsm_group=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -610,7 +610,7 @@ async fn mock_cfs_v3_components(srv: &MockServer) {
 // Phase A — Remaining GET happy paths
 // ---------------------------------------------------------------------------
 
-// GET /api/v1/kernel-parameters?group_name=compute
+// GET /api/v1/kernel-parameters?hsm_group=compute
 //
 // Call chain mirrors get_boot_parameters: resolve_target_nodes
 // (HSM groups + components) → get_bootparameters.
@@ -622,7 +622,7 @@ async fn get_kernel_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/kernel-parameters?group_name=compute"))
+    .send(fx.auth_get("/api/v1/kernel-parameters?hsm_group=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 

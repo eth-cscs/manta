@@ -6,7 +6,9 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::validate_user_group_vec_access;
+use crate::service::authorization::{
+  validate_user_group_access, validate_user_group_vec_access,
+};
 use crate::service::infra_backend::DeletionCandidates;
 pub use manta_shared::types::params::configuration::GetConfigurationParams;
 
@@ -61,6 +63,14 @@ pub async fn get_configurations(
 /// session templates, and IMS images that depend on them. The CLI
 /// shows this set as a confirmation prompt before invoking
 /// [`delete_configurations_and_derivatives`].
+///
+/// When `settings_hsm_group_name_opt` is `Some(name)`, the caller's
+/// access to that group is validated first; when `None`, the
+/// candidate set is scoped to every group the token already grants
+/// access to. The backend's `get_data_to_delete` only walks resources
+/// reachable from the supplied group set, so the candidates returned
+/// here are guaranteed to be reachable through the caller's
+/// accessible-group lens.
 pub(crate) async fn get_deletion_candidates(
   infra: &InfraContext<'_>,
   token: &str,
@@ -71,12 +81,18 @@ pub(crate) async fn get_deletion_candidates(
 ) -> Result<DeletionCandidates, Error> {
   validate_date_range(since, until)?;
 
-  let target_hsm_group_vec =
-    if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
-      vec![settings_hsm_group_name.to_string()]
-    } else {
-      infra.get_group_name_available(token).await?
-    };
+  let target_hsm_group_vec = if let Some(settings_hsm_group_name) =
+    settings_hsm_group_name_opt
+  {
+    // Defense-in-depth: today the handler always passes `None`, but
+    // if a future caller (CLI, another handler) routes a user-
+    // supplied group label through here, an unchecked group would
+    // let the caller cascade-delete configurations they don't own.
+    validate_user_group_access(infra, token, settings_hsm_group_name).await?;
+    vec![settings_hsm_group_name.to_string()]
+  } else {
+    infra.get_group_name_available(token).await?
+  };
 
   infra
     .get_data_to_delete(

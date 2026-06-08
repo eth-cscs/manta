@@ -109,6 +109,13 @@ pub async fn delete_group(
   tracing::info!("delete_group label={} force={}", label, q.force);
   let infra = ctx.infra();
 
+  // Authorization: caller must have access to the target group.
+  service::authorization::validate_user_group_access(
+    &infra, &ctx.token, &label,
+  )
+  .await
+  .map_err(to_handler_error)?;
+
   service::group::delete_group(&infra, &ctx.token, &label, q.force)
     .await
     .map_err(to_handler_error)?;
@@ -139,6 +146,18 @@ pub async fn create_group(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!("create_group");
   let infra = ctx.infra();
+
+  // Authorization: group creation is admin-only. A new label has no
+  // existing ownership to validate against, so the only sensible
+  // policy without a separate provisioning system is to require the
+  // pa_admin role.
+  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
+    return Err(to_handler_error(
+      manta_backend_dispatcher::error::Error::BadRequest(
+        "group creation requires admin privileges".to_string(),
+      ),
+    ));
+  }
 
   service::group::create_group(&infra, &ctx.token, group)
     .await
@@ -198,6 +217,11 @@ pub async fn add_nodes_to_group(
   );
   let infra = ctx.infra();
 
+  // Authorization: caller must have access to the target group.
+  service::authorization::validate_user_group_access(&infra, &ctx.token, &name)
+    .await
+    .map_err(to_handler_error)?;
+
   let (added, removed) = service::group::add_nodes_to_group(
     &infra,
     &ctx.token,
@@ -249,6 +273,11 @@ pub async fn delete_group_members(
     body.dry_run
   );
   let infra = ctx.infra();
+
+  // Authorization: caller must have access to the target group.
+  service::authorization::validate_user_group_access(&infra, &ctx.token, &name)
+    .await
+    .map_err(to_handler_error)?;
 
   service::group::delete_group_members(
     &infra,

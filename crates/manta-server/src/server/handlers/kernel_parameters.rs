@@ -17,10 +17,10 @@ use crate::service;
 /// Query parameters for `GET /kernel-parameters`.
 #[derive(Deserialize, IntoParams)]
 pub struct KernelParametersQuery {
-  /// Group whose members' kernel parameters should be returned.
-  pub group_name: Option<String>,
+  /// HSM group whose members' kernel parameters should be returned.
+  pub hsm_group: Option<String>,
   /// Explicit comma-separated xnames; mutually exclusive with
-  /// `group_name`.
+  /// `hsm_group`.
   pub nodes: Option<String>,
 }
 
@@ -42,7 +42,7 @@ pub async fn get_kernel_parameters(
   let infra = ctx.infra();
 
   let params = service::kernel_parameters::GetKernelParametersParams {
-    group_name: q.group_name,
+    group_name: q.hsm_group,
     nodes: q.nodes,
     settings_group_name: None,
   };
