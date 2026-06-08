@@ -896,7 +896,7 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
 
 ```json
 {
-  "xnames": "x3000c0s[1-4]b0n0",
+  "hosts_expression": "x3000c0s[1-4]b0n0",
   "boot_image_id": "ims-image-uuid",
   "boot_image_configuration": "csm-config-1.0",
   "kernel_parameters": "console=ttyS0",
@@ -907,7 +907,7 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `xnames` | string | **yes** | Hosts expression (xnames, NIDs, or hostlist notation). Group names are not accepted here; resolve them first via `GET /groups/{name}` if needed. |
+| `hosts_expression` | string | **yes** | Hosts expression (xnames, NIDs, or hostlist notation). Group names are not accepted here; resolve them first via `GET /groups?name=<group>` if needed. |
 | `boot_image_id` | string | no | IMS image ID to set as boot image |
 | `boot_image_configuration` | string | no | CFS configuration to link to the boot image |
 | `kernel_parameters` | string | no | Kernel parameters to set |
@@ -930,7 +930,7 @@ curl -k -X POST "$MANTA_HOST/api/v1/boot-config" \
   -H "Authorization: Bearer $MANTA_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
-    "xnames": "x3000c0s[1-4]b0n0",
+    "hosts_expression": "x3000c0s[1-4]b0n0",
     "boot_image_id": "ims-image-uuid",
     "kernel_parameters": "console=ttyS0",
     "dry_run": true

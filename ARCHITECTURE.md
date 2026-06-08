@@ -102,7 +102,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer: `auth`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `ephemeral_env`, `group`, `hardware`, `hw_cluster`, `image`, `kernel_parameters`, `migrate`, `node`, `power`, `redfish`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend` (which groups the backend-dispatcher methods onto `InfraContext`).
+Business logic layer: `auth`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `ephemeral_env`, `group`, `hardware`, `hw_cluster`, `image`, `kernel_parameters`, `migrate`, `node`, `power`, `redfish`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend/` (which groups the backend-dispatcher methods onto `InfraContext`; split into per-domain files: `auth.rs`, `bos.rs`, `bss.rs`, `cfs.rs`, `delete_configurations.rs`, `hsm.rs`, `ims.rs`, `migrate.rs`, `pcs.rs`, `redfish.rs`, `sat.rs`).
 
 Each module receives an `&InfraContext<'_>` plus a bearer token and typed parameters, and returns typed results. This layer:
 
@@ -111,9 +111,9 @@ Each module receives an `&InfraContext<'_>` plus a bearer token and typed parame
 - Uses `manta_backend_dispatcher::error::Error` (not `anyhow`).
 - Has no knowledge of terminal output or HTTP request/response shapes.
 
-### `crates/manta-server/src/backend_dispatcher/mod.rs`
+### `crates/manta-server/src/backend_dispatcher/`
 
-Trait implementation glue, consolidated in a single `mod.rs` ordered alphabetically by trait name. Implements all `manta-backend-dispatcher` traits (`CfsTrait`, `GroupTrait`, `BootParametersTrait`, etc.) on `StaticBackendDispatcher` using a `dispatch!` macro. The macro expands to a `match` that routes each method call to either the `Csm` or `OCHAMI` variant. Server-only — the CLI never reaches this code.
+Trait implementation glue. `mod.rs` owns the shared imports plus the `dispatch!` macro and declares one sibling file per backend trait (`apply_hw_cluster_pin.rs`, `apply_session.rs`, `authentication.rs`, `boot_parameters.rs`, `cfs.rs`, `cluster_session.rs`, `cluster_template.rs`, `component.rs`, `console.rs`, `delete_configurations.rs`, `get_images.rs`, `group.rs`, `hardware_inventory.rs`, `ims.rs`, `migrate_backup.rs`, `migrate_restore.rs`, `pcs.rs`, `redfish_endpoint.rs`, `sat.rs`). Each sibling holds a single `impl ... for StaticBackendDispatcher` block; the `dispatch!` macro expands to a `match` that routes each method call to either the `CSM` or `OCHAMI` variant. Server-only — the CLI never reaches this code.
 
 ### `crates/manta-server/src/dispatcher.rs`
 
