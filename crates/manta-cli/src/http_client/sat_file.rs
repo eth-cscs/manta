@@ -19,11 +19,7 @@
 use std::collections::HashMap;
 
 use manta_shared::types::dto::{CfsSessionGetResponse, Image};
-pub use manta_shared::types::wire::sat_file::{
-  CreateImageCfsSessionRequest, PostSatConfigurationRequest,
-  PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
-  StampImageFromSessionRequest,
-};
+pub use manta_shared::types::wire::sat_file::CreateImageCfsSessionRequest;
 use serde_json::Value;
 
 use super::MantaClient;

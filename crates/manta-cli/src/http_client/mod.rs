@@ -47,7 +47,7 @@ pub use kernel_parameters::{
 pub use sat_file::CreateImageCfsSessionRequest;
 pub use sessions::CreateSessionRequest;
 pub use templates::{BosOperation, PostTemplateSessionRequest};
-pub use vcluster::{MigrateBackupRequest, MigrateRestoreRequest};
+pub use vcluster::MigrateRestoreRequest;
 
 #[cfg(test)]
 mod tests {
