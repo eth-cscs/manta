@@ -17,6 +17,14 @@ use manta_shared::common::error::MantaError;
 
 /// Map a `MantaError` (returned by manta-shared's pure helpers) onto
 /// the structured `BackendError` that the server's service layer uses.
+///
+/// **Exhaustiveness** is enforced at compile time: `MantaError` is
+/// not `#[non_exhaustive]`, so adding a new variant breaks this
+/// `match` with E0004. A reviewer suggesting the test suite is the
+/// only line of defence misread the structure — the tests below pin
+/// per-variant *payload* preservation, not exhaustiveness, and they
+/// stay relevant only as a guard against silent renames within the
+/// existing arms (e.g. `BackendError::Message` → `BackendError::Other`).
 pub fn to_backend(e: MantaError) -> BackendError {
   match e {
     MantaError::IoError(e) => BackendError::IoError(e),
