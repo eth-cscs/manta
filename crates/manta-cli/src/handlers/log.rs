@@ -33,7 +33,7 @@ pub async fn handle_log(
       &GetSessionParams {
         name: Some(user_input.to_string()),
         xnames: vec![],
-        hsm_group: None,
+        group: None,
         min_age: None,
         max_age: None,
         session_type: None,
@@ -52,7 +52,7 @@ pub async fn handle_log(
         &GetSessionParams {
           name: None,
           xnames: vec![user_input.to_string()],
-          hsm_group: None,
+          group: None,
           min_age: None,
           max_age: None,
           session_type: None,

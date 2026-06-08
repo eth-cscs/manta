@@ -2,9 +2,9 @@
 
 /// Typed parameters for fetching cluster hardware inventory.
 pub struct GetHardwareClusterParams {
-  /// Cluster (HSM group) name to inventory; `None` falls back to the
+  /// Cluster group name to inventory; `None` falls back to the
   /// operator default.
-  pub hsm_group_name: Option<String>,
+  pub group_name: Option<String>,
   /// Operator default from `cli.toml`'s `parent_hsm_group`, used when
   /// `hsm_group_name` is absent.
   pub settings_hsm_group_name: Option<String>,
@@ -14,5 +14,5 @@ pub struct GetHardwareClusterParams {
 #[derive(Debug)]
 pub struct GetHardwareNodesListParams {
   /// Comma-separated xnames.
-  pub xnames: String,
+  pub host_expression: String,
 }

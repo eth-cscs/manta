@@ -6,7 +6,7 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::get_groups_names_available;
+use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::infra_backend::DeletionCandidates;
 pub use manta_shared::types::params::configuration::GetConfigurationParams;
 
@@ -16,13 +16,20 @@ pub async fn get_configurations(
   token: &str,
   params: &GetConfigurationParams,
 ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra,
-    token,
-    params.hsm_group.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
+
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   let limit_ref = params.limit.as_ref();
 
@@ -31,7 +38,7 @@ pub async fn get_configurations(
       token,
       params.name.as_deref(),
       params.pattern.as_deref(),
-      &target_hsm_group_vec,
+      &target_group_vec,
       params.since,
       params.until,
       limit_ref,
@@ -50,13 +57,14 @@ pub(crate) async fn get_deletion_candidates(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
 ) -> Result<DeletionCandidates, Error> {
+  // TODO: not implemented
   validate_date_range(since, until)?;
 
   let target_hsm_group_vec =
     if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
       vec![settings_hsm_group_name.to_string()]
     } else {
-      get_groups_names_available(infra, token, None, None).await?
+      infra.get_group_name_available(token).await?
     };
 
   infra

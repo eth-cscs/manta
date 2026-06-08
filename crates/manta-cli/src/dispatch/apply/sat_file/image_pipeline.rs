@@ -29,7 +29,10 @@
 //! monitor poll and no stamp PATCH are attempted because both would
 //! reach against a CFS session and IMS image that do not exist.
 
-use std::{collections::HashMap, time::Duration};
+use std::{
+  collections::HashMap,
+  time::{Duration, Instant},
+};
 
 use anyhow::{Context, bail};
 use serde_json::Value;
@@ -45,6 +48,20 @@ use crate::http_client::{CreateImageCfsSessionRequest, MantaClient};
 /// that we don't hammer the server (CFS sessions take minutes to
 /// hours), short enough that a fast-failing session surfaces promptly.
 const POLL_INTERVAL: Duration = Duration::from_secs(10);
+
+/// Hard cap on the monitor loop. Image builds top out around 1-2 hours;
+/// a 4-hour budget covers worst-case CFS jobs while still preventing an
+/// unattended CLI from spinning forever on a stuck pod. On expiry the
+/// CLI bails with a clear pointer to manual investigation — the
+/// underlying session is not cancelled.
+const POLL_BUDGET: Duration = Duration::from_secs(4 * 60 * 60);
+
+/// Cap on consecutive "session not yet visible" responses. CFS normally
+/// surfaces a newly-created session within a few seconds; sitting at
+/// `None` for minutes means the create call landed somewhere we can't
+/// see (server-side error, backend filter mismatch, …). Bail rather
+/// than mask the gap.
+const NOT_VISIBLE_BUDGET: Duration = Duration::from_secs(5 * 60);
 
 /// Run the create-session → monitor → stamp pipeline for one SAT
 /// `images[]` entry. Returns the resulting `Image` as `serde_json::Value`
@@ -73,8 +90,10 @@ pub async fn run_image_pipeline(
     .context("create CFS session from SAT image entry")?;
 
   let session_name = session.name.clone();
-  let image_name =
-    image.get("name").and_then(Value::as_str).unwrap_or("<unnamed>");
+  let image_name = image
+    .get("name")
+    .and_then(Value::as_str)
+    .unwrap_or("<unnamed>");
   tracing::info!(
     "CFS session '{session_name}' created for SAT image '{image_name}'"
   );
@@ -160,37 +179,61 @@ async fn poll_session_until_terminal(
 ) -> anyhow::Result<()> {
   tracing::info!(
     "Polling CFS session '{session_name}' until it reaches terminal status \
-     (poll interval: {}s)",
+     (poll interval: {}s, hard cap: {} h)",
     POLL_INTERVAL.as_secs(),
+    POLL_BUDGET.as_secs() / 3600,
   );
+  let start = Instant::now();
+  let mut first_not_visible_at: Option<Instant> = None;
   loop {
+    if start.elapsed() > POLL_BUDGET {
+      bail!(
+        "CFS session '{session_name}' did not reach terminal status \
+         within {} h; aborting monitor. The session may still be running — \
+         inspect it directly with `manta get sessions --name {session_name}`.",
+        POLL_BUDGET.as_secs() / 3600,
+      );
+    }
     match fetch_session_opt(client, token, session_name).await? {
       None => {
-        // Session may still be creating in CFS; retry shortly.
+        // Session may still be creating in CFS; retry until we cross
+        // NOT_VISIBLE_BUDGET, then bail — a session that never appears
+        // is almost certainly a server-side or backend-filter issue.
+        let stuck_for = first_not_visible_at
+          .get_or_insert_with(Instant::now)
+          .elapsed();
+        if stuck_for > NOT_VISIBLE_BUDGET {
+          bail!(
+            "CFS session '{session_name}' was never visible after {} min of \
+             polling. The create call returned a session name we can't \
+             fetch back — check the manta-server log for backend errors.",
+            NOT_VISIBLE_BUDGET.as_secs() / 60,
+          );
+        }
         tokio::time::sleep(POLL_INTERVAL).await;
-        continue;
       }
-      Some(session) => match session.status().as_deref() {
-        Some("complete") | Some("succeeded") | Some("success") => {
-          tracing::info!("CFS session '{session_name}' complete");
-          return Ok(());
+      Some(session) => {
+        first_not_visible_at = None;
+        match session.status().as_deref() {
+          Some("complete") | Some("succeeded") | Some("success") => {
+            tracing::info!("CFS session '{session_name}' complete");
+            return Ok(());
+          }
+          Some(s) if s.contains("fail") => {
+            bail!("CFS session '{session_name}' failed (status: '{s}')");
+          }
+          Some(s) => {
+            tracing::debug!(
+              "CFS session '{session_name}' still running (status: '{s}')",
+            );
+            tokio::time::sleep(POLL_INTERVAL).await;
+          }
+          None => {
+            tracing::debug!("CFS session '{session_name}' has no status yet",);
+            tokio::time::sleep(POLL_INTERVAL).await;
+          }
         }
-        Some(s) if s.contains("fail") => {
-          bail!("CFS session '{session_name}' failed (status: '{s}')");
-        }
-        Some(s) => {
-          tracing::debug!(
-            "CFS session '{session_name}' still running (status: '{s}')",
-          );
-          tokio::time::sleep(POLL_INTERVAL).await;
-        }
-        None => {
-          tracing::debug!(
-            "CFS session '{session_name}' has no status yet",
-          );
-          tokio::time::sleep(POLL_INTERVAL).await;
-        }
-      },
+      }
     }
   }
 }
@@ -203,7 +246,7 @@ async fn fetch_session_opt(
   session_name: &str,
 ) -> anyhow::Result<Option<CfsSessionGetResponse>> {
   let params = GetSessionParams {
-    hsm_group: None,
+    group: None,
     xnames: Vec::new(),
     min_age: None,
     max_age: None,
@@ -218,4 +261,3 @@ async fn fetch_session_opt(
     .with_context(|| format!("fetch CFS session '{session_name}'"))?;
   Ok(sessions.into_iter().next())
 }
-

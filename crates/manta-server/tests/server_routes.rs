@@ -424,7 +424,6 @@ async fn all_get_routes_are_registered() {
     "/api/v1/nodes",
     "/api/v1/groups",
     "/api/v1/groups/available",
-    "/api/v1/groups/all",
     "/api/v1/groups/nodes",
     "/api/v1/groups/hardware",
     "/api/v1/images",

@@ -32,7 +32,7 @@ impl MantaClient {
     params: &GetSessionParams,
   ) -> anyhow::Result<Vec<CfsSessionGetResponse>> {
     let q = QueryBuilder::new()
-      .opt("hsm_group", &params.hsm_group)
+      .opt("hsm_group", &params.group)
       .vec("xnames", &params.xnames)
       .opt("min_age", &params.min_age)
       .opt("max_age", &params.max_age)

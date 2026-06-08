@@ -47,7 +47,7 @@ pub async fn get_configurations(
   let params = service::configuration::GetConfigurationParams {
     name: q.name,
     pattern: q.pattern,
-    hsm_group: q.hsm_group,
+    group_name: q.hsm_group,
     settings_hsm_group_name: None,
     since: None,
     until: None,

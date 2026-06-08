@@ -12,6 +12,7 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
 };
 
 use crate::server::common::app_context::InfraContext;
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 pub use manta_shared::types::params::power::{
   ApplyPowerParams, PowerAction, PowerTargetType,
@@ -27,27 +28,24 @@ pub async fn resolve_target_xnames(
   infra: &InfraContext<'_>,
   token: &str,
   target_type: PowerTargetType,
-  targets_expression: &str,
+  host_expression: &str,
 ) -> Result<Vec<String>, Error> {
   let xnames = match target_type {
     PowerTargetType::Cluster => {
       infra
         .get_member_vec_from_group_name_vec(
           token,
-          std::slice::from_ref(&targets_expression.to_string()),
+          std::slice::from_ref(&host_expression.to_string()),
         )
         .await?
     }
     PowerTargetType::Nodes => {
-      node_ops::resolve_hosts_expression(
-        infra,
-        token,
-        targets_expression,
-        false,
-      )
-      .await?
+      node_ops::resolve_hosts_expression(infra, token, host_expression, false)
+        .await?
     }
   };
+
+  validate_user_group_members_access(infra, token, &xnames).await?;
 
   if xnames.is_empty() {
     return Err(Error::BadRequest("No nodes to operate on".into()));
@@ -69,6 +67,8 @@ pub async fn apply_power(
   token: &str,
   params: &ApplyPowerParams,
 ) -> Result<TransitionStartOutput, Error> {
+  validate_user_group_members_access(infra, token, &params.xnames).await?;
+
   infra
     .pcs_transitions_post(
       token,
@@ -96,12 +96,24 @@ pub(crate) fn pcs_operation(action: PowerAction, force: bool) -> &'static str {
 /// Fetch the current snapshot of a PCS power transition by id. The
 /// CLI's poll loop calls this every few seconds after `apply_power`
 /// returned the transition id.
+///
+/// Authorization: the caller must have group-access to every xname
+/// listed in the transition's `tasks`. An admin token short-circuits
+/// the check. A transition with no tasks (an unusual edge case the
+/// backend can in principle return) is allowed through; the response
+/// contains no xnames the caller didn't already supply.
 pub async fn get_power_transition(
   infra: &InfraContext<'_>,
   token: &str,
   transition_id: &str,
 ) -> Result<TransitionResponse, Error> {
-  infra.pcs_transitions_get(token, transition_id).await
+  let transition = infra.pcs_transitions_get(token, transition_id).await?;
+
+  let xnames: Vec<String> =
+    transition.tasks.iter().map(|t| t.xname.clone()).collect();
+  validate_user_group_members_access(infra, token, &xnames).await?;
+
+  Ok(transition)
 }
 
 #[cfg(test)]

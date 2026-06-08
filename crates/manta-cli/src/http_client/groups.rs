@@ -28,9 +28,9 @@ impl MantaClient {
     params: &GetClusterParams,
   ) -> anyhow::Result<Vec<NodeDetails>> {
     let hsm = params
-      .hsm_group_name
+      .group_name
       .as_deref()
-      .or(params.settings_hsm_group_name.as_deref())
+      .or(params.settings_group_name.as_deref())
       .map(String::from);
     let q = QueryBuilder::new()
       .opt("hsm_group", &hsm)

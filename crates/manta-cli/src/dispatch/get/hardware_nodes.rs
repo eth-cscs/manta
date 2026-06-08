@@ -15,7 +15,9 @@ fn parse_hardware_nodes_params(
     .get_one::<String>("VALUE")
     .context("The 'VALUE' argument must have a value")?
     .clone();
-  Ok(GetHardwareNodesListParams { xnames })
+  Ok(GetHardwareNodesListParams {
+    host_expression: xnames,
+  })
 }
 
 /// CLI adapter for `manta get hardware nodes`.
@@ -50,13 +52,13 @@ mod tests {
     let matches =
       hw_nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0,x1000c0s0b0n1"]);
     let params = parse_hardware_nodes_params(&matches).unwrap();
-    assert_eq!(params.xnames, "x1000c0s0b0n0,x1000c0s0b0n1");
+    assert_eq!(params.host_expression, "x1000c0s0b0n0,x1000c0s0b0n1");
   }
 
   #[test]
   fn parse_single_xname() {
     let matches = hw_nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0"]);
     let params = parse_hardware_nodes_params(&matches).unwrap();
-    assert_eq!(params.xnames, "x1000c0s0b0n0");
+    assert_eq!(params.host_expression, "x1000c0s0b0n0");
   }
 }

@@ -3,8 +3,8 @@
 //! Pure helpers that read the HSM-group names a single SAT `images[]`
 //! or `session_templates[]` entry references, so handlers can gate
 //! access at the boundary via
-//! [`crate::service::group::validate_hsm_group_access_many`] before
-//! delegating to the backend.
+//! [`crate::service::authorization::validate_user_group_vec_access`]
+//! before delegating to the backend.
 //!
 //! The SAT schema lives in csm-rs and is carried as
 //! `serde_json::Value` end-to-end (see ARCHITECTURE.md). These
@@ -135,9 +135,6 @@ mod tests {
         }
       }
     });
-    assert_eq!(
-      extract_session_template_groups(&template),
-      vec!["compute"]
-    );
+    assert_eq!(extract_session_template_groups(&template), vec!["compute"]);
   }
 }

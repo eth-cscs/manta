@@ -941,7 +941,7 @@ async fn post_power_on_nodes_happy_path() {
       "/api/v1/power",
       json!({
         "action": "on",
-        "targets_expression": "x3000c0s1b0n0",
+        "host_expression": "x3000c0s1b0n0",
         "target_type": "nodes",
         "force": false,
       }),

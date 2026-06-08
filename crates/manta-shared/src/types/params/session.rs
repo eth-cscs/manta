@@ -2,8 +2,8 @@
 
 /// Typed parameters for fetching CFS sessions.
 pub struct GetSessionParams {
-  /// HSM group whose sessions should be returned.
-  pub hsm_group: Option<String>,
+  /// Group whose sessions should be returned.
+  pub group: Option<String>,
   /// Filter to sessions whose `ansible_limit` mentions any of these
   /// xnames. Empty means "no xname filter".
   pub xnames: Vec<String>,

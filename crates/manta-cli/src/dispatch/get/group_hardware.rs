@@ -13,7 +13,7 @@ fn parse_hardware_cluster_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetHardwareClusterParams {
   GetHardwareClusterParams {
-    hsm_group_name: cli_args.get_one::<String>("CLUSTER_NAME").cloned(),
+    group_name: cli_args.get_one::<String>("CLUSTER_NAME").cloned(),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
@@ -51,7 +51,7 @@ mod tests {
     let matches =
       hw_cluster_cmd().get_matches_from(["group-hardware", "compute"]);
     let params = parse_hardware_cluster_params(&matches, None);
-    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
+    assert_eq!(params.group_name.as_deref(), Some("compute"));
     assert!(params.settings_hsm_group_name.is_none());
   }
 

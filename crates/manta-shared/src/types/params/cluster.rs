@@ -2,11 +2,11 @@
 
 /// Typed parameters for fetching cluster node details.
 pub struct GetClusterParams {
-  /// Cluster (HSM group) name to query; falls back to
+  /// Cluster group name to query; falls back to
   /// `settings_hsm_group_name` when absent.
-  pub hsm_group_name: Option<String>,
+  pub group_name: Option<String>,
   /// Operator default from `cli.toml`'s `parent_hsm_group`.
-  pub settings_hsm_group_name: Option<String>,
+  pub settings_group_name: Option<String>,
   /// Optional power-status filter (e.g. `OFF`, `ON`, `READY`,
   /// `STANDBY`, `PENDING`, `FAILED`, `CONFIGURED`); returns all nodes
   /// when absent.

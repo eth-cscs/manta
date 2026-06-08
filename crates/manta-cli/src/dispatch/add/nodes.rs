@@ -16,7 +16,6 @@ pub async fn exec(
   dryrun: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
-
   if !common::confirm::confirm(
     &format!(
       "Nodes matching '{hosts_expression}' will be added to HSM group '{target_hsm_name}'. Do you want to proceed?"

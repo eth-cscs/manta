@@ -14,8 +14,8 @@ fn parse_boot_parameters_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetBootParametersParams {
   GetBootParametersParams {
-    hsm_group: cli_args.opt_string("group"),
-    nodes: cli_args.opt_string("nodes"),
+    group_name: cli_args.opt_string("group"),
+    host_expression: cli_args.opt_string("nodes"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
@@ -57,8 +57,8 @@ mod tests {
       "x1000c0s0b0n0",
     ]);
     let params = parse_boot_parameters_params(&matches, None);
-    assert!(params.hsm_group.is_none());
-    assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
+    assert!(params.group_name.is_none());
+    assert_eq!(params.host_expression.as_deref(), Some("x1000c0s0b0n0"));
     assert!(params.settings_hsm_group_name.is_none());
   }
 
@@ -70,7 +70,7 @@ mod tests {
       "compute",
     ]);
     let params = parse_boot_parameters_params(&matches, None);
-    assert_eq!(params.hsm_group.as_deref(), Some("compute"));
+    assert_eq!(params.group_name.as_deref(), Some("compute"));
   }
 
   #[test]

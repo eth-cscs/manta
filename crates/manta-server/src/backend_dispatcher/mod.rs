@@ -334,7 +334,7 @@ impl CfsTrait for StaticBackendDispatcher {
   async fn get_and_filter_sessions(
     &self,
     shasta_token: &str,
-    hsm_group_name_vec: Vec<String>,
+    group_name_vec: Vec<String>,
     xname_vec: Vec<&str>,
     min_age_opt: Option<&String>,
     max_age_opt: Option<&String>,
@@ -348,7 +348,7 @@ impl CfsTrait for StaticBackendDispatcher {
       self,
       get_and_filter_sessions,
       shasta_token,
-      hsm_group_name_vec,
+      group_name_vec,
       xname_vec,
       min_age_opt,
       max_age_opt,
@@ -907,13 +907,6 @@ impl GroupTrait for StaticBackendDispatcher {
       auth_token,
       member_vec
     )
-  }
-
-  async fn get_all_groups(
-    &self,
-    auth_token: &str,
-  ) -> Result<Vec<Group>, Error> {
-    dispatch!(self, get_all_groups, auth_token)
   }
 
   async fn get_group(

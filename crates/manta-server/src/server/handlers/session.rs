@@ -67,17 +67,19 @@ pub async fn get_sessions(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
 
-  let xnames = match q.xnames {
-    Some(expr) => crate::service::node_ops::resolve_hosts_expression(
-      &infra, &ctx.token, &expr, false,
-    )
-    .await
-    .map_err(to_handler_error)?,
-    None => vec![],
-  };
+  let xnames: Vec<String> = q
+    .xnames
+    .map(|s| {
+      s.split(',')
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map(str::to_string)
+        .collect()
+    })
+    .unwrap_or_default();
 
   let params = service::session::GetSessionParams {
-    hsm_group: q.hsm_group,
+    group: q.hsm_group,
     xnames,
     min_age: q.min_age,
     max_age: q.max_age,
@@ -196,14 +198,17 @@ pub async fn create_session(
 
   // Authorization: requested HSM group must be accessible to the token.
   if let Some(ref hsm_group) = body.hsm_group {
-    service::group::validate_hsm_group_access(&infra, &ctx.token, hsm_group)
-      .await
-      .map_err(to_handler_error)?;
+    service::authorization::validate_user_group_access(
+      &infra, &ctx.token, hsm_group,
+    )
+    .await
+    .map_err(to_handler_error)?;
   }
+
   // Authorization: every xname in ansible_limit must belong to a group
   // the token can access.
   if let Some(ref ansible_limit) = body.ansible_limit {
-    service::authorization::validate_ansible_limit_membership(
+    service::authorization::validate_ansible_limit_membership_access(
       &infra,
       &ctx.token,
       ansible_limit,

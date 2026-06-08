@@ -41,8 +41,8 @@ pub async fn get_boot_parameters(
   let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
-    hsm_group: q.hsm_group,
-    nodes: q.nodes,
+    group_name: q.hsm_group,
+    host_expression: q.nodes,
     settings_hsm_group_name: None,
   };
 
@@ -179,8 +179,8 @@ pub async fn update_boot_parameters(
 /// Request body for `POST /boot-config`.
 #[derive(Deserialize, ToSchema)]
 pub struct ApplyBootConfigRequest {
-  /// Node-set expression (xnames, HSM group, or nodeset) identifying the target nodes.
-  pub hosts_expression: String,
+  /// List of comma separated xnames identifying the target nodes.
+  pub xnames: String,
   /// IMS image ID to set as the boot image.
   pub boot_image_id: Option<String>,
   /// CFS configuration name associated with the boot image.
@@ -213,7 +213,7 @@ pub async fn apply_boot_config(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
     "apply_boot_config hosts={} dry_run={}",
-    body.hosts_expression,
+    body.xnames,
     body.dry_run
   );
   let infra = ctx.infra();
@@ -221,7 +221,7 @@ pub async fn apply_boot_config(
   let changeset = service::boot_parameters::prepare_boot_config(
     &infra,
     &ctx.token,
-    &body.hosts_expression,
+    &body.xnames,
     body.boot_image_id.as_deref(),
     body.boot_image_configuration.as_deref(),
     body.kernel_parameters.as_deref(),

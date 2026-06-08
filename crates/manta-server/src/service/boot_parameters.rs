@@ -11,7 +11,7 @@ use manta_backend_dispatcher::{
 use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::validate_target_hsm_members;
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::ims_ops::get_image_vec_related_cfs_configuration_name;
 use crate::service::node_ops;
 pub use manta_shared::types::params::boot_parameters::{
@@ -24,16 +24,24 @@ pub async fn get_boot_parameters(
   token: &str,
   params: &GetBootParametersParams,
 ) -> Result<Vec<BootParameters>, Error> {
+  tracing::info!("Get boot parameters");
+
   let xname_vec = node_ops::resolve_target_nodes(
     infra,
     token,
-    params.nodes.as_deref(),
-    params.hsm_group.as_deref(),
+    params.host_expression.as_deref(),
+    params.group_name.as_deref(),
     params.settings_hsm_group_name.as_deref(),
   )
   .await?;
 
-  tracing::info!("Get boot parameters");
+  if xname_vec.is_empty() {
+    return Err(Error::BadRequest(
+      "The list of nodes to operate is empty. Nothing to do".to_string(),
+    ));
+  }
+
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
 
   infra.get_bootparameters(token, &xname_vec).await
 }
@@ -54,6 +62,9 @@ pub async fn delete_boot_parameters(
     cloud_init: None,
   };
 
+  validate_user_group_members_access(infra, token, &boot_parameters.hosts)
+    .await?;
+
   infra.delete_bootparameters(token, &boot_parameters).await
 }
 
@@ -63,6 +74,9 @@ pub async fn add_boot_parameters(
   token: &str,
   boot_parameters: &BootParameters,
 ) -> Result<(), Error> {
+  validate_user_group_members_access(infra, token, &boot_parameters.hosts)
+    .await?;
+
   infra.add_bootparameters(token, boot_parameters).await
 }
 
@@ -72,7 +86,7 @@ pub async fn update_boot_parameters(
   token: &str,
   params: UpdateBootParametersParams,
 ) -> Result<(), Error> {
-  validate_target_hsm_members(infra, token, &params.hosts).await?;
+  validate_user_group_members_access(infra, token, &params.hosts).await?;
 
   let boot_parameters = BootParameters {
     hosts: params.hosts,
@@ -172,6 +186,9 @@ pub(crate) async fn persist_boot_config(
 ) -> Result<(), Error> {
   tracing::info!("Persist changes");
 
+  validate_user_group_members_access(infra, token, &changeset.xname_vec)
+    .await?;
+
   for boot_parameter in &changeset.boot_param_vec {
     tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
     let component_patch_rep =
@@ -183,7 +200,7 @@ pub(crate) async fn persist_boot_config(
   }
 
   if let Some(new_runtime_configuration_name) = new_runtime_configuration_opt {
-    println!(
+    tracing::info!(
       "Updating runtime configuration to '{new_runtime_configuration_name}'"
     );
 

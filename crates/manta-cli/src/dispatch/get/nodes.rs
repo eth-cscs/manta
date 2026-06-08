@@ -16,7 +16,7 @@ fn parse_nodes_params(
   let xname = cli_args.req_str("VALUE")?.to_string();
 
   Ok(GetNodesParams {
-    xname,
+    host_expression: xname,
     include_siblings: cli_args.get_flag("include-siblings"),
     status_filter: cli_args.opt_string("status"),
   })
@@ -94,7 +94,7 @@ mod tests {
   fn parse_xname_only() {
     let matches = nodes_cmd().get_matches_from(["nodes", "x1000c0s0b0n0"]);
     let params = parse_nodes_params(&matches).unwrap();
-    assert_eq!(params.xname, "x1000c0s0b0n0");
+    assert_eq!(params.host_expression, "x1000c0s0b0n0");
     assert!(!params.include_siblings);
     assert!(params.status_filter.is_none());
   }

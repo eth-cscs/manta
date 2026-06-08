@@ -46,8 +46,8 @@ pub struct PowerRequest {
   pub action: PowerAction,
   /// For nodes: hosts expression (xnames, nids, or hostlist notation).
   /// For cluster: the HSM group name.
-  pub targets_expression: String,
-  /// Indicates whether `targets_expression` is a node expression or a cluster name.
+  pub host_expression: String,
+  /// Indicates whether `host_expression` is a node expression or a cluster name.
   pub target_type: PowerTargetType,
   /// Pass `--force` to the underlying power operation (forceful shutdown/reset).
   #[serde(default)]
@@ -95,7 +95,7 @@ pub async fn post_power(
     &infra,
     &ctx.token,
     target_type,
-    &body.targets_expression,
+    &body.host_expression,
   )
   .await
   .map_err(to_handler_error)?;

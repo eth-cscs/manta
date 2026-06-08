@@ -22,7 +22,7 @@ fn parse_configuration_params(
   GetConfigurationParams {
     name: cli_args.opt_string("name"),
     pattern: cli_args.opt_string("pattern"),
-    hsm_group: cli_args.opt_string("group"),
+    group_name: cli_args.opt_string("group"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     since: None,
     until: None,
@@ -76,7 +76,7 @@ mod tests {
     let params = parse_configuration_params(&matches, None);
     assert!(params.name.is_none());
     assert!(params.pattern.is_none());
-    assert!(params.hsm_group.is_none());
+    assert!(params.group_name.is_none());
     assert!(params.limit.is_none());
   }
 

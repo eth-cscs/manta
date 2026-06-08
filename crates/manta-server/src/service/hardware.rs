@@ -10,9 +10,9 @@ use tokio::sync::Semaphore;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::{
-  get_groups_names_available, validate_target_hsm_members,
+  validate_user_group_members_access, validate_user_group_vec_access,
 };
-use crate::service::node_ops;
+use crate::service::node_ops::from_hosts_expression_to_xname_vec;
 pub use manta_shared::types::params::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
 };
@@ -113,15 +113,22 @@ pub async fn get_hardware_cluster(
   token: &str,
   params: &GetHardwareClusterParams,
 ) -> Result<HardwareClusterResult, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra,
-    token,
-    params.hsm_group_name.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
 
-  let hsm_group_name = target_hsm_group_vec
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+
+  let hsm_group_name = target_group_vec
     .first()
     .ok_or_else(|| {
       Error::NotFound("No HSM groups available for this user".to_string())
@@ -179,19 +186,25 @@ pub async fn get_hardware_nodes_list(
   token: &str,
   params: &GetHardwareNodesListParams,
 ) -> Result<HardwareNodesListResult, Error> {
-  let xnames =
-    node_ops::resolve_hosts_expression(infra, token, &params.xnames, false)
-      .await?;
+  let node_metadata_available_vec =
+    infra.get_node_metadata_available(token).await?;
 
-  if xnames.is_empty() {
+  let node_list = from_hosts_expression_to_xname_vec(
+    &params.host_expression,
+    false,
+    &node_metadata_available_vec,
+  )?;
+
+  if node_list.is_empty() {
     return Err(Error::BadRequest(
-      "The list of nodes is empty. Nothing to do.".to_string(),
+      "The list of nodes to operate is empty. Nothing to do".to_string(),
     ));
   }
 
-  validate_target_hsm_members(infra, token, &xnames).await?;
+  // Validate xnames
+  validate_user_group_members_access(infra, token, &node_list).await?;
 
-  let node_summaries = fetch_node_summaries(infra, token, &xnames).await;
+  let node_summaries = fetch_node_summaries(infra, token, &node_list).await;
   Ok(HardwareNodesListResult { node_summaries })
 }
 

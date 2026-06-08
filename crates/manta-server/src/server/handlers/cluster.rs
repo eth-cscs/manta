@@ -39,8 +39,8 @@ pub async fn get_groups_nodes(
   let infra = ctx.infra();
 
   let params = service::cluster::GetClusterParams {
-    hsm_group_name: q.hsm_group,
-    settings_hsm_group_name: None,
+    group_name: q.hsm_group,
+    settings_group_name: None,
     status_filter: q.status,
   };
 

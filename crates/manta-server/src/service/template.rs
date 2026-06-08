@@ -7,7 +7,7 @@ use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::{
-  get_groups_names_available, validate_target_hsm_members,
+  validate_user_group_members_access, validate_user_group_vec_access,
 };
 use crate::service::node_ops::validate_xname_format;
 pub use manta_shared::types::params::template::{
@@ -20,29 +20,36 @@ pub async fn get_templates(
   token: &str,
   params: &GetTemplateParams,
 ) -> Result<Vec<BosSessionTemplate>, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra,
-    token,
-    params.hsm_group.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
+
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   let hsm_member_vec = infra
-    .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
+    .get_member_vec_from_group_name_vec(token, &target_group_vec)
     .await?;
 
   let limit_ref = params.limit.as_ref();
 
   tracing::info!(
     "Get BOS sessiontemplates for HSM groups: {:?}",
-    target_hsm_group_vec
+    target_group_vec
   );
 
   let mut bos_sessiontemplate_vec = infra
     .get_and_filter_templates(
       token,
-      &target_hsm_group_vec,
+      &target_group_vec,
       &hsm_member_vec,
       params.name.as_deref(),
       limit_ref,
@@ -99,7 +106,7 @@ pub async fn validate_and_prepare_template_session(
     bos_sessiontemplate.get_target_xname()
   };
 
-  validate_target_hsm_members(infra, token, &target_xname_vec).await?;
+  validate_user_group_members_access(infra, token, &target_xname_vec).await?;
 
   // Validate user has access to xnames in `limit` argument
   tracing::info!("Validate user has access to xnames in BOS sessiontemplate");
@@ -137,8 +144,12 @@ pub async fn validate_and_prepare_template_session(
   }
 
   tracing::info!("Validate list of xnames translated from 'limit argument'");
-  validate_target_hsm_members(infra, token, &xnames_to_validate_access_vec)
-    .await?;
+  validate_user_group_members_access(
+    infra,
+    token,
+    &xnames_to_validate_access_vec,
+  )
+  .await?;
 
   tracing::info!("Access to '{}' granted. Continue.", params.limit);
 

@@ -4,79 +4,32 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::get_groups_names_available;
-use crate::service::node_ops;
+use crate::service::authorization::validate_user_group_vec_access;
+use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
 pub use manta_shared::types::params::group::GetGroupParams;
 
-/// Validate that `group_name` is in the set this token can access.
-///
-/// Used by handlers that perform privileged HSM-group operations and
-/// need a server-side authorization check before delegating to the
-/// service layer. Returns `Error::BadRequest` with a usable error
-/// message when the group is not accessible.
-pub async fn validate_hsm_group_access(
-  infra: &InfraContext<'_>,
-  token: &str,
-  group_name: &str,
-) -> Result<(), Error> {
-  let accessible = infra.get_group_name_available(token).await?;
-  if !accessible.iter().any(|name| name == group_name) {
-    let mut accessible = accessible;
-    accessible.sort();
-    return Err(Error::BadRequest(format!(
-      "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
-      group_name,
-      accessible.join(", ")
-    )));
-  }
-  Ok(())
-}
-
-/// Validate that every group name in `group_names` is in the set this
-/// token can access. Empty `group_names` is a no-op success.
-///
-/// Single round-trip to the backend regardless of slice length, in
-/// contrast to calling [`validate_hsm_group_access`] in a loop. Used by
-/// SAT-file per-element handlers that need to gate on the set of
-/// groups named inside a single SAT entry before delegating.
-pub async fn validate_hsm_group_access_many(
-  infra: &InfraContext<'_>,
-  token: &str,
-  group_names: &[String],
-) -> Result<(), Error> {
-  if group_names.is_empty() {
-    return Ok(());
-  }
-  let accessible = infra.get_group_name_available(token).await?;
-  if let Some(unauthorized) =
-    group_names.iter().find(|name| !accessible.contains(name))
-  {
-    let mut accessible = accessible;
-    accessible.sort();
-    return Err(Error::BadRequest(format!(
-      "Can't access HSM group '{}'.\nPlease choose one from the list below:\n{}",
-      unauthorized,
-      accessible.join(", ")
-    )));
-  }
-  Ok(())
-}
-
-/// Fetch HSM groups from the backend.
+/// Fetch groups from the backend.
 pub async fn get_groups(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetGroupParams,
 ) -> Result<Vec<Group>, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra,
-    token,
-    params.group_name.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
 
-  infra.get_groups(token, Some(&target_hsm_group_vec)).await
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+
+  infra.get_groups(token, Some(&target_group_vec)).await
 }
 
 /// Validate that deleting a group will not orphan any nodes.
@@ -145,21 +98,36 @@ pub async fn delete_group_members(
   infra: &InfraContext<'_>,
   token: &str,
   group_name: &str,
-  xnames_expression: &str,
+  host_expression: &str,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let xnames =
-    node_ops::resolve_hosts_expression(infra, token, xnames_expression, false)
-      .await?;
+  let node_metadata_available_vec =
+    infra.get_node_metadata_available(token).await?;
 
-  if dry_run {
-    return Ok(());
+  let node_list = from_hosts_expression_to_xname_vec(
+    host_expression,
+    false,
+    &node_metadata_available_vec,
+  )?;
+
+  if node_list.is_empty() {
+    return Err(Error::BadRequest(
+      "The list of nodes to operate is empty. Nothing to do".to_string(),
+    ));
   }
 
-  for xname in &xnames {
-    infra
-      .delete_member_from_group(token, group_name, xname)
-      .await?;
+  for xname in &node_list {
+    if dry_run {
+      tracing::info!(
+        "Dryrun enabled: no changes peorsisted into the system.\nGroup member '{}' removed from group '{}'",
+        xname,
+        group_name
+      );
+    } else {
+      infra
+        .delete_member_from_group(token, group_name, xname)
+        .await?;
+    }
   }
 
   Ok(())

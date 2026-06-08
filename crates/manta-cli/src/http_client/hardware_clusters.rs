@@ -29,7 +29,7 @@ impl MantaClient {
     params: &GetHardwareClusterParams,
   ) -> anyhow::Result<Value> {
     let hsm = params
-      .hsm_group_name
+      .group_name
       .as_deref()
       .or(params.settings_hsm_group_name.as_deref())
       .map(String::from);
@@ -42,7 +42,8 @@ impl MantaClient {
     token: &str,
     params: &GetHardwareNodesListParams,
   ) -> anyhow::Result<Value> {
-    let q: Vec<(&str, String)> = vec![("xnames", params.xnames.clone())];
+    let q: Vec<(&str, String)> =
+      vec![("xnames", params.host_expression.clone())];
     self.get_json(token, "/hardware-nodes-list", &q).await
   }
 

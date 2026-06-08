@@ -26,7 +26,7 @@ impl MantaClient {
   ) -> anyhow::Result<Vec<BosSessionTemplate>> {
     let q = QueryBuilder::new()
       .opt("name", &params.name)
-      .opt("hsm_group", &params.hsm_group)
+      .opt("hsm_group", &params.group_name)
       .opt_display("limit", &params.limit)
       .build();
     self.get_json(token, "/templates", &q).await

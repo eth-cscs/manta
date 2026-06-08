@@ -15,8 +15,8 @@ fn parse_cluster_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetClusterParams {
   GetClusterParams {
-    hsm_group_name: cli_args.opt_string("HSM_GROUP_NAME"),
-    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    group_name: cli_args.opt_string("HSM_GROUP_NAME"),
+    settings_group_name: settings_hsm_group_name_opt.map(String::from),
     status_filter: cli_args.opt_string("status"),
   }
 }
@@ -109,7 +109,7 @@ mod tests {
   fn parse_positional_only_leaves_status_filter_unset() {
     let matches = cluster_cmd().get_matches_from(["group-nodes", "compute"]);
     let params = parse_cluster_params(&matches, None);
-    assert_eq!(params.hsm_group_name.as_deref(), Some("compute"));
+    assert_eq!(params.group_name.as_deref(), Some("compute"));
     assert!(params.status_filter.is_none());
   }
 
@@ -129,9 +129,6 @@ mod tests {
   fn parse_settings_hsm_group_preserved_alongside_positional() {
     let matches = cluster_cmd().get_matches_from(["group-nodes", "compute"]);
     let params = parse_cluster_params(&matches, Some("default-group"));
-    assert_eq!(
-      params.settings_hsm_group_name.as_deref(),
-      Some("default-group")
-    );
+    assert_eq!(params.settings_group_name.as_deref(), Some("default-group"));
   }
 }

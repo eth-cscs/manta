@@ -28,8 +28,8 @@ impl MantaClient {
     params: &GetBootParametersParams,
   ) -> anyhow::Result<Vec<BootParameters>> {
     let q = QueryBuilder::new()
-      .opt("hsm_group", &params.hsm_group)
-      .opt("nodes", &params.nodes)
+      .opt("hsm_group", &params.group_name)
+      .opt("nodes", &params.host_expression)
       .build();
     self.get_json(token, "/boot-parameters", &q).await
   }

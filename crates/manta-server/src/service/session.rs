@@ -7,7 +7,9 @@ use manta_backend_dispatcher::types::cfs::component::Component;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::get_groups_names_available;
+use crate::service::authorization::{
+  validate_user_group_members_access, validate_user_group_vec_access,
+};
 use crate::service::node_ops;
 pub use manta_shared::types::params::session::GetSessionParams;
 
@@ -19,15 +21,31 @@ pub async fn get_sessions(
 ) -> Result<Vec<CfsSessionGetResponse>, Error> {
   tracing::info!("Get CFS sessions");
 
+  // The backend rejects requests that pass both group names and
+  // xnames, so an explicit xname filter wins and skips the group
+  // expansion. Otherwise, use the requested group or fall back to the
+  // caller's accessible groups.
+  let target_group_vec: Vec<String> = if !params.xnames.is_empty() {
+    Vec::new()
+  } else if let Some(group) = &params.group {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
+
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+  validate_user_group_members_access(infra, token, &params.xnames).await?;
+
   infra
     .get_and_filter_sessions(
       token,
-      params
-        .hsm_group
-        .as_ref()
-        .map(|v| vec![v.clone()])
-        .unwrap_or_default(),
-      params.xnames.iter().map(String::as_str).collect(),
+      target_group_vec,
+      params.xnames.iter().map(|xname| xname.as_ref()).collect(),
       params.min_age.as_ref(),
       params.max_age.as_ref(),
       params.session_type.as_ref(),
@@ -59,11 +77,23 @@ pub async fn prepare_session_deletion(
   infra: &InfraContext<'_>,
   token: &str,
   session_name: &str,
-  settings_hsm_group_name_opt: Option<&str>,
+  settings_group_name_opt: Option<&str>,
 ) -> Result<SessionDeletionContext, Error> {
-  let group_available_names =
-    get_groups_names_available(infra, token, None, settings_hsm_group_name_opt)
-      .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> =
+    if let Some(group) = &settings_group_name_opt {
+      vec![group.to_string()]
+    } else {
+      infra
+        .get_group_available(token)
+        .await?
+        .iter()
+        .map(|group| group.label.clone())
+        .collect()
+    };
+
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();
@@ -77,7 +107,7 @@ pub async fn prepare_session_deletion(
     infra.get_group_available(token),
     infra.get_and_filter_sessions(
       token,
-      group_available_names,
+      target_group_vec,
       Vec::new(),
       None,
       None,
@@ -184,9 +214,9 @@ pub async fn create_cfs_session(
 ///
 /// Returns the fetched session so the caller doesn't double-GET.
 /// `NotFound` when the session doesn't exist; `BadRequest` when any
-/// target group is outside the accessible set — matching the existing
+/// target group is outside the accessible set — matching the
 /// access-denial shape used by
-/// [`crate::service::authorization::get_groups_names_available`].
+/// [`crate::service::authorization::validate_user_group_access`].
 pub async fn validate_session_access(
   infra: &InfraContext<'_>,
   token: &str,
@@ -207,9 +237,10 @@ pub async fn validate_session_access(
     )
     .await?;
 
-  let session = sessions.into_iter().next().ok_or_else(|| {
-    Error::NotFound(format!("CFS session '{session_name}'"))
-  })?;
+  let session = sessions
+    .into_iter()
+    .next()
+    .ok_or_else(|| Error::NotFound(format!("CFS session '{session_name}'")))?;
 
   let target_groups = session.get_target_hsm().unwrap_or_default();
   if !target_groups.is_empty() {
@@ -320,7 +351,10 @@ mod tests {
     Artifact, CfsSessionGetResponse, Status,
   };
 
-  fn session_with_result_id(name: &str, result_id: Option<&str>) -> CfsSessionGetResponse {
+  fn session_with_result_id(
+    name: &str,
+    result_id: Option<&str>,
+  ) -> CfsSessionGetResponse {
     CfsSessionGetResponse {
       name: name.to_string(),
       configuration: None,
@@ -342,8 +376,7 @@ mod tests {
 
   #[test]
   fn require_result_image_accepts_session_with_result_id() {
-    let session =
-      session_with_result_id("sat-img-v1", Some("ims-image-abc"));
+    let session = session_with_result_id("sat-img-v1", Some("ims-image-abc"));
     assert!(require_result_image(&session).is_ok());
   }
 

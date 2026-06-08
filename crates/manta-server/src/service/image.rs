@@ -6,7 +6,7 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::get_groups_names_available;
+use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
 pub use manta_shared::types::params::image::GetImagesParams;
 
@@ -37,10 +37,23 @@ pub async fn validate_image_deletion(
   infra: &InfraContext<'_>,
   token: &str,
   image_id_vec: &[&str],
-  settings_hsm_group_name_opt: Option<&str>,
+  settings_group_name_opt: Option<&str>,
 ) -> Result<(), Error> {
-  get_groups_names_available(infra, token, None, settings_hsm_group_name_opt)
-    .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> =
+    if let Some(group) = &settings_group_name_opt {
+      vec![group.to_string()]
+    } else {
+      infra
+        .get_group_available(token)
+        .await?
+        .iter()
+        .map(|group| group.label.clone())
+        .collect()
+    };
+
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   let (group_available_vec, boot_parameter_vec) = tokio::try_join!(
     infra.get_group_available(token),
@@ -87,7 +100,7 @@ pub async fn validate_image_deletion(
 
   if !image_restricted_vec.is_empty() {
     return Err(Error::BadRequest(format!(
-      "The following image ids are not deletable \
+      "The following image ids can't be deleted \
        because they are used by hosts that are not part \
        of the groups available to the user:\n{}",
       image_restricted_vec.join(", ")

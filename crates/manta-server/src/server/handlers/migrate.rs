@@ -54,9 +54,11 @@ pub async fn migrate_nodes(
     .iter()
     .chain(body.parent_hsm_names.iter())
   {
-    service::group::validate_hsm_group_access(&infra, &ctx.token, name)
-      .await
-      .map_err(to_handler_error)?;
+    service::authorization::validate_user_group_access(
+      &infra, &ctx.token, name,
+    )
+    .await
+    .map_err(to_handler_error)?;
   }
 
   let (xnames, results) = service::migrate::migrate_nodes(

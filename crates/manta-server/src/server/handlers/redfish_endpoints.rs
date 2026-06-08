@@ -10,6 +10,7 @@ use serde::Deserialize;
 use utoipa::IntoParams;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::service;
 use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
@@ -58,10 +59,10 @@ pub async fn get_redfish_endpoints(
     ipaddress: q.ipaddress,
   };
 
-  let endpoints = infra
-    .get_redfish_endpoints(&ctx.token, &params)
-    .await
-    .map_err(to_handler_error)?;
+  let endpoints =
+    service::redfish::get_redfish_endpoints(&infra, &ctx.token, &params)
+      .await
+      .map_err(to_handler_error)?;
 
   Ok(Json(endpoints))
 }
@@ -89,8 +90,7 @@ pub async fn delete_redfish_endpoint(
   tracing::info!("delete_redfish_endpoint id={}", id);
   let infra = ctx.infra();
 
-  infra
-    .delete_redfish_endpoint(&ctx.token, &id)
+  service::redfish::delete_redfish_endpoint(&infra, &ctx.token, &id)
     .await
     .map_err(to_handler_error)?;
 
@@ -120,8 +120,7 @@ pub async fn add_redfish_endpoint(
   tracing::info!("add_redfish_endpoint");
   let infra = ctx.infra();
 
-  infra
-    .add_redfish_endpoint(&ctx.token, params)
+  service::redfish::add_redfish_endpoint(&infra, &ctx.token, params)
     .await
     .map_err(to_handler_error)?;
 
@@ -154,8 +153,7 @@ pub async fn update_redfish_endpoint(
   tracing::info!("update_redfish_endpoint");
   let infra = ctx.infra();
 
-  infra
-    .update_redfish_endpoint(&ctx.token, params)
+  service::redfish::update_redfish_endpoint(&infra, &ctx.token, params)
     .await
     .map_err(to_handler_error)?;
 

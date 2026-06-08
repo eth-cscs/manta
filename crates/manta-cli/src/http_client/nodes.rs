@@ -14,7 +14,7 @@ impl MantaClient {
     params: &GetNodesParams,
   ) -> anyhow::Result<Vec<NodeDetails>> {
     let q = QueryBuilder::new()
-      .pair("xname", params.xname.clone())
+      .pair("xname", params.host_expression.clone())
       .flag("include_siblings", params.include_siblings)
       .opt("status", &params.status_filter)
       .build();

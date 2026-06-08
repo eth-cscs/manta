@@ -52,40 +52,47 @@ pub fn print_table(nodes_status: Vec<NodeDetails>, wide: bool) {
     ];
 
     if wide {
-      let kernel_params_vec: Vec<&str> =
-        node_status.kernel_params.split_whitespace().collect();
-      let cell_max_width = kernel_params_vec
-        .iter()
-        .map(|value| value.len())
-        .max()
-        .unwrap_or(0);
-
-      let mut kernel_params_string: String = kernel_params_vec
-        .first()
-        .map(std::string::ToString::to_string)
-        .unwrap_or_default();
-      let mut cell_width = kernel_params_string.len();
-
-      for kernel_param in kernel_params_vec.iter().skip(1) {
-        cell_width += kernel_param.len();
-
-        if cell_width + kernel_param.len() >= cell_max_width {
-          kernel_params_string.push('\n');
-          cell_width = 0;
-        } else {
-          kernel_params_string.push(' ');
-        }
-
-        kernel_params_string.push_str(kernel_param);
-      }
-
-      row.push(Cell::new(kernel_params_string));
+      row.push(Cell::new(wrap_kernel_params(&node_status.kernel_params)));
     }
 
     table.add_row(row);
   }
 
   println!("{table}");
+}
+
+/// Target wrap width for the wide-mode kernel-params column. Picked
+/// so a typical 80-column terminal still has room for the other nine
+/// columns; comfy-table's `ContentArrangement::Dynamic` will narrow
+/// further when the rest of the row needs space.
+const KERNEL_PARAMS_WRAP_WIDTH: usize = 60;
+
+/// Word-wrap a whitespace-separated `kernel_params` string into lines
+/// of at most ~[`KERNEL_PARAMS_WRAP_WIDTH`] columns. Each token stays
+/// intact — only the inter-token space is replaced with a newline when
+/// adding the next token (plus its leading space) would overflow the
+/// current line.
+fn wrap_kernel_params(kernel_params: &str) -> String {
+  let mut out = String::new();
+  let mut line_len = 0;
+  for token in kernel_params.split_whitespace() {
+    if out.is_empty() {
+      out.push_str(token);
+      line_len = token.len();
+      continue;
+    }
+    // +1 for the separator (space) that joins the token to the line.
+    if line_len + 1 + token.len() > KERNEL_PARAMS_WRAP_WIDTH {
+      out.push('\n');
+      out.push_str(token);
+      line_len = token.len();
+    } else {
+      out.push(' ');
+      out.push_str(token);
+      line_len += 1 + token.len();
+    }
+  }
+  out
 }
 
 /// Print a two-column summary table from a counter hashmap.
@@ -252,6 +259,53 @@ mod tests {
   #[test]
   fn print_summary_on_empty_does_not_panic() {
     print_summary(vec![]);
+  }
+
+  #[test]
+  fn wrap_kernel_params_empty_input_yields_empty_output() {
+    assert_eq!(wrap_kernel_params(""), "");
+  }
+
+  #[test]
+  fn wrap_kernel_params_single_token_does_not_wrap() {
+    assert_eq!(wrap_kernel_params("ip=dhcp"), "ip=dhcp");
+  }
+
+  #[test]
+  fn wrap_kernel_params_joins_short_tokens_with_spaces() {
+    // Three short tokens easily fit on one 60-column line.
+    let input = "ip=dhcp console=ttyS0,115200 crashkernel=512M";
+    let out = wrap_kernel_params(input);
+    assert_eq!(out, input);
+    assert!(!out.contains('\n'));
+  }
+
+  #[test]
+  fn wrap_kernel_params_breaks_when_line_would_overflow() {
+    // Each token is 25 chars; "tok1 tok2" = 51, "tok1 tok2 tok3" = 77,
+    // so the wrap should land between tok2 and tok3 (after 51 chars,
+    // before exceeding 60).
+    let tok = "x".repeat(25);
+    let input = format!("{tok} {tok} {tok}");
+    let out = wrap_kernel_params(&input);
+    let lines: Vec<&str> = out.split('\n').collect();
+    assert_eq!(lines.len(), 2, "expected exactly one break in: {out:?}");
+    assert_eq!(lines[0], format!("{tok} {tok}"));
+    assert_eq!(lines[1], tok);
+  }
+
+  #[test]
+  fn wrap_kernel_params_oversized_token_lives_on_its_own_line() {
+    // A token longer than the wrap width can't fit anywhere; it lands
+    // on a fresh line and stays intact rather than getting truncated.
+    let big = "x".repeat(KERNEL_PARAMS_WRAP_WIDTH + 10);
+    let input = format!("ip=dhcp {big} console=ttyS0");
+    let out = wrap_kernel_params(&input);
+    let lines: Vec<&str> = out.split('\n').collect();
+    assert_eq!(lines.len(), 3);
+    assert_eq!(lines[0], "ip=dhcp");
+    assert_eq!(lines[1], big);
+    assert_eq!(lines[2], "console=ttyS0");
   }
 
   #[test]

@@ -11,6 +11,8 @@ use serde_json::Value;
 
 use manta_shared::common::error::MantaError;
 
+use crate::service::authorization::PA_ADMIN;
+
 fn get_claims_from_jwt_token(token: &str) -> Result<Value, MantaError> {
   // Handle both "Bearer <token>" and bare "<token>" formats
   let jwt_body = token.split(' ').nth(1).unwrap_or(token);
@@ -62,6 +64,30 @@ pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
     Some(name) => Ok(name.to_string()),
     None => Ok("MISSING".to_string()),
   }
+}
+
+/// Returns the list of available HSM groups in JWT user token. The list is filtered and system HSM
+/// groups (eg alps, alpsm, alpse, etc)
+pub fn get_roles(token: &str) -> Result<Vec<String>, MantaError> {
+  // If JWT does not have `/realm_access/roles` claim, then we will assume, user is admin
+  Ok(
+    get_claims_from_jwt_token(token)?
+      .pointer("/realm_access/roles")
+      .unwrap_or(&serde_json::json!([]))
+      .as_array()
+      .cloned()
+      .unwrap_or_default()
+      .iter()
+      .filter_map(|role_value| role_value.as_str().map(str::to_string))
+      .collect(),
+  )
+}
+
+/// This function will return true if the user is an admin, otherwise false
+pub fn is_user_admin(token: &str) -> bool {
+  let roles_rslt = get_roles(token);
+
+  roles_rslt.is_ok_and(|roles| roles.contains(&PA_ADMIN.to_string()))
 }
 
 #[cfg(test)]

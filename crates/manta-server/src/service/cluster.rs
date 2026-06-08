@@ -4,7 +4,7 @@ use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::get_groups_names_available;
+use crate::service::authorization::validate_user_group_vec_access;
 pub use manta_shared::types::params::cluster::GetClusterParams;
 
 /// Fetch node details for all nodes in the specified HSM groups.
@@ -13,16 +13,23 @@ pub async fn get_cluster_nodes(
   token: &str,
   params: &GetClusterParams,
 ) -> Result<Vec<NodeDetails>, Error> {
-  let target_hsm_group_vec = get_groups_names_available(
-    infra,
-    token,
-    params.hsm_group_name.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
-  )
-  .await?;
+  // Get list of target groups the user is asking for
+  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
+    vec![group.clone()]
+  } else {
+    infra
+      .get_group_available(token)
+      .await?
+      .iter()
+      .map(|group| group.label.clone())
+      .collect()
+  };
+
+  // Validate groups and get list of groups available
+  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   let mut hsm_groups_node_list = infra
-    .get_member_vec_from_group_name_vec(token, &target_hsm_group_vec)
+    .get_member_vec_from_group_name_vec(token, &target_group_vec)
     .await?;
 
   hsm_groups_node_list.sort();

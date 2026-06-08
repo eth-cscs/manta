@@ -22,7 +22,7 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
   }
 
   GetSessionParams {
-    hsm_group: cli_args.opt_string("group"),
+    group: cli_args.opt_string("group"),
     xnames: cli_args
       .opt_string("xnames")
       .map(|s| vec![s])
@@ -69,7 +69,7 @@ mod tests {
   fn parse_no_args_returns_all_none() {
     let matches = sessions_cmd().get_matches_from(["sessions"]);
     let params = parse_session_params(&matches);
-    assert!(params.hsm_group.is_none());
+    assert!(params.group.is_none());
     assert!(params.xnames.is_empty());
     assert!(params.min_age.is_none());
     assert!(params.max_age.is_none());
@@ -137,7 +137,7 @@ mod tests {
     let matches =
       sessions_cmd().get_matches_from(["sessions", "--group", "compute"]);
     let params = parse_session_params(&matches);
-    assert_eq!(params.hsm_group.as_deref(), Some("compute"));
+    assert_eq!(params.group.as_deref(), Some("compute"));
   }
 
   #[test]

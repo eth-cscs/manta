@@ -99,17 +99,13 @@ pub fn get_xname_from_xname_hostlist(
   Ok(xname_vec)
 }
 
-// Unused get_xname_from_nid_regex removed
-
-// Unused get_xname_from_xname_regex removed
-
 /// Convenience wrapper that fetches node metadata from the backend
 /// and resolves a hosts expression to a sorted, deduplicated list
 /// of xnames.
 ///
-/// This combines the two-step pattern of
-/// `backend.get_node_metadata_available()` followed by
-/// `from_hosts_expression_to_xname_vec()` that appears in many
+/// Combines the two-step pattern of
+/// [`InfraContext::get_node_metadata_available`] followed by
+/// [`from_hosts_expression_to_xname_vec`] that recurs in many
 /// command files.
 pub async fn resolve_hosts_expression(
   infra: &InfraContext<'_>,
@@ -123,7 +119,7 @@ pub async fn resolve_hosts_expression(
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,
     is_include_siblings,
-    node_metadata_available_vec,
+    &node_metadata_available_vec,
   )?;
 
   xname_vec.sort();
@@ -140,7 +136,7 @@ pub async fn resolve_hosts_expression(
 pub fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,
-  node_metadata_available_vec: Vec<Component>,
+  node_metadata_available_vec: &[Component],
 ) -> Result<Vec<String>, Error> {
   let hostlist_expanded_vec_rslt =
     parse(user_input).map_err(|e| Error::InvalidNodeId(e.to_string()));
@@ -153,13 +149,13 @@ pub fn from_hosts_expression_to_xname_vec(
         tracing::debug!("hostlist Nids: {}", user_input);
         tracing::debug!("hostlist Nids expanded: {:?}", node_vec);
 
-        get_xname_from_nid_hostlist(&node_vec, &node_metadata_available_vec)?
+        get_xname_from_nid_hostlist(&node_vec, node_metadata_available_vec)?
       } else if validate_xname_format_vec(&node_vec) {
         tracing::debug!("XNAME format is valid");
         tracing::debug!("hostlist XNAMEs: {}", user_input);
         tracing::debug!("hostlist XNAMEs expanded: {:?}", node_vec);
 
-        get_xname_from_xname_hostlist(&node_vec, &node_metadata_available_vec)?
+        get_xname_from_xname_hostlist(&node_vec, node_metadata_available_vec)?
       } else {
         return Err(Error::BadRequest(
           "Could not parse user input as a list of nodes from a hostlist expression."
@@ -198,10 +194,10 @@ pub fn from_hosts_expression_to_xname_vec(
 
     tracing::debug!("XNAME blades:\n{:?}", xname_blade_vec);
 
-    // Filter xnames to the ones the user has access to
-
+    // Include siblings: keep any node whose xname shares a blade
+    // prefix with one of the resolved xnames.
     node_metadata_available_vec
-      .into_iter()
+      .iter()
       .filter(|node_metadata_available| {
         node_metadata_available.id.as_ref().is_some_and(|id| {
           xname_blade_vec
@@ -209,7 +205,8 @@ pub fn from_hosts_expression_to_xname_vec(
             .any(|xname_blade| id.starts_with(xname_blade))
         })
       })
-      .filter_map(|node_metadata_available| node_metadata_available.id)
+      .filter_map(|node_metadata_available| node_metadata_available.id.as_ref())
+      .cloned()
       .collect()
   } else {
     xname_vec
@@ -284,7 +281,7 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 ///    [`resolve_hosts_expression`].
 /// 2. `hsm_group_name_arg_opt` — the CLI `--hsm-group`
 ///    argument; validated for access via
-///    [`crate::service::authorization::get_groups_names_available`],
+///    [`crate::service::authorization::validate_user_group_access`],
 ///    then expanded to member xnames.
 /// 3. `settings_hsm_group_name_opt` — the group configured in
 ///    the environment or config file; same treatment as (2).
@@ -299,20 +296,21 @@ pub async fn resolve_target_nodes(
 ) -> Result<Vec<String>, Error> {
   if let Some(hosts_expr) = hosts_expression {
     resolve_hosts_expression(infra, shasta_token, hosts_expr, false).await
-  } else if hsm_group_name_arg_opt.is_some()
-    || settings_hsm_group_name_opt.is_some()
+  } else if let Some(target_group) =
+    hsm_group_name_arg_opt.or(settings_hsm_group_name_opt)
   {
-    let hsm_group_name_vec =
-      crate::service::authorization::get_groups_names_available(
-        infra,
-        shasta_token,
-        hsm_group_name_arg_opt,
-        settings_hsm_group_name_opt,
-      )
-      .await?;
+    crate::service::authorization::validate_user_group_access(
+      infra,
+      shasta_token,
+      target_group,
+    )
+    .await?;
 
     let hsm_members: Vec<String> = infra
-      .get_member_vec_from_group_name_vec(shasta_token, &hsm_group_name_vec)
+      .get_member_vec_from_group_name_vec(
+        shasta_token,
+        &[target_group.to_string()],
+      )
       .await?;
 
     resolve_hosts_expression(infra, shasta_token, &hsm_members.join(","), false)

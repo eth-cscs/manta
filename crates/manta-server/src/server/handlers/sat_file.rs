@@ -50,6 +50,8 @@ use manta_backend_dispatcher::types::ims::Image;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
+use crate::service::authorization::validate_user_group_vec_access;
+
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
   to_handler_error,
@@ -108,6 +110,12 @@ pub async fn post_sat_configuration(
     .await
     .map_err(to_handler_error)?;
 
+  // CFS configurations are not HSM-group-scoped — the SAT
+  // `configurations[]` entry only carries name + layers (git URL,
+  // branch, playbook), with no group field. Access control here
+  // relies on the backend's RBAC layer (CSM/OCHAMI), matching the
+  // convention used for other non-group-scoped handlers (see
+  // ARCHITECTURE.md "Security model").
   let cfg = infra
     .apply_configuration(
       &ctx.token,
@@ -171,10 +179,7 @@ pub async fn post_sat_image_cfs_session(
   ctx: RequestCtx,
   Json(body): Json<CreateImageCfsSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!(
-    "post_sat_image_cfs_session dry_run={}",
-    body.dry_run
-  );
+  tracing::info!("post_sat_image_cfs_session dry_run={}", body.dry_run);
   let infra = ctx.infra();
 
   let vault_base_url = require_vault(infra.vault_base_url)?;
@@ -182,13 +187,10 @@ pub async fn post_sat_image_cfs_session(
 
   let target_groups =
     crate::service::sat_groups::extract_image_groups(&body.image);
-  crate::service::group::validate_hsm_group_access_many(
-    &infra,
-    &ctx.token,
-    &target_groups,
-  )
-  .await
-  .map_err(to_handler_error)?;
+
+  validate_user_group_vec_access(&infra, &ctx.token, &target_groups)
+    .await
+    .map_err(to_handler_error)?;
 
   let session = infra
     .create_image_cfs_session(
@@ -246,10 +248,7 @@ pub async fn post_sat_image_stamp(
   ctx: RequestCtx,
   Json(body): Json<StampImageFromSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!(
-    "post_sat_image_stamp cfs_session={}",
-    body.cfs_session_name
-  );
+  tracing::info!("post_sat_image_stamp cfs_session={}", body.cfs_session_name);
   let infra = ctx.infra();
 
   let session = crate::service::session::validate_session_access(
@@ -339,13 +338,10 @@ pub async fn post_sat_session_template(
     crate::service::sat_groups::extract_session_template_groups(
       &body.session_template,
     );
-  crate::service::group::validate_hsm_group_access_many(
-    &infra,
-    &ctx.token,
-    &target_groups,
-  )
-  .await
-  .map_err(to_handler_error)?;
+
+  validate_user_group_vec_access(&infra, &ctx.token, &target_groups)
+    .await
+    .map_err(to_handler_error)?;
 
   let (template, session) = infra
     .apply_session_template(

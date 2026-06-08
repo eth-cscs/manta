@@ -16,7 +16,7 @@ impl MantaClient {
     let q = QueryBuilder::new()
       .opt("name", &params.name)
       .opt("pattern", &params.pattern)
-      .opt("hsm_group", &params.hsm_group)
+      .opt("hsm_group", &params.group_name)
       .opt_display("limit", &params.limit)
       .build();
     self.get_json(token, "/configurations", &q).await

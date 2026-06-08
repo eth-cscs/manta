@@ -48,31 +48,6 @@ pub async fn get_available_groups(
   Ok(Json(names))
 }
 
-/// GET /groups/all — list every HSM group in the system.
-///
-/// Backs CLI commands (e.g. `manta config set hsm`) that need the full
-/// catalogue, not just the accessible-to-this-token subset.
-#[utoipa::path(get, path = "/groups/all", tag = "groups",
-  params(SiteHeader),
-  security(("bearerAuth" = [])),
-  responses(
-    (status = 200, description = "List of all groups",      body = serde_json::Value),
-    (status = 401, description = "Unauthorized",            body = ErrorResponse),
-    (status = 500, description = "Internal error",          body = ErrorResponse),
-  )
-)]
-#[tracing::instrument(skip_all)]
-pub async fn get_all_groups(
-  ctx: RequestCtx,
-) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let infra = ctx.infra();
-  let groups = infra
-    .get_all_groups(&ctx.token)
-    .await
-    .map_err(to_handler_error)?;
-  Ok(Json(groups))
-}
-
 /// GET /groups — list HSM groups, optionally filtered by name.
 #[utoipa::path(get, path = "/groups", tag = "groups",
   params(GroupQuery, SiteHeader),

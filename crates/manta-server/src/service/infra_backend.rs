@@ -107,17 +107,19 @@ impl InfraContext<'_> {
   pub async fn get_session_logs_stream(
     &self,
     token: &str,
-    cfs_session_name: &str,
+    session_name: &str,
     timestamps: bool,
     k8s: &K8sDetails,
-  ) -> Result<impl futures::io::AsyncBufRead + Send + Sized + use<>, Error>
-  {
+  ) -> Result<impl futures::io::AsyncBufRead + Send + Sized + use<>, Error> {
+    crate::service::session::validate_session_access(self, token, session_name)
+      .await?;
+
     self
       .backend
       .get_session_logs_stream(
         token,
         self.site_name,
-        cfs_session_name,
+        session_name,
         timestamps,
         k8s,
       )
@@ -437,7 +439,7 @@ impl InfraContext<'_> {
   pub async fn get_and_filter_sessions(
     &self,
     token: &str,
-    hsm_group_name_vec: Vec<String>,
+    group_name_vec: Vec<String>,
     xname_vec: Vec<&str>,
     min_age_opt: Option<&String>,
     max_age_opt: Option<&String>,
@@ -451,7 +453,7 @@ impl InfraContext<'_> {
       .backend
       .get_and_filter_sessions(
         token,
-        hsm_group_name_vec,
+        group_name_vec,
         xname_vec,
         min_age_opt,
         max_age_opt,
@@ -615,7 +617,7 @@ impl InfraContext<'_> {
     self.backend.filter_images(image_vec)
   }
 
-  /// List the HSM groups the caller's token can access (names only).
+  /// List the groups the caller's token can access (names only).
   pub async fn get_group_name_available(
     &self,
     token: &str,
@@ -751,18 +753,12 @@ impl InfraContext<'_> {
       .await
   }
 
-
   /// Fetch metadata for every HSM node the caller can access.
   pub async fn get_node_metadata_available(
     &self,
     token: &str,
   ) -> Result<Vec<HsmComponent>, Error> {
     self.backend.get_node_metadata_available(token).await
-  }
-
-  /// List every HSM group in the system (no access filter).
-  pub async fn get_all_groups(&self, token: &str) -> Result<Vec<Group>, Error> {
-    self.backend.get_all_groups(token).await
   }
 
   /// List HSM groups, optionally restricted to a name set.

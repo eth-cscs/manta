@@ -6,6 +6,7 @@ use manta_backend_dispatcher::types::ims::Image;
 use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 pub use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
 
@@ -26,6 +27,8 @@ pub async fn get_kernel_parameters(
     params.settings_hsm_group_name.as_deref(),
   )
   .await?;
+
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
 
   let boot_parameter_vec = infra.get_bootparameters(token, &xname_vec).await?;
 
@@ -153,6 +156,9 @@ pub async fn apply_kernel_params_changes(
   changeset: &KernelParamsChangeset,
   images_to_project: &HashMap<String, Image>,
 ) -> Result<(), Error> {
+  validate_user_group_members_access(infra, token, &changeset.xnames_to_reboot)
+    .await?;
+
   // Update boot parameters
   for bp in &changeset.boot_params {
     infra.update_bootparameters(token, bp).await?;

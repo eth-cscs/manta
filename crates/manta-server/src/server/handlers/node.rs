@@ -47,7 +47,7 @@ pub async fn get_nodes(
   let infra = ctx.infra();
 
   let params = service::node::GetNodesParams {
-    xname: q.xname,
+    host_expression: q.xname,
     include_siblings: q.include_siblings.unwrap_or(false),
     status_filter: q.status,
   };

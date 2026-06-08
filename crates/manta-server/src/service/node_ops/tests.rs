@@ -214,7 +214,7 @@ async fn hosts_expression_nid_list() {
   ];
   // Comma-separated NID hostlist
   let result =
-    from_hosts_expression_to_xname_vec("nid000001,nid000002", false, metadata)
+    from_hosts_expression_to_xname_vec("nid000001,nid000002", false, &metadata)
       .unwrap();
   assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s1b0n0"]);
 }
@@ -228,7 +228,7 @@ async fn hosts_expression_xname_list() {
   let result = from_hosts_expression_to_xname_vec(
     "x1000c0s0b0n0,x1000c0s1b0n0",
     false,
-    metadata,
+    &metadata,
   )
   .unwrap();
   assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s1b0n0"]);
@@ -238,8 +238,7 @@ async fn hosts_expression_xname_list() {
 async fn hosts_expression_invalid_input() {
   let metadata = vec![make_component("x1000c0s0b0n0", Some(1))];
   // "foobar" is neither a valid NID nor xname
-  let result =
-    from_hosts_expression_to_xname_vec("foobar", false, metadata);
+  let result = from_hosts_expression_to_xname_vec("foobar", false, &metadata);
   assert!(result.is_err());
 }
 
@@ -248,7 +247,7 @@ async fn hosts_expression_nid_no_metadata_match_returns_error() {
   // All NIDs are valid but none match the metadata -> empty -> error
   let metadata = vec![make_component("x1000c0s0b0n0", Some(99))];
   let result =
-    from_hosts_expression_to_xname_vec("nid000001", false, metadata);
+    from_hosts_expression_to_xname_vec("nid000001", false, &metadata);
   assert!(result.is_err());
 }
 
@@ -262,7 +261,7 @@ async fn hosts_expression_include_siblings() {
   ];
   // Request only nid000001 but include siblings
   let mut result =
-    from_hosts_expression_to_xname_vec("nid000001", true, metadata).unwrap();
+    from_hosts_expression_to_xname_vec("nid000001", true, &metadata).unwrap();
   result.sort();
   assert_eq!(result, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
 }

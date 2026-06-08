@@ -21,7 +21,7 @@ fn parse_template_params(
 
   GetTemplateParams {
     name: cli_args.opt_string("name"),
-    hsm_group: cli_args.opt_string("group"),
+    group_name: cli_args.opt_string("group"),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
     limit,
   }
@@ -63,7 +63,7 @@ mod tests {
     let matches = template_cmd().get_matches_from(["templates"]);
     let params = parse_template_params(&matches, None);
     assert!(params.name.is_none());
-    assert!(params.hsm_group.is_none());
+    assert!(params.group_name.is_none());
     assert!(params.limit.is_none());
   }
 

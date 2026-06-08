@@ -37,7 +37,7 @@ pub async fn get_groups_hardware(
   let infra = ctx.infra();
 
   let params = service::hardware::GetHardwareClusterParams {
-    hsm_group_name: q.hsm_group,
+    group_name: q.hsm_group,
     settings_hsm_group_name: None,
   };
 
@@ -104,8 +104,9 @@ pub async fn get_hardware_nodes_list(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
 
-  let params =
-    service::hardware::GetHardwareNodesListParams { xnames: q.xnames };
+  let params = service::hardware::GetHardwareNodesListParams {
+    host_expression: q.xnames,
+  };
 
   let result =
     service::hardware::get_hardware_nodes_list(&infra, &ctx.token, &params)

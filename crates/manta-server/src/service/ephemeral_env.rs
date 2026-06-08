@@ -7,6 +7,7 @@ use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
 use crate::server::common::jwt_ops;
+use crate::wire_conv;
 
 const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 
@@ -17,11 +18,7 @@ pub async fn exec(
   image_id: &str,
 ) -> Result<String, Error> {
   let user_public_key_name =
-    jwt_ops::get_preferred_username(token).map_err(|e| {
-      Error::JwtMalformed(format!(
-        "claim 'preferred_user' not found in JWT token: {e}"
-      ))
-    })?;
+    jwt_ops::get_preferred_username(token).map_err(wire_conv::to_backend)?;
 
   tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 

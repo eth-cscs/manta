@@ -4,7 +4,7 @@
 pub struct GetNodesParams {
   /// Comma-separated xnames, NIDs, or hostlist expression
   /// (e.g. `x3000c0s1b0n[0-3]`).
-  pub xname: String,
+  pub host_expression: String,
   /// When true, also return nodes sharing a power supply with any
   /// requested node.
   pub include_siblings: bool,

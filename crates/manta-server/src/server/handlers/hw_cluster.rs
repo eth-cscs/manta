@@ -53,10 +53,12 @@ pub async fn add_hw_component(
   );
   let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
-    .await
-    .map_err(to_handler_error)?;
-  service::group::validate_hsm_group_access(
+  service::authorization::validate_user_group_access(
+    &infra, &ctx.token, &target,
+  )
+  .await
+  .map_err(to_handler_error)?;
+  service::authorization::validate_user_group_access(
     &infra,
     &ctx.token,
     &body.parent_cluster,
@@ -130,10 +132,12 @@ pub async fn delete_hw_component(
   );
   let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
-    .await
-    .map_err(to_handler_error)?;
-  service::group::validate_hsm_group_access(
+  service::authorization::validate_user_group_access(
+    &infra, &ctx.token, &target,
+  )
+  .await
+  .map_err(to_handler_error)?;
+  service::authorization::validate_user_group_access(
     &infra,
     &ctx.token,
     &body.parent_cluster,
@@ -224,10 +228,12 @@ pub async fn apply_hw_configuration(
   );
   let infra = ctx.infra();
 
-  service::group::validate_hsm_group_access(&infra, &ctx.token, &target)
-    .await
-    .map_err(to_handler_error)?;
-  service::group::validate_hsm_group_access(
+  service::authorization::validate_user_group_access(
+    &infra, &ctx.token, &target,
+  )
+  .await
+  .map_err(to_handler_error)?;
+  service::authorization::validate_user_group_access(
     &infra,
     &ctx.token,
     &body.parent_cluster,

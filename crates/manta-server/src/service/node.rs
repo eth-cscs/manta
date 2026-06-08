@@ -8,7 +8,8 @@ use manta_backend_dispatcher::types::{
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::node_ops;
+use crate::service::authorization::validate_user_group_members_access;
+use crate::service::node_ops::from_hosts_expression_to_xname_vec;
 pub use manta_shared::types::params::node::GetNodesParams;
 
 /// Fetch node details for the given xname expression.
@@ -17,19 +18,23 @@ pub async fn get_nodes(
   token: &str,
   params: &GetNodesParams,
 ) -> Result<Vec<NodeDetails>, Error> {
-  let node_list = node_ops::resolve_hosts_expression(
-    infra,
-    token,
-    &params.xname,
+  let node_metadata_available_vec =
+    infra.get_node_metadata_available(token).await?;
+
+  let node_list = from_hosts_expression_to_xname_vec(
+    &params.host_expression,
     params.include_siblings,
-  )
-  .await?;
+    &node_metadata_available_vec,
+  )?;
 
   if node_list.is_empty() {
     return Err(Error::BadRequest(
       "The list of nodes to operate is empty. Nothing to do".to_string(),
     ));
   }
+
+  // Validate xnames
+  validate_user_group_members_access(infra, token, &node_list).await?;
 
   let mut node_details_list = csm_rs::node::utils::get_node_details(
     token,
@@ -63,6 +68,8 @@ pub async fn delete_node(
   token: &str,
   id: &str,
 ) -> Result<(), Error> {
+  validate_user_group_members_access(infra, token, &[id.to_string()]).await?;
+
   infra.delete_node(token, id).await
 }
 
@@ -79,6 +86,8 @@ pub async fn add_node(
   arch_opt: Option<String>,
   hardware_file_path: Option<&PathBuf>,
 ) -> Result<(), Error> {
+  validate_user_group_members_access(infra, token, &[id.to_string()]).await?;
+
   // Create node
   let component = ComponentCreate {
     id: id.to_string(),
