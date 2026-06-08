@@ -3,12 +3,61 @@
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::Group;
 
-use crate::server::common::app_context::InfraContext;
+use crate::server::common::{app_context::InfraContext, jwt_ops};
 use crate::service::authorization::{
-  validate_user_group_members_access, validate_user_group_vec_access,
+  validate_group_vec_access, validate_user_group_members_access,
 };
 use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
 pub use manta_shared::types::params::group::GetGroupParams;
+
+/// Resolve the caller's accessible groups (`Vec<Group>`) and the
+/// target-label vector in a single backend round-trip.
+///
+/// Three places in the service layer repeated the same three-call
+/// dance:
+///
+/// 1. `get_group_available` to derive labels (used when no settings
+///    group is supplied).
+/// 2. `validate_user_group_vec_access` which itself called
+///    `get_group_name_available` to verify the labels.
+/// 3. A second `get_group_available` inside a `try_join!` to fetch the
+///    full `Vec<Group>` needed by the downstream filter.
+///
+/// All three steps want the same data; the helper folds them into one
+/// `get_group_available` call plus an in-memory check. Non-admin
+/// callers still get the same access-validation guarantee (they're
+/// rejected with `BadRequest` if `settings_group_name_opt` names a
+/// group they can't see); admin tokens short-circuit, matching the
+/// behaviour of [`validate_user_group_vec_access`].
+pub async fn resolve_target_and_available_groups(
+  infra: &InfraContext<'_>,
+  token: &str,
+  settings_group_name_opt: Option<&str>,
+) -> Result<(Vec<Group>, Vec<String>), Error> {
+  let group_available_vec = infra.get_group_available(token).await?;
+
+  let target_group_vec: Vec<String> = match settings_group_name_opt {
+    Some(label) => {
+      if !jwt_ops::is_user_admin(token) {
+        let available_labels: Vec<String> = group_available_vec
+          .iter()
+          .map(|g| g.label.clone())
+          .collect();
+        validate_group_vec_access(
+          std::slice::from_ref(&label.to_string()),
+          &available_labels,
+        )?;
+      }
+      vec![label.to_string()]
+    }
+    None => group_available_vec
+      .iter()
+      .map(|g| g.label.clone())
+      .collect(),
+  };
+
+  Ok((group_available_vec, target_group_vec))
+}
 
 /// List HSM groups visible to the caller.
 ///
@@ -22,20 +71,16 @@ pub async fn get_groups(
   token: &str,
   params: &GetGroupParams,
 ) -> Result<Vec<Group>, Error> {
-  // Get list of target groups the user is asking for
-  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
-    vec![group.clone()]
-  } else {
-    infra
-      .get_group_available(token)
-      .await?
-      .iter()
-      .map(|group| group.label.clone())
-      .collect()
-  };
-
-  // Validate groups and get list of groups available
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+  // Single backend fetch + in-memory access validation replaces
+  // three sequential round-trips (label derivation, validation,
+  // backend fetch). See [`resolve_target_and_available_groups`].
+  let (_group_available_vec, target_group_vec) =
+    resolve_target_and_available_groups(
+      infra,
+      token,
+      params.group_name.as_deref(),
+    )
+    .await?;
 
   infra.get_groups(token, Some(&target_group_vec)).await
 }

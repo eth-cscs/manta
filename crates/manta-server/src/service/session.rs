@@ -97,32 +97,20 @@ pub async fn prepare_session_deletion(
   session_name: &str,
   settings_group_name_opt: Option<&str>,
 ) -> Result<SessionDeletionContext, Error> {
-  // Get list of target groups the user is asking for
-  let target_group_vec: Vec<String> =
-    if let Some(group) = &settings_group_name_opt {
-      vec![group.to_string()]
-    } else {
-      infra
-        .get_group_available(token)
-        .await?
-        .iter()
-        .map(|group| group.label.clone())
-        .collect()
-    };
-
-  // Validate groups and get list of groups available
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+  // One backend fetch + in-memory validation, replacing the prior
+  // three round-trips. See `service::group::resolve_target_and_available_groups`.
+  let (group_available_vec, target_group_vec) =
+    crate::service::group::resolve_target_and_available_groups(
+      infra,
+      token,
+      settings_group_name_opt,
+    )
+    .await?;
 
   tracing::info!("Fetching data from the backend...");
   let start = std::time::Instant::now();
 
-  let (
-    group_available_vec,
-    cfs_session_vec,
-    cfs_component_vec,
-    bss_bootparameters_vec,
-  ) = tokio::try_join!(
-    infra.get_group_available(token),
+  let (cfs_session_vec, cfs_component_vec, bss_bootparameters_vec) = tokio::try_join!(
     infra.get_and_filter_sessions(
       token,
       target_group_vec,

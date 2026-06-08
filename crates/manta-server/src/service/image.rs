@@ -6,7 +6,6 @@ use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
 pub use manta_shared::types::params::image::GetImagesParams;
 
@@ -47,26 +46,17 @@ pub async fn validate_image_deletion(
   image_id_vec: &[&str],
   settings_group_name_opt: Option<&str>,
 ) -> Result<(), Error> {
-  // Get list of target groups the user is asking for
-  let target_group_vec: Vec<String> =
-    if let Some(group) = &settings_group_name_opt {
-      vec![group.to_string()]
-    } else {
-      infra
-        .get_group_available(token)
-        .await?
-        .iter()
-        .map(|group| group.label.clone())
-        .collect()
-    };
+  // One backend fetch + in-memory validation, replacing the prior
+  // three round-trips. See `service::group::resolve_target_and_available_groups`.
+  let (group_available_vec, _target_group_vec) =
+    crate::service::group::resolve_target_and_available_groups(
+      infra,
+      token,
+      settings_group_name_opt,
+    )
+    .await?;
 
-  // Validate groups and get list of groups available
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
-
-  let (group_available_vec, boot_parameter_vec) = tokio::try_join!(
-    infra.get_group_available(token),
-    infra.get_all_bootparameters(token),
-  )?;
+  let boot_parameter_vec = infra.get_all_bootparameters(token).await?;
 
   // Check if any requested image is used to boot nodes
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
