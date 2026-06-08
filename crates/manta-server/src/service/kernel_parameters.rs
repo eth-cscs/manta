@@ -118,8 +118,17 @@ pub(crate) async fn prepare_kernel_params_changes(
 
   let mut has_changes = false;
   let mut xnames_to_reboot: Vec<String> = Vec::new();
-  let mut seen_images: HashMap<String, bool> = HashMap::new();
-  let mut sbps_candidates: Vec<(String, Image)> = Vec::new();
+
+  // First pass: apply the in-memory mutation and gather, in the
+  // order they first appear, the unique image ids referenced by
+  // iSCSI-ready boot parameters. The image fetches happen in the
+  // second pass below — the previous code fetched serially inside
+  // the loop (N HTTPS round-trips for N distinct boot images on a
+  // cluster-scale write).
+  let handles_sbps = operation.handles_sbps_images();
+  let mut sbps_image_ids: Vec<String> = Vec::new();
+  let mut seen_image_ids: std::collections::HashSet<String> =
+    std::collections::HashSet::new();
 
   for bp in &mut boot_params {
     let changed = operation.mutate(bp);
@@ -128,27 +137,32 @@ pub(crate) async fn prepare_kernel_params_changes(
       xnames_to_reboot.extend(bp.hosts.iter().cloned());
     }
 
-    // Detect SBPS image candidates (add & apply only)
-    if operation.handles_sbps_images()
+    if handles_sbps
+      && bp.is_root_kernel_param_iscsi_ready()
       && let Some(image_id) = bp.try_get_boot_image_id()
-      && !seen_images.contains_key(&image_id)
+      && seen_image_ids.insert(image_id.clone())
     {
-      seen_images.insert(image_id.clone(), true);
+      sbps_image_ids.push(image_id);
+    }
+  }
 
-      let image: Image = infra
-        .get_images(token, Some(&image_id))
+  // Second pass: resolve each unique image id in parallel.
+  let sbps_candidates: Vec<(String, Image)> = if sbps_image_ids.is_empty() {
+    Vec::new()
+  } else {
+    futures::future::try_join_all(sbps_image_ids.into_iter().map(|id| async {
+      let image = infra
+        .get_images(token, Some(id.as_str()))
         .await?
         .first()
         .ok_or_else(|| {
-          Error::NotFound("No image found for the given image id".to_string())
+          Error::NotFound(format!("No image found for image id '{id}'"))
         })?
         .clone();
-
-      if bp.is_root_kernel_param_iscsi_ready() {
-        sbps_candidates.push((image_id, image));
-      }
-    }
-  }
+      Ok::<_, Error>((id, image))
+    }))
+    .await?
+  };
 
   Ok(KernelParamsChangeset {
     boot_params,

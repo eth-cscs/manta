@@ -414,6 +414,13 @@ async fn collect_boot_images(
       *need_restart = true;
     }
   } else {
+    // Dedupe boot_image_ids before fetching: a 5k-node group with N
+    // distinct boot images was previously costing N HTTPS round-trips
+    // serialised inside this loop. Now we resolve each id once in
+    // parallel.
+    let mut unique_ids: Vec<String> = Vec::new();
+    let mut seen: std::collections::HashSet<String> =
+      std::collections::HashSet::new();
     for boot_parameter in boot_param_vec.iter() {
       let boot_image_id =
         boot_parameter.try_get_boot_image_id().ok_or_else(|| {
@@ -422,17 +429,28 @@ async fn collect_boot_images(
             boot_parameter.hosts
           ))
         })?;
+      if seen.insert(boot_image_id.clone()) {
+        unique_ids.push(boot_image_id);
+      }
+    }
 
-      let boot_image = infra
-        .get_images(shasta_token, Some(boot_image_id.as_str()))
-        .await?
-        .first()
-        .ok_or_else(|| {
-          Error::NotFound("No image found for boot image id".to_string())
-        })?
-        .clone();
+    let fetched: Vec<(String, Image)> = futures::future::try_join_all(
+      unique_ids.iter().map(|id| async move {
+        let image = infra
+          .get_images(shasta_token, Some(id.as_str()))
+          .await?
+          .first()
+          .ok_or_else(|| {
+            Error::NotFound(format!("No image found for boot image id '{id}'"))
+          })?
+          .clone();
+        Ok::<_, Error>((id.clone(), image))
+      }),
+    )
+    .await?;
 
-      image_vec.insert(boot_image_id, boot_image);
+    for (id, image) in fetched {
+      image_vec.insert(id, image);
     }
   }
 
