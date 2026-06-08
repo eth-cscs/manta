@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use manta_backend_dispatcher::error::Error;
 
 use crate::server::common::app_context::InfraContext;
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 
 /// Result of migrating nodes for a single parent→target pair.
@@ -49,15 +50,28 @@ pub async fn migrate_nodes(
   dry_run: bool,
   create_group: bool,
 ) -> Result<(Vec<String>, Vec<NodeMigrationResult>), Error> {
-  let xname_to_move_vec =
-    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
-      .await?;
+  let xname_to_move_vec = node_ops::from_user_hosts_expression_to_xname_vec(
+    infra,
+    token,
+    hosts_expression,
+    false,
+  )
+  .await?;
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::BadRequest(
       "The list of nodes to operate is empty. Nothing to do".to_string(),
     ));
   }
+
+  // Defence in depth: the handler already validates every named
+  // target/parent group, and the `retain` below filters out any
+  // resolved xname that isn't in a parent group the caller can
+  // reach — so the migration itself is bounded. We still gate on
+  // member access here so the resolved `xname_to_move_vec` returned
+  // in the response doesn't disclose nodes outside the caller's
+  // groups (the resolver runs against full cluster metadata).
+  validate_user_group_members_access(infra, token, &xname_to_move_vec).await?;
 
   let mut group_summary: HashMap<String, Vec<String>> =
     node_ops::get_curated_group_from_xname_hostlist(

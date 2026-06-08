@@ -43,6 +43,8 @@ pub async fn get_boot_parameters(
   )
   .await?;
 
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
+
   if xname_vec.is_empty() {
     return Err(Error::BadRequest(
       "The list of nodes to operate is empty. Nothing to do".to_string(),
@@ -160,9 +162,19 @@ pub(crate) async fn prepare_boot_config(
 ) -> Result<BootConfigChangeset, Error> {
   let mut need_restart = false;
 
-  let xname_vec =
-    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
-      .await?;
+  let xname_vec = node_ops::from_user_hosts_expression_to_xname_vec(
+    infra,
+    token,
+    hosts_expression,
+    false,
+  )
+  .await?;
+
+  // Gate before the BSS / IMS lookups below: the dry-run handler
+  // path returns the changeset (boot params + referenced images)
+  // directly to the caller, so an unauthorized resolution would leak
+  // state. `persist_boot_config` re-checks at write time.
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> =
     infra.get_bootparameters(token, &xname_vec).await?;

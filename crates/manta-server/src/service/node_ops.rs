@@ -107,7 +107,7 @@ pub fn get_xname_from_xname_hostlist(
 /// [`InfraContext::get_node_metadata_available`] followed by
 /// [`from_hosts_expression_to_xname_vec`] that recurs in many
 /// command files.
-pub async fn resolve_hosts_expression(
+pub async fn from_user_hosts_expression_to_xname_vec(
   infra: &InfraContext<'_>,
   shasta_token: &str,
   hosts_expression: &str,
@@ -295,31 +295,26 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 /// Returns a sorted, deduplicated `Vec<String>` of xnames.
 pub async fn resolve_target_nodes(
   infra: &InfraContext<'_>,
-  shasta_token: &str,
-  hosts_expression: Option<&str>,
+  token: &str,
+  hosts_expression_opt: Option<&str>,
   group_name_arg_opt: Option<&str>,
   settings_group_name_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
-  if let Some(hosts_expr) = hosts_expression {
-    resolve_hosts_expression(infra, shasta_token, hosts_expr, false).await
+  if let Some(hosts_expr) = hosts_expression_opt {
+    from_user_hosts_expression_to_xname_vec(infra, token, hosts_expr, false)
+      .await
   } else if let Some(target_group) =
     group_name_arg_opt.or(settings_group_name_opt)
   {
     crate::service::authorization::validate_user_group_access(
       infra,
-      shasta_token,
+      token,
       target_group,
     )
     .await?;
 
-    let hsm_members: Vec<String> = infra
-      .get_member_vec_from_group_name_vec(
-        shasta_token,
-        &[target_group.to_string()],
-      )
-      .await?;
-
-    resolve_hosts_expression(infra, shasta_token, &hsm_members.join(","), false)
+    infra
+      .get_member_vec_from_group_name_vec(token, &[target_group.to_string()])
       .await
   } else {
     Err(Error::BadRequest(

@@ -211,9 +211,13 @@ pub async fn create_cfs_session(
   ansible_passthrough: Option<&str>,
 ) -> Result<(String, String), Error> {
   let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
-    let xname_vec =
-      node_ops::resolve_hosts_expression(infra, token, ansible_limit, false)
-        .await?;
+    let xname_vec = node_ops::from_user_hosts_expression_to_xname_vec(
+      infra,
+      token,
+      ansible_limit,
+      false,
+    )
+    .await?;
     Some(xname_vec.join(","))
   } else {
     None

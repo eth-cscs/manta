@@ -4,7 +4,9 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::validate_user_group_vec_access;
+use crate::service::authorization::{
+  validate_user_group_members_access, validate_user_group_vec_access,
+};
 use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
 pub use manta_shared::types::params::group::GetGroupParams;
 
@@ -126,19 +128,30 @@ pub async fn delete_group_members(
   let node_metadata_available_vec =
     infra.get_node_metadata_available(token).await?;
 
-  let node_list = from_hosts_expression_to_xname_vec(
+  let xname_vec = from_hosts_expression_to_xname_vec(
     host_expression,
     false,
     &node_metadata_available_vec,
   )?;
 
-  if node_list.is_empty() {
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
+
+  if xname_vec.is_empty() {
     return Err(Error::BadRequest(
       "The list of nodes to operate is empty. Nothing to do".to_string(),
     ));
   }
 
-  for xname in &node_list {
+  // Defence in depth: callers can only remove nodes from groups they
+  // have access to (handler already gates on `group_name`), but a
+  // hosts_expression resolved over the full cluster could name xnames
+  // outside the caller's reach. The downstream backend call would
+  // already no-op on non-members, but rejecting here gives the user
+  // an explicit error and keeps `add_nodes_to_group` / this function
+  // symmetric.
+  validate_user_group_members_access(infra, token, &xname_vec).await?;
+
+  for xname in &xname_vec {
     if dry_run {
       tracing::info!(
         "Dryrun enabled: no changes persisted into the system.\nGroup member '{}' removed from group '{}'",
@@ -168,9 +181,15 @@ pub async fn add_nodes_to_group(
   target_hsm_name: &str,
   hosts_expression: &str,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
-  let xname_to_move_vec =
-    node_ops::resolve_hosts_expression(infra, token, hosts_expression, false)
-      .await?;
+  let xname_to_move_vec = node_ops::from_user_hosts_expression_to_xname_vec(
+    infra,
+    token,
+    hosts_expression,
+    false,
+  )
+  .await?;
+
+  validate_user_group_members_access(infra, token, &xname_to_move_vec).await?;
 
   if xname_to_move_vec.is_empty() {
     return Err(Error::BadRequest(

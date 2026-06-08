@@ -4,7 +4,7 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::hsm::inventory::RedfishEndpointArray;
 
 use crate::{
-  server::common::app_context::InfraContext,
+  server::common::{app_context::InfraContext, jwt_ops},
   service::authorization::validate_user_group_members_access,
 };
 pub use manta_shared::types::params::redfish_endpoints::{
@@ -14,10 +14,13 @@ pub use manta_shared::types::params::redfish_endpoints::{
 /// List Redfish endpoint registrations, applying any caller-supplied
 /// filters (`id` / `fqdn` / `uuid` / `macaddr` / `ipaddress`).
 ///
-/// When `params.id` is set, the caller's group access to that BMC
-/// xname is validated first; broad listings (no `id`) skip the
-/// per-xname check since the backend already scopes by token. Admin
-/// tokens short-circuit either way.
+/// Authorization rules:
+/// - Admin tokens (carrying [`crate::service::authorization::PA_ADMIN`])
+///   may list every endpoint, with or without filters.
+/// - Non-admin callers MUST scope the request by `id`. The xname is
+///   then validated against the caller's accessible groups; without
+///   an `id`, the response could leak every BMC's identity and
+///   credentials. The non-admin broad listing returns `BadRequest`.
 pub async fn get_redfish_endpoints(
   infra: &InfraContext<'_>,
   token: &str,
@@ -25,12 +28,16 @@ pub async fn get_redfish_endpoints(
 ) -> Result<RedfishEndpointArray, Error> {
   tracing::info!("Get Redfish endpoints");
 
-  let xname_vec = if let Some(xname) = params.id.as_deref() {
-    vec![xname.to_string()]
-  } else {
-    vec![]
-  };
-  validate_user_group_members_access(infra, token, &xname_vec).await?;
+  if !jwt_ops::is_user_admin(token) {
+    let Some(xname) = params.id.as_deref() else {
+      return Err(Error::BadRequest(
+        "Non-admin callers must scope a Redfish-endpoints query by `id`."
+          .to_string(),
+      ));
+    };
+    validate_user_group_members_access(infra, token, &[xname.to_string()])
+      .await?;
+  }
 
   infra.get_redfish_endpoints(token, params).await
 }

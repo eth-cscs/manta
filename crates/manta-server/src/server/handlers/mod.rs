@@ -336,7 +336,6 @@ pub(super) fn validate_repo_list_lengths(
   Ok(())
 }
 
-
 pub(super) fn parse_iso_datetime(
   field: &str,
   value: &str,
@@ -395,7 +394,7 @@ async fn resolve_xnames_from_request(
   if let Some(expr) = xnames_expression
     && !expr.is_empty()
   {
-    return crate::service::node_ops::resolve_hosts_expression(
+    return crate::service::node_ops::from_user_hosts_expression_to_xname_vec(
       infra, token, expr, false,
     )
     .await

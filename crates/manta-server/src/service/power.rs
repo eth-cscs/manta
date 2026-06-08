@@ -44,8 +44,13 @@ pub async fn resolve_target_xnames(
         .await?
     }
     PowerTargetType::Nodes => {
-      node_ops::resolve_hosts_expression(infra, token, host_expression, false)
-        .await?
+      node_ops::from_user_hosts_expression_to_xname_vec(
+        infra,
+        token,
+        host_expression,
+        false,
+      )
+      .await?
     }
   };
 

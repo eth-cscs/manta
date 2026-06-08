@@ -8,8 +8,8 @@ use manta_backend_dispatcher::interfaces::hsm::component::ComponentTrait;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
 use manta_backend_dispatcher::types::{
-  Component as HsmComponent, ComponentArrayPostArray, Group,
-  HWInventoryByLocationList, HsmActionResponse,
+  Component, ComponentArrayPostArray, Group, HWInventoryByLocationList,
+  HsmActionResponse,
 };
 
 use crate::server::common::app_context::InfraContext;
@@ -114,7 +114,7 @@ impl InfraContext<'_> {
   pub async fn get_node_metadata_available(
     &self,
     token: &str,
-  ) -> Result<Vec<HsmComponent>, Error> {
+  ) -> Result<Vec<Component>, Error> {
     self.backend.get_node_metadata_available(token).await
   }
 

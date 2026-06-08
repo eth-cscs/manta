@@ -645,6 +645,8 @@ async fn get_redfish_endpoints_happy_path() {
   let fx = TestFixture::setup().await;
   mock_redfish_endpoints(&fx.mock_server).await;
 
+  // Admin tokens may list broadly; non-admins must scope by `id`.
+  // TEST_TOKEN carries pa_admin so this exercises the admin path.
   let resp = fx.send(fx.auth_get("/api/v1/redfish-endpoints")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 

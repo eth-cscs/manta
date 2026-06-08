@@ -9,7 +9,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
-use crate::service::node_ops::from_hosts_expression_to_xname_vec;
+use crate::service::node_ops::from_user_hosts_expression_to_xname_vec;
 pub use manta_shared::types::params::node::GetNodesParams;
 
 /// Fetch HSM node details for the targets named by
@@ -27,14 +27,13 @@ pub async fn get_nodes(
   token: &str,
   params: &GetNodesParams,
 ) -> Result<Vec<NodeDetails>, Error> {
-  let node_metadata_available_vec =
-    infra.get_node_metadata_available(token).await?;
-
-  let node_list = from_hosts_expression_to_xname_vec(
+  let node_list = from_user_hosts_expression_to_xname_vec(
+    infra,
+    token,
     &params.host_expression,
     params.include_siblings,
-    &node_metadata_available_vec,
-  )?;
+  )
+  .await?;
 
   if node_list.is_empty() {
     return Err(Error::BadRequest(
