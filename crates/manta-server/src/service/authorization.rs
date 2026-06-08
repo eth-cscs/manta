@@ -169,3 +169,68 @@ pub async fn validate_group_members_access(
     )))
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn s(v: &[&str]) -> Vec<String> {
+    v.iter().map(|s| (*s).to_string()).collect()
+  }
+
+  #[test]
+  fn allows_when_every_target_is_in_available_set() {
+    let result =
+      validate_group_vec_access(&s(&["compute", "login"]), &s(&["compute", "login", "storage"]));
+    assert!(result.is_ok(), "got {result:?}");
+  }
+
+  #[test]
+  fn allows_empty_target_set() {
+    let result = validate_group_vec_access(&[], &s(&["compute"]));
+    assert!(result.is_ok(), "got {result:?}");
+  }
+
+  #[test]
+  fn rejects_when_any_target_is_missing_from_available_set() {
+    let err =
+      validate_group_vec_access(&s(&["compute", "secret"]), &s(&["compute"]))
+        .unwrap_err();
+    let Error::BadRequest(msg) = err else {
+      panic!("expected BadRequest, got {err:?}");
+    };
+    assert!(
+      msg.contains("\"secret\""),
+      "error message should name the offending group: {msg}"
+    );
+    assert!(
+      !msg.contains("\"compute\""),
+      "error message should not name the allowed group: {msg}"
+    );
+  }
+
+  #[test]
+  fn rejects_when_available_set_is_empty() {
+    let err =
+      validate_group_vec_access(&s(&["compute"]), &[]).unwrap_err();
+    assert!(matches!(err, Error::BadRequest(_)));
+  }
+
+  // Sorting the offending list keeps the error message deterministic
+  // across runs — important for CLI users grepping their failure log.
+  #[test]
+  fn error_message_sorts_offending_groups_alphabetically() {
+    let err = validate_group_vec_access(
+      &s(&["zeta", "alpha", "mu"]),
+      &s(&["other"]),
+    )
+    .unwrap_err();
+    let Error::BadRequest(msg) = err else {
+      panic!("expected BadRequest, got {err:?}");
+    };
+    let alpha = msg.find("alpha").expect("alpha listed");
+    let mu = msg.find("mu").expect("mu listed");
+    let zeta = msg.find("zeta").expect("zeta listed");
+    assert!(alpha < mu && mu < zeta, "got: {msg}");
+  }
+}
