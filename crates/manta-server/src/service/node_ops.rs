@@ -300,7 +300,7 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 ///
 /// Priority order:
 /// 1. `hosts_expression` — parsed and validated via
-///    [`resolve_hosts_expression`].
+///    [`from_user_hosts_expression_to_xname_vec`].
 /// 2. `group_name_arg_opt` — the group name supplied by the CLI's
 ///    `--group` flag (also accepted as `--hsm-group`); validated for
 ///    access via

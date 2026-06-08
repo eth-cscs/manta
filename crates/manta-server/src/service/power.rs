@@ -24,7 +24,7 @@ pub use manta_shared::types::params::power::{
 /// For [`PowerTargetType::Cluster`] the expression is a single HSM
 /// group name and we fetch its members; for [`PowerTargetType::Nodes`]
 /// it's a hostlist / NID / xname expression resolved through
-/// [`node_ops::resolve_hosts_expression`]. The caller's group access
+/// [`node_ops::from_user_hosts_expression_to_xname_vec`]. The caller's group access
 /// to every resolved xname is validated before return. An empty
 /// resolution yields `Error::BadRequest` so PCS is never called with
 /// nothing to do.

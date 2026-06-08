@@ -16,7 +16,8 @@ pub use manta_shared::types::params::node::GetNodesParams;
 /// Fetch HSM node details for the targets named by
 /// `params.host_expression`.
 ///
-/// The expression is parsed by [`from_hosts_expression_to_xname_vec`];
+/// The expression is parsed by
+/// [`crate::service::node_ops::from_user_hosts_expression_to_xname_vec`];
 /// when `params.include_siblings` is set, the resulting xnames are
 /// expanded to cover every node on the same BMC. Access to the
 /// resolved set is validated before the (relatively slow) per-node
