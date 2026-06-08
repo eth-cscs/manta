@@ -1,5 +1,8 @@
 //! Implements the `manta apply boot group` command.
 
+use anyhow::{anyhow, bail};
+use manta_shared::types::params::group::GetGroupParams;
+
 use crate::common::app_context::AppContext;
 use crate::http_client::{ApplyBootConfigRequest, MantaClient};
 use crate::output::action_result;
@@ -15,21 +18,41 @@ pub struct ExecParams<'a> {
 }
 
 /// Apply a boot configuration to all nodes in a cluster.
+///
+/// The server's `/boot-config` endpoint takes a hosts expression
+/// (xnames / NIDs / hostlist notation), not a group name, so this
+/// fetches the group's members first and forwards them as a
+/// comma-separated xname list.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx)?;
+
+  let groups = client
+    .get_groups(
+      token,
+      &GetGroupParams {
+        group_name: Some(p.hsm_group_name.to_string()),
+        settings_group_name: None,
+      },
+    )
+    .await?;
+  let group = groups
+    .into_iter()
+    .next()
+    .ok_or_else(|| anyhow!("HSM group '{}' not found", p.hsm_group_name))?;
+  let xnames = group.members.and_then(|m| m.ids).unwrap_or_default();
+  if xnames.is_empty() {
+    bail!("HSM group '{}' has no members", p.hsm_group_name);
+  }
+
+  let result = client
     .apply_boot_config(
       token,
       &ApplyBootConfigRequest {
-        // NOTE: the server's /boot-config takes a hosts expression,
-        // not a group name. Passing the group label literally as
-        // below relies on the server's hostlist parser; in practice
-        // this codepath needs a separate "resolve group → xnames"
-        // step. Tracked separately from the wire-shape unification.
-        hosts_expression: p.hsm_group_name.to_string(),
+        hosts_expression: xnames.join(","),
         boot_image_id: p.boot_image.map(str::to_string),
         boot_image_configuration: p
           .boot_image_configuration
