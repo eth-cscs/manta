@@ -13,7 +13,7 @@ fn parse_hardware_cluster_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetHardwareClusterParams {
   GetHardwareClusterParams {
-    group_name: cli_args.get_one::<String>("CLUSTER_NAME").cloned(),
+    group_name: cli_args.get_one::<String>("GROUP_NAME").cloned(),
     settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }

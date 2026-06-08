@@ -22,8 +22,7 @@ fn add_power_on_group_args(cmd: Command) -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
-    // ID preserved as "CLUSTER_NAME" for handler compatibility
-    .arg(arg!(<CLUSTER_NAME> "Group name"))
+    .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
 /// Attach the per-group args for `power off group/cluster`.
@@ -48,7 +47,7 @@ fn add_power_off_group_args(cmd: Command) -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
-    .arg(arg!(<CLUSTER_NAME> "Group name"))
+    .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
 /// Attach the per-group args for `power reset group/cluster`.
@@ -73,7 +72,7 @@ fn add_power_reset_group_args(cmd: Command) -> Command {
         .default_value("table"),
     )
     .arg(arg!(-r --reason <TEXT> "Reason for the power operation"))
-    .arg(arg!(<CLUSTER_NAME> "Group name"))
+    .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
 pub fn subcommand_power() -> Command {

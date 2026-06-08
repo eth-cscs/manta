@@ -207,8 +207,7 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
       ArgGroup::new("boot-image_or_boot-config")
         .args(["boot-image", "boot-image-configuration"]),
     )
-    // ID preserved as "CLUSTER_NAME" for handler compatibility
-    .arg(arg!(<CLUSTER_NAME> "Group name").required(true))
+    .arg(arg!(<GROUP_NAME> "Group name").required(true))
     .arg(output_flag())
 }
 

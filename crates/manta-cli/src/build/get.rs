@@ -47,7 +47,7 @@ pub fn subcommand_get_group_hardware() -> Command {
   Command::new("group-hardware")
     .arg_required_else_help(true)
     .about("Show hardware inventory for a group")
-    .arg(arg!(<CLUSTER_NAME> "Group name").required(true))
+    .arg(arg!(<GROUP_NAME> "Group name").required(true))
     .arg(
       arg!(-o --output <FORMAT> "Output format")
         .value_parser(["json", "summary", "details", "pattern"])

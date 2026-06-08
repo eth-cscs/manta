@@ -18,7 +18,7 @@ async fn dispatch_power_on_group(
     token,
     PowerOpts {
       action: PowerAction::On,
-      target: m.req_str("CLUSTER_NAME")?,
+      target: m.req_str("GROUP_NAME")?,
       force: false,
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),
@@ -42,7 +42,7 @@ async fn dispatch_power_off_group(
     token,
     PowerOpts {
       action: PowerAction::Off,
-      target: m.req_str("CLUSTER_NAME")?,
+      target: m.req_str("GROUP_NAME")?,
       force: !graceful,
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),
@@ -66,7 +66,7 @@ async fn dispatch_power_reset_group(
     token,
     PowerOpts {
       action: PowerAction::Reset,
-      target: m.req_str("CLUSTER_NAME")?,
+      target: m.req_str("GROUP_NAME")?,
       force: *force,
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),

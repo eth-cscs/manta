@@ -266,7 +266,7 @@ pub async fn handle_apply(
             boot_image_configuration: m.opt_str("boot-image-configuration"),
             runtime_configuration: m.opt_str("runtime-configuration"),
             kernel_parameters: m.opt_str("kernel-parameters"),
-            hsm_group_name: m.req_str("CLUSTER_NAME")?,
+            hsm_group_name: m.req_str("GROUP_NAME")?,
             dry_run: m.get_flag("dry-run"),
             output: m.opt_str("output"),
           },
