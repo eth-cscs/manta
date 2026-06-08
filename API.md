@@ -434,11 +434,12 @@ Add nodes to an HSM group.
 ```json
 {
   "added": ["x3000c0s1b0n0", "x3000c0s2b0n0"],
+  "final_members": ["x3000c0s1b0n0", "x3000c0s2b0n0", "x3000c0s3b0n0"],
   "removed": ["x3000c0s1b0n0", "x3000c0s2b0n0", "x3000c0s3b0n0"]
 }
 ```
 
-> **Note on `removed`** — despite the field name, this carries the **final, sorted membership of the group after the update**, not the xnames that were removed. The name is kept for wire stability; expect a `final_members` alias in a future release.
+> **`final_members` vs `removed`** — `final_members` carries the **final, sorted membership of the group after the update**. `removed` is a deprecated alias that holds the same value for one transition release, kept so existing clients reading the old name keep working; new clients should read `final_members`. `removed` will be dropped in the next major bump.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/groups/compute/members" \

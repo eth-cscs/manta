@@ -22,6 +22,14 @@ pub struct AddNodesToGroupResponse {
   /// Xnames that were added to the group as part of this request.
   pub added: Vec<String>,
   /// Final, sorted membership of the group after the update.
+  pub final_members: Vec<String>,
+  /// Deprecated alias for [`Self::final_members`]. Carries the same
+  /// value so existing clients reading `removed` keep working for one
+  /// release; new clients should read `final_members`. Scheduled for
+  /// removal in the next major bump — at which point the
+  /// `#[serde(alias = "removed")]` on `final_members` keeps inbound
+  /// compatibility for anyone POSTing back the old name.
+  #[serde(default)]
   pub removed: Vec<String>,
 }
 

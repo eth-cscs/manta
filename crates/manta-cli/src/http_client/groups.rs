@@ -78,23 +78,27 @@ impl MantaClient {
     let resp: Value = self
       .post_json(token, &format!("/groups/{name}/members"), &body)
       .await?;
-    let added = resp["added"]
-      .as_array()
-      .map(|a| {
-        a.iter()
-          .filter_map(|v| v.as_str().map(String::from))
-          .collect()
-      })
-      .unwrap_or_default();
-    let removed = resp["removed"]
-      .as_array()
-      .map(|a| {
-        a.iter()
-          .filter_map(|v| v.as_str().map(String::from))
-          .collect()
-      })
-      .unwrap_or_default();
-    Ok((added, removed))
+    let str_vec = |arr: Option<&Vec<Value>>| -> Vec<String> {
+      arr
+        .map(|a| {
+          a.iter()
+            .filter_map(|v| v.as_str().map(String::from))
+            .collect()
+        })
+        .unwrap_or_default()
+    };
+    let added = str_vec(resp["added"].as_array());
+    // Prefer the canonical `final_members` from servers ≥ this
+    // release; fall back to `removed` for older servers during the
+    // deprecation window. The tuple's second element is the final
+    // membership in either case.
+    let final_members_value = if resp.get("final_members").is_some() {
+      &resp["final_members"]
+    } else {
+      &resp["removed"]
+    };
+    let final_members = str_vec(final_members_value.as_array());
+    Ok((added, final_members))
   }
 
   pub async fn delete_group(

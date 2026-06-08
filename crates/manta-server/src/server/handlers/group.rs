@@ -202,7 +202,14 @@ pub async fn add_nodes_to_group(
   .await
   .map_err(to_handler_error)?;
 
-  Ok(Json(AddNodesToGroupResponse { added, removed }))
+  // Emit both `final_members` (canonical) and `removed` (deprecated
+  // alias). One release of overlap so existing CLI clients reading
+  // `removed` keep working; the next major bump drops `removed`.
+  Ok(Json(AddNodesToGroupResponse {
+    added,
+    final_members: removed.clone(),
+    removed,
+  }))
 }
 
 // ---------------------------------------------------------------------------
