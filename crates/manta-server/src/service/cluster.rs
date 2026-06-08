@@ -1,10 +1,11 @@
 //! Cluster-scoped node detail queries using HSM group membership.
 
-use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::error::Error;
+use manta_shared::types::dto::NodeDetails;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_vec_access;
+use crate::service::node_details;
 pub use manta_shared::types::params::cluster::GetClusterParams;
 
 /// Fetch full node details for every member of the requested HSM
@@ -40,15 +41,8 @@ pub async fn get_cluster_nodes(
 
   group_vec_node_list.sort();
 
-  let mut node_details_list = csm_rs::node::utils::get_node_details(
-    token,
-    infra.shasta_base_url,
-    infra.shasta_root_cert,
-    infra.socks5_proxy,
-    group_vec_node_list,
-  )
-  .await
-  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
+  let mut node_details_list =
+    node_details::get_node_details(infra, token, &group_vec_node_list).await?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {

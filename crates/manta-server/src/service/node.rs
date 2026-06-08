@@ -1,14 +1,15 @@
 //! HSM node queries, registration, and deletion, with rollback on partial failure.
 
-use csm_rs::node::types::NodeDetails;
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList,
 };
+use manta_shared::types::dto::NodeDetails;
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
+use crate::service::node_details;
 use crate::service::node_ops::from_user_hosts_expression_to_xname_vec;
 pub use manta_shared::types::params::node::GetNodesParams;
 
@@ -44,15 +45,8 @@ pub async fn get_nodes(
   // Validate xnames
   validate_user_group_members_access(infra, token, &node_list).await?;
 
-  let mut node_details_list = csm_rs::node::utils::get_node_details(
-    token,
-    infra.shasta_base_url,
-    infra.shasta_root_cert,
-    infra.socks5_proxy,
-    node_list.to_vec(),
-  )
-  .await
-  .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;
+  let mut node_details_list =
+    node_details::get_node_details(infra, token, &node_list).await?;
 
   // Apply status filter
   if let Some(ref status) = params.status_filter {

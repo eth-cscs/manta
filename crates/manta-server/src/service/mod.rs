@@ -16,6 +16,7 @@ pub mod infra_backend;
 pub mod kernel_parameters;
 pub mod migrate;
 pub mod node;
+pub mod node_details;
 pub mod node_ops;
 pub mod power;
 pub mod redfish;
