@@ -5,7 +5,7 @@ use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList,
 };
 use manta_shared::types::dto::NodeDetails;
-use std::{fs::File, io::BufReader, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
@@ -124,36 +124,24 @@ pub async fn add_node(
 
   tracing::info!("Node saved '{}'", id);
 
-  // Parse and add hardware inventory if provided
+  // Parse and add hardware inventory if provided.
+  //
+  // HW inventory files are operator-supplied JSON that can run to
+  // several MB. Reading them with the sync `std::fs::File` +
+  // `serde_json::from_reader` chain parked the Tokio worker for the
+  // duration of the read and parse, stalling unrelated requests
+  // queued behind it on the same worker. `tokio::fs::read` does the
+  // I/O on a blocking pool; the in-memory `from_slice` parse stays
+  // on the worker but is bounded by file size.
   let hw_inventory_opt: Option<HWInventoryByLocationList> =
     if let Some(hardware_file) = hardware_file_path {
-      let file = match File::open(hardware_file) {
-        Ok(f) => f,
+      match read_hw_inventory(hardware_file).await {
+        Ok(inv) => Some(inv),
         Err(e) => {
           rollback_node(infra, token, id).await;
-          return Err(e.into());
+          return Err(e);
         }
-      };
-      let reader = BufReader::new(file);
-      let hw_inventory_value: serde_json::Value =
-        match serde_json::from_reader(reader) {
-          Ok(v) => v,
-          Err(e) => {
-            rollback_node(infra, token, id).await;
-            return Err(e.into());
-          }
-        };
-      Some(
-        match serde_json::from_value::<HWInventoryByLocationList>(
-          hw_inventory_value,
-        ) {
-          Ok(v) => v,
-          Err(e) => {
-            rollback_node(infra, token, id).await;
-            return Err(e.into());
-          }
-        },
-      )
+      }
     } else {
       None
     };
@@ -174,6 +162,20 @@ pub async fn add_node(
   }
 
   Ok(())
+}
+
+/// Read and parse a hardware-inventory JSON file off the Tokio
+/// reactor. The two-step `Value` → `from_value` round-trip is kept
+/// so the surfaced parse error still names the bad field (csm-rs
+/// uses `#[serde(rename = "ID")]` etc. and the direct `from_slice`
+/// path produces less helpful errors when a key is mistyped).
+async fn read_hw_inventory(
+  path: &PathBuf,
+) -> Result<HWInventoryByLocationList, Error> {
+  let bytes = tokio::fs::read(path).await?;
+  let value: serde_json::Value = serde_json::from_slice(&bytes)?;
+  let inv = serde_json::from_value::<HWInventoryByLocationList>(value)?;
+  Ok(inv)
 }
 
 /// Rollback helper: attempt to delete a node that was partially created.
