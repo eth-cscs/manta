@@ -27,10 +27,9 @@ pub async fn handle_migrate(
 
       // If --from is set, use just that group; otherwise fan out to every
       // group the token can access. The accessible-group list comes from
-      // the manta server. Server-side `validate_hsm_group_access` then
-      // re-checks each name in the resulting list.
-      let from: Vec<String> = match from_opt.or(ctx.settings_hsm_group_name_opt)
-      {
+      // the manta server. Server-side `validate_user_group_vec_access`
+      // then re-checks each name in the resulting list.
+      let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
         None => {
           MantaClient::new(ctx.manta_server_url, ctx.site_name)?

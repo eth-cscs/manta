@@ -12,14 +12,14 @@ pub enum PowerAction {
   Reset,
 }
 
-/// Whether the caller's `targets_expression` is a hosts expression
-/// (xnames / nids / hostlist) or a single HSM group name whose
+/// Whether the caller's `host_expression` is a hosts expression
+/// (xnames / NIDs / hostlist) or a single HSM group name whose
 /// members should be targeted.
 #[derive(Debug, Clone, Copy)]
 pub enum PowerTargetType {
-  /// `targets_expression` is a hosts expression.
+  /// `host_expression` is a hosts expression.
   Nodes,
-  /// `targets_expression` is a single HSM group name.
+  /// `host_expression` is a single HSM group name.
   Cluster,
 }
 

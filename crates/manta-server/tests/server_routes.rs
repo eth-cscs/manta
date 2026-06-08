@@ -327,11 +327,12 @@ async fn post_routes_reject_invalid_bodies() {
     // "fly" is not a valid PowerAction enum variant.
     (
       "/api/v1/power",
-      r#"{"action":"fly","targets":["x3000c0s1b0n0"],"target_type":"nodes"}"#,
+      r#"{"action":"fly","host_expression":"x3000c0s1b0n0","target_type":"nodes"}"#,
     ),
+    // Missing required `action` field.
     (
       "/api/v1/power",
-      r#"{"targets":["x3000c0s1b0n0"],"target_type":"nodes"}"#,
+      r#"{"host_expression":"x3000c0s1b0n0","target_type":"nodes"}"#,
     ),
     (
       "/api/v1/templates/my-template/sessions",

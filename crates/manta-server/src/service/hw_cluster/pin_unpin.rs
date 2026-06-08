@@ -19,7 +19,7 @@ use crate::server::common::app_context::InfraContext;
 // keys for bucketing nodes are intentional truncation; Rust's saturating
 // `as` semantics handle any non-finite edge case.
 #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-pub fn calculate_target_hsm_pin(
+pub fn calculate_target_group_pin(
   user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>,
   user_defined_hw_component_vec: &[String],
   combination_target_parent_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
@@ -30,20 +30,20 @@ pub fn calculate_target_hsm_pin(
   let mut combination_target_parent_hsm_hw_component_summary_hashmap: HashMap<
     String,
     usize,
-  > = scoring::calculate_hsm_hw_component_summary(
+  > = scoring::calculate_group_hw_component_summary(
     combination_target_parent_hsm_node_hw_component_count_vec,
   );
   let target_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
-    scoring::calculate_hsm_hw_component_summary(
+    scoring::calculate_group_hw_component_summary(
       target_hsm_node_hw_component_count_vec,
     );
   let parent_hsm_hw_component_summary_hashmap: HashMap<String, usize> =
-    scoring::calculate_hsm_hw_component_summary(
+    scoring::calculate_group_hw_component_summary(
       parent_hsm_node_hw_component_count_vec,
     );
 
   let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
-    scoring::calculate_hsm_node_scores_from_final_hsm(
+    scoring::calculate_group_node_scores_from_final_hsm(
       target_hsm_node_hw_component_count_vec,
       &target_hsm_hw_component_summary_hashmap,
       user_defined_hsm_hw_components_count_hashmap,
@@ -51,7 +51,7 @@ pub fn calculate_target_hsm_pin(
     );
 
   let mut parent_hsm_node_score_tuple_vec: Vec<(String, f64)> =
-    scoring::calculate_hsm_node_scores_from_final_hsm(
+    scoring::calculate_group_node_scores_from_final_hsm(
       parent_hsm_node_hw_component_count_vec,
       &parent_hsm_hw_component_summary_hashmap,
       user_defined_hsm_hw_components_count_hashmap,
@@ -147,7 +147,7 @@ pub fn calculate_target_hsm_pin(
     }
 
     combination_target_parent_hsm_hw_component_summary_hashmap =
-      scoring::calculate_hsm_hw_component_summary(
+      scoring::calculate_group_hw_component_summary(
         combination_target_parent_hsm_node_hw_component_count_vec,
       );
 
@@ -158,7 +158,7 @@ pub fn calculate_target_hsm_pin(
       .retain(|(node, _)| !node.eq(&best_candidate.0));
 
     let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
-      scoring::calculate_hsm_node_scores_from_final_hsm(
+      scoring::calculate_group_node_scores_from_final_hsm(
         target_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
         user_defined_hsm_hw_components_count_hashmap,
@@ -166,7 +166,7 @@ pub fn calculate_target_hsm_pin(
       );
 
     let mut parent_hsm_node_score_tuple_vec: Vec<(String, f64)> =
-      scoring::calculate_hsm_node_scores_from_final_hsm(
+      scoring::calculate_group_node_scores_from_final_hsm(
         parent_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
         user_defined_hsm_hw_components_count_hashmap,
@@ -236,7 +236,7 @@ pub fn calculate_target_hsm_pin(
 
 /// Node selection algorithm for UNPIN mode — merges target and parent, then
 /// selects nodes to move back to parent.
-pub fn calculate_target_hsm_unpin(
+pub fn calculate_target_group_unpin(
   user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>,
   user_defined_hw_component_vec: &[String],
   combination_target_parent_hsm_node_hw_component_count_vec: &mut NodeHwCountVec,
@@ -245,14 +245,14 @@ pub fn calculate_target_hsm_unpin(
   let mut combination_target_parent_hsm_hw_component_summary_hashmap: HashMap<
     String,
     usize,
-  > = scoring::calculate_hsm_hw_component_summary(
+  > = scoring::calculate_group_hw_component_summary(
     combination_target_parent_hsm_node_hw_component_count_vec,
   );
 
   let mut combination_target_parent_hsm_node_score_tuple_vec: Vec<(
     String,
     f64,
-  )> = scoring::calculate_hsm_node_scores_from_final_hsm(
+  )> = scoring::calculate_group_node_scores_from_final_hsm(
     combination_target_parent_hsm_node_hw_component_count_vec,
     &combination_target_parent_hsm_hw_component_summary_hashmap,
     user_defined_hsm_hw_components_count_hashmap,
@@ -319,7 +319,7 @@ pub fn calculate_target_hsm_unpin(
     }
 
     combination_target_parent_hsm_hw_component_summary_hashmap =
-      scoring::calculate_hsm_hw_component_summary(
+      scoring::calculate_group_hw_component_summary(
         combination_target_parent_hsm_node_hw_component_count_vec,
       );
 
@@ -327,7 +327,7 @@ pub fn calculate_target_hsm_unpin(
       .retain(|(node, _)| !node.eq(&best_candidate.0));
 
     let mut target_hsm_node_score_tuple_vec: Vec<(String, f64)> =
-      scoring::calculate_hsm_node_scores_from_final_hsm(
+      scoring::calculate_group_node_scores_from_final_hsm(
         combination_target_parent_hsm_node_hw_component_count_vec,
         &combination_target_parent_hsm_hw_component_summary_hashmap,
         user_defined_hsm_hw_components_count_hashmap,
@@ -489,7 +489,8 @@ pub fn validate_resource_sufficiency(
     }
   }
 
-  let combined_summary = scoring::calculate_hsm_hw_component_summary(&combined);
+  let combined_summary =
+    scoring::calculate_group_hw_component_summary(&combined);
 
   for (hw_component, qty) in requested {
     if combined_summary

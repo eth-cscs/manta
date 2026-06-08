@@ -363,20 +363,6 @@ curl -k "$MANTA_HOST/api/v1/groups/available" \
 
 ---
 
-### GET /groups/all
-
-List every HSM group on the backend (no authorization filtering). Useful for site operators and read-only dashboards.
-
-**Response `200`** — array of HSM group objects (same shape as `GET /groups`).
-
-```bash
-curl -k "$MANTA_HOST/api/v1/groups/all" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H "Authorization: Bearer $MANTA_TOKEN"
-```
-
----
-
 ### POST /groups
 
 Create a new HSM group.
@@ -629,7 +615,7 @@ Get BSS boot parameters.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `hsm_group` | string | no | Filter by HSM group |
+| `group_name` | string | no | Filter by HSM group |
 | `nodes` | string | no | Comma-separated xnames |
 
 **Response `200`** — boot parameters object.
@@ -738,7 +724,7 @@ Get kernel parameters for nodes.
 
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
-| `hsm_group` | string | no | Filter by HSM group |
+| `group_name` | string | no | Filter by HSM group |
 | `nodes` | string | no | Comma-separated xnames |
 
 **Response `200`** — kernel parameters object.
@@ -910,7 +896,7 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
 
 ```json
 {
-  "hosts_expression": "compute",
+  "xnames": "x3000c0s[1-4]b0n0",
   "boot_image_id": "ims-image-uuid",
   "boot_image_configuration": "csm-config-1.0",
   "kernel_parameters": "console=ttyS0",
@@ -921,7 +907,7 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `hosts_expression` | string | **yes** | Xnames, nodeset expression, or HSM group name |
+| `xnames` | string | **yes** | Hosts expression (xnames, NIDs, or hostlist notation). Group names are not accepted here; resolve them first via `GET /groups/{name}` if needed. |
 | `boot_image_id` | string | no | IMS image ID to set as boot image |
 | `boot_image_configuration` | string | no | CFS configuration to link to the boot image |
 | `kernel_parameters` | string | no | Kernel parameters to set |
@@ -944,7 +930,7 @@ curl -k -X POST "$MANTA_HOST/api/v1/boot-config" \
   -H "Authorization: Bearer $MANTA_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
-    "hosts_expression": "compute",
+    "xnames": "x3000c0s[1-4]b0n0",
     "boot_image_id": "ims-image-uuid",
     "kernel_parameters": "console=ttyS0",
     "dry_run": true
@@ -964,7 +950,7 @@ sequenceDiagram
   participant Srv as manta-server
   participant PCS
 
-  CLI->>Srv: POST /power { action, targets_expression, target_type, force }
+  CLI->>Srv: POST /power { action, host_expression, target_type, force }
   Srv->>PCS: POST /power-control/v1/transitions
   PCS-->>Srv: 200 { transitionID }
   Srv-->>CLI: 200 { transitionID, operation }
@@ -985,7 +971,7 @@ Start a PCS power transition (on, off, or reset) against nodes or an entire HSM 
 ```json
 {
   "action": "reset",
-  "targets_expression": "x3000c0s[1-4]b0n0",
+  "host_expression": "x3000c0s[1-4]b0n0",
   "target_type": "nodes",
   "force": false
 }
@@ -994,7 +980,7 @@ Start a PCS power transition (on, off, or reset) against nodes or an entire HSM 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `action` | string | **yes** | `on`, `off`, or `reset` (lowercase; serde rejects anything else with 422) |
-| `targets_expression` | string | **yes** | Hosts expression (for `target_type: nodes`) or HSM group name (for `target_type: cluster`) |
+| `host_expression` | string | **yes** | Hosts expression (for `target_type: nodes`) or HSM group name (for `target_type: cluster`) |
 | `target_type` | string | **yes** | `nodes` or `cluster` |
 | `force` | bool | no | Hard power off/reset without graceful shutdown (default: `false`) |
 
@@ -1021,7 +1007,7 @@ curl -k -X POST "$MANTA_HOST/api/v1/power" \
   -H 'Content-Type: application/json' \
   -d '{
     "action": "reset",
-    "targets_expression": "x3000c0s1b0n0",
+    "host_expression": "x3000c0s1b0n0",
     "target_type": "nodes",
     "force": false
   }'
@@ -1530,7 +1516,7 @@ The SAT (Shasta Artifact Template) workflow is split across per-element endpoint
 - `POST /sat-file/images/stamp` — once the session is terminal-complete, stamp the produced IMS image with provenance metadata
 - `POST /sat-file/session-templates` — one per `session_templates[]` entry
 
-The legacy `POST /sat-file` whole-file endpoint is retained for SAT files with a `hardware:` section until the hardware path is moved to its own per-element endpoint.
+There is no whole-file `POST /sat-file` endpoint; SAT files with a `hardware:` section are not supported by the current apply flow.
 
 > All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
@@ -1727,65 +1713,6 @@ curl -k -X POST "$MANTA_HOST/api/v1/sat-file/session-templates" \
   }'
 ```
 
-### POST /sat-file (legacy)
-
-Apply a whole pre-rendered SAT file in one call. Retained for SAT files with a `hardware:` section while the per-element flow only covers configurations, images, and session_templates. The CLI no longer invokes this endpoint; a follow-up will either move hardware to its own per-element endpoint and remove this one, or drop hardware support from `manta apply sat-file`.
-
-**Request body**
-
-```json
-{
-  "sat_file": {
-    "configurations": [{ "name": "cfg-v1", "layers": [/* ... */] }],
-    "images":         [{ "name": "img-v1", "configuration": "cfg-v1", "ims": {/* ... */} }],
-    "session_templates": [/* ... */],
-    "hardware": [/* ... */]
-  },
-  "ansible_verbosity": 0,
-  "ansible_passthrough": "",
-  "reboot": false,
-  "watch_logs": false,
-  "timestamps": false,
-  "overwrite": false,
-  "dry_run": false
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `sat_file` | object | **yes** | Whole SAT file as a structured value — Jinja2 already evaluated client-side. The schema mirrors the SAT YAML spec (top-level keys `configurations`, `images`, `session_templates`, optionally `hardware`); the server forwards the value verbatim to the backend, which knows the schema. |
-| `ansible_verbosity` | u8 | no | Ansible verbosity level 0–4 |
-| `ansible_passthrough` | string | no | Extra arguments passed to `ansible-playbook` |
-| `reboot` | bool | no | Reboot nodes after applying session templates (default: `false`) |
-| `watch_logs` | bool | no | Stream CFS session logs during apply (default: `false`) |
-| `timestamps` | bool | no | Include timestamps in streamed logs (default: `false`) |
-| `overwrite` | bool | no | Overwrite existing configurations and images (default: `false`) |
-| `dry_run` | bool | no | Validate without creating anything (default: `false`) |
-
-**Response `200`** — the same four-list summary the per-element flow produces:
-
-```json
-{
-  "configurations":    [ /* CfsConfigurationResponse, ... */ ],
-  "images":            [ /* IMS Image, ... */ ],
-  "session_templates": [ /* BosSessionTemplate, ... */ ],
-  "bos_sessions":      [ /* BosSession, ... */ ]
-}
-```
-
-```bash
-curl -k -X POST "$MANTA_HOST/api/v1/sat-file" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H "Authorization: Bearer $MANTA_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "sat_file": {
-      "configurations": [{ "name": "cfg-v1", "layers": [] }]
-    },
-    "dry_run": true
-  }'
-```
-
 ---
 
 ## Authentication
@@ -1969,8 +1896,8 @@ When either is missing for the active site, the affected endpoints return `501 N
 
 | Required site config | Used by |
 |---|---|
-| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
-| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
 
 ## Troubleshooting
 

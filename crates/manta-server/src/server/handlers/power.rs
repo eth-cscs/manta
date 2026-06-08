@@ -29,13 +29,14 @@ pub enum PowerAction {
   Reset,
 }
 
-/// Whether `targets` contains xnames (`nodes`) or a single cluster name (`cluster`).
+/// Whether `host_expression` parses as a node expression
+/// (`nodes`) or a single cluster name (`cluster`).
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum PowerTargetType {
-  /// `targets` is a list of xnames.
+  /// `host_expression` is a hostlist / NID / xname expression.
   Nodes,
-  /// `targets` contains a single HSM group name whose members will be targeted.
+  /// `host_expression` is a single HSM group name; every member is targeted.
   Cluster,
 }
 

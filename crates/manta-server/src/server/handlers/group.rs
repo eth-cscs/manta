@@ -67,7 +67,7 @@ pub async fn get_groups(
 
   let params = service::group::GetGroupParams {
     group_name: q.name,
-    settings_hsm_group_name: None,
+    settings_group_name: None,
   };
 
   let groups = service::group::get_groups(&infra, &ctx.token, &params)
@@ -167,7 +167,9 @@ pub struct AddNodesToGroupRequest {
 pub struct AddNodesToGroupResponse {
   /// Xnames that were added to the group as part of this request.
   pub added: Vec<String>,
-  /// Xnames that were removed from the group as part of this request.
+  /// Final, sorted membership of the group after the update. The CLI
+  /// renders this as the post-operation member list. The field name
+  /// is retained for wire stability.
   pub removed: Vec<String>,
 }
 

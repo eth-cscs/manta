@@ -17,7 +17,7 @@ use super::{MantaClient, QueryBuilder};
 pub struct CreateSessionRequest<'a> {
   pub cfs_conf_sess_name: Option<&'a str>,
   pub playbook_yaml_file_name: Option<&'a str>,
-  pub hsm_group: Option<&'a str>,
+  pub group_name: Option<&'a str>,
   pub repo_names: &'a [&'a str],
   pub repo_last_commit_ids: &'a [&'a str],
   pub ansible_limit: Option<&'a str>,

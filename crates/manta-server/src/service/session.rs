@@ -13,7 +13,16 @@ use crate::service::authorization::{
 use crate::service::node_ops;
 pub use manta_shared::types::params::session::GetSessionParams;
 
-/// Fetch and filter CFS sessions from the backend.
+/// List CFS sessions visible to the caller, applying every filter on
+/// `params`.
+///
+/// The backend rejects mixing group and xname filters: an explicit
+/// `params.xnames` list wins and the group set is left empty;
+/// otherwise the request is scoped to `params.group` (single label)
+/// or to every group the token already grants access to. Group
+/// access and xname membership are validated before the backend
+/// call so the response can never leak rows the caller couldn't
+/// have listed directly.
 pub async fn get_sessions(
   infra: &InfraContext<'_>,
   token: &str,
@@ -72,7 +81,16 @@ pub struct SessionDeletionContext {
   pub bss_bootparameters_vec: Vec<BootParameters>,
 }
 
-/// Fetch session and related data, validate session exists.
+/// Collect everything a session-delete operation will need, without
+/// mutating any state.
+///
+/// Validates group access first, then fans out four backend calls in
+/// parallel (groups, sessions, CFS components, BSS boot parameters)
+/// because each is independent and the latency dominates the
+/// operation. Returns `NotFound` when the named session isn't in the
+/// (group-scoped) result set. The image ids the session produced are
+/// extracted up front so the apply step doesn't need to re-derive
+/// them.
 pub async fn prepare_session_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -142,7 +160,14 @@ pub async fn prepare_session_deletion(
   })
 }
 
-/// Execute the session deletion.
+/// Apply a session delete previously planned by
+/// [`prepare_session_deletion`].
+///
+/// Delegates to the backend's combined delete/cancel routine, which
+/// also rewrites CFS component desired-config refs and unsets BSS
+/// boot-image refs that pointed at the session's images. With
+/// `dry_run = true` the routine returns the would-be changes without
+/// touching the backend.
 pub async fn execute_session_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -161,9 +186,16 @@ pub async fn execute_session_deletion(
     .await
 }
 
-/// Resolve ansible-limit hosts to xnames and create a CFS session.
+/// Create a CFS session, expanding the ansible-limit hosts expression
+/// to xnames first.
 ///
-/// Returns `(cfs_configuration_name, cfs_session_name)`.
+/// `ansible_limit_opt` is parsed as a hostlist / NID / xname
+/// expression the same way other entry points do, then joined with
+/// commas for the CFS request — CFS itself is happy with either form
+/// but downstream tooling expects xnames. When `ansible_limit_opt`
+/// is `None`, the session targets the full group selected by
+/// `group_opt`. Returns
+/// `(cfs_configuration_name, cfs_session_name)`.
 #[allow(clippy::too_many_arguments)]
 pub async fn create_cfs_session(
   infra: &InfraContext<'_>,
@@ -171,7 +203,7 @@ pub async fn create_cfs_session(
   gitea_token: &str,
   cfs_conf_sess_name: Option<&str>,
   playbook_yaml_file_name_opt: Option<&str>,
-  hsm_group_opt: Option<&str>,
+  group_opt: Option<&str>,
   repo_name_vec: &[&str],
   repo_last_commit_id_vec: &[&str],
   ansible_limit_opt: Option<&str>,
@@ -193,7 +225,7 @@ pub async fn create_cfs_session(
       token,
       cfs_conf_sess_name,
       playbook_yaml_file_name_opt,
-      hsm_group_opt,
+      group_opt,
       repo_name_vec,
       repo_last_commit_id_vec,
       ansible_limit.as_deref(),

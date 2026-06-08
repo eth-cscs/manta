@@ -23,7 +23,7 @@ Dep graph: `manta-cli → manta-shared ← manta-server`. Neither binary depends
 
 | Module | Used by | Contents |
 |--------|---------|----------|
-| `shared` | both bins | Wire types (`params/`, `dto`) and `cluster_status` helpers |
+| `types` | both bins | Wire types (`params/`, `dto`, `auth`) and `cluster_status` helpers |
 | `common` | both bins | Config loader (untyped `Config`), `MantaError`, logging |
 
 The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/mod.rs`, `dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
@@ -102,7 +102,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer (17 modules): `auth`, `session`, `configuration`, `group`, `node`, `image`, `template`, `boot_parameters`, `kernel_parameters`, `hardware`, `hw_cluster`, `cluster`, `ephemeral_env`, `sat_file`, `migrate`, `power`, `redfish_endpoints`.
+Business logic layer: `auth`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `ephemeral_env`, `group`, `hardware`, `hw_cluster`, `image`, `kernel_parameters`, `migrate`, `node`, `power`, `redfish`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend` (which groups the backend-dispatcher methods onto `InfraContext`).
 
 Each module receives an `&InfraContext<'_>` plus a bearer token and typed parameters, and returns typed results. This layer:
 
@@ -147,11 +147,11 @@ Axum HTTPS server. Key files:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
-| `routes.rs` | Registers 48 REST endpoints (including the two `/api/v1/auth/*` endpoints) + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
-| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus 18 per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
+| `routes.rs` | Registers REST endpoints (including the two `/api/v1/auth/*` endpoints) + 2 WebSocket upgrades under `/api/v1/`; serves `GET /openapi.json` and `GET /docs` |
+| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v1` server base path |
 
-The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention.
+The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention. The crate lints `#![warn(missing_docs)]`; CI's `cargo doc` step still surfaces undocumented public items.
 
 `crates/manta-server/src/wire_conv.rs` holds backend⇄wire-type conversions that can't live in either `manta-shared` or `manta-backend-dispatcher` due to Rust's orphan rule. Currently a single free function `to_backend(MantaError) → BackendError`, used at server call sites that propagate `manta-shared`'s `MantaError` via `?`.
 
@@ -164,7 +164,7 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 | Type | Used by | Contents |
 |------|---------|---------|
 | `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, site name, shasta + gitea base URLs, root CA cert, optional SOCKS5 proxy, optional vault + k8s URLs (8 borrowed fields) |
-| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_hsm_group_name_opt`, `request_timeout_secs`, `settings` |
+| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_group_name_opt`, `request_timeout_secs`, `settings` |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
 `manta_server_url` is a CLI routing decision — proxy requests through the manta HTTP server instead of calling the backend directly. It is not needed by the service layer or the HTTP server.
@@ -270,9 +270,15 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 5-field struct; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
-Server-side authorization helpers live in `service::group::validate_hsm_group_access` (target HSM group must be accessible to the token) and `service::authorization::validate_target_hsm_members` (every xname in the request belongs to an accessible group). Phase 7 closed five gaps where one or both checks were missing: `create_session` (calls both — group + per-xname), `add_hw_component`, `delete_hw_component`, `apply_hw_configuration`, and `migrate_nodes` (each calls `validate_hsm_group_access` on its target group). Handlers operating on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
+Server-side authorization helpers live in `service::authorization`:
 
-The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::shared::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in six pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
+- `validate_user_group_access` / `validate_user_group_vec_access` — the target group label(s) must be in the set the token can reach.
+- `validate_user_group_members_access` — every xname in the request must be a member of an accessible group.
+- `validate_ansible_limit_membership_access` — the same membership check applied to a comma-separated `ansible_limit` string.
+
+Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. Handlers that operate on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
+
+The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::types::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in the pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
 
 This means manta-server is a **single point of compromise** for everyone using it: if it is owned, the attacker gets a chokepoint that sees every auth attempt and holds whatever service-account scoped tokens are configured for the backend. Mitigations split between code and ops:
 

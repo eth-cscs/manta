@@ -6,10 +6,11 @@
 //!
 //! `NodeDetails` is mirrored locally (rather than re-exporting from
 //! `csm-rs`) so `manta-shared` — and therefore `manta-cli` — does not
-//! transitively depend on `csm-rs`. The server converts from
-//! `csm_rs::node::types::NodeDetails` at the service-layer boundary
-//! (see `crates/manta-server/src/wire_conv.rs`). The JSON wire shape
-//! is byte-identical: same field names, no `#[serde(rename)]`.
+//! transitively depend on `csm-rs`. No in-process conversion is
+//! needed: the type boundary is HTTP, and the JSON wire shape is
+//! byte-identical between `csm_rs::node::types::NodeDetails` and the
+//! mirror below (same field names, no `#[serde(rename)]`), so the CLI
+//! just deserializes the response directly into this struct.
 //!
 //! The remaining re-exports come from the lightweight
 //! `manta-backend-dispatcher` crate (types + traits only, no csm-rs
@@ -32,8 +33,9 @@ use serde::{Deserialize, Serialize};
 /// Per-node details returned by `GET /api/v1/nodes`.
 ///
 /// Mirror of `csm_rs::node::types::NodeDetails` with identical fields
-/// and identical JSON wire format. The server converts from the
-/// upstream type via `From` in `wire_conv.rs`.
+/// and identical JSON wire format. No conversion impl is needed in
+/// the server crate — the response is serialised straight from the
+/// csm-rs type and the CLI deserialises it into this mirror.
 ///
 /// All fields are wire-stringified (CSM serializes them that way);
 /// callers parse them as needed for display or comparison.

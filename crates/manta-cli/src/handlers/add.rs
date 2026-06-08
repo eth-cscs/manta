@@ -72,11 +72,11 @@ pub async fn handle_add(
       // POST /api/v1/hardware-clusters/{target}/members on the server.
       let target = m
         .opt_str("target-group")
-        .or(ctx.settings_hsm_group_name_opt)
+        .or(ctx.settings_group_name_opt)
         .context("'target-cluster' is required (no default in cli.toml)")?;
       let parent = m
         .opt_str("parent-group")
-        .or(ctx.settings_hsm_group_name_opt)
+        .or(ctx.settings_group_name_opt)
         .context("'parent-cluster' is required (no default in cli.toml)")?;
       add_hardware::exec(
         ctx,

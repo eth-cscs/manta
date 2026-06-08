@@ -16,7 +16,7 @@ fn parse_boot_parameters_params(
   GetBootParametersParams {
     group_name: cli_args.opt_string("group"),
     host_expression: cli_args.opt_string("nodes"),
-    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    settings_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
 
@@ -30,7 +30,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_boot_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_boot_parameters_params(cli_args, ctx.settings_group_name_opt);
 
   let boot_parameters = MantaClient::from_app_ctx(ctx)?
     .get_boot_parameters(token, &params)
@@ -59,7 +59,7 @@ mod tests {
     let params = parse_boot_parameters_params(&matches, None);
     assert!(params.group_name.is_none());
     assert_eq!(params.host_expression.as_deref(), Some("x1000c0s0b0n0"));
-    assert!(params.settings_hsm_group_name.is_none());
+    assert!(params.settings_group_name.is_none());
   }
 
   #[test]
@@ -81,9 +81,6 @@ mod tests {
       "x1000c0s0b0n0",
     ]);
     let params = parse_boot_parameters_params(&matches, Some("default-group"));
-    assert_eq!(
-      params.settings_hsm_group_name.as_deref(),
-      Some("default-group")
-    );
+    assert_eq!(params.settings_group_name.as_deref(), Some("default-group"));
   }
 }

@@ -10,10 +10,12 @@ use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 pub use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
 
-/// Fetch kernel boot parameters for the specified nodes.
+/// Fetch BSS kernel parameters for the targets described by `params`.
 ///
-/// Resolves target nodes from HSM group or node list, then
-/// fetches their BSS boot parameters.
+/// Targets are resolved through [`node_ops::resolve_target_nodes`]
+/// (host expression → `group_name` → `settings_group_name` fallback
+/// from `cli.toml`). The caller's access to every resolved xname is
+/// validated before the BSS query runs.
 pub async fn get_kernel_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -23,8 +25,8 @@ pub async fn get_kernel_parameters(
     infra,
     token,
     params.nodes.as_deref(),
-    params.hsm_group.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
+    params.group_name.as_deref(),
+    params.settings_group_name.as_deref(),
   )
   .await?;
 
@@ -95,9 +97,16 @@ pub struct KernelParamsChangeset {
   pub sbps_candidates: Vec<(String, Image)>,
 }
 
-/// Fetch boot parameters, apply mutations, and return a changeset.
+/// Compute the kernel-parameter mutation as a
+/// [`KernelParamsChangeset`] without writing anything.
 ///
-/// Does NOT persist anything — the caller decides whether to proceed.
+/// Pulls the current BSS records for `xname_vec`, applies `operation`
+/// to each in memory, and tracks which xnames actually changed so the
+/// caller can target the reboot list precisely. For `Add`/`Apply`,
+/// each unique boot-image referenced by a changed record is
+/// inspected once: if its root kernel-parameters look iSCSI-ready it
+/// is appended to `sbps_candidates` so the caller can decide whether
+/// to project it through SBPS.
 pub(crate) async fn prepare_kernel_params_changes(
   infra: &InfraContext<'_>,
   token: &str,
@@ -149,7 +158,13 @@ pub(crate) async fn prepare_kernel_params_changes(
   })
 }
 
-/// Persist the kernel parameter changes and optionally update SBPS images.
+/// Write a previously prepared [`KernelParamsChangeset`] back to BSS,
+/// and patch any SBPS images supplied in `images_to_project`.
+///
+/// Access to every reboot-target xname is re-validated before the
+/// first backend write. `images_to_project` is normally built by
+/// [`build_images_to_project`]; pass an empty map (as the delete path
+/// does) to skip SBPS projection entirely.
 pub async fn apply_kernel_params_changes(
   infra: &InfraContext<'_>,
   token: &str,

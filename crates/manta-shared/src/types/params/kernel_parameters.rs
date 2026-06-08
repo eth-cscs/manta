@@ -7,12 +7,12 @@
 
 /// Typed parameters for fetching kernel boot parameters.
 pub struct GetKernelParametersParams {
-  /// HSM group whose members' kernel parameters should be returned.
-  pub hsm_group: Option<String>,
+  /// Group whose members' kernel parameters should be returned.
+  pub group_name: Option<String>,
   /// Explicit comma-separated xnames; mutually exclusive with
-  /// `hsm_group`.
+  /// `group_name`.
   pub nodes: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_hsm_group`, used
-  /// when neither `hsm_group` nor `nodes` is supplied.
-  pub settings_hsm_group_name: Option<String>,
+  /// Operator default from `cli.toml`'s `parent_group_group`, used
+  /// when neither `group_name` nor `nodes` is supplied.
+  pub settings_group_name: Option<String>,
 }

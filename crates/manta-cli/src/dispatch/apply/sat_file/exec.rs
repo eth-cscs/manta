@@ -129,10 +129,8 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  // 6. Plan was built in step 3 (build_plan also pruned `sat_file`
-  //    according to the filter flags). Dispatch of the plan
-  //    element-by-element is the next refactor; for now we log its
-  //    shape and still ship the whole SAT to the server.
+  // 6. Log the plan shape for operator visibility before the hook +
+  //    dispatch pair runs (step 3 already pruned `sat_file` to match).
   let (n_cfg, n_img, n_st) =
     plan.iter().fold((0_usize, 0, 0), |(c, i, s), e| match e {
       plan::SatElement::Configuration(_) => (c + 1, i, s),

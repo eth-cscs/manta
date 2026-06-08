@@ -30,14 +30,14 @@ use crate::server::common::app_context::InfraContext;
 // size by many orders of magnitude.
 #[allow(clippy::cast_precision_loss)]
 pub fn calculate_hw_component_scarcity_scores(
-  hsm_node_hw_component_count: &[(String, HashMap<String, usize>)],
+  group_node_hw_component_count: &[(String, HashMap<String, usize>)],
 ) -> HashMap<String, f64> {
-  let total_num_hw_components: usize = hsm_node_hw_component_count
+  let total_num_hw_components: usize = group_node_hw_component_count
     .iter()
     .flat_map(|(_, hw_component_qty_hashmap)| hw_component_qty_hashmap.values())
     .sum();
 
-  let mut hw_component_vec: Vec<&String> = hsm_node_hw_component_count
+  let mut hw_component_vec: Vec<&String> = group_node_hw_component_count
     .iter()
     .flat_map(|(_, hw_component_counter_hashmap)| {
       hw_component_counter_hashmap.keys()
@@ -50,19 +50,19 @@ pub fn calculate_hw_component_scarcity_scores(
   let mut hw_component_scarcity_score_hashmap: HashMap<String, f64> =
     HashMap::new();
   for hw_component in hw_component_vec {
-    let mut hsm_hw_component_count = 0;
+    let mut group_hw_component_count = 0;
 
-    for (_, hw_component_counter_hashmap) in hsm_node_hw_component_count {
+    for (_, hw_component_counter_hashmap) in group_node_hw_component_count {
       if let Some(hw_component_qty) =
         hw_component_counter_hashmap.get(hw_component)
       {
-        hsm_hw_component_count += hw_component_qty;
+        group_hw_component_count += hw_component_qty;
       }
     }
 
     hw_component_scarcity_score_hashmap.insert(
       hw_component.clone(),
-      (total_num_hw_components as f64) / (hsm_hw_component_count as f64),
+      (total_num_hw_components as f64) / (group_hw_component_count as f64),
     );
   }
 
@@ -79,15 +79,18 @@ pub fn calculate_hw_component_scarcity_scores(
 // Same `cast_precision_loss` justification as above — qty is a per-node
 // component count, never large enough to overflow f64's mantissa.
 #[allow(clippy::cast_precision_loss)]
-pub fn calculate_hsm_node_scores_from_final_hsm(
-  parent_hsm_node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
-  parent_hsm_hw_component_summary_hashmap: &HashMap<String, usize>,
-  final_hsm_summary_hashmap: &HashMap<String, usize>,
+pub fn calculate_group_node_scores_from_final_hsm(
+  parent_group_node_hw_component_count_vec: &[(
+    String,
+    HashMap<String, usize>,
+  )],
+  parent_group_hw_component_summary_hashmap: &HashMap<String, usize>,
+  final_group_summary_hashmap: &HashMap<String, usize>,
   hw_component_scarcity_scores_hashmap: &HashMap<String, f64>,
 ) -> Vec<(String, f64)> {
   let mut node_score_vec: Vec<(String, f64)> = Vec::new();
 
-  for (xname, hw_component_count) in parent_hsm_node_hw_component_count_vec {
+  for (xname, hw_component_count) in parent_group_node_hw_component_count_vec {
     let mut node_score: f64 = 0.0;
     for (hw_component, qty) in hw_component_count {
       let scarcity_score = hw_component_scarcity_scores_hashmap
@@ -95,14 +98,14 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
         .copied()
         .unwrap_or(0.0);
 
-      if final_hsm_summary_hashmap.get(hw_component).is_none() {
+      if final_group_summary_hashmap.get(hw_component).is_none() {
         node_score -= scarcity_score * *qty as f64;
       } else {
-        let final_qty = final_hsm_summary_hashmap
+        let final_qty = final_group_summary_hashmap
           .get(hw_component)
           .copied()
           .unwrap_or(0);
-        let parent_qty = parent_hsm_hw_component_summary_hashmap
+        let parent_qty = parent_group_hw_component_summary_hashmap
           .get(hw_component)
           .copied()
           .unwrap_or(0);
@@ -122,11 +125,11 @@ pub fn calculate_hsm_node_scores_from_final_hsm(
 
 /// Check whether further iteration is needed to satisfy the target hw pattern.
 pub fn keep_iterating_final_hsm(
-  hsm_final_hw_component_summary_hashmap: &HashMap<String, usize>,
-  hsm_current_hw_component_summary_hashmap: &HashMap<String, usize>,
+  group_final_hw_component_summary_hashmap: &HashMap<String, usize>,
+  group_current_hw_component_summary_hashmap: &HashMap<String, usize>,
 ) -> bool {
-  for (hw_component, final_qty) in hsm_final_hw_component_summary_hashmap {
-    if hsm_current_hw_component_summary_hashmap
+  for (hw_component, final_qty) in group_final_hw_component_summary_hashmap {
+    if group_current_hw_component_summary_hashmap
       .get(hw_component)
       .is_some_and(|current_qty| current_qty > final_qty)
     {
@@ -138,23 +141,23 @@ pub fn keep_iterating_final_hsm(
 }
 
 /// Aggregate per-node hardware counters into a single summary map.
-pub fn calculate_hsm_hw_component_summary(
-  target_hsm_group_node_hw_component_vec: &[(String, HashMap<String, usize>)],
+pub fn calculate_group_hw_component_summary(
+  target_group_node_hw_component_vec: &[(String, HashMap<String, usize>)],
 ) -> HashMap<String, usize> {
-  let mut hsm_hw_component_count_hashmap = HashMap::new();
+  let mut group_hw_component_count_hashmap = HashMap::new();
 
   for (_xname, node_hw_component_count_hashmap) in
-    target_hsm_group_node_hw_component_vec
+    target_group_node_hw_component_vec
   {
     for (hw_component, &qty) in node_hw_component_count_hashmap {
-      hsm_hw_component_count_hashmap
+      group_hw_component_count_hashmap
         .entry(hw_component.clone())
         .and_modify(|qty_aux| *qty_aux += qty)
         .or_insert(qty);
     }
   }
 
-  hsm_hw_component_count_hashmap
+  group_hw_component_count_hashmap
 }
 
 /// Returns properties from a hardware inventory value matching the given pattern.
@@ -206,13 +209,13 @@ fn get_node_hw_properties_from_value(
 async fn get_node_hw_component_count(
   backend: StaticBackendDispatcher,
   shasta_token: String,
-  hsm_member: &str,
+  group_member: &str,
   user_defined_hw_profile_vec: Vec<String>,
 ) -> (String, Vec<String>, Vec<u64>) {
   let hw_inventory_typed = match backend
     .get_inventory_hardware_query(
       &shasta_token,
-      hsm_member,
+      group_member,
       None,
       None,
       None,
@@ -223,8 +226,12 @@ async fn get_node_hw_component_count(
   {
     Ok(value) => value,
     Err(e) => {
-      tracing::error!("Failed to get hw inventory for '{}': {}", hsm_member, e);
-      return (hsm_member.to_string(), Vec::new(), Vec::new());
+      tracing::error!(
+        "Failed to get hw inventory for '{}': {}",
+        group_member,
+        e
+      );
+      return (group_member.to_string(), Vec::new(), Vec::new());
     }
   };
 
@@ -238,24 +245,31 @@ async fn get_node_hw_component_count(
     &user_defined_hw_profile_vec,
   );
 
-  (hsm_member.to_string(), node_hw_profile.0, node_hw_profile.1)
+  (
+    group_member.to_string(),
+    node_hw_profile.0,
+    node_hw_profile.1,
+  )
 }
 
 /// Print a table of node hardware component scores with color-coded cells.
 pub fn print_score_table(
   user_defined_hw_component_vec: &[String],
-  hsm_hw_pattern_vec: &[(String, HashMap<String, usize>)],
-  hsm_score_vec: &[(String, f64)],
+  group_hw_pattern_vec: &[(String, HashMap<String, usize>)],
+  group_score_vec: &[(String, f64)],
 ) {
-  let hsm_hw_component_vec: Vec<String> = hsm_hw_pattern_vec
+  let group_hw_component_vec: Vec<String> = group_hw_pattern_vec
     .iter()
     .flat_map(|(_xname, node_pattern_hashmap)| {
       node_pattern_hashmap.keys().cloned()
     })
     .collect();
 
-  let mut all_hw_component_vec =
-    [hsm_hw_component_vec, user_defined_hw_component_vec.to_vec()].concat();
+  let mut all_hw_component_vec = [
+    group_hw_component_vec,
+    user_defined_hw_component_vec.to_vec(),
+  ]
+  .concat();
 
   all_hw_component_vec.sort();
   all_hw_component_vec.dedup();
@@ -271,7 +285,7 @@ pub fn print_score_table(
     .concat(),
   );
 
-  for (xname, node_pattern_hashmap) in hsm_hw_pattern_vec {
+  for (xname, node_pattern_hashmap) in group_hw_pattern_vec {
     let mut row: Vec<comfy_table::Cell> = Vec::new();
     row.push(
       comfy_table::Cell::new(xname.clone())
@@ -305,7 +319,7 @@ pub fn print_score_table(
     }
 
     let default_score = (xname.clone(), 0.0);
-    let node_score = hsm_score_vec
+    let node_score = group_score_vec
       .iter()
       .find(|(node_name, _)| node_name.eq(xname))
       .unwrap_or(&default_score)
@@ -327,11 +341,11 @@ pub fn print_score_table(
 }
 
 /// Fetch hardware inventory for HSM group members and return per-node component counters.
-pub async fn get_hsm_node_hw_component_counter(
+pub async fn get_group_node_hw_component_counter(
   infra: &InfraContext<'_>,
   shasta_token: &str,
   user_defined_hw_component_vec: &[String],
-  hsm_group_member_vec: &[String],
+  group_member_vec: &[String],
   mem_lcm: u64,
 ) -> Vec<(String, HashMap<String, usize>)> {
   let start = Instant::now();
@@ -340,16 +354,16 @@ pub async fn get_hsm_node_hw_component_counter(
 
   let sem = Arc::new(Semaphore::new(HW_COMPONENT_CONCURRENCY_LIMIT));
 
-  let mut target_hsm_node_hw_component_count_vec = Vec::new();
+  let mut target_group_node_hw_component_count_vec = Vec::new();
 
-  for hsm_member in hsm_group_member_vec {
+  for group_member in group_member_vec {
     let shasta_token_string = shasta_token.to_string();
     let user_defined_hw_component_vec =
       user_defined_hw_component_vec.to_owned();
     // Owned clone needed for `tokio::spawn` below — see
     // `InfraContext::backend_clone`'s docstring for the lifetime story.
     let backend_clone = infra.backend_clone();
-    let hsm_member = hsm_member.clone();
+    let group_member = group_member.clone();
 
     let permit = Arc::clone(&sem).acquire_owned().await;
 
@@ -359,7 +373,7 @@ pub async fn get_hsm_node_hw_component_counter(
       get_node_hw_component_count(
         backend_clone,
         shasta_token_string,
-        &hsm_member,
+        &group_member,
         user_defined_hw_component_vec,
       )
       .await
@@ -390,7 +404,7 @@ pub async fn get_hsm_node_hw_component_counter(
           .unwrap_or(0),
       );
 
-      target_hsm_node_hw_component_count_vec.push((
+      target_group_node_hw_component_count_vec.push((
         node_hw_component_vec_tuple.0,
         node_hw_component_count_hashmap,
       ));
@@ -402,28 +416,28 @@ pub async fn get_hsm_node_hw_component_counter(
   let duration = start.elapsed();
   tracing::info!("Time elapsed to calculate hw components is: {:?}", duration);
 
-  target_hsm_node_hw_component_count_vec
+  target_group_node_hw_component_count_vec
 }
 
 /// Selects the best candidate node by highest score, breaking ties by xname.
 pub fn get_best_candidate_in_hsm(
-  hsm_score_vec: &mut [(String, f64)],
-  hsm_hw_component_vec: &[(String, HashMap<String, usize>)],
+  group_score_vec: &mut [(String, f64)],
+  group_hw_component_vec: &[(String, HashMap<String, usize>)],
 ) -> Option<((String, f64), HashMap<String, usize>)> {
-  if hsm_score_vec.is_empty() || hsm_hw_component_vec.is_empty() {
+  if group_score_vec.is_empty() || group_hw_component_vec.is_empty() {
     return None;
   }
 
-  hsm_score_vec.sort_by(|a, b| {
+  group_score_vec.sort_by(|a, b| {
     b.1
       .partial_cmp(&a.1)
       .unwrap_or(std::cmp::Ordering::Equal)
       .then(a.0.cmp(&b.0))
   });
 
-  let best_candidate: (String, f64) = hsm_score_vec.first()?.clone();
+  let best_candidate: (String, f64) = group_score_vec.first()?.clone();
 
-  hsm_hw_component_vec
+  group_hw_component_vec
     .iter()
     .find(|(node, _)| node.eq(&best_candidate.0))
     .map(|best_candidate_hw| (best_candidate, best_candidate_hw.1.clone()))
@@ -431,22 +445,25 @@ pub fn get_best_candidate_in_hsm(
 
 /// For PIN mode: selects best candidate preferring existing target nodes first.
 pub fn get_best_candidate_in_target_and_parent_hsm(
-  target_hsm_node_score_tuple_vec: &mut [(String, f64)],
-  parent_hsm_node_score_tuple_vec: &mut [(String, f64)],
-  target_hsm_node_hw_component_count_vec: &mut [(
+  target_group_node_score_tuple_vec: &mut [(String, f64)],
+  parent_group_node_score_tuple_vec: &mut [(String, f64)],
+  target_group_node_hw_component_count_vec: &mut [(
     String,
     HashMap<String, usize>,
   )],
-  parent_hsm_node_hw_component_count_vec: &[(String, HashMap<String, usize>)],
+  parent_group_node_hw_component_count_vec: &[(
+    String,
+    HashMap<String, usize>,
+  )],
 ) -> Option<((String, f64), HashMap<String, usize>)> {
   let target_best_candidate_tuple = get_best_candidate_in_hsm(
-    target_hsm_node_score_tuple_vec,
-    target_hsm_node_hw_component_count_vec,
+    target_group_node_score_tuple_vec,
+    target_group_node_hw_component_count_vec,
   );
 
   let parent_best_candidate_tuple = get_best_candidate_in_hsm(
-    parent_hsm_node_score_tuple_vec,
-    parent_hsm_node_hw_component_count_vec,
+    parent_group_node_score_tuple_vec,
+    parent_group_node_hw_component_count_vec,
   );
 
   if target_best_candidate_tuple.is_some() {
@@ -469,15 +486,15 @@ pub fn get_best_candidate_in_target_and_parent_hsm(
 #[allow(clippy::type_complexity)]
 pub fn resolve_hw_description_to_xnames(
   mode: HwClusterMode,
-  mut target_hsm_node_hw_component_count_vec: Vec<(
+  mut target_group_node_hw_component_count_vec: Vec<(
     String,
     HashMap<String, usize>,
   )>,
-  mut parent_hsm_node_hw_component_count_vec: Vec<(
+  mut parent_group_node_hw_component_count_vec: Vec<(
     String,
     HashMap<String, usize>,
   )>,
-  user_defined_target_hsm_hw_component_count_hashmap: &HashMap<String, usize>,
+  user_defined_target_group_hw_component_count_hashmap: &HashMap<String, usize>,
 ) -> Result<
   (
     Vec<(String, HashMap<String, usize>)>,
@@ -485,68 +502,69 @@ pub fn resolve_hw_description_to_xnames(
   ),
   Error,
 > {
-  let mut combined_target_parent_hsm_node_hw_component_count_vec =
-    parent_hsm_node_hw_component_count_vec.clone();
+  let mut combined_target_parent_group_node_hw_component_count_vec =
+    parent_group_node_hw_component_count_vec.clone();
 
-  for elem in &target_hsm_node_hw_component_count_vec {
-    if !parent_hsm_node_hw_component_count_vec
+  for elem in &target_group_node_hw_component_count_vec {
+    if !parent_group_node_hw_component_count_vec
       .iter()
       .any(|(xname, _)| xname.eq(&elem.0))
     {
-      combined_target_parent_hsm_node_hw_component_count_vec.push(elem.clone());
+      combined_target_parent_group_node_hw_component_count_vec
+        .push(elem.clone());
     }
   }
 
-  let combined_target_parent_hsm_hw_component_summary_hashmap =
-    calculate_hsm_hw_component_summary(
-      &combined_target_parent_hsm_node_hw_component_count_vec,
+  let combined_target_parent_group_hw_component_summary_hashmap =
+    calculate_group_hw_component_summary(
+      &combined_target_parent_group_node_hw_component_count_vec,
     );
 
   let hw_component_scarcity_scores_hashmap: HashMap<String, f64> =
     calculate_hw_component_scarcity_scores(
-      &combined_target_parent_hsm_node_hw_component_count_vec,
+      &combined_target_parent_group_node_hw_component_count_vec,
     );
 
-  let mut final_combined_target_parent_hsm_hw_component_summary =
-    user_defined_target_hsm_hw_component_count_hashmap.clone();
+  let mut final_combined_target_parent_group_hw_component_summary =
+    user_defined_target_group_hw_component_count_hashmap.clone();
 
   for (hw_component, qty) in
-    combined_target_parent_hsm_hw_component_summary_hashmap
+    combined_target_parent_group_hw_component_summary_hashmap
   {
-    final_combined_target_parent_hsm_hw_component_summary
+    final_combined_target_parent_group_hw_component_summary
       .entry(hw_component)
       .and_modify(|current_qty| *current_qty = qty - *current_qty);
   }
 
   let hw_component_counters_to_move_out_from_combined_hsm = match mode {
-    HwClusterMode::Pin => pin_unpin::calculate_target_hsm_pin(
-      &final_combined_target_parent_hsm_hw_component_summary,
-      &final_combined_target_parent_hsm_hw_component_summary
+    HwClusterMode::Pin => pin_unpin::calculate_target_group_pin(
+      &final_combined_target_parent_group_hw_component_summary,
+      &final_combined_target_parent_group_hw_component_summary
         .keys()
         .cloned()
         .collect::<Vec<String>>(),
-      &mut combined_target_parent_hsm_node_hw_component_count_vec,
-      &mut target_hsm_node_hw_component_count_vec,
-      &mut parent_hsm_node_hw_component_count_vec,
+      &mut combined_target_parent_group_node_hw_component_count_vec,
+      &mut target_group_node_hw_component_count_vec,
+      &mut parent_group_node_hw_component_count_vec,
       &hw_component_scarcity_scores_hashmap,
     )?,
-    HwClusterMode::Unpin => pin_unpin::calculate_target_hsm_unpin(
-      &final_combined_target_parent_hsm_hw_component_summary,
-      &final_combined_target_parent_hsm_hw_component_summary
+    HwClusterMode::Unpin => pin_unpin::calculate_target_group_unpin(
+      &final_combined_target_parent_group_hw_component_summary,
+      &final_combined_target_parent_group_hw_component_summary
         .keys()
         .cloned()
         .collect::<Vec<String>>(),
-      &mut combined_target_parent_hsm_node_hw_component_count_vec,
+      &mut combined_target_parent_group_node_hw_component_count_vec,
       &hw_component_scarcity_scores_hashmap,
     )?,
   };
 
-  let new_target_hsm_node_hw_component_count_vec =
+  let new_target_group_node_hw_component_count_vec =
     hw_component_counters_to_move_out_from_combined_hsm;
 
   Ok((
-    new_target_hsm_node_hw_component_count_vec,
-    combined_target_parent_hsm_node_hw_component_count_vec,
+    new_target_group_node_hw_component_count_vec,
+    combined_target_parent_group_node_hw_component_count_vec,
   ))
 }
 
@@ -590,7 +608,7 @@ pub fn parse_hw_pattern(
 
 /// Fetch HSM group members, compute per-node hw component counts, and return
 /// the member list, per-node counts, and group summary.
-pub async fn fetch_hsm_hw_inventory(
+pub async fn fetch_group_hw_inventory(
   infra: &InfraContext<'_>,
   shasta_token: &str,
   hw_components: &[String],
@@ -606,7 +624,7 @@ pub async fn fetch_hsm_hw_inventory(
       ))
     })?;
 
-  let mut node_hw_count_vec = get_hsm_node_hw_component_counter(
+  let mut node_hw_count_vec = get_group_node_hw_component_counter(
     infra,
     shasta_token,
     hw_components,
@@ -617,7 +635,7 @@ pub async fn fetch_hsm_hw_inventory(
 
   node_hw_count_vec.sort_by(|a, b| a.0.cmp(&b.0));
 
-  let summary = calculate_hsm_hw_component_summary(&node_hw_count_vec);
+  let summary = calculate_group_hw_component_summary(&node_hw_count_vec);
 
   Ok((member_vec, node_hw_count_vec, summary))
 }

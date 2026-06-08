@@ -7,7 +7,13 @@ use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_vec_access;
 pub use manta_shared::types::params::cluster::GetClusterParams;
 
-/// Fetch node details for all nodes in the specified HSM groups.
+/// Fetch full node details for every member of the requested HSM
+/// groups.
+///
+/// When `params.group_name` is unset the scope expands to every
+/// group the token can access. The optional `status_filter` matches
+/// case-insensitively against either the power or configuration
+/// status. Results are sorted by xname for stable rendering.
 pub async fn get_cluster_nodes(
   infra: &InfraContext<'_>,
   token: &str,
@@ -28,18 +34,18 @@ pub async fn get_cluster_nodes(
   // Validate groups and get list of groups available
   validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
-  let mut hsm_groups_node_list = infra
+  let mut group_vec_node_list = infra
     .get_member_vec_from_group_name_vec(token, &target_group_vec)
     .await?;
 
-  hsm_groups_node_list.sort();
+  group_vec_node_list.sort();
 
   let mut node_details_list = csm_rs::node::utils::get_node_details(
     token,
     infra.shasta_base_url,
     infra.shasta_root_cert,
     infra.socks5_proxy,
-    hsm_groups_node_list,
+    group_vec_node_list,
   )
   .await
   .map_err(|e: csm_rs::error::Error| -> Error { e.into() })?;

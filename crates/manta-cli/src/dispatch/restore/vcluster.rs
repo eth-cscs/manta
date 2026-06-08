@@ -40,7 +40,7 @@ pub async fn exec(
 
   action_result::print(
     &format!(
-      "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n HSM_file: {}",
+      "Migrate_restore\n Prehook: {}\n Posthook: {}\n BOS_file: {}\n CFS_file: {}\n IMS_file: {}\n Group_file: {}",
       prehook.unwrap_or("none"),
       posthook.unwrap_or("none"),
       bos_file_value,

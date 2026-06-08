@@ -32,12 +32,12 @@ pub async fn exec(
     .cloned()
     .collect();
 
-  let hsm_group_name_arg_opt = cli_run_session.opt_str("group");
+  let group_name_arg_opt = cli_run_session.opt_str("group");
 
   let cfs_conf_sess_name_opt = cli_run_session.opt_str("name");
   let playbook_file_name_opt = cli_run_session.opt_str("playbook-name");
 
-  let hsm_group_members_opt = cli_run_session.opt_str("ansible-limit");
+  let group_members_opt = cli_run_session.opt_str("ansible-limit");
   let ansible_verbosity = cli_run_session.opt_str("ansible-verbosity");
 
   let ansible_passthrough = cli_run_session.opt_str("ansible-passthrough");
@@ -52,9 +52,9 @@ pub async fn exec(
     SessionParams {
       session_name: cfs_conf_sess_name_opt,
       playbook: playbook_file_name_opt,
-      hsm_group: hsm_group_name_arg_opt,
+      group_name: group_name_arg_opt,
       repos: &repo_path_vec,
-      ansible_limit: hsm_group_members_opt,
+      ansible_limit: group_members_opt,
       ansible_verbosity,
       ansible_passthrough,
       watch_logs,
@@ -70,7 +70,7 @@ pub async fn exec(
 struct SessionParams<'a> {
   session_name: Option<&'a str>,
   playbook: Option<&'a str>,
-  hsm_group: Option<&'a str>,
+  group_name: Option<&'a str>,
   repos: &'a [PathBuf],
   ansible_limit: Option<&'a str>,
   ansible_verbosity: Option<&'a str>,
@@ -93,7 +93,7 @@ async fn run_session(
 ) -> Result<(String, String), Error> {
   let cfs_conf_sess_name = p.session_name;
   let playbook_yaml_file_name_opt = p.playbook;
-  let hsm_group_opt = p.hsm_group;
+  let group_name_opt = p.group_name;
   let repos_paths = p.repos;
   let ansible_limit_opt = p.ansible_limit;
   let ansible_verbosity = p.ansible_verbosity;
@@ -118,7 +118,7 @@ async fn run_session(
         &crate::http_client::CreateSessionRequest {
           cfs_conf_sess_name,
           playbook_yaml_file_name: playbook_yaml_file_name_opt,
-          hsm_group: hsm_group_opt,
+          group_name: group_name_opt,
           repo_names: &repo_names,
           repo_last_commit_ids: &repo_commits,
           ansible_limit: ansible_limit_opt,

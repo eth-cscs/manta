@@ -82,7 +82,8 @@ pub async fn get_hardware_clusters_deprecated(
 /// Query parameters for `GET /hardware-nodes-list`.
 #[derive(Deserialize, IntoParams)]
 pub struct HardwareNodesListQuery {
-  /// Comma-separated xnames.
+  /// Hosts expression (xnames, NIDs, or hostlist notation).
+  /// The field name is retained for wire stability.
   pub xnames: String,
 }
 

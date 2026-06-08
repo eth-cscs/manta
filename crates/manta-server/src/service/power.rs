@@ -18,12 +18,16 @@ pub use manta_shared::types::params::power::{
   ApplyPowerParams, PowerAction, PowerTargetType,
 };
 
-/// Resolve the caller's `targets_expression` into the concrete xname
-/// list to pass to `apply_power`. For `Cluster` targets the expression
-/// is a single HSM group name and we fetch its members; for `Nodes`
-/// it's a hosts expression. Returns `Error::BadRequest` when the
-/// resolution yields an empty list (the caller would otherwise hit
-/// PCS with no work to do).
+/// Resolve `host_expression` into the concrete xname list to pass to
+/// [`apply_power`].
+///
+/// For [`PowerTargetType::Cluster`] the expression is a single HSM
+/// group name and we fetch its members; for [`PowerTargetType::Nodes`]
+/// it's a hostlist / NID / xname expression resolved through
+/// [`node_ops::resolve_hosts_expression`]. The caller's group access
+/// to every resolved xname is validated before return. An empty
+/// resolution yields `Error::BadRequest` so PCS is never called with
+/// nothing to do.
 pub async fn resolve_target_xnames(
   infra: &InfraContext<'_>,
   token: &str,

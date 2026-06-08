@@ -18,7 +18,15 @@ pub use manta_shared::types::params::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };
 
-/// Fetch boot parameters for the specified nodes.
+/// Fetch BSS boot parameters for the resolved target nodes.
+///
+/// Targets are resolved from `params` in the
+/// [`node_ops::resolve_target_nodes`] priority order (host
+/// expression, then `group_name`, then the `settings_group_name`
+/// fallback from `cli.toml`). An empty resolution returns `BadRequest`
+/// rather than silently querying nothing; otherwise the caller's
+/// access to every resolved xname is validated before hitting the
+/// backend.
 pub async fn get_boot_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -31,7 +39,7 @@ pub async fn get_boot_parameters(
     token,
     params.host_expression.as_deref(),
     params.group_name.as_deref(),
-    params.settings_hsm_group_name.as_deref(),
+    params.settings_group_name.as_deref(),
   )
   .await?;
 
@@ -46,7 +54,12 @@ pub async fn get_boot_parameters(
   infra.get_bootparameters(token, &xname_vec).await
 }
 
-/// Delete boot parameters for the specified hosts.
+/// Remove the BSS boot-parameter record for each host in `hosts`.
+///
+/// The caller's access to every host is validated before the delete
+/// is dispatched. The constructed `BootParameters` carries only the
+/// host list — BSS keys deletions by host, so the other fields are
+/// intentionally empty.
 pub async fn delete_boot_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -68,7 +81,11 @@ pub async fn delete_boot_parameters(
   infra.delete_bootparameters(token, &boot_parameters).await
 }
 
-/// Add (create) boot parameters for specified nodes.
+/// Create a new BSS boot-parameter record for `boot_parameters.hosts`.
+///
+/// The caller's access to every listed host is validated before the
+/// create is dispatched. Use [`update_boot_parameters`] when modifying
+/// an existing record.
 pub async fn add_boot_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -80,7 +97,12 @@ pub async fn add_boot_parameters(
   infra.add_bootparameters(token, boot_parameters).await
 }
 
-/// Update boot parameters for specified nodes.
+/// Replace the BSS boot-parameter record for `params.hosts` with the
+/// values carried in `params`.
+///
+/// The caller's access to every host is validated first. `cloud_init`
+/// is intentionally left unset: the update endpoint accepts only the
+/// core boot fields (`params`, `kernel`, `initrd`, `macs`, `nids`).
 pub async fn update_boot_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -116,7 +138,18 @@ pub(crate) struct BootConfigChangeset {
   pub need_restart: bool,
 }
 
-/// Prepare boot configuration changes (no side effects).
+/// Build a [`BootConfigChangeset`] describing what the requested
+/// boot-config edit would write, without persisting anything.
+///
+/// Resolves `hosts_expression`, fetches the current boot parameters,
+/// applies new kernel parameters (always first — the boot image patch
+/// reads the updated kernel-params), then attaches the new boot image
+/// either by id or by latest image for the named CFS configuration.
+/// The iSCSI-ready flag is propagated from the existing kernel
+/// parameters onto each affected image.
+///
+/// The split between this and [`persist_boot_config`] lets callers
+/// confirm the planned change with the user before any backend write.
 pub(crate) async fn prepare_boot_config(
   infra: &InfraContext<'_>,
   token: &str,
@@ -177,7 +210,13 @@ pub(crate) async fn prepare_boot_config(
   })
 }
 
-/// Persist boot configuration changes.
+/// Write a [`BootConfigChangeset`] previously built by
+/// [`prepare_boot_config`].
+///
+/// Validates access to every xname in the changeset, writes each
+/// updated BSS record, then — if `new_runtime_configuration_opt` is
+/// supplied — points the runtime configuration at it and patches the
+/// referenced images so they boot under the new CFS configuration.
 pub(crate) async fn persist_boot_config(
   infra: &InfraContext<'_>,
   token: &str,

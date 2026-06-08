@@ -91,7 +91,7 @@ async fn run_cli(
   let app_context = AppContext {
     site_name: &site_name,
     manta_server_url,
-    settings_hsm_group_name_opt: settings_hsm_group_name_opt.as_deref(),
+    settings_group_name_opt: settings_hsm_group_name_opt.as_deref(),
     request_timeout_secs: configuration.request_timeout_secs,
     settings: &settings,
   };

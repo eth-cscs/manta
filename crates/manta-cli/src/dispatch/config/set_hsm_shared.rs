@@ -23,18 +23,18 @@ pub async fn set_hsm_config_value(
 ) -> Result<(), Error> {
   let (path, mut doc) = read_config_toml()?;
 
-  let mut settings_hsm_available_vec = client
+  let mut settings_group_available_vec = client
     .get_available_groups(shasta_token)
     .await
     .unwrap_or_default();
 
-  settings_hsm_available_vec
+  settings_group_available_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
   // VALIDATION
-  // If 'hsm_available' is empty (admin user), fetch all HSM
+  // If 'group_available' is empty (admin user), fetch all HSM
   // groups via the server to validate the requested group exists.
-  let hsm_available_vec = if settings_hsm_available_vec.is_empty() {
+  let group_available_vec = if settings_group_available_vec.is_empty() {
     client
       .get_all_groups(shasta_token)
       .await
@@ -43,10 +43,10 @@ pub async fn set_hsm_config_value(
       .map(|hsm_group| hsm_group.label)
       .collect::<Vec<String>>()
   } else {
-    settings_hsm_available_vec
+    settings_group_available_vec
   };
 
-  validate_hsm_in_available(new_hsm, &hsm_available_vec)?;
+  validate_group_in_available(new_hsm, &group_available_vec)?;
 
   tracing::info!("Changing configuration to use {} '{}'", label, new_hsm);
 
@@ -59,7 +59,7 @@ pub async fn set_hsm_config_value(
   Ok(())
 }
 
-fn validate_hsm_in_available(
+fn validate_group_in_available(
   hsm_group: &str,
   hsm_available_vec: &[String],
 ) -> Result<(), Error> {

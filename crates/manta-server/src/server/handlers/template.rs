@@ -49,7 +49,7 @@ pub async fn get_templates(
   let params = service::template::GetTemplateParams {
     name: q.name,
     group_name: q.hsm_group,
-    settings_hsm_group_name: None,
+    settings_group_name: None,
     limit: q.limit,
   };
 

@@ -378,7 +378,7 @@ async fn mock_hsm_components(srv: &MockServer) {
 //
 // Call chain:
 //   service::group::get_groups
-//     → get_groups_names_available (pa_admin → GET /smd/hsm/v2/groups)
+//     → get_group_name_available (pa_admin → GET /smd/hsm/v2/groups)
 //     → backend.get_groups          (GET /smd/hsm/v2/groups?group=compute)
 #[tokio::test]
 async fn get_groups_happy_path() {
@@ -399,7 +399,7 @@ async fn get_groups_happy_path() {
 //
 // Call chain (csm-rs uses CFS v2 for configurations):
 //   service::configuration::get_configurations
-//     → get_groups_names_available           (GET /smd/hsm/v2/groups)
+//     → get_group_name_available           (GET /smd/hsm/v2/groups)
 //     → backend.get_and_filter_configuration
 //         → get_member_vec_from_hsm_name_vec  (GET /smd/hsm/v2/groups?group=compute)
 //         → try_join!:
@@ -494,7 +494,7 @@ async fn get_sessions_xnames_expression_resolves_correctly() {
 //
 // Call chain:
 //   service::template::get_templates
-//     → get_groups_names_available (GET /smd/hsm/v2/groups)
+//     → get_group_name_available (GET /smd/hsm/v2/groups)
 //     → backend.get_member_vec_from_group_name_vec
 //         → GET /smd/hsm/v2/groups?group=compute  (same stub)
 //     → backend.get_and_filter_templates
@@ -537,12 +537,12 @@ async fn get_images_happy_path() {
   assert_eq!(arr[0]["name"], "compute-my-image");
 }
 
-// GET /api/v1/boot-parameters?hsm_group=compute
+// GET /api/v1/boot-parameters?group_name=compute
 //
 // Call chain:
 //   service::boot_parameters::get_boot_parameters
-//     → service::node_ops::resolve_target_nodes(hsm_group=Some("compute"))
-//         → get_groups_names_available            (GET /smd/hsm/v2/groups)
+//     → service::node_ops::resolve_target_nodes(group_name=Some("compute"))
+//         → get_group_name_available            (GET /smd/hsm/v2/groups)
 //         → backend.get_member_vec_from_group_name_vec
 //                                                 (GET /smd/hsm/v2/groups?group=compute)
 //         → resolve_hosts_expression("x3000c0s1b0n0")
@@ -561,7 +561,7 @@ async fn get_boot_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/boot-parameters?hsm_group=compute"))
+    .send(fx.auth_get("/api/v1/boot-parameters?group_name=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -610,7 +610,7 @@ async fn mock_cfs_v3_components(srv: &MockServer) {
 // Phase A — Remaining GET happy paths
 // ---------------------------------------------------------------------------
 
-// GET /api/v1/kernel-parameters?hsm_group=compute
+// GET /api/v1/kernel-parameters?group_name=compute
 //
 // Call chain mirrors get_boot_parameters: resolve_target_nodes
 // (HSM groups + components) → get_bootparameters.
@@ -622,7 +622,7 @@ async fn get_kernel_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/kernel-parameters?hsm_group=compute"))
+    .send(fx.auth_get("/api/v1/kernel-parameters?group_name=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -877,7 +877,7 @@ async fn get_groups_backend_error_returns_500() {
 //
 // Call chain:
 //   service::session::prepare_session_deletion
-//     → get_groups_names_available (GET /smd/hsm/v2/groups)
+//     → get_group_name_available (GET /smd/hsm/v2/groups)
 //     → try_join!:
 //         get_group_available      (GET /smd/hsm/v2/groups)
 //         get_and_filter_sessions  (GET /cfs/v2/sessions → "my-session")

@@ -110,7 +110,7 @@ manta delete group gpu-cluster
 
 ## 3. Deploying with a SAT file
 
-The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to four top-level sections: `configurations`, `images`, `session_templates`, and an optional `hardware` block describing hardware patterns to apply.
+The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to three top-level sections: `configurations`, `images`, and `session_templates`. (A `hardware` section is recognised by the SAT YAML spec but is not supported by the current apply flow.)
 
 The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--reboot` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
 
@@ -204,7 +204,7 @@ Every image built by `manta apply sat-file` is automatically annotated with the 
 
 These are written as an explicit step after the CFS session reaches a terminal-complete state: the CLI hands the session name to `POST /sat-file/images/stamp` and the server derives + PATCHes the three keys onto the produced IMS image. You can read them with `manta get images -i <image-id>` (the keys appear in the JSON `metadata` field). If the CFS session ends without producing an image (no `result_id`), the stamp step refuses with an explicit error so the apply fails fast instead of patching a non-existent image.
 
-> Metadata is not written in `--dry-run` mode, since no real image is produced. It is also not written to images created by side-paths that don't go through `apply sat-file` (e.g. direct IMS image uploads, or the bulk `apply` flow for SAT files with a `hardware:` section).
+> Metadata is not written in `--dry-run` mode, since no real image is produced. It is also not written to images created by side-paths that don't go through `apply sat-file` (e.g. direct IMS image uploads).
 
 ---
 

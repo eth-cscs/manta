@@ -14,7 +14,14 @@ pub use manta_shared::types::params::template::{
   ApplyTemplateParams, GetTemplateParams,
 };
 
-/// Fetch and filter BOS session templates from the backend.
+/// List BOS session templates visible to the caller.
+///
+/// When `params.group_name` is unset the lookup spans every HSM
+/// group the token already grants access to. The backend filters
+/// templates whose targets intersect the resolved group set (and
+/// their member xnames), so the response stays scoped to what the
+/// caller could see by other means. Results are sorted by template
+/// name for stable output.
 pub async fn get_templates(
   infra: &InfraContext<'_>,
   token: &str,
@@ -61,10 +68,17 @@ pub async fn get_templates(
   Ok(bos_sessiontemplate_vec)
 }
 
-/// Validate template access, resolve limit targets, and build
-/// a BOS session ready for creation.
+/// Build the [`BosSession`] that
+/// [`create_bos_session`] will submit, after validating every
+/// xname/group the operation will touch.
 ///
-/// Returns `(bos_session, resolved_limit_vec)`.
+/// Authorization runs in two passes: first against the template's
+/// own targets (group members or explicit xnames), then against each
+/// comma-separated entry of `params.limit`, which may itself be an
+/// xname or a group label. An unrecognised limit value yields
+/// `BadRequest`; a missing template yields `NotFound`. The returned
+/// `Vec<String>` is the split limit list, useful when the caller
+/// wants to display the resolved targets before creation.
 pub async fn validate_and_prepare_template_session(
   infra: &InfraContext<'_>,
   token: &str,
@@ -176,7 +190,11 @@ pub async fn validate_and_prepare_template_session(
   Ok((bos_session, limit_vec))
 }
 
-/// Create a BOS session via the backend.
+/// Submit a [`BosSession`] previously built by
+/// [`validate_and_prepare_template_session`].
+///
+/// This is a thin wrapper kept so the handler stays a one-liner and
+/// the validate / create steps remain separate testable units.
 pub async fn create_bos_session(
   infra: &InfraContext<'_>,
   token: &str,

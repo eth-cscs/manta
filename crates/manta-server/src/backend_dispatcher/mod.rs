@@ -106,24 +106,24 @@ macro_rules! dispatch {
 impl ApplyHwClusterPin for StaticBackendDispatcher {
   async fn apply_hw_cluster_pin(
     &self,
-    shasta_token: &str,
-    target_hsm_group_name: &str,
-    parent_hsm_group_name: &str,
+    token: &str,
+    target_group_name: &str,
+    parent_group_name: &str,
     pattern: &str,
     nodryrun: bool,
-    create_target_hsm_group: bool,
-    delete_empty_parent_hsm_group: bool,
+    create_target_group: bool,
+    delete_empty_parent_group: bool,
   ) -> Result<(), Error> {
     dispatch!(
       self,
       apply_hw_cluster_pin,
-      shasta_token,
-      target_hsm_group_name,
-      parent_hsm_group_name,
+      token,
+      target_group_name,
+      parent_group_name,
       pattern,
       nodryrun,
-      create_target_hsm_group,
-      delete_empty_parent_hsm_group
+      create_target_group,
+      delete_empty_parent_group
     )
   }
 }
@@ -137,10 +137,10 @@ impl ApplySessionTrait for StaticBackendDispatcher {
     &self,
     gitea_token: &str,
     gitea_base_url: &str,
-    shasta_token: &str,
+    token: &str,
     cfs_conf_sess_name: Option<&str>,
     playbook_yaml_file_name_opt: Option<&str>,
-    hsm_group: Option<&str>,
+    group_name: Option<&str>,
     repos_name_vec: &[&str],
     repos_last_commit_id_vec: &[&str],
     ansible_limit: Option<&str>,
@@ -152,10 +152,10 @@ impl ApplySessionTrait for StaticBackendDispatcher {
       apply_session,
       gitea_token,
       gitea_base_url,
-      shasta_token,
+      token,
       cfs_conf_sess_name,
       playbook_yaml_file_name_opt,
-      hsm_group,
+      group_name,
       repos_name_vec,
       repos_last_commit_id_vec,
       ansible_limit,
@@ -258,7 +258,7 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn get_session_logs_stream(
     &self,
-    shasta_token: &str,
+    token: &str,
     site_name: &str,
     cfs_session_name: &str,
     timestamps: bool,
@@ -267,7 +267,7 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       get_session_logs_stream,
-      shasta_token,
+      token,
       site_name,
       cfs_session_name,
       timestamps,
@@ -296,10 +296,10 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn post_session(
     &self,
-    shasta_token: &str,
+    token: &str,
     session: &CfsSessionPostRequest,
   ) -> Result<CfsSessionGetResponse, Error> {
-    dispatch!(self, post_session, shasta_token, session)
+    dispatch!(self, post_session, token, session)
   }
 
   async fn get_sessions(
@@ -333,7 +333,7 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn get_and_filter_sessions(
     &self,
-    shasta_token: &str,
+    token: &str,
     group_name_vec: Vec<String>,
     xname_vec: Vec<&str>,
     min_age_opt: Option<&String>,
@@ -347,7 +347,7 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       get_and_filter_sessions,
-      shasta_token,
+      token,
       group_name_vec,
       xname_vec,
       min_age_opt,
@@ -362,7 +362,7 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn delete_and_cancel_session(
     &self,
-    shasta_token: &str,
+    token: &str,
     group_available_vec: &[Group],
     cfs_session: &CfsSessionGetResponse,
     cfs_component_vec: &[CfsComponent],
@@ -372,7 +372,7 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       delete_and_cancel_session,
-      shasta_token,
+      token,
       group_available_vec,
       cfs_session,
       cfs_component_vec,
@@ -418,7 +418,7 @@ impl CfsTrait for StaticBackendDispatcher {
     auth_token: &str,
     configuration_name: Option<&str>,
     configuration_name_pattern: Option<&str>,
-    hsm_group_name_vec: &[String],
+    group_name_vec: &[String],
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
     limit_number_opt: Option<&u8>,
@@ -429,7 +429,7 @@ impl CfsTrait for StaticBackendDispatcher {
       auth_token,
       configuration_name,
       configuration_name_pattern,
-      hsm_group_name_vec,
+      group_name_vec,
       since_opt,
       until_opt,
       limit_number_opt
@@ -472,7 +472,7 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn put_configuration(
     &self,
-    shasta_token: &str,
+    token: &str,
     configuration: &CfsConfigurationRequest,
     configuration_name: &str,
     overwrite: bool,
@@ -480,7 +480,7 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       put_configuration,
-      shasta_token,
+      token,
       configuration,
       configuration_name,
       overwrite
@@ -504,7 +504,7 @@ impl CfsTrait for StaticBackendDispatcher {
 
   async fn get_cfs_components(
     &self,
-    shasta_token: &str,
+    token: &str,
     configuration_name: Option<&str>,
     components_ids: Option<&str>,
     status: Option<&str>,
@@ -512,7 +512,7 @@ impl CfsTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       get_cfs_components,
-      shasta_token,
+      token,
       configuration_name,
       components_ids,
       status
@@ -527,10 +527,10 @@ impl CfsTrait for StaticBackendDispatcher {
 impl ClusterSessionTrait for StaticBackendDispatcher {
   async fn post_template_session(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos_session: types::bos::session::BosSession,
   ) -> Result<BosSession, Error> {
-    dispatch!(self, post_template_session, shasta_token, bos_session)
+    dispatch!(self, post_template_session, token, bos_session)
   }
 }
 
@@ -541,31 +541,26 @@ impl ClusterSessionTrait for StaticBackendDispatcher {
 impl ClusterTemplateTrait for StaticBackendDispatcher {
   async fn get_template(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos_session_template_id_opt: Option<&str>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
-    dispatch!(
-      self,
-      get_template,
-      shasta_token,
-      bos_session_template_id_opt
-    )
+    dispatch!(self, get_template, token, bos_session_template_id_opt)
   }
 
   async fn get_and_filter_templates(
     &self,
-    shasta_token: &str,
-    hsm_group_name_vec: &[String],
-    hsm_member_vec: &[String],
+    token: &str,
+    group_name_vec: &[String],
+    group_member_vec: &[String],
     bos_sessiontemplate_name_opt: Option<&str>,
     limit_number_opt: Option<&u8>,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
     dispatch!(
       self,
       get_and_filter_templates,
-      shasta_token,
-      hsm_group_name_vec,
-      hsm_member_vec,
+      token,
+      group_name_vec,
+      group_member_vec,
       bos_sessiontemplate_name_opt,
       limit_number_opt
     )
@@ -573,32 +568,26 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
 
   async fn get_all_templates(
     &self,
-    shasta_token: &str,
+    token: &str,
   ) -> Result<Vec<BosSessionTemplate>, Error> {
-    dispatch!(self, get_all_templates, shasta_token)
+    dispatch!(self, get_all_templates, token)
   }
 
   async fn put_template(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos_template: &BosSessionTemplate,
     bos_template_name: &str,
   ) -> Result<BosSessionTemplate, Error> {
-    dispatch!(
-      self,
-      put_template,
-      shasta_token,
-      bos_template,
-      bos_template_name
-    )
+    dispatch!(self, put_template, token, bos_template, bos_template_name)
   }
 
   async fn delete_template(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos_template_id: &str,
   ) -> Result<(), Error> {
-    dispatch!(self, delete_template, shasta_token, bos_template_id)
+    dispatch!(self, delete_template, token, bos_template_id)
   }
 }
 
@@ -709,7 +698,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
 
   async fn attach_to_node_console(
     &self,
-    shasta_token: &str,
+    token: &str,
     site_name: &str,
     xname: &str,
     width: u16,
@@ -725,7 +714,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       attach_to_node_console,
-      shasta_token,
+      token,
       site_name,
       xname,
       width,
@@ -736,7 +725,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
 
   async fn attach_to_session_console(
     &self,
-    shasta_token: &str,
+    token: &str,
     site_name: &str,
     session_name: &str,
     width: u16,
@@ -752,7 +741,7 @@ impl ConsoleTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       attach_to_session_console,
-      shasta_token,
+      token,
       site_name,
       session_name,
       width,
@@ -769,8 +758,8 @@ impl ConsoleTrait for StaticBackendDispatcher {
 impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
   async fn get_data_to_delete(
     &self,
-    shasta_token: &str,
-    hsm_name_available_vec: &[String],
+    token: &str,
+    group_name_available_vec: &[String],
     configuration_name_pattern_opt: Option<&str>,
     since_opt: Option<NaiveDateTime>,
     until_opt: Option<NaiveDateTime>,
@@ -788,8 +777,8 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       get_data_to_delete,
-      shasta_token,
-      hsm_name_available_vec,
+      token,
+      group_name_available_vec,
       configuration_name_pattern_opt,
       since_opt,
       until_opt
@@ -798,7 +787,7 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
 
   async fn delete(
     &self,
-    shasta_token: &str,
+    token: &str,
     cfs_configuration_name_vec: &[String],
     image_id_vec: &[String],
     cfs_session_name_vec: &[String],
@@ -807,7 +796,7 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       delete,
-      shasta_token,
+      token,
       cfs_configuration_name_vec,
       image_id_vec,
       cfs_session_name_vec,
@@ -823,16 +812,16 @@ impl DeleteConfigurationsAndDataRelatedTrait for StaticBackendDispatcher {
 impl GetImagesAndDetailsTrait for StaticBackendDispatcher {
   async fn get_images_and_details(
     &self,
-    shasta_token: &str,
-    hsm_group_name_vec: &[String],
+    token: &str,
+    group_group_name_vec: &[String],
     id_opt: Option<&str>,
     limit_number: Option<&u8>,
   ) -> Result<Vec<(Image, String, String, bool)>, Error> {
     dispatch!(
       self,
       get_images_and_details,
-      shasta_token,
-      hsm_group_name_vec,
+      token,
+      group_group_name_vec,
       id_opt,
       limit_number
     )
@@ -865,34 +854,34 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn add_group(
     &self,
     auth_token: &str,
-    hsm_group: Group,
+    group_name: Group,
   ) -> Result<Group, Error> {
-    dispatch!(self, add_group, auth_token, hsm_group)
+    dispatch!(self, add_group, auth_token, group_name)
   }
 
   async fn get_member_vec_from_group_name_vec(
     &self,
     auth_token: &str,
-    hsm_group_name_vec: &[String],
+    group_name_vec: &[String],
   ) -> Result<Vec<String>, Error> {
     dispatch!(
       self,
       get_member_vec_from_group_name_vec,
       auth_token,
-      hsm_group_name_vec
+      group_name_vec
     )
   }
 
   async fn get_group_map_and_filter_by_group_vec(
     &self,
     auth_token: &str,
-    hsm_name_vec: &[&str],
+    group_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
     dispatch!(
       self,
       get_group_map_and_filter_by_group_vec,
       auth_token,
-      hsm_name_vec
+      group_name_vec
     )
   }
 
@@ -912,69 +901,69 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn get_group(
     &self,
     auth_token: &str,
-    hsm_name: &str,
+    group_name: &str,
   ) -> Result<Group, Error> {
-    dispatch!(self, get_group, auth_token, hsm_name)
+    dispatch!(self, get_group, auth_token, group_name)
   }
 
   async fn get_groups(
     &self,
     auth_token: &str,
-    hsm_name_vec: Option<&[String]>,
+    group_name_vec: Option<&[String]>,
   ) -> Result<Vec<Group>, Error> {
-    dispatch!(self, get_groups, auth_token, hsm_name_vec)
+    dispatch!(self, get_groups, auth_token, group_name_vec)
   }
 
   async fn delete_group(
     &self,
     auth_token: &str,
-    hsm_group_label: &str,
+    group_name: &str,
   ) -> Result<HsmActionResponse, Error> {
-    dispatch!(self, delete_group, auth_token, hsm_group_label)
+    dispatch!(self, delete_group, auth_token, group_name)
   }
 
-  async fn get_hsm_map_and_filter_by_hsm_name_vec(
+  async fn get_group_map_and_filter_by_group_name_vec(
     &self,
     auth_token: &str,
-    hsm_name_vec: &[&str],
+    group_name_vec: &[&str],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
     dispatch!(
       self,
-      get_hsm_map_and_filter_by_hsm_name_vec,
+      get_group_map_and_filter_by_group_name_vec,
       auth_token,
-      hsm_name_vec
+      group_name_vec
     )
   }
 
   async fn post_member(
     &self,
     auth_token: &str,
-    group_label: &str,
+    group_name: &str,
     xname: &str,
   ) -> Result<HsmActionResponse, Error> {
-    dispatch!(self, post_member, auth_token, group_label, xname)
+    dispatch!(self, post_member, auth_token, group_name, xname)
   }
 
   async fn add_members_to_group(
     &self,
     auth_token: &str,
-    group_label: &str,
+    group_name: &str,
     xnames: &[&str],
   ) -> Result<Vec<String>, Error> {
-    dispatch!(self, add_members_to_group, auth_token, group_label, xnames)
+    dispatch!(self, add_members_to_group, auth_token, group_name, xnames)
   }
 
   async fn delete_member_from_group(
     &self,
     auth_token: &str,
-    group_label: &str,
+    group_name: &str,
     xname: &str,
   ) -> Result<(), Error> {
     dispatch!(
       self,
       delete_member_from_group,
       auth_token,
-      group_label,
+      group_name,
       xname
     )
   }
@@ -982,18 +971,18 @@ impl GroupTrait for StaticBackendDispatcher {
   async fn migrate_group_members(
     &self,
     auth_token: &str,
-    target_hsm_group_name: &str,
-    parent_hsm_group_name: &str,
-    new_target_hsm_members: &[&str],
+    target_group_name: &str,
+    parent_group_name: &str,
+    new_target_group_members: &[&str],
     dryrun: bool,
   ) -> Result<(Vec<String>, Vec<String>), Error> {
     dispatch!(
       self,
       migrate_group_members,
       auth_token,
-      target_hsm_group_name,
-      parent_hsm_group_name,
-      new_target_hsm_members,
+      target_group_name,
+      parent_group_name,
+      new_target_group_members,
       dryrun
     )
   }
@@ -1068,17 +1057,14 @@ impl HardwareInventory for StaticBackendDispatcher {
 impl ImsTrait for StaticBackendDispatcher {
   async fn get_images(
     &self,
-    shasta_token: &str,
+    token: &str,
     image_id_opt: Option<&str>,
   ) -> Result<Vec<Image>, Error> {
-    dispatch!(self, get_images, shasta_token, image_id_opt)
+    dispatch!(self, get_images, token, image_id_opt)
   }
 
-  async fn get_all_images(
-    &self,
-    shasta_token: &str,
-  ) -> Result<Vec<Image>, Error> {
-    dispatch!(self, get_all_images, shasta_token)
+  async fn get_all_images(&self, token: &str) -> Result<Vec<Image>, Error> {
+    dispatch!(self, get_all_images, token)
   }
 
   fn filter_images(&self, image_vec: &mut Vec<Image>) -> Result<(), Error> {
@@ -1087,19 +1073,19 @@ impl ImsTrait for StaticBackendDispatcher {
 
   async fn update_image(
     &self,
-    shasta_token: &str,
+    token: &str,
     image_id: &str,
     image: &PatchImage,
   ) -> Result<(), Error> {
-    dispatch!(self, update_image, shasta_token, image_id, image)
+    dispatch!(self, update_image, token, image_id, image)
   }
 
   async fn delete_image(
     &self,
-    shasta_token: &str,
+    token: &str,
     image_id: &str,
   ) -> Result<(), Error> {
-    dispatch!(self, delete_image, shasta_token, image_id)
+    dispatch!(self, delete_image, token, image_id)
   }
 }
 
@@ -1110,11 +1096,11 @@ impl ImsTrait for StaticBackendDispatcher {
 impl MigrateBackupTrait for StaticBackendDispatcher {
   async fn migrate_backup(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos: Option<&str>,
     destination: Option<&str>,
   ) -> Result<(), Error> {
-    dispatch!(self, migrate_backup, shasta_token, bos, destination)
+    dispatch!(self, migrate_backup, token, bos, destination)
   }
 }
 
@@ -1125,10 +1111,10 @@ impl MigrateBackupTrait for StaticBackendDispatcher {
 impl MigrateRestoreTrait for StaticBackendDispatcher {
   async fn migrate_restore(
     &self,
-    shasta_token: &str,
+    token: &str,
     bos_file: Option<&str>,
     cfs_file: Option<&str>,
-    hsm_file: Option<&str>,
+    group_file: Option<&str>,
     ims_file: Option<&str>,
     image_dir: Option<&str>,
     overwrite_group: bool,
@@ -1139,10 +1125,10 @@ impl MigrateRestoreTrait for StaticBackendDispatcher {
     dispatch!(
       self,
       migrate_restore,
-      shasta_token,
+      token,
       bos_file,
       cfs_file,
-      hsm_file,
+      group_file,
       ims_file,
       image_dir,
       overwrite_group,

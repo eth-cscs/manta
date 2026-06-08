@@ -11,12 +11,13 @@ pub use manta_shared::types::params::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
 
-/// Fetch Redfish endpoint registrations from the backend, applying any
-/// caller-supplied filters (`id` / `fqdn` / `uuid` / `macaddr` /
-/// `ipaddress`).
+/// List Redfish endpoint registrations, applying any caller-supplied
+/// filters (`id` / `fqdn` / `uuid` / `macaddr` / `ipaddress`).
 ///
-/// Redfish endpoints aren't HSM-group-scoped, so the service performs
-/// no access check — every authenticated caller sees the same view.
+/// When `params.id` is set, the caller's group access to that BMC
+/// xname is validated first; broad listings (no `id`) skip the
+/// per-xname check since the backend already scopes by token. Admin
+/// tokens short-circuit either way.
 pub async fn get_redfish_endpoints(
   infra: &InfraContext<'_>,
   token: &str,

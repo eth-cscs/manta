@@ -104,10 +104,13 @@ async fn fetch_node_summaries(
   summaries
 }
 
-/// Fetch hardware inventory for all nodes in a cluster (HSM group).
+/// Fetch hardware inventory for every member of an HSM group.
 ///
-/// Concurrently queries hardware inventory for each node, rate-limited
-/// by a semaphore.
+/// When `params.group_name` is unset, the first group the caller has
+/// access to is used and surfaced back through
+/// `HardwareClusterResult::hsm_group_name`. Per-node inventory
+/// queries run concurrently, capped by `HW_INVENTORY_CONCURRENCY_LIMIT`.
+/// Empty groups are logged but not treated as an error.
 pub async fn get_hardware_cluster(
   infra: &InfraContext<'_>,
   token: &str,
@@ -175,12 +178,15 @@ pub struct HardwareNodesListResult {
   pub node_summaries: Vec<NodeSummary>,
 }
 
-/// Fetch hardware inventory for an explicit node expression.
+/// Fetch hardware inventory for the nodes named by
+/// `params.host_expression`.
 ///
-/// The expression is resolved via `resolve_hosts_expression`, which expands
-/// hostlist notation, translates NIDs to xnames, and validates that every
-/// resolved node actually exists. Authorization is then checked with
-/// `validate_target_hsm_members`.
+/// The expression is parsed by [`from_hosts_expression_to_xname_vec`]
+/// (hostlist notation, NIDs, or xnames; siblings are not expanded
+/// here). An empty resolution yields `BadRequest` rather than a
+/// silent no-op. The caller's group access to every resolved xname is
+/// validated through [`validate_user_group_members_access`] before
+/// the per-node inventory fan-out runs.
 pub async fn get_hardware_nodes_list(
   infra: &InfraContext<'_>,
   token: &str,
@@ -208,11 +214,12 @@ pub async fn get_hardware_nodes_list(
   Ok(HardwareNodesListResult { node_summaries })
 }
 
-// `calculate_hsm_hw_component_summary` and `get_cluster_hw_pattern` moved
-// to `manta_shared::types::cluster_status`. Only `calculate_hsm_hw_component_summary`
-// is still needed locally — the tests below use it.
+// `calculate_group_hw_component_summary` and `get_cluster_hw_pattern` moved
+// to `manta_shared::types::cluster_status`. Only
+// `calculate_group_hw_component_summary` is still needed locally — the
+// tests below use it.
 #[cfg(test)]
-use manta_shared::types::cluster_status::calculate_hsm_hw_component_summary;
+use manta_shared::types::cluster_status::calculate_group_hw_component_summary;
 
 #[cfg(test)]
 mod tests {
@@ -249,7 +256,7 @@ mod tests {
       node_hsn_nics: vec![],
       ..Default::default()
     }];
-    let summary = calculate_hsm_hw_component_summary(&nodes);
+    let summary = calculate_group_hw_component_summary(&nodes);
     assert_eq!(summary.get("AMD EPYC 7742"), Some(&2));
     assert_eq!(summary.get("NVIDIA A100"), Some(&1));
   }
@@ -275,7 +282,7 @@ mod tests {
       node_hsn_nics: vec![],
       ..Default::default()
     }];
-    let summary = calculate_hsm_hw_component_summary(&nodes);
+    let summary = calculate_group_hw_component_summary(&nodes);
     assert_eq!(summary.get("Memory (GiB)"), Some(&32));
   }
 
@@ -299,7 +306,7 @@ mod tests {
         ..Default::default()
       },
     ];
-    let summary = calculate_hsm_hw_component_summary(&nodes);
+    let summary = calculate_group_hw_component_summary(&nodes);
     assert_eq!(summary.get("AMD EPYC 7742"), Some(&2));
     assert_eq!(summary.get("Intel Xeon Gold"), Some(&1));
   }
@@ -307,7 +314,7 @@ mod tests {
   #[test]
   fn summary_empty_nodes() {
     let nodes: Vec<NodeSummary> = vec![];
-    let summary = calculate_hsm_hw_component_summary(&nodes);
+    let summary = calculate_group_hw_component_summary(&nodes);
     assert!(summary.is_empty());
   }
 
@@ -321,7 +328,7 @@ mod tests {
       ],
       ..Default::default()
     }];
-    let summary = calculate_hsm_hw_component_summary(&nodes);
+    let summary = calculate_group_hw_component_summary(&nodes);
     assert_eq!(summary.get("AMD EPYC 7742"), Some(&1));
     assert_eq!(summary.len(), 1);
   }

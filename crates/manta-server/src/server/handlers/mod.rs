@@ -393,7 +393,7 @@ async fn resolve_xnames_from_request(
   infra: &crate::server::common::app_context::InfraContext<'_>,
   token: &str,
   xnames_expression: Option<&str>,
-  hsm_group: Option<&str>,
+  group_name_opt: Option<&str>,
 ) -> Result<Vec<String>, (StatusCode, Json<ErrorResponse>)> {
   if let Some(expr) = xnames_expression
     && !expr.is_empty()
@@ -404,7 +404,7 @@ async fn resolve_xnames_from_request(
     .await
     .map_err(to_handler_error);
   }
-  if let Some(group) = hsm_group {
+  if let Some(group) = group_name_opt {
     return crate::service::node_ops::resolve_target_nodes(
       infra,
       token,

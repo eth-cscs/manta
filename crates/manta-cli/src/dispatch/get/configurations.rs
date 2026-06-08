@@ -37,7 +37,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_configuration_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_configuration_params(cli_args, ctx.settings_group_name_opt);
 
   let cfs_configuration_vec = MantaClient::from_app_ctx(ctx)?
     .get_configurations(token, &params)

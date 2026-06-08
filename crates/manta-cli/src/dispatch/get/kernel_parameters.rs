@@ -14,9 +14,9 @@ fn parse_kernel_parameters_params(
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetKernelParametersParams {
   GetKernelParametersParams {
-    hsm_group: cli_args.opt_string("group"),
+    group_name: cli_args.opt_string("group"),
     nodes: cli_args.opt_string("nodes"),
-    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    settings_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
 
@@ -27,7 +27,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_kernel_parameters_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_kernel_parameters_params(cli_args, ctx.settings_group_name_opt);
 
   let boot_parameters = MantaClient::from_app_ctx(ctx)?
     .get_kernel_parameters(token, &params)
@@ -69,7 +69,7 @@ mod tests {
       "x1000c0s0b0n0",
     ]);
     let params = parse_kernel_parameters_params(&matches, None);
-    assert!(params.hsm_group.is_none());
+    assert!(params.group_name.is_none());
     assert_eq!(params.nodes.as_deref(), Some("x1000c0s0b0n0"));
   }
 
@@ -81,6 +81,6 @@ mod tests {
       "compute",
     ]);
     let params = parse_kernel_parameters_params(&matches, None);
-    assert_eq!(params.hsm_group.as_deref(), Some("compute"));
+    assert_eq!(params.group_name.as_deref(), Some("compute"));
   }
 }

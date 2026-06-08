@@ -25,7 +25,7 @@ pub async fn exec(
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
-    parse_hardware_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
+    parse_hardware_cluster_params(cli_args, ctx.settings_group_name_opt);
   let output = cli_args
     .get_one::<String>("output")
     .map_or("summary", String::as_str);

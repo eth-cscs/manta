@@ -17,9 +17,9 @@ use crate::service;
 #[derive(Deserialize, IntoParams)]
 pub struct BootParametersQuery {
   /// HSM group whose members' boot parameters should be returned.
-  pub hsm_group: Option<String>,
+  pub group_name: Option<String>,
   /// Explicit comma-separated xnames; mutually exclusive with
-  /// `hsm_group`.
+  /// `group_name`.
   pub nodes: Option<String>,
 }
 
@@ -41,9 +41,9 @@ pub async fn get_boot_parameters(
   let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
-    group_name: q.hsm_group,
+    group_name: q.group_name,
     host_expression: q.nodes,
-    settings_hsm_group_name: None,
+    settings_group_name: None,
   };
 
   let boot_params =
@@ -179,7 +179,8 @@ pub async fn update_boot_parameters(
 /// Request body for `POST /boot-config`.
 #[derive(Deserialize, ToSchema)]
 pub struct ApplyBootConfigRequest {
-  /// List of comma separated xnames identifying the target nodes.
+  /// Hosts expression naming the target nodes (xnames, NIDs, or
+  /// hostlist notation). The field name is kept for wire stability.
   pub xnames: String,
   /// IMS image ID to set as the boot image.
   pub boot_image_id: Option<String>,

@@ -6,9 +6,16 @@ use manta_backend_dispatcher::{error::Error, types::ims::Image};
 
 use crate::server::common::app_context::InfraContext;
 
-/// This function retrieves the list of image IDs related to a CFS configuration name.
-/// It first checks the CFS sessions for any succeeded sessions that built an image related to the
-/// CFS configuration. Then, it checks if the image ID exists in the IMS.
+/// Return the IMS images produced by succeeded image-build CFS
+/// sessions that referenced `cfs_configuration_name`.
+///
+/// The CFS session list is filtered to entries whose configuration
+/// matches, whose target definition is `"image"`, and which carry at
+/// least one `result_id`. For each matching session every result id
+/// is looked up in IMS; misses are logged and skipped so a partially
+/// garbage-collected IMS doesn't break callers that just want
+/// whatever images still exist (boot-config application, SAT-file
+/// rendering, etc.).
 pub async fn get_image_vec_related_cfs_configuration_name(
   infra: &InfraContext<'_>,
   shasta_token: &str,

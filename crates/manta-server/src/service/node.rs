@@ -12,7 +12,16 @@ use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops::from_hosts_expression_to_xname_vec;
 pub use manta_shared::types::params::node::GetNodesParams;
 
-/// Fetch node details for the given xname expression.
+/// Fetch HSM node details for the targets named by
+/// `params.host_expression`.
+///
+/// The expression is parsed by [`from_hosts_expression_to_xname_vec`];
+/// when `params.include_siblings` is set, the resulting xnames are
+/// expanded to cover every node on the same BMC. Access to the
+/// resolved set is validated before the (relatively slow) per-node
+/// detail fetch. The optional `status_filter` matches case-insensitively
+/// against either the power or configuration status. Results are
+/// sorted by xname for stable output.
 pub async fn get_nodes(
   infra: &InfraContext<'_>,
   token: &str,
@@ -62,7 +71,10 @@ pub async fn get_nodes(
 // `compute_summary_status` moved to `manta_shared::types::cluster_status` —
 // only CLI display code calls it.
 
-/// Delete a node by its xname/ID.
+/// Remove the HSM component with id `id` (typically an xname).
+///
+/// The caller's group access to the node is validated before the
+/// delete is dispatched.
 pub async fn delete_node(
   infra: &InfraContext<'_>,
   token: &str,
@@ -73,10 +85,16 @@ pub async fn delete_node(
   infra.delete_node(token, id).await
 }
 
-/// Register a new node, optionally add hardware inventory,
-/// and assign it to an HSM group.
+/// Register a new HSM component, attach an optional hardware
+/// inventory file, and add it to the named group.
 ///
-/// Rolls back (deletes the node) if any step after creation fails.
+/// The flow is three writes: `post_nodes`, then (if
+/// `hardware_file_path` is supplied) `post_inventory_hardware` after
+/// parsing the JSON file, then `post_member`. Each failure after the
+/// initial create rolls back by deleting the node, so a partial
+/// failure does not leave a stub component behind. Hardware-file
+/// parse errors are reported as the original IO / serde error, with
+/// the same rollback applied.
 pub async fn add_node(
   infra: &InfraContext<'_>,
   token: &str,

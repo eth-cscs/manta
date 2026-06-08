@@ -11,7 +11,16 @@ use crate::wire_conv;
 
 const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 
-/// Create an ephemeral CFS environment and return the SSH hostname.
+/// Launch an ephemeral IMS customize container against `image_id` and
+/// return its SSH hostname.
+///
+/// The caller's preferred username is read from the JWT and used to
+/// look up their registered SSH public key in IMS. If no key is
+/// registered, returns `NotFound` with a message pointing the user
+/// at platform admins. The hostname is plucked from the IMS response
+/// at `/ssh_containers/0/connection_info/customer_access/host`; a
+/// missing field is reported as `MissingField` rather than a generic
+/// error so operators can tell schema drift from real failures.
 pub async fn exec(
   infra: &InfraContext<'_>,
   token: &str,

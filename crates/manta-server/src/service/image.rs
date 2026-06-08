@@ -31,8 +31,16 @@ pub async fn get_images(
   Ok(image_vec)
 }
 
-/// Validate that images can be deleted (not used by boot nodes,
-/// not restricted). Does NOT perform deletion.
+/// Refuse a planned image delete that would orphan a live boot path
+/// or touch an image scoped to a group the caller can't reach.
+///
+/// Two checks run after access validation: any image listed in
+/// `image_id_vec` that is the current boot image of an existing BSS
+/// record fails with `BadRequest` (deleting it would brick the next
+/// boot); any image whose boot record targets hosts outside the
+/// caller's available groups fails the same way (so a user can't
+/// indirectly remove an image they don't own through a shared id).
+/// Pure check — no deletion happens here.
 pub async fn validate_image_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -110,8 +118,13 @@ pub async fn validate_image_deletion(
   Ok(())
 }
 
-/// Validate and delete IMS images.
-/// Returns list of image IDs that were successfully deleted.
+/// Run [`validate_image_deletion`] then delete each image in
+/// `image_id_vec`, best-effort.
+///
+/// Individual delete failures are logged and skipped — the function
+/// keeps going so a single backend hiccup doesn't strand the rest of
+/// the batch. The returned vector lists exactly the ids the backend
+/// confirmed removed.
 pub async fn delete_images(
   infra: &InfraContext<'_>,
   token: &str,

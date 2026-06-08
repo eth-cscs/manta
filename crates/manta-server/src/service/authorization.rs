@@ -28,7 +28,14 @@ pub async fn validate_user_group_access(
   validate_group_vec_access(&[group_name.to_string()], &group_available_vec)
 }
 
-/// Validate if user has access to a list of target groups
+/// Validate that every label in `group_vec` is in the set the token
+/// can access.
+///
+/// Admin tokens (carrying the [`PA_ADMIN`] role) short-circuit to
+/// `Ok` without touching the backend. Otherwise the available-group
+/// list is fetched once and matched against `group_vec`. Use the
+/// single-group variant [`validate_user_group_access`] when you only
+/// need to check one label.
 pub async fn validate_user_group_vec_access(
   infra: &InfraContext<'_>,
   token: &str,
@@ -43,7 +50,15 @@ pub async fn validate_user_group_vec_access(
   validate_group_vec_access(group_vec, &group_available_vec)
 }
 
-/// Checks if a list of target groups belongs to the list of groups the user has access to
+/// Pure check that every label in `group_target_vec` appears in
+/// `group_available_vec`.
+///
+/// The async wrappers above resolve `group_available_vec` from the
+/// backend; this entry point exists for callers that already have
+/// the available list in hand (or for unit tests). On failure the
+/// `BadRequest` message lists the offending labels followed by the
+/// allowed set, so the user gets an actionable hint without a second
+/// round-trip.
 pub fn validate_group_vec_access(
   group_target_vec: &[String],
   group_available_vec: &[String],
@@ -67,8 +82,13 @@ pub fn validate_group_vec_access(
   }
 }
 
-/// Validate that every xname in a comma-separated `ansible_limit`-style
-/// string belongs to a group the token has access to.
+/// Validate every xname in a comma-separated `ansible_limit`-style
+/// string against the caller's accessible groups.
+///
+/// Splits on `,`, trims, and forwards to
+/// [`validate_user_group_members_access`]. Admin tokens skip the
+/// check entirely. Use this at handler boundaries where the request
+/// shape is the raw ansible-limit string (e.g. CFS session creation).
 pub async fn validate_ansible_limit_membership_access(
   infra: &InfraContext<'_>,
   token: &str,
@@ -85,7 +105,13 @@ pub async fn validate_ansible_limit_membership_access(
   validate_user_group_members_access(infra, token, &xnames).await
 }
 
-/// Validate that every requested xname belongs to a group the token has access to.
+/// Validate that every xname in `group_members_target_vec` is a
+/// member of at least one group the token can access.
+///
+/// Admin tokens skip the check. Otherwise the caller's accessible
+/// group list is fetched, expanded to member xnames, and matched
+/// against the request. This is the standard membership gate used by
+/// the per-node and per-host service helpers.
 pub async fn validate_user_group_members_access(
   infra: &InfraContext<'_>,
   token: &str,
@@ -107,7 +133,12 @@ pub async fn validate_user_group_members_access(
   .await
 }
 
-/// Validate that every requested xname belongs to a group the token has access to.
+/// Like [`validate_user_group_members_access`] but with the
+/// caller-accessible group list supplied explicitly.
+///
+/// Lets a caller that has already fetched `hsm_groups_user_has_access`
+/// reuse it across several membership checks without an extra
+/// round-trip. Admin tokens still short-circuit.
 pub async fn validate_group_members_access(
   infra: &InfraContext<'_>,
   token: &str,
@@ -132,7 +163,7 @@ pub async fn validate_group_members_access(
     Ok(())
   } else {
     Err(Error::BadRequest(format!(
-      "Invalid group members:\n'{:?}'.\nPlease choose members form the list of groups below:\n{}",
+      "Invalid group members:\n'{:?}'.\nPlease choose members from the list of groups below:\n{}",
       invalid_xnames,
       hsm_groups_user_has_access.join(", ")
     )))

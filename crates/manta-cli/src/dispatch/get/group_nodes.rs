@@ -27,7 +27,7 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_cluster_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_cluster_params(cli_args, ctx.settings_group_name_opt);
   let nids_only = cli_args.get_flag("nids-only-one-line");
   let xnames_only = cli_args.get_flag("xnames-only-one-line");
   let output_opt = cli_args.opt_str("output");

@@ -8,7 +8,13 @@ use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
 pub use manta_shared::types::params::group::GetGroupParams;
 
-/// Fetch groups from the backend.
+/// List HSM groups visible to the caller.
+///
+/// When `params.group_name` is set the lookup is scoped to that
+/// single label; otherwise it spans every group the token already
+/// grants access to. Group access is re-validated before the backend
+/// call so the response can't leak labels the caller couldn't have
+/// listed directly.
 pub async fn get_groups(
   infra: &InfraContext<'_>,
   token: &str,
@@ -32,7 +38,14 @@ pub async fn get_groups(
   infra.get_groups(token, Some(&target_group_vec)).await
 }
 
-/// Validate that deleting a group will not orphan any nodes.
+/// Check that deleting `label` would not leave any node without a
+/// group.
+///
+/// An xname is "orphaned" if `label` is its only HSM group. When at
+/// least one such node exists, returns
+/// `Error::Conflict` listing the orphans so the operator can decide
+/// whether to move them first or pass `force` to
+/// [`delete_group`].
 pub async fn validate_group_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -68,7 +81,10 @@ pub async fn validate_group_deletion(
   Ok(())
 }
 
-/// Delete an HSM group by label.
+/// Delete the HSM group named `label`.
+///
+/// Unless `force` is set, [`validate_group_deletion`] runs first and
+/// the delete is rejected if any node would be orphaned.
 pub async fn delete_group(
   infra: &InfraContext<'_>,
   token: &str,
@@ -81,7 +97,10 @@ pub async fn delete_group(
   infra.delete_group(token, label).await.map(|_| ())
 }
 
-/// Create an HSM group via the backend.
+/// Create the HSM group described by `group`.
+///
+/// The backend rejects duplicate labels; manta does no pre-check
+/// beyond the standard authorization layer applied by the handler.
 pub async fn create_group(
   infra: &InfraContext<'_>,
   token: &str,
@@ -90,10 +109,13 @@ pub async fn create_group(
   infra.add_group(token, group).await.map(|_| ())
 }
 
-/// Resolve `xnames_expression` and remove the resolved nodes from
-/// `group_name`. With `dry_run = true`, only the resolution runs —
-/// no backend mutation. Errors from the per-node deletion abort
-/// the loop and surface to the handler.
+/// Resolve `host_expression` and remove the resolved nodes from
+/// `group_name`.
+///
+/// With `dry_run = true`, only the resolution runs — no backend
+/// mutation. Errors from the per-node deletion abort the loop and
+/// surface to the handler, so a partially completed batch is
+/// possible.
 pub async fn delete_group_members(
   infra: &InfraContext<'_>,
   token: &str,
@@ -119,7 +141,7 @@ pub async fn delete_group_members(
   for xname in &node_list {
     if dry_run {
       tracing::info!(
-        "Dryrun enabled: no changes peorsisted into the system.\nGroup member '{}' removed from group '{}'",
+        "Dryrun enabled: no changes persisted into the system.\nGroup member '{}' removed from group '{}'",
         xname,
         group_name
       );
@@ -133,10 +155,13 @@ pub async fn delete_group_members(
   Ok(())
 }
 
-/// Resolve hosts expression, validate target group exists,
-/// and add nodes to the HSM group.
+/// Resolve `hosts_expression` and add the resulting nodes to the
+/// existing HSM group `target_hsm_name`.
 ///
-/// Returns `(xnames_resolved, updated_member_list)`.
+/// The target group must already exist (an explicit `NotFound` is
+/// returned rather than the backend's opaque error). An empty
+/// resolution is rejected with `BadRequest`. Returns the resolved
+/// xnames alongside the group's sorted, post-update membership.
 pub async fn add_nodes_to_group(
   infra: &InfraContext<'_>,
   token: &str,

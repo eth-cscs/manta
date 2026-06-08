@@ -7,9 +7,11 @@
 //! `manta_backend_dispatcher::error::Error` for its own error surface.
 //!
 //! Server-side code keeps returning `manta_backend_dispatcher::error::Error`
-//! and uses `?` to convert `MantaError` at the call site via the
-//! `From<MantaError> for BackendError` impl in
-//! `crates/manta-server/src/wire_conv.rs`.
+//! and bridges `MantaError` at call sites via the free function
+//! `crates/manta-server/src/wire_conv.rs::to_backend`, used as
+//! `.map_err(wire_conv::to_backend)?`. The orphan rule prevents a
+//! `From<MantaError> for BackendError` impl in the server crate (both
+//! types are foreign there).
 
 use thiserror::Error;
 

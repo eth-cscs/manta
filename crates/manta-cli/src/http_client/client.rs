@@ -28,16 +28,14 @@ impl MantaClient {
     Self::new_with_timeout(server_url, site_name, None)
   }
 
-  /// Build a client with an explicit optional per-request timeout.
-  /// `None` keeps reqwest's default (no timeout); `Some(secs)`
-  /// configures the inner `reqwest::Client` with
-  /// `.timeout(Duration::from_secs(secs))`.
   /// Build a client from an `AppContext`, honouring its
-  /// `request_timeout_secs` (loaded from `cli.toml`). Every dispatch
-  /// site that already has an `&AppContext` should prefer this over
-  /// the lower-level [`MantaClient::new`] / [`MantaClient::new_with_timeout`]
-  /// constructors — it unifies URL + site + timeout in one call and
-  /// keeps the documented `cli.toml`-driven timeout actually wired up.
+  /// `request_timeout_secs` (loaded from `cli.toml`).
+  ///
+  /// Every dispatch site that already has an `&AppContext` should
+  /// prefer this over the lower-level [`MantaClient::new`] /
+  /// [`MantaClient::new_with_timeout`] constructors — it unifies URL +
+  /// site + timeout in one call and keeps the documented
+  /// `cli.toml`-driven timeout actually wired up.
   pub fn from_app_ctx(
     ctx: &crate::common::app_context::AppContext<'_>,
   ) -> anyhow::Result<Self> {
@@ -48,6 +46,12 @@ impl MantaClient {
     )
   }
 
+  /// Build a client with an explicit optional per-request timeout.
+  ///
+  /// `None` keeps reqwest's default (no timeout); `Some(secs)`
+  /// configures the inner `reqwest::Client` with
+  /// `.timeout(Duration::from_secs(secs))`. URL scheme normalisation
+  /// matches [`MantaClient::new`].
   pub fn new_with_timeout(
     server_url: &str,
     site_name: &str,

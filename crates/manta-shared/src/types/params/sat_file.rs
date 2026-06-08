@@ -1,6 +1,13 @@
-//! Parameters for `POST /sat-file`.
+//! Parameters for the backend's `apply_sat_file` whole-file pass-through.
+//!
+//! The active HTTP surface for SAT-file apply is the per-element
+//! `POST /sat-file/{configurations,images/*,session-templates}` set in
+//! `crates/manta-server/src/server/handlers/sat_file.rs`. This struct
+//! is kept for the backend-dispatcher trait method that still accepts
+//! a whole SAT file in one call (used by `InfraContext::apply_sat_file`).
 
-/// Parameters for applying a SAT file.
+/// Parameters for applying a SAT file via the whole-file backend
+/// pathway.
 ///
 /// The CLI renders Jinja2, parses the rendered YAML into a structured
 /// value, applies the `image_only` / `session_template_only` filters

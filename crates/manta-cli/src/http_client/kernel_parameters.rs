@@ -38,7 +38,7 @@ impl MantaClient {
     params: &GetKernelParametersParams,
   ) -> anyhow::Result<Vec<BootParameters>> {
     let q = QueryBuilder::new()
-      .opt("hsm_group", &params.hsm_group)
+      .opt("hsm_group", &params.group_name)
       .opt("nodes", &params.nodes)
       .build();
     self.get_json(token, "/kernel-parameters", &q).await

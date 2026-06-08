@@ -12,28 +12,39 @@ use super::{
 };
 use crate::server::common::app_context::InfraContext;
 
-/// Core logic for hardware cluster pin/unpin — no terminal interaction.
+/// Pin or unpin nodes between `parent_group_name` and
+/// `target_group_name` so the target group satisfies `pattern`.
+///
+/// The flow is parse → ensure → score → resolve → apply: the
+/// component pattern is parsed into a counts map, the target group is
+/// created on demand (or refused when `create_target_group` is false
+/// and the group is missing), parent and target hardware inventories
+/// are fetched, the resource-sufficiency check rejects patterns that
+/// ask for more of a component than exists in the pool, and `mode`
+/// (`Pin` / `Unpin`) picks which selection algorithm runs. `dryrun`
+/// shortcuts every backend mutation but still returns the would-be
+/// final memberships so the operator sees the plan.
 #[allow(clippy::too_many_arguments)]
 pub async fn apply_hw_configuration(
   infra: &InfraContext<'_>,
   mode: HwClusterMode,
   shasta_token: &str,
-  target_hsm_group_name: &str,
-  parent_hsm_group_name: &str,
+  target_group_name: &str,
+  parent_group_name: &str,
   pattern: &str,
   dryrun: bool,
-  create_target_hsm_group: bool,
-  delete_empty_parent_hsm_group: bool,
+  create_target_group: bool,
+  delete_empty_parent_group: bool,
 ) -> Result<ApplyHwResult, Error> {
   let (user_defined_hw_component_vec, user_defined_hw_component_count_hashmap) =
-    pin_unpin::parse_hw_pattern_usize(target_hsm_group_name, pattern)?;
+    pin_unpin::parse_hw_pattern_usize(target_group_name, pattern)?;
 
   pin_unpin::ensure_target_group_exists(
     infra,
     shasta_token,
-    target_hsm_group_name,
+    target_group_name,
     dryrun,
-    create_target_hsm_group,
+    create_target_group,
   )
   .await?;
 
@@ -41,18 +52,18 @@ pub async fn apply_hw_configuration(
     target_hsm_group_member_vec,
     target_hsm_node_hw_component_count_vec,
     target_hsm_hw_component_summary,
-  ) = scoring::fetch_hsm_hw_inventory(
+  ) = scoring::fetch_group_hw_inventory(
     infra,
     shasta_token,
     &user_defined_hw_component_vec,
-    target_hsm_group_name,
+    target_group_name,
     MEMORY_CAPACITY_LCM,
   )
   .await?;
 
   tracing::info!(
     "HSM group '{}' hw component summary: {:?}",
-    target_hsm_group_name,
+    target_group_name,
     target_hsm_hw_component_summary
   );
 
@@ -60,11 +71,11 @@ pub async fn apply_hw_configuration(
     parent_hsm_group_member_vec,
     parent_hsm_node_hw_component_count_vec,
     _parent_summary,
-  ) = scoring::fetch_hsm_hw_inventory(
+  ) = scoring::fetch_group_hw_inventory(
     infra,
     shasta_token,
     &user_defined_hw_component_vec,
-    parent_hsm_group_name,
+    parent_group_name,
     MEMORY_CAPACITY_LCM,
   )
   .await?;
@@ -98,14 +109,14 @@ pub async fn apply_hw_configuration(
   pin_unpin::apply_group_updates(
     infra,
     shasta_token,
-    target_hsm_group_name,
-    parent_hsm_group_name,
+    target_group_name,
+    parent_group_name,
     &target_hsm_group_member_vec,
     &parent_hsm_group_member_vec,
     &target_hsm_node_vec,
     &parent_hsm_node_vec,
     dryrun,
-    delete_empty_parent_hsm_group,
+    delete_empty_parent_group,
   )
   .await?;
 
@@ -196,27 +207,37 @@ fn compute_final_parent_summary(
   Ok(final_summary)
 }
 
-/// Core logic for adding hardware components to a cluster group.
-/// No terminal interaction — suitable for both CLI and HTTP callers.
+/// Move enough nodes out of `parent_group_name` into
+/// `target_group_name` to add the components described by
+/// `pattern` (`<component>:<delta>` pairs) to the target.
+///
+/// The target group is created on demand when `create_group` is
+/// set; missing it otherwise yields `NotFound`. The parent group's
+/// post-move hw component summary is computed up front so the
+/// algorithm can reject patterns that would over-draw the parent
+/// (`InsufficientResources`). Selection uses scarcity-weighted scores
+/// so common components get pulled first and rare ones are preserved.
+/// In `dryrun` mode the planned move is returned without any backend
+/// mutation.
 pub async fn add_hw_component(
   infra: &InfraContext<'_>,
   shasta_token: &str,
-  target_hsm_group_name: &str,
-  parent_hsm_group_name: &str,
+  target_group_name: &str,
+  parent_group_name: &str,
   pattern: &str,
   dryrun: bool,
-  create_hsm_group: bool,
+  create_group: bool,
 ) -> Result<AddHwResult, Error> {
   ensure_add_target_group_exists(
     infra,
     shasta_token,
-    target_hsm_group_name,
+    target_group_name,
     dryrun,
-    create_hsm_group,
+    create_group,
   )
   .await?;
 
-  let pattern_str = format!("{target_hsm_group_name}:{pattern}");
+  let pattern_str = format!("{target_group_name}:{pattern}");
   let pattern_lowercase = pattern_str.to_lowercase();
   let mut pattern_element_vec: Vec<&str> =
     pattern_lowercase.split(':').collect();
@@ -231,11 +252,11 @@ pub async fn add_hw_component(
     _parent_member_vec,
     mut parent_hsm_node_hw_component_count_vec,
     parent_hsm_hw_component_summary,
-  ) = scoring::fetch_hsm_hw_inventory(
+  ) = scoring::fetch_group_hw_inventory(
     infra,
     shasta_token,
     &user_defined_delta_hw_component_vec,
-    parent_hsm_group_name,
+    parent_group_name,
     MEMORY_CAPACITY_LCM,
   )
   .await?;
@@ -243,14 +264,14 @@ pub async fn add_hw_component(
   let final_parent_hsm_hw_component_summary = compute_final_parent_summary(
     &parent_hsm_hw_component_summary,
     &user_defined_delta_hw_component_count_hashmap,
-    parent_hsm_group_name,
+    parent_group_name,
   )?;
 
   let scarcity_scores = scoring::calculate_hw_component_scarcity_scores(
     &parent_hsm_node_hw_component_count_vec,
   );
 
-  let hw_counters_to_move = pin_unpin::calculate_target_hsm_unpin(
+  let hw_counters_to_move = pin_unpin::calculate_target_group_unpin(
     &final_parent_hsm_hw_component_summary,
     &final_parent_hsm_hw_component_summary
       .keys()
@@ -278,7 +299,7 @@ pub async fn add_hw_component(
   if !dryrun {
     for xname in &nodes_to_move {
       infra
-        .delete_member_from_group(shasta_token, parent_hsm_group_name, xname)
+        .delete_member_from_group(shasta_token, parent_group_name, xname)
         .await?;
 
       let _ = infra
@@ -421,27 +442,37 @@ async fn apply_node_moves(
   Ok(())
 }
 
-/// Core logic for removing hardware components from a cluster group.
-/// No terminal interaction — suitable for both CLI and HTTP callers.
+/// Move enough nodes out of `target_group_name` back into
+/// `parent_group_name` to remove the components described by
+/// `pattern` from the target.
+///
+/// The target group must already exist (returns `NotFound`
+/// otherwise). When the target is already empty the routine
+/// short-circuits, optionally deleting the empty group if
+/// `delete_group` is set. Selection scores combine both groups'
+/// scarcity, so the move keeps the most scarce hardware in the target
+/// group whenever possible. After moving, the function deletes the
+/// target group if it ended up empty and `delete_group` is true.
+/// `dryrun` returns the planned move without touching the backend.
 pub async fn delete_hw_component(
   infra: &InfraContext<'_>,
   token: &str,
-  target_hsm_group_name: &str,
-  parent_hsm_group_name: &str,
+  target_group_name: &str,
+  parent_group_name: &str,
   pattern: &str,
   dryrun: bool,
-  delete_hsm_group: bool,
+  delete_group: bool,
 ) -> Result<DeleteHwResult, Error> {
-  match infra.get_group(token, target_hsm_group_name).await {
+  match infra.get_group(token, target_group_name).await {
     Ok(_) => {}
     Err(_) => {
       return Err(Error::NotFound(format!(
-        "HSM group {target_hsm_group_name} does not exist, cannot remove hw from it."
+        "HSM group {target_group_name} does not exist, cannot remove hw from it."
       )));
     }
   }
 
-  let pattern_str = format!("{target_hsm_group_name}:{pattern}");
+  let pattern_str = format!("{target_group_name}:{pattern}");
   let pattern_lowercase = pattern_str.to_lowercase();
   let mut pattern_element_vec: Vec<&str> =
     pattern_lowercase.split(':').collect();
@@ -456,7 +487,7 @@ pub async fn delete_hw_component(
     target_hsm_group_member_vec,
     mut target_hsm_node_hw_component_count_vec,
     target_hsm_hw_component_summary,
-  ) = scoring::fetch_hsm_hw_inventory(
+  ) = scoring::fetch_group_hw_inventory(
     infra,
     token,
     &user_defined_delta_hw_component_vec,
@@ -466,7 +497,7 @@ pub async fn delete_hw_component(
   .await?;
 
   if target_hsm_node_hw_component_count_vec.is_empty() {
-    handle_empty_target(infra, token, target_name, dryrun, delete_hsm_group)
+    handle_empty_target(infra, token, target_name, dryrun, delete_group)
       .await?;
     return Ok(DeleteHwResult {
       nodes_moved: vec![],
@@ -479,11 +510,11 @@ pub async fn delete_hw_component(
     parent_hsm_group_member_vec,
     parent_hsm_node_hw_component_count_vec,
     _parent_summary,
-  ) = scoring::fetch_hsm_hw_inventory(
+  ) = scoring::fetch_group_hw_inventory(
     infra,
     token,
     &user_defined_delta_hw_component_vec,
-    parent_hsm_group_name,
+    parent_group_name,
     MEMORY_CAPACITY_LCM,
   )
   .await?;
@@ -501,7 +532,7 @@ pub async fn delete_hw_component(
     &user_defined_delta_hw_component_count_hashmap,
   )?;
 
-  let hw_counters_to_move = pin_unpin::calculate_target_hsm_unpin(
+  let hw_counters_to_move = pin_unpin::calculate_target_group_unpin(
     &final_target_summary,
     &final_target_summary
       .keys()
@@ -530,10 +561,10 @@ pub async fn delete_hw_component(
       infra,
       token,
       target_name,
-      parent_hsm_group_name,
+      parent_group_name,
       &nodes_to_move,
       target_hsm_group_member_vec.len() == nodes_to_move.len(),
-      delete_hsm_group,
+      delete_group,
     )
     .await?;
   }

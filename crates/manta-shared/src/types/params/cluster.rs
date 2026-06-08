@@ -3,7 +3,7 @@
 /// Typed parameters for fetching cluster node details.
 pub struct GetClusterParams {
   /// Cluster group name to query; falls back to
-  /// `settings_hsm_group_name` when absent.
+  /// `settings_group_name` when absent.
   pub group_name: Option<String>,
   /// Operator default from `cli.toml`'s `parent_hsm_group`.
   pub settings_group_name: Option<String>,

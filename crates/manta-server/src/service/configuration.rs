@@ -10,7 +10,12 @@ use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::infra_backend::DeletionCandidates;
 pub use manta_shared::types::params::configuration::GetConfigurationParams;
 
-/// Fetch and filter CFS configurations from the backend.
+/// List CFS configurations the caller may see.
+///
+/// When `params.group_name` is set, access to that group is validated
+/// first; otherwise the search is scoped to every group the token
+/// already grants access to. Name / pattern / date filters and the
+/// per-call `limit` are applied by the backend.
 pub async fn get_configurations(
   infra: &InfraContext<'_>,
   token: &str,
@@ -48,7 +53,14 @@ pub async fn get_configurations(
   Ok(cfs_configuration_vec)
 }
 
-/// Fetch deletion candidates (no side effects).
+/// Collect every resource that would be removed by a cascading
+/// configuration delete, without actually deleting anything.
+///
+/// Returns the configurations matching `configuration_name_pattern`
+/// (within `since`/`until` if provided) plus the CFS sessions, BOS
+/// session templates, and IMS images that depend on them. The CLI
+/// shows this set as a confirmation prompt before invoking
+/// [`delete_configurations_and_derivatives`].
 pub(crate) async fn get_deletion_candidates(
   infra: &InfraContext<'_>,
   token: &str,
@@ -57,7 +69,6 @@ pub(crate) async fn get_deletion_candidates(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
 ) -> Result<DeletionCandidates, Error> {
-  // TODO: not implemented
   validate_date_range(since, until)?;
 
   let target_hsm_group_vec =
@@ -96,7 +107,14 @@ pub fn validate_date_range(
   Ok(())
 }
 
-/// Execute the deletion of configurations and derivatives.
+/// Apply a cascading delete previously planned by
+/// [`get_deletion_candidates`].
+///
+/// Removes the named configurations together with every dependent
+/// CFS session, BOS session template, and IMS image listed in
+/// `candidates`. The two-step plan/apply split exists so the caller
+/// can show the user exactly what is about to disappear before any
+/// state changes.
 pub(crate) async fn delete_configurations_and_derivatives(
   infra: &InfraContext<'_>,
   token: &str,

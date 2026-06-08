@@ -1,6 +1,6 @@
 use super::pin_unpin::{parse_hw_pattern_usize, validate_resource_sufficiency};
 use super::scoring::{
-  calculate_hsm_hw_component_summary, get_best_candidate_in_hsm,
+  calculate_group_hw_component_summary, get_best_candidate_in_hsm,
   keep_iterating_final_hsm, parse_hw_pattern, resolve_hw_description_to_xnames,
 };
 use super::*;
@@ -58,12 +58,12 @@ fn parse_hw_pattern_sorted_output() {
   assert_eq!(names, vec!["alpha", "mid", "zebra"]);
 }
 
-// ---- calculate_hsm_hw_component_summary ----
+// ---- calculate_group_hw_component_summary ----
 
 #[test]
 fn summary_empty_input() {
   let input: Vec<(String, HashMap<String, usize>)> = vec![];
-  let result = calculate_hsm_hw_component_summary(&input);
+  let result = calculate_group_hw_component_summary(&input);
   assert!(result.is_empty());
 }
 
@@ -73,7 +73,7 @@ fn summary_single_node() {
   hw.insert("a100".to_string(), 4);
   hw.insert("epyc".to_string(), 2);
   let input = vec![("x1000c0s0b0n0".to_string(), hw)];
-  let result = calculate_hsm_hw_component_summary(&input);
+  let result = calculate_group_hw_component_summary(&input);
   assert_eq!(result.get("a100"), Some(&4));
   assert_eq!(result.get("epyc"), Some(&2));
 }
@@ -90,7 +90,7 @@ fn summary_multiple_nodes() {
     ("x1000c0s0b0n0".to_string(), hw1),
     ("x1000c0s1b0n0".to_string(), hw2),
   ];
-  let result = calculate_hsm_hw_component_summary(&input);
+  let result = calculate_group_hw_component_summary(&input);
   assert_eq!(result.get("a100"), Some(&6));
   assert_eq!(result.get("epyc"), Some(&2));
   assert_eq!(result.get("instinct"), Some(&8));
@@ -310,10 +310,10 @@ fn validate_sufficiency_no_double_count_overlap() {
 // ---- resolve_hw_description_to_xnames (pin / unpin integration) ----
 
 #[tokio::test]
-pub async fn test_hsm_hw_management_pin_1() {
+pub async fn test_group_hw_management_pin_1() {
   let user_request_hw_summary = HashMap::from([("epyc".to_string(), 8)]);
 
-  let hsm_zinal_hw_counters = vec![
+  let group_zinal_hw_counters = vec![
     (
       "x1001c1s5b0n0".to_string(),
       HashMap::from([
@@ -432,7 +432,7 @@ pub async fn test_hsm_hw_management_pin_1() {
     ),
   ];
 
-  let hsm_nodes_free_hw_conters = vec![
+  let group_nodes_free_hw_conters = vec![
     (
       "x1000c1s7b0n0".to_string(),
       HashMap::from([
@@ -533,22 +533,24 @@ pub async fn test_hsm_hw_management_pin_1() {
     ),
   ];
 
-  let (target_hsm_node_hw_component_count_vec, _) =
+  let (target_group_node_hw_component_count_vec, _) =
     resolve_hw_description_to_xnames(
       HwClusterMode::Pin,
-      hsm_zinal_hw_counters,
-      hsm_nodes_free_hw_conters,
+      group_zinal_hw_counters,
+      group_nodes_free_hw_conters,
       &user_request_hw_summary,
     )
     .unwrap();
 
-  let target_hsm_hw_summary: HashMap<String, usize> =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+  let target_group_hw_summary: HashMap<String, usize> =
+    calculate_group_hw_component_summary(
+      &target_group_node_hw_component_count_vec,
+    );
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {
-    if !target_hsm_hw_summary.contains_key(&hw_component)
-      || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
+    if !target_group_hw_summary.contains_key(&hw_component)
+      || qty > *target_group_hw_summary.get(&hw_component).unwrap()
     {
       success = false;
     }
@@ -558,10 +560,10 @@ pub async fn test_hsm_hw_management_pin_1() {
 }
 
 #[tokio::test]
-pub async fn test_hsm_hw_management_pin_2() {
+pub async fn test_group_hw_management_pin_2() {
   let user_request_hw_summary = HashMap::from([("epyc".to_string(), 8)]);
 
-  let hsm_zinal_hw_counters = vec![
+  let group_zinal_hw_counters = vec![
     (
       "x1001c1s5b0n1".to_string(),
       HashMap::from([("memory".to_string(), 16), ("epyc".to_string(), 2)]),
@@ -624,7 +626,7 @@ pub async fn test_hsm_hw_management_pin_2() {
     ),
   ];
 
-  let hsm_nodes_free_hw_conters = vec![
+  let group_nodes_free_hw_conters = vec![
     (
       "x1001c1s5b0n0".to_string(),
       HashMap::from([("memory".to_string(), 16), ("epyc".to_string(), 2)]),
@@ -707,22 +709,24 @@ pub async fn test_hsm_hw_management_pin_2() {
     ),
   ];
 
-  let (target_hsm_node_hw_component_count_vec, _) =
+  let (target_group_node_hw_component_count_vec, _) =
     resolve_hw_description_to_xnames(
       HwClusterMode::Pin,
-      hsm_zinal_hw_counters.clone(),
-      hsm_nodes_free_hw_conters,
+      group_zinal_hw_counters.clone(),
+      group_nodes_free_hw_conters,
       &user_request_hw_summary,
     )
     .unwrap();
 
-  let target_hsm_hw_summary: HashMap<String, usize> =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+  let target_group_hw_summary: HashMap<String, usize> =
+    calculate_group_hw_component_summary(
+      &target_group_node_hw_component_count_vec,
+    );
 
   let mut success = true;
   for (hw_component, qty) in &user_request_hw_summary {
-    if !target_hsm_hw_summary.contains_key(hw_component)
-      || *qty > *target_hsm_hw_summary.get(hw_component).unwrap()
+    if !target_group_hw_summary.contains_key(hw_component)
+      || *qty > *target_group_hw_summary.get(hw_component).unwrap()
     {
       success = false;
     }
@@ -730,9 +734,9 @@ pub async fn test_hsm_hw_management_pin_2() {
 
   // Pinning: new target should maximise nodes from old target
   success = success
-    && target_hsm_node_hw_component_count_vec.iter().all(
+    && target_group_node_hw_component_count_vec.iter().all(
       |(new_target_xname, _)| {
-        hsm_zinal_hw_counters
+        group_zinal_hw_counters
           .iter()
           .any(|(old_target_xname, _)| old_target_xname == new_target_xname)
       },
@@ -742,10 +746,10 @@ pub async fn test_hsm_hw_management_pin_2() {
 }
 
 #[tokio::test]
-pub async fn test_hsm_hw_management_unpin_1() {
+pub async fn test_group_hw_management_unpin_1() {
   let user_request_hw_summary = HashMap::from([("epyc".to_string(), 8)]);
 
-  let hsm_zinal_hw_counters = vec![
+  let group_zinal_hw_counters = vec![
     (
       "x1001c1s5b0n0".to_string(),
       HashMap::from([
@@ -864,7 +868,7 @@ pub async fn test_hsm_hw_management_unpin_1() {
     ),
   ];
 
-  let hsm_nodes_free_hw_conters = vec![
+  let group_nodes_free_hw_conters = vec![
     (
       "x1000c1s7b0n0".to_string(),
       HashMap::from([
@@ -965,22 +969,24 @@ pub async fn test_hsm_hw_management_unpin_1() {
     ),
   ];
 
-  let (target_hsm_node_hw_component_count_vec, _) =
+  let (target_group_node_hw_component_count_vec, _) =
     resolve_hw_description_to_xnames(
       HwClusterMode::Unpin,
-      hsm_zinal_hw_counters,
-      hsm_nodes_free_hw_conters,
+      group_zinal_hw_counters,
+      group_nodes_free_hw_conters,
       &user_request_hw_summary,
     )
     .unwrap();
 
-  let target_hsm_hw_summary: HashMap<String, usize> =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+  let group_hsm_hw_summary: HashMap<String, usize> =
+    calculate_group_hw_component_summary(
+      &target_group_node_hw_component_count_vec,
+    );
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {
-    if !target_hsm_hw_summary.contains_key(&hw_component)
-      || qty > *target_hsm_hw_summary.get(&hw_component).unwrap()
+    if !group_hsm_hw_summary.contains_key(&hw_component)
+      || qty > *group_hsm_hw_summary.get(&hw_component).unwrap()
     {
       success = false;
     }
@@ -1149,7 +1155,9 @@ pub async fn test_hsm_hw_management_unpin_2() {
     .unwrap();
 
   let target_hsm_hw_summary: HashMap<String, usize> =
-    calculate_hsm_hw_component_summary(&target_hsm_node_hw_component_count_vec);
+    calculate_group_hw_component_summary(
+      &target_hsm_node_hw_component_count_vec,
+    );
 
   let mut success = true;
   for (hw_component, qty) in user_request_hw_summary {

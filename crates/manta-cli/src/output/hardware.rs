@@ -175,7 +175,7 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
     "details" => print_table_details(&node_summaries),
     "summary" => {
       let summary =
-        manta_shared::types::cluster_status::calculate_hsm_hw_component_summary(
+        manta_shared::types::cluster_status::calculate_group_hw_component_summary(
           &node_summaries,
         );
       print_table_summary(&summary);

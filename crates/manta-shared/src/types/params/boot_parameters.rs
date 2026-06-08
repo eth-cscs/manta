@@ -4,12 +4,12 @@
 pub struct GetBootParametersParams {
   /// Group whose members' boot parameters should be returned.
   pub group_name: Option<String>,
-  /// Explicit comma-separated xnames; mutually exclusive with
-  /// `hsm_group`.
+  /// Hosts expression (xnames, NIDs, or hostlist notation); mutually
+  /// exclusive with `group_name`.
   pub host_expression: Option<String>,
   /// Operator default from `cli.toml`'s `parent_hsm_group`, used
-  /// when neither `hsm_group` nor `nodes` is supplied.
-  pub settings_hsm_group_name: Option<String>,
+  /// when neither `group_name` nor `host_expression` is supplied.
+  pub settings_group_name: Option<String>,
 }
 
 /// Typed parameters for updating boot parameters.

@@ -15,7 +15,7 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
 ) -> Result<(), Error> {
-  let settings_hsm_group_name_opt = ctx.settings_hsm_group_name_opt;
+  let settings_hsm_group_name_opt = ctx.settings_group_name_opt;
 
   let target_hsm_group_name_arg_opt =
     cli_apply_hw_group.opt_str("target-group");

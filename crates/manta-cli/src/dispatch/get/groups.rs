@@ -14,7 +14,7 @@ fn parse_group_params(
 ) -> GetGroupParams {
   GetGroupParams {
     group_name: cli_args.get_one::<String>("VALUE").cloned(),
-    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    settings_group_name: settings_hsm_group_name_opt.map(String::from),
   }
 }
 
@@ -24,7 +24,7 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_group_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_group_params(cli_args, ctx.settings_group_name_opt);
 
   let groups = MantaClient::from_app_ctx(ctx)?
     .get_groups(token, &params)
@@ -65,7 +65,7 @@ mod tests {
     let matches = group_cmd().get_matches_from(["groups"]);
     let params = parse_group_params(&matches, None);
     assert!(params.group_name.is_none());
-    assert!(params.settings_hsm_group_name.is_none());
+    assert!(params.settings_group_name.is_none());
   }
 
   #[test]
@@ -79,9 +79,6 @@ mod tests {
   fn parse_settings_hsm_group() {
     let matches = group_cmd().get_matches_from(["groups"]);
     let params = parse_group_params(&matches, Some("default-group"));
-    assert_eq!(
-      params.settings_hsm_group_name.as_deref(),
-      Some("default-group")
-    );
+    assert_eq!(params.settings_group_name.as_deref(), Some("default-group"));
   }
 }

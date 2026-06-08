@@ -88,7 +88,7 @@ pub fn compute_summary_status(nodes: &[NodeDetails]) -> &'static str {
 ///
 /// Counts processors and accelerators by info string, converts
 /// memory from MiB to GiB, and counts HSN NICs.
-pub fn calculate_hsm_hw_component_summary(
+pub fn calculate_group_hw_component_summary(
   node_summary_vec: &[NodeSummary],
 ) -> HashMap<String, usize> {
   let mut node_hw_component_summary: HashMap<String, usize> = HashMap::new();
@@ -296,11 +296,11 @@ mod tests {
     assert_eq!(compute_summary_status(&[node("ON", "CONFIGURED")]), "ON");
   }
 
-  // ---- calculate_hsm_hw_component_summary ----
+  // ---- calculate_group_hw_component_summary ----
 
   #[test]
   fn hw_summary_empty_input_is_empty() {
-    assert!(calculate_hsm_hw_component_summary(&[]).is_empty());
+    assert!(calculate_group_hw_component_summary(&[]).is_empty());
   }
 
   #[test]
@@ -320,7 +320,7 @@ mod tests {
       vec![],
       vec![],
     );
-    let got = calculate_hsm_hw_component_summary(&[node_a, node_b]);
+    let got = calculate_group_hw_component_summary(&[node_a, node_b]);
     assert_eq!(got.get("AMD EPYC 7763"), Some(&3));
   }
 
@@ -333,7 +333,7 @@ mod tests {
       vec![],
       vec![],
     );
-    let got = calculate_hsm_hw_component_summary(&[node]);
+    let got = calculate_group_hw_component_summary(&[node]);
     assert_eq!(got.get("Memory (GiB)"), Some(&512));
   }
 
@@ -346,7 +346,7 @@ mod tests {
       vec![artifact(ArtifactType::NodeAccel, None)],
       vec![artifact(ArtifactType::NodeHsnNic, None)],
     );
-    assert!(calculate_hsm_hw_component_summary(&[node]).is_empty());
+    assert!(calculate_group_hw_component_summary(&[node]).is_empty());
   }
 
   #[test]
@@ -360,7 +360,7 @@ mod tests {
       vec![],
       vec![],
     );
-    let got = calculate_hsm_hw_component_summary(&[node]);
+    let got = calculate_group_hw_component_summary(&[node]);
     assert_eq!(got.get("Memory (GiB)"), Some(&0));
   }
 
@@ -389,7 +389,7 @@ mod tests {
 
   #[test]
   fn hw_pattern_aggregates_memory_as_raw_value_not_gib() {
-    // Unlike `calculate_hsm_hw_component_summary`, this helper does
+    // Unlike `calculate_group_hw_component_summary`, this helper does
     // NOT divide memory by 1024; it sums the raw value under the
     // literal key "memory". Catches a future "let's unify these
     // helpers" change that would silently shift consumers' numbers.

@@ -23,11 +23,11 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let target = p
     .target_group
-    .or(ctx.settings_hsm_group_name_opt)
+    .or(ctx.settings_group_name_opt)
     .ok_or_else(|| anyhow!("No target HSM group specified"))?;
   let parent = p
     .parent_group
-    .or(ctx.settings_hsm_group_name_opt)
+    .or(ctx.settings_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
   let result = MantaClient::from_app_ctx(ctx)?
     .delete_hw_component(

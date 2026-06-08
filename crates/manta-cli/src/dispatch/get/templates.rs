@@ -22,7 +22,7 @@ fn parse_template_params(
   GetTemplateParams {
     name: cli_args.opt_string("name"),
     group_name: cli_args.opt_string("group"),
-    settings_hsm_group_name: settings_hsm_group_name_opt.map(String::from),
+    settings_group_name: settings_hsm_group_name_opt.map(String::from),
     limit,
   }
 }
@@ -33,7 +33,7 @@ pub async fn exec(
   token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
-  let params = parse_template_params(cli_args, ctx.settings_hsm_group_name_opt);
+  let params = parse_template_params(cli_args, ctx.settings_group_name_opt);
 
   let templates = MantaClient::from_app_ctx(ctx)?
     .get_templates(token, &params)

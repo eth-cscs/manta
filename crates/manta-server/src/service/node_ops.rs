@@ -215,9 +215,14 @@ pub fn from_hosts_expression_to_xname_vec(
   Ok(xname_vec)
 }
 
-/// Returns a HashMap with keys HSM group names the user has access to and values a curated list of memembers that matches
-/// hostlist
-pub async fn get_curated_hsm_group_from_xname_hostlist(
+/// Group the supplied xnames by their parent HSM group.
+///
+/// Fetches the HSM groups the caller can access, then for each group
+/// returns the intersection of its membership with `xname_vec`.
+/// Groups whose intersection is empty are omitted, so the returned
+/// map contains only groups that actually contribute at least one
+/// matching node.
+pub async fn get_curated_group_from_xname_hostlist(
   infra: &InfraContext<'_>,
   auth_token: &str,
   xname_vec: &[String],
@@ -279,25 +284,26 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 /// Priority order:
 /// 1. `hosts_expression` — parsed and validated via
 ///    [`resolve_hosts_expression`].
-/// 2. `hsm_group_name_arg_opt` — the CLI `--hsm-group`
-///    argument; validated for access via
+/// 2. `group_name_arg_opt` — the group name supplied by the CLI's
+///    `--group` flag (also accepted as `--hsm-group`); validated for
+///    access via
 ///    [`crate::service::authorization::validate_user_group_access`],
 ///    then expanded to member xnames.
-/// 3. `settings_hsm_group_name_opt` — the group configured in
-///    the environment or config file; same treatment as (2).
+/// 3. `settings_group_name_opt` — the group configured in
+///    `cli.toml`'s `parent_hsm_group`; same treatment as (2).
 ///
 /// Returns a sorted, deduplicated `Vec<String>` of xnames.
 pub async fn resolve_target_nodes(
   infra: &InfraContext<'_>,
   shasta_token: &str,
   hosts_expression: Option<&str>,
-  hsm_group_name_arg_opt: Option<&str>,
-  settings_hsm_group_name_opt: Option<&str>,
+  group_name_arg_opt: Option<&str>,
+  settings_group_name_opt: Option<&str>,
 ) -> Result<Vec<String>, Error> {
   if let Some(hosts_expr) = hosts_expression {
     resolve_hosts_expression(infra, shasta_token, hosts_expr, false).await
   } else if let Some(target_group) =
-    hsm_group_name_arg_opt.or(settings_hsm_group_name_opt)
+    group_name_arg_opt.or(settings_group_name_opt)
   {
     crate::service::authorization::validate_user_group_access(
       infra,
