@@ -60,3 +60,14 @@ fn cli_site_flag_accepted_with_help() {
     .assert()
     .success();
 }
+
+#[test]
+fn cli_apply_boot_group_help_uses_group_name_placeholder() {
+  Command::cargo_bin("manta")
+    .unwrap()
+    .args(["apply", "boot", "group", "--help"])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("<GROUP_NAME>"))
+    .stdout(predicate::str::contains("CLUSTER_NAME").not());
+}
