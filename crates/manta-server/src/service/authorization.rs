@@ -153,9 +153,16 @@ pub async fn validate_group_members_access(
     .get_member_vec_from_group_name_vec(token, hsm_groups_user_has_access)
     .await?;
 
+  // Hash the accessible-xname set once. It can be cluster-scale (every
+  // xname in every group the caller can see), so the previous
+  // `.contains()` per target was O(target_count · accessible_count).
+  let accessible_set: std::collections::HashSet<&str> = all_xnames_user_has_access
+    .iter()
+    .map(String::as_str)
+    .collect();
   let invalid_xnames: Vec<String> = group_members_target_vec
     .iter()
-    .filter(|group| !all_xnames_user_has_access.contains(group))
+    .filter(|group| !accessible_set.contains(group.as_str()))
     .cloned()
     .collect();
 

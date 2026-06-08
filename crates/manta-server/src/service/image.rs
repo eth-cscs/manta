@@ -79,9 +79,17 @@ pub async fn validate_image_deletion(
       )
     })?;
 
+  // `image_used_to_boot_nodes` is cluster-scale (one entry per BSS
+  // record). Hash it once so the safety check across user-supplied
+  // delete ids is O(D) rather than O(D·N).
+  let image_used_to_boot_nodes_set: std::collections::HashSet<&str> =
+    image_used_to_boot_nodes
+      .iter()
+      .map(String::as_str)
+      .collect();
   let image_xnames_boot_map: Vec<&&str> = image_id_vec
     .iter()
-    .filter(|id| image_used_to_boot_nodes.contains(&id.to_string()))
+    .filter(|id| image_used_to_boot_nodes_set.contains(**id))
     .collect();
 
   if !image_xnames_boot_map.is_empty() {

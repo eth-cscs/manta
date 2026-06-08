@@ -60,12 +60,18 @@ pub fn get_xname_from_nid_hostlist(
 
   tracing::debug!("short Nid list expanded: {:?}", short_nid_vec);
 
+  // Build a HashSet once so the per-component lookup below is O(1).
+  // The previous `short_nid_vec.contains(&nid)` was O(N) — at cluster
+  // scale (say a hostlist `nid[1-5000]` against ~5k components) that
+  // turned into a 25M-comparison filter on every resolve.
+  let short_nid_set: std::collections::HashSet<usize> =
+    short_nid_vec.iter().copied().collect();
   let xname_vec: Vec<String> = node_metadata_available_vec
     .iter()
     .filter(|node_metadata_available| {
       node_metadata_available
         .nid
-        .is_some_and(|nid| short_nid_vec.contains(&nid))
+        .is_some_and(|nid| short_nid_set.contains(&nid))
     })
     .filter_map(|node_metadata_available| {
       node_metadata_available.id.as_ref().cloned()
@@ -82,14 +88,20 @@ pub fn get_xname_from_xname_hostlist(
   node_metadata_available_vec: &[Component],
 ) -> Result<Vec<String>, Error> {
   // If hostlist of XNAMEs, return hostlist expanded xnames
-  // Validate XNAMEs
+  // Validate XNAMEs.
+  //
+  // Hash the requested-xname list once — same reasoning as
+  // `get_xname_from_nid_hostlist`: at cluster scale the
+  // `node_vec.contains(id)` filter was O(N·M).
+  let node_set: std::collections::HashSet<&str> =
+    node_vec.iter().map(String::as_str).collect();
   let xname_vec: Vec<String> = node_metadata_available_vec
     .iter()
     .filter(|node_metadata_available| {
       node_metadata_available
         .id
         .as_ref()
-        .is_some_and(|id| node_vec.contains(id))
+        .is_some_and(|id| node_set.contains(id.as_str()))
     })
     .filter_map(|node_metadata_available| {
       node_metadata_available.id.as_ref().cloned()
@@ -242,11 +254,16 @@ pub async fn get_curated_group_from_xname_hostlist(
     )
     .await?;
 
-  // Filter hsm group members
+  // Filter hsm group members. Pre-compute a hash of the requested
+  // xname set once — the outer loop is over groups and the inner
+  // `xname_vec.contains(xname)` would otherwise re-scan the full
+  // requested list per member per group (groups × members × xnames).
+  let xname_set: std::collections::HashSet<&str> =
+    xname_vec.iter().map(String::as_str).collect();
   for (hsm_name, hsm_members) in hsm_group_available_map {
     let xname_filtered: Vec<String> = hsm_members
       .iter()
-      .filter(|&xname| xname_vec.contains(xname))
+      .filter(|xname| xname_set.contains(xname.as_str()))
       .cloned()
       .collect();
     if !xname_filtered.is_empty() {
