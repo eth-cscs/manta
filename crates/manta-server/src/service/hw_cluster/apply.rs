@@ -302,7 +302,7 @@ pub async fn add_hw_component(
         .delete_member_from_group(shasta_token, parent_group_name, xname)
         .await?;
 
-      let _ = infra
+      infra
         .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
         .await?;
     }

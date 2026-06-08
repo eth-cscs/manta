@@ -362,7 +362,7 @@ fn apply_kernel_params(
       ))
     })?;
 
-    let _ = boot_parameter
+    boot_parameter
       .update_boot_image(&image_id, &boot_parameter.get_boot_image_etag())?;
   }
 

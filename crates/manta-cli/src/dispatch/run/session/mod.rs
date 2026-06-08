@@ -46,7 +46,7 @@ pub async fn exec(
   let timestamps: bool = cli_run_session.get_flag("timestamps");
   let output_opt = cli_run_session.opt_str("output");
 
-  let _ = run_session(
+  run_session(
     ctx,
     token,
     SessionParams {
@@ -62,9 +62,7 @@ pub async fn exec(
       output: output_opt,
     },
   )
-  .await?;
-
-  Ok(())
+  .await
 }
 
 struct SessionParams<'a> {
@@ -85,12 +83,15 @@ struct SessionParams<'a> {
 /// the session log to stdout via SSE before printing the action
 /// result.
 ///
-/// Returns `(cfs_configuration_name, cfs_session_name)`.
+/// The created CFS configuration and session names are already
+/// reported through `action_result::print_with_data`, so this
+/// function returns `()` rather than handing the names back to a
+/// caller that wouldn't have anything to do with them.
 async fn run_session(
   ctx: &AppContext<'_>,
   shasta_token: &str,
   p: SessionParams<'_>,
-) -> Result<(String, String), Error> {
+) -> Result<(), Error> {
   let cfs_conf_sess_name = p.session_name;
   let playbook_yaml_file_name_opt = p.playbook;
   let group_name_opt = p.group_name;
@@ -162,7 +163,7 @@ async fn run_session(
     output_opt,
   )?;
 
-  Ok((cfs_configuration_name, cfs_session_name))
+  Ok(())
 }
 
 fn check_local_repos(

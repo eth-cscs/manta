@@ -470,7 +470,7 @@ pub async fn ensure_target_group_exists(
     members: None,
     exclusive_group: Some("false".to_string()),
   };
-  let _ = infra.add_group(shasta_token, group).await.map_err(|e| {
+  infra.add_group(shasta_token, group).await.map_err(|e| {
     Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
   })?;
   Ok(())
