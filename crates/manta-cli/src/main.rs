@@ -3,6 +3,8 @@
 //! OCHAMI directly — every operation is forwarded to the manta HTTPS
 //! server named by `cli.toml`'s `manta_server_url`.
 
+#![warn(missing_docs)]
+
 mod build;
 mod common;
 mod dispatch;
