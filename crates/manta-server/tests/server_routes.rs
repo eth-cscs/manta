@@ -54,6 +54,7 @@ fn router() -> axum::Router {
     auditor: None,
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
+    migrate_backup_root: None,
   });
   build_router(state)
 }
@@ -83,6 +84,7 @@ fn router_with_vault() -> axum::Router {
     auditor: None,
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
+    migrate_backup_root: None,
   });
   build_router(state)
 }

@@ -192,6 +192,10 @@ cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute = 60       # per source IP for /auth/*; omit to disable
+# Filesystem root for POST /migrate/{backup,restore}. Required for those
+# endpoints to work — the server will reject migrate requests with 400
+# while this is unset. Must be an absolute path to an existing directory.
+# migrate_backup_root = "/var/lib/manta/migrate"
 
 [sites.<site_name>]
 backend = "csm"

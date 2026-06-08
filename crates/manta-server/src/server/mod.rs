@@ -62,6 +62,12 @@ pub struct ServerState {
   /// dispatch) runs CLI-side, so this is the only request-timeout
   /// knob the server has.
   pub request_timeout: Duration,
+  /// Filesystem root that confines `POST /migrate/{backup,restore}`
+  /// file access. `None` disables both endpoints — even admin callers
+  /// must wait for an operator to opt in via `[server]
+  /// migrate_backup_root`. The path is stored already-canonicalised
+  /// so per-request validation is a single `starts_with` against this.
+  pub migrate_backup_root: Option<std::path::PathBuf>,
 }
 
 impl ServerState {

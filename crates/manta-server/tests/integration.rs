@@ -138,6 +138,7 @@ impl TestFixture {
       auditor: None,
       auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
+      migrate_backup_root: None,
     });
 
     let router = build_router(state);

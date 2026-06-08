@@ -204,6 +204,27 @@ async fn run_server(
   let request_timeout =
     std::time::Duration::from_secs(configuration.server.request_timeout_secs);
 
+  // Resolve `migrate_backup_root` once at startup so per-request
+  // path validation is just a `starts_with` against an already-
+  // canonical PathBuf. Treating a missing directory as a hard error
+  // catches operator typos before the first migrate call.
+  let migrate_backup_root = match configuration
+    .server
+    .migrate_backup_root
+    .as_deref()
+  {
+    Some(raw) => Some(
+      std::path::PathBuf::from(raw).canonicalize().map_err(|e| {
+        format!(
+          "[server] migrate_backup_root '{raw}' could not be canonicalised: {e}. \
+           Either point it at an existing directory or remove the entry to keep \
+           the /migrate/* endpoints disabled."
+        )
+      })?,
+    ),
+    None => None,
+  };
+
   print_startup_summary(
     &configuration,
     &listen_addr,
@@ -282,6 +303,7 @@ async fn run_server(
     auditor,
     auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
+    migrate_backup_root,
   });
 
   server::start_server(

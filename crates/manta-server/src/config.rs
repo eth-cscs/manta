@@ -87,6 +87,15 @@ pub struct ServerSettings {
   /// so no endpoint needs more than the default.
   #[serde(default = "default_request_timeout_secs")]
   pub request_timeout_secs: u64,
+  /// Filesystem root that confines `POST /migrate/{backup,restore}`
+  /// file access. When set, every `destination` / `bos_file` /
+  /// `cfs_file` / `hsm_file` / `ims_file` / `image_dir` path in the
+  /// request is canonicalised and rejected unless it resolves under
+  /// this directory. When unset (default), the migrate endpoints
+  /// return `BadRequest` even for admin callers — the operator must
+  /// explicitly opt in to server-side filesystem writes.
+  #[serde(default)]
+  pub migrate_backup_root: Option<String>,
 }
 
 impl ServerSettings {
@@ -188,6 +197,7 @@ mod tests {
         console_inactivity_timeout_secs: 1800,
         auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 60,
+        migrate_backup_root: None,
       },
       sites,
       auditor: None,
