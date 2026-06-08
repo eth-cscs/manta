@@ -7,6 +7,8 @@
 /// `manta/data/<...>`.
 pub mod http_client {
 
+  use std::sync::LazyLock;
+
   use manta_backend_dispatcher::error::Error;
   use serde_json::{Value, json};
 
@@ -19,6 +21,23 @@ pub mod http_client {
   /// Vault role name used for JWT authentication.
   const VAULT_ROLE: &str = "manta";
 
+  /// Process-wide `reqwest::Client` reused for every Vault call.
+  ///
+  /// Each call previously built a fresh client (re-doing the TLS
+  /// handshake + connection-pool setup) — every console attach, log
+  /// stream, and SAT-file apply did two such builds. `LazyLock` lets
+  /// us share one `Client` (which is itself an `Arc` internally, so
+  /// it's cheap to share across handlers) and keep keep-alive working.
+  ///
+  /// `Client::builder().build()` only fails on invalid TLS / proxy
+  /// configuration; with all defaults it can't, so the unwrap here is
+  /// safe — see the reqwest::ClientBuilder source for the conditions.
+  static VAULT_HTTP_CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+      .build()
+      .expect("default reqwest::ClientBuilder build cannot fail")
+  });
+
   /// Authenticate to Vault using a JWT token and return
   /// a Vault client token.
   pub async fn auth_oidc_jwt(
@@ -28,8 +47,6 @@ pub mod http_client {
   ) -> Result<String, Error> {
     let role = VAULT_ROLE;
 
-    let client = reqwest::Client::builder().build()?;
-
     let api_url = format!(
       "{vault_base_url}{VAULT_API_PREFIX}/auth/jwt-manta-{site_name}/login"
     );
@@ -38,7 +55,7 @@ pub mod http_client {
 
     let request_payload = json!({ "jwt": shasta_token, "role": role });
 
-    let resp = client
+    let resp = VAULT_HTTP_CLIENT
       .post(api_url)
       .header("X-Vault-Request", "true")
       .json(&request_payload)
@@ -64,13 +81,11 @@ pub mod http_client {
     vault_base_url: &str,
     secret_path: &str,
   ) -> Result<Value, Error> {
-    let client = reqwest::Client::builder().build()?;
-
     let api_url = vault_base_url.to_owned() + secret_path;
 
     tracing::debug!("Vault url to fetch VCS secrets is '{}'", api_url);
 
-    let resp = client
+    let resp = VAULT_HTTP_CLIENT
       .get(api_url)
       .header("X-Vault-Token", vault_auth_token)
       .send()
