@@ -2,6 +2,87 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.51] - 2026-06-09
+
+### Bug Fixes
+
+- Unify drift-bearing wire types into manta-shared::types::wire
+- Unify remaining request bodies into manta-shared::types::wire
+- Unify GET / DELETE query structs into manta-shared::types::wire
+- Resolve group → xnames before sending /boot-config
+- Move HW inventory read off the Tokio reactor in add_node
+- Add `final_members` as canonical replacement for AddNodesToGroupResponse.removed
+- Switch source-chain-losing .map_err(|e| anyhow!(...)) to .context()
+- Drop --assume-yes / --do-not-reboot from clap where they were no-ops; quiet per-iter info logs
+
+### Build
+
+- Point Cargo.toml comments at the .cargo/config.toml override
+
+### Documentation
+
+- Describe CLI-driven 3-step image build flow
+- Refresh module-level docstrings for split image flow
+- Field-level rustdoc on CreateImageCfsSessionRequest
+- Note the image-build sub-pipeline in CLI.md + ARCHITECTURE.md
+- Refresh rustdoc, user docs, and tests after `hsm_group` rename
+- Sync ARCHITECTURE + API with recent changes
+- Fix six API.md drifts surfaced by the multi-agent audit
+- Refresh 3 stale intra-doc links after the resolver rename
+- Enable #![warn(missing_docs)] on manta-cli + document PowerAction::wire
+- Clarify that to_backend exhaustiveness is rust-enforced
+
+### Features
+
+- CLI-driven per-image build pipeline
+
+### Miscellaneous Tasks
+
+- Drop unused http_client re-exports
+- Confine migrate-backup/restore paths to migrate_backup_root
+- Refuse plain HTTP by default + add HSTS to every response
+
+### Performance
+
+- Dedupe + parallelise per-image fetches in boot-config / kernel-params
+- Share a process-wide reqwest::Client across Vault calls
+- Swap O(N·M) Vec::contains for HashSet at cluster scale
+- Loosen InfraContext wrappers to take &[String] for group-membership calls
+
+### Refactor
+
+- [**breaking**] Audit fixes for the per-image build pipeline
+- Handler-boundary access checks + status-aware errors
+- Switch remaining handlers to to_handler_error; drop dead helpers
+- Unwrap server error body + tag image failures with name
+- Enforce InfraContext boundary uniformly
+- Wire request_timeout_secs through MantaClient::from_app_ctx
+- Lift run_hook_if_present into common::hooks
+- Replace .to_string() with .clone() on already-String values
+- Drop async from CPU-bound service helpers
+- Convert match { Some => ..., _ => ... } to if let else
+- Make `()` matches explicit where the type really is `()`
+- Make integer casts explicit about saturation vs domain assumption
+- Tighten parameter ownership where the body doesn't need it
+- Add trailing `;` to block-expression last statements
+- Finish group rename + authorization-helper migration
+- Split backend_dispatcher and InfraContext into per-domain files
+- Rename clap arg id CLUSTER_NAME -> GROUP_NAME
+- Rename + tighten authz on host-expression callers
+- Drop csm-rs bypass in service/{cluster,node}
+- Drop misleading `let _ = expr?;` pattern
+- Collapse three service-layer too_many_arguments allows into typed params
+
+### Testing
+
+- Cover new image endpoints + fix stale legacy assertions
+- Guard the GROUP_NAME placeholder rename
+- Lock down the pure validate_group_vec_access logic
+
+### Security
+
+- Phase-1 authz gaps + wire-field realignment
+
 ## [2.0.0-beta.50] - 2026-06-07
 
 ### Build
