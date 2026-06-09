@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.52] - 2026-06-09
+
+### Build
+
+- Bump sibling deps to mbd 1.0.0-beta.10, csm-rs 1.0.0-beta.12, ochami-rs 1.0.0-beta.9
+
 ## [2.0.0-beta.51] - 2026-06-09
 
 ### Bug Fixes

@@ -4,7 +4,7 @@ members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server"]
 
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
-version      = "2.0.0-beta.51"
+version      = "2.0.0-beta.52"
 edition      = "2024"
 authors      = [
   "Manuel Sopena Ballesteros <msopena@cscs.ch>",
@@ -27,7 +27,7 @@ repository   = "https://github.com/eth-cscs/manta"
 # manta-cli move together — they're not independently semver-
 # compatible. Bump this in lockstep with the workspace version on
 # every release.
-manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.51" }
+manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.52" }
 # Sibling repos — registry-only (no `path = "../..."`) so CI runners
 # and fresh-clone contributors that don't have the adjacent sibling
 # checkouts can still resolve them. cargo's `path` attribute is
