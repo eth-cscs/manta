@@ -131,7 +131,6 @@ pub fn subcommand_delete_configuration() -> Command {
     .arg(arg!(-n --"configuration-name" <VALUE> "Glob pattern to filter by name.\neg: my-config*, my-config-v[1,2]"))
     .arg(arg!(-s --since <DATE> "Delete configurations last updated after this date (format: %Y-%m-%d)"))
     .arg(arg!(-u --until <DATE> "Delete configurations last updated before this date (format: %Y-%m-%d)"))
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(output_flag())
     .group(
       ArgGroup::new("since_and_until")
@@ -166,8 +165,6 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
       arg!(-H --group <GROUP_NAME> "Remove the listed kernel parameters from every node in this group")
         .visible_alias("hsm-group"),
     )
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     // ID preserved as "VALUE" for handler compatibility
     .arg(arg!(<VALUE> "Comma-separated kernel parameter names to remove.\neg: console,bad_page,crashkernel,hugepagelist,quiet").value_name("PARAMS"))

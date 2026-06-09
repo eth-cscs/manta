@@ -89,11 +89,8 @@ pub async fn handle_delete(
       let hsm_group_name_arg_opt = m.opt_str("group");
       let nodes = m.opt_str("nodes");
       let kernel_parameters = m.req_str("VALUE")?;
-      let assume_yes: bool = m.get_flag("assume-yes");
-      let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let dryrun = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      let _ = (assume_yes, do_not_reboot);
       delete_kernel_parameters::exec(
         ctx,
         &token,
@@ -151,9 +148,7 @@ pub async fn handle_delete(
         None
       };
       let cfs_configuration_name_pattern = m.opt_str("configuration-name");
-      let assume_yes = m.get_flag("assume-yes");
       let output_opt = m.opt_str("output");
-      let _ = assume_yes;
       if let Err(e) = delete_configurations_and_derivatives::exec(
         ctx,
         &token,

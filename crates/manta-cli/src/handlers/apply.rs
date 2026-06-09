@@ -120,8 +120,6 @@ pub async fn handle_apply(
       let include_disabled: bool = *m
         .get_one("include-disabled")
         .context("'include-disabled' must have a value")?;
-      let assume_yes: bool = m.get_flag("assume-yes");
-      let _ = assume_yes;
       dispatch::apply::template::exec(
         ctx,
         &token,
@@ -213,10 +211,7 @@ pub async fn handle_apply(
       };
       let dryrun = m.get_flag("dry-run");
       let kernel_parameters = m.req_str("VALUE")?;
-      let assume_yes: bool = m.get_flag("assume-yes");
-      let do_not_reboot: bool = m.get_flag("do-not-reboot");
       let output_opt = m.opt_str("output");
-      let _ = (assume_yes, do_not_reboot);
       dispatch::apply::kernel_parameters::exec(
         ctx,
         &token,
@@ -240,7 +235,6 @@ pub async fn handle_apply(
         {
           bail!("Image id is not a UUID");
         }
-        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         dispatch::apply::boot_node::exec(
           ctx,
           &token,
@@ -257,7 +251,6 @@ pub async fn handle_apply(
         .await?;
       }
       Some(("group", m)) => {
-        let _ = (m.get_flag("assume-yes"), m.get_flag("do-not-reboot"));
         dispatch::apply::boot_group::exec(
           ctx,
           &token,

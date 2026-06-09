@@ -341,10 +341,21 @@ fn apply_kernel_params(
   boot_param_vec: &mut [BootParameters],
   new_kernel_parameters: &str,
 ) -> Result<bool, Error> {
+  // One summary log per call; the previous per-iteration `info!`
+  // logged identical content N times (where N = number of nodes)
+  // and logged the running `any_changed` aggregate inside the loop
+  // — at cluster scale that drowned out anything else operators
+  // were trying to read from the info stream.
+  tracing::info!(
+    "Updating kernel parameters to '{}' across {} boot-parameter record(s)",
+    new_kernel_parameters,
+    boot_param_vec.len()
+  );
+
   let mut any_changed = false;
 
   for boot_parameter in boot_param_vec.iter_mut() {
-    tracing::info!(
+    tracing::debug!(
       "Updating '{:?}' kernel parameters to '{}'",
       boot_parameter.hosts,
       new_kernel_parameters
@@ -352,8 +363,6 @@ fn apply_kernel_params(
 
     let changed = boot_parameter.apply_kernel_params(new_kernel_parameters);
     any_changed = changed || any_changed;
-
-    tracing::info!("need restart? {}", any_changed);
 
     let image_id = boot_parameter.try_get_boot_image_id().ok_or_else(|| {
       Error::MissingField(format!(
@@ -402,8 +411,16 @@ async fn collect_boot_images(
     });
 
     if any_differ {
+      // Single summary at info; per-host detail at debug. The
+      // previous per-iter `info!` emitted N identical lines for
+      // cluster-scale calls.
+      tracing::info!(
+        "Updating boot image to '{}' across {} boot-parameter record(s)",
+        new_boot_image_id,
+        boot_param_vec.len()
+      );
       for boot_parameter in boot_param_vec.iter_mut() {
-        tracing::info!(
+        tracing::debug!(
           "Updating '{:?}' boot image to '{}'",
           boot_parameter.hosts,
           new_boot_image_id

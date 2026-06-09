@@ -76,7 +76,6 @@ pub fn subcommand_apply_template() -> Command {
       arg!(-i --"include-disabled" "Include nodes marked as disabled in the hardware state manager")
         .action(ArgAction::SetTrue),
     )
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
 }
 
@@ -171,11 +170,6 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to the nodes"))
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(
-      arg!(--"do-not-reboot" "Suppress the automatic reboot after updating boot parameters")
-        .action(ArgAction::SetTrue),
-    )
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     .group(
       ArgGroup::new("boot-image_or_boot-config")
@@ -197,11 +191,6 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all group members"))
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(
-      arg!(--"do-not-reboot" "Suppress the automatic reboot after updating boot parameters")
-        .action(ArgAction::SetTrue),
-    )
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     .group(
       ArgGroup::new("boot-image_or_boot-config")
@@ -238,10 +227,6 @@ fn add_boot_parameters_args(cmd: Command) -> Command {
     .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
     .arg(
       arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
-    .arg(
-      arg!(-y --"assume-yes" "Skip confirmation prompts")
         .action(ArgAction::SetTrue),
     )
     .arg(output_flag())
@@ -295,8 +280,6 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
       arg!(-H --group <GROUP_NAME> "Replace kernel parameters on every node in this group")
         .visible_alias("hsm-group"),
     )
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
     // ID preserved as "VALUE" for handler compatibility
     .arg(
