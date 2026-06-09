@@ -5,7 +5,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 ## TL;DR
 
 - **Base URL:** `https://<host>:8443/api/v1`
-- **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
+- **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Under `--allow-http` the per-site `root_ca_cert_file` check is also relaxed: a missing or unreadable file becomes a startup warning instead of a hard failure, so you can hit `/health`, `/docs`, `/openapi.json` without inventing a placeholder PEM. Outbound backend calls under this mode fall through to the system trust store and will almost certainly fail — that's by design; the shortcut is only for smoke-testing the server itself. Use against `localhost` or behind an upstream TLS terminator. The flag also has a config-file equivalent, `[server] allow_http = true`.
 - **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, `/docs`, and `/api/v1/auth/*`.
 - **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
