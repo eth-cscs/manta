@@ -28,7 +28,7 @@ pub use manta_shared::types::params::group::GetGroupParams;
 /// callers still get the same access-validation guarantee (they're
 /// rejected with `BadRequest` if `settings_group_name_opt` names a
 /// group they can't see); admin tokens short-circuit, matching the
-/// behaviour of [`validate_user_group_vec_access`].
+/// behaviour of [`crate::service::authorization::validate_user_group_vec_access`].
 pub async fn resolve_target_and_available_groups(
   infra: &InfraContext<'_>,
   token: &str,
