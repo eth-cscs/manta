@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.53] - 2026-06-09
+
+### Miscellaneous Tasks
+
+- Bump ochami-rs, csm-rs and manta-backend-dispatcher
+
 ## [2.0.0-beta.52] - 2026-06-09
 
 ### Build
