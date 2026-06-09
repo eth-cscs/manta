@@ -442,6 +442,60 @@ For a typical site with N workstation users + one server host:
 
 ---
 
+## 5. Within-v2 breaking changes (since `2.0.0-beta.51`)
+
+The migration above is the v1 → v2 jump. The points below are
+beta-to-beta changes that only matter if you're upgrading from an
+earlier v2 beta rather than fresh-installing.
+
+### 5.1. CLI flags removed where they were no-ops
+
+`--assume-yes` and `--do-not-reboot` are gone from the subcommands
+that never read them: `apply template`, `apply boot group`,
+`apply boot nodes`, `apply boot-parameters`,
+`apply kernel-parameters`, `delete configurations`,
+`delete kernel-parameters`. Scripts passing those flags to those
+specific commands now error with clap's standard "unexpected
+argument".
+
+The flags are unchanged on the subcommands that do honour them
+(`delete session`, `apply sat-file`, `add group`,
+`add kernel-parameters`, `add boot-parameters`).
+
+### 5.2. Server fails closed without TLS
+
+`manta-server` refuses to start when neither `cert` nor `key` is
+configured. Existing scripts that ran `manta-server` against an
+HTTP terminator must add either `[server] allow_http = true` to
+`server.toml` or pass `--allow-http` on the command line. Default
+is fail-closed so bearer tokens cannot land on the wire in
+cleartext.
+
+### 5.3. `migrate` endpoints require opt-in root directory
+
+`POST /migrate/backup` and `POST /migrate/restore` now reject every
+request with `400 BadRequest` until the operator sets
+`[server] migrate_backup_root` to an absolute, existing directory.
+Once set, every file path supplied in the request body is
+canonicalised and must resolve under that root.
+
+### 5.4. `AddNodesToGroupResponse.removed` deprecated
+
+The wire field actually carries the *final* group membership after
+the update, not the removed xnames. A new `final_members` field
+holds the same value under a clearer name. Both ship on the wire
+for one transition release; new clients should read
+`final_members`. The next major bump drops `removed`.
+
+### 5.5. HSTS on every response
+
+`Strict-Transport-Security: max-age=31536000; includeSubDomains`
+is emitted on every response. Browsers ignore HSTS over plain HTTP
+per RFC 6797, so this is a no-op under `allow_http = true` and
+active otherwise — no client-side action needed.
+
+---
+
 ## Reference
 
 - [README.md](README.md) — installation, deployment overview, operator runbook

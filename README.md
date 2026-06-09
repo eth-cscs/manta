@@ -220,6 +220,12 @@ Each setting in the `[server]` block can be overridden at runtime:
 | `--listen-address` | `[server].listen_address` | Bind address |
 | `--cert` | `[server].cert` | TLS certificate path |
 | `--key` | `[server].key` | TLS private key path |
+| `--allow-http` | `[server].allow_http` | Opt in to plain-HTTP listen mode when no cert/key is set. Default fail-closed — the server refuses to start without TLS so bearer tokens can't accidentally land on the wire in cleartext. Set only when TLS terminates upstream. |
+
+Beyond the flags above, two settings are config-only:
+
+- `[server].migrate_backup_root` — absolute filesystem directory that confines `POST /migrate/{backup,restore}` paths. Required for those endpoints to function at all; when unset the server returns `400 BadRequest` even for admin callers. Set, then restart.
+- HSTS (`Strict-Transport-Security: max-age=31536000; includeSubDomains`) is emitted on every response unconditionally. Browsers ignore it over plain HTTP per RFC 6797, so it's a no-op under `allow_http = true` and active otherwise.
 
 > The CLI no longer ships a `manta serve` subcommand — invoke `manta-server` directly.
 

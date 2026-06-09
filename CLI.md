@@ -496,7 +496,6 @@ Create a BOS session from an existing BOS session template.
 | `-n/--name` | string | no | — | Session name |
 | `-o/--operation` | string | no | `reboot` | `reboot`, `boot`, or `shutdown` |
 | `-i/--include-disabled` | flag | no | — | Include disabled nodes |
-| `-y/--assume-yes` | flag | no | — | Non-interactive mode |
 | `-d/--dry-run` | flag | no | — | Simulate without changes |
 
 ```
@@ -514,8 +513,6 @@ Update boot parameters (image + runtime config + kernel parameters) for all node
 | `-b/--boot-image-configuration` | string | no* | CFS configuration name to derive boot image from |
 | `-r/--runtime-configuration` | string | no | CFS configuration for post-boot configuration |
 | `-k/--kernel-parameters` | string | no | Kernel parameters string |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
-| `--do-not-reboot` | flag | no | Update boot params without rebooting |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 | `-o/--output` | string | no | Output format: `table`, `json` (default `table`) |
 
@@ -536,8 +533,6 @@ Update boot parameters for specific nodes.
 | `-b/--boot-image-configuration` | string | no* | CFS configuration name |
 | `-r/--runtime-configuration` | string | no | Post-boot CFS configuration |
 | `-k/--kernel-parameters` | string | no | Kernel parameters |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
-| `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
 ### apply boot-parameters
@@ -553,7 +548,6 @@ boot.
 | `-k/--kernel` | string | no | S3 path to kernel file |
 | `-i/--initrd` | string | no | S3 path to initrd file |
 | `-d/--dry-run` | flag | no | Simulate without changes |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
 
 ### apply redfish-endpoint
 
@@ -570,8 +564,6 @@ Replace kernel parameters for nodes (full replace, not merge).
 | `VALUE` | string | **yes** | Space-separated `key=value` pairs |
 | `-n/--nodes` | string | no* | Target nodes (xnames/nids/hostlist) |
 | `-H/--group` | string | no* | Target HSM group |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
-| `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
 > To merge parameters instead of replacing, use [`add kernel-parameters`](#add-kernel-parameters-value).
@@ -678,13 +670,12 @@ Delete CFS configurations and all derivatives (sessions, BOS templates, IMS imag
 | `-n/--configuration-name` | string | Glob pattern for configuration name |
 | `-s/--since` | date | Delete configs updated after this date (`YYYY-MM-DD`) |
 | `-u/--until` | date | Delete configs updated before this date |
-| `-y/--assume-yes` | flag | Non-interactive mode |
 
 > `--since` and `--until` must be used together.  
 > `--configuration-name` and date range are mutually exclusive.
 
 ```
-manta delete configurations --configuration-name "old-config-*" --assume-yes
+manta delete configurations --configuration-name "old-config-*"
 manta delete configurations --since 2024-01-01 --until 2024-06-01
 ```
 
@@ -716,8 +707,6 @@ Remove specific kernel parameters from nodes.
 | `VALUE` | string | **yes** | Comma-separated parameter names to remove |
 | `-n/--nodes` | string | no* | Target nodes (xnames/nids/hostlist) |
 | `-H/--group` | string | no* | Target HSM group |
-| `-y/--assume-yes` | flag | no | Non-interactive mode |
-| `--do-not-reboot` | flag | no | Skip reboot |
 | `-d/--dry-run` | flag | no | Simulate without changes |
 
 > One of `--nodes` or `--group` is required.
