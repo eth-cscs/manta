@@ -270,46 +270,23 @@ async fn run_server(
       K8sAuth::Vault { base_url, .. } => Some(base_url.clone()),
       K8sAuth::Native { .. } => None,
     });
-    // CA cert is required in production: a missing or unreadable file
-    // means every backend HTTPS call would fall through to the
-    // empty-vec branch which `reqwest::Certificate::from_pem` accepts
-    // as "no extra trust anchors". That silently widens the trust
-    // store to the system default, which on most operator
-    // workstations does not include the CSM/OpenCHAMI internal CA —
-    // so calls work but without the expected pinning. Under
-    // `--allow-http` we assume the operator is running a local
-    // smoke test that may never make a real backend call, and
-    // downgrade the missing-file failure to a loud warning so they
-    // aren't forced to invent a placeholder PEM.
-    let root_cert = match manta_config::get_csm_root_cert_content(
-      &site.root_ca_cert_file,
-    ) {
-      Ok(bytes) => bytes,
-      Err(e) if allow_http => {
-        eprintln!(
-          "WARNING: CA cert for site '{name}' at '{}' could not be \
-           read: {e}. Continuing with an empty trust set because \
-           --allow-http is enabled; outbound backend HTTPS calls \
-           will fall through to the system trust store and any \
-           backend invocation against this site is likely to fail.",
-          site.root_ca_cert_file
-        );
-        Vec::new()
-      }
-      Err(e) => {
-        return Err(
+    // CA cert is required: a missing or unreadable file means every
+    // backend HTTPS call would fall through to the empty-vec branch
+    // which `reqwest::Certificate::from_pem` accepts as "no extra
+    // trust anchors". That silently widens the trust store to the
+    // system default, which on most operator workstations does not
+    // include the CSM/OpenCHAMI internal CA — so calls work but
+    // without the expected pinning. Fail at startup instead.
+    let root_cert =
+      manta_config::get_csm_root_cert_content(&site.root_ca_cert_file)
+        .map_err(|e| {
           format!(
             "CA cert for site '{name}' at '{}' could not be read: {e}. \
              Fix the path under [sites.{name}].root_ca_cert_file in \
-             server.toml, remove the site entry, or pass --allow-http \
-             if you're starting a local test server that won't make \
-             real backend calls.",
+             server.toml or remove the site entry.",
             site.root_ca_cert_file
           )
-          .into(),
-        );
-      }
-    };
+        })?;
     print_site_summary(
       name,
       site.backend.as_str(),
