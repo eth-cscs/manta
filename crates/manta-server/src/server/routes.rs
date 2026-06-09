@@ -181,7 +181,29 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .nest("/api/v1", api)
     .nest("/api/v1/auth", auth)
     .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
+    // HSTS on every response. Browsers ignore HSTS over plain HTTP
+    // per RFC 6797, so this is a no-op when `allow_http = true`
+    // and active otherwise. Conservative one-year max-age; bump to
+    // include `preload` only after confirming the deployment can
+    // sustain it.
+    .layer(middleware::from_fn(add_hsts_header))
     .with_state(state)
+}
+
+/// Inject `Strict-Transport-Security: max-age=31536000; includeSubDomains`
+/// on every outgoing response. Cheap; the header is constant.
+async fn add_hsts_header(
+  request: axum::extract::Request,
+  next: middleware::Next,
+) -> axum::response::Response {
+  let mut response = next.run(request).await;
+  response.headers_mut().insert(
+    axum::http::header::STRICT_TRANSPORT_SECURITY,
+    axum::http::HeaderValue::from_static(
+      "max-age=31536000; includeSubDomains",
+    ),
+  );
+  response
 }
 
 /// WebSocket upgrade routes — kept separate so they're easy to identify

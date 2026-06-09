@@ -141,6 +141,28 @@ async fn health_body_contains_status_ok() {
 }
 
 // ---------------------------------------------------------------------------
+// HSTS header is applied to every response
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn responses_carry_strict_transport_security_header() {
+  // Browsers only honour HSTS over TLS, but emitting it
+  // unconditionally is cheap and ensures any TLS deployment is
+  // protected without further config. Pin the exact value so a
+  // future bump of max-age or addition of `preload` is an explicit
+  // operator decision, not a silent drift.
+  let resp = router().oneshot(get("/api/v1/health")).await.unwrap();
+  let hsts = resp
+    .headers()
+    .get(axum::http::header::STRICT_TRANSPORT_SECURITY)
+    .expect("HSTS header should be present on every response");
+  assert_eq!(
+    hsts.to_str().unwrap(),
+    "max-age=31536000; includeSubDomains"
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Unknown routes return 404
 // ---------------------------------------------------------------------------
 

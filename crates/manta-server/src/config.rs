@@ -96,6 +96,14 @@ pub struct ServerSettings {
   /// explicitly opt in to server-side filesystem writes.
   #[serde(default)]
   pub migrate_backup_root: Option<String>,
+  /// Opt in to plain-HTTP listen mode. Default `false`: when neither
+  /// `cert` nor `key` is configured the server refuses to start, so
+  /// bearer tokens can't accidentally land on the wire in cleartext.
+  /// Set to `true` only when TLS terminates upstream (reverse proxy
+  /// or sidecar); otherwise leave it off and configure both `cert`
+  /// and `key`.
+  #[serde(default)]
+  pub allow_http: bool,
 }
 
 impl ServerSettings {
@@ -198,6 +206,7 @@ mod tests {
         auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 60,
         migrate_backup_root: None,
+        allow_http: false,
       },
       sites,
       auditor: None,

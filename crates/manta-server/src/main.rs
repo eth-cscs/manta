@@ -152,6 +152,15 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
         .long("listen-address")
         .help("Override [server] listen_address from server.toml."),
     )
+    .arg(
+      Arg::new("allow-http")
+        .long("allow-http")
+        .action(clap::ArgAction::SetTrue)
+        .help(
+          "Allow listening over plain HTTP when no cert/key is set. \
+           Use only when TLS terminates upstream (reverse proxy, sidecar).",
+        ),
+    )
     .get_matches();
 
   let settings = manta_config::get_server_configuration()
@@ -184,6 +193,18 @@ async fn run_server(
     .cloned()
     .or_else(|| configuration.server.key.clone());
   let has_tls = cert_path.is_some() && key_path.is_some();
+  let allow_http =
+    cli.get_flag("allow-http") || configuration.server.allow_http;
+  if !has_tls && !allow_http {
+    return Err(
+      "Refusing to start without TLS: configure `cert` + `key` in \
+       [server] (or pass --cert/--key), or set `allow_http = true` / \
+       pass --allow-http if TLS terminates upstream. The default \
+       is fail-closed so bearer tokens cannot accidentally land on \
+       the wire in cleartext."
+        .into(),
+    );
+  }
   let port: u16 = cli
     .get_one::<u16>("port")
     .copied()
