@@ -245,13 +245,7 @@ pub async fn get_curated_group_from_xname_hostlist(
     infra.get_group_name_available(auth_token).await?;
 
   let hsm_group_available_map = infra
-    .get_group_map_and_filter_by_group_vec(
-      auth_token,
-      &hsm_name_available_vec
-        .iter()
-        .map(String::as_str)
-        .collect::<Vec<&str>>(),
-    )
+    .get_group_map_and_filter_by_group_vec(auth_token, &hsm_name_available_vec)
     .await?;
 
   // Filter hsm group members. Pre-compute a hash of the requested

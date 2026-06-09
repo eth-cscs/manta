@@ -102,8 +102,6 @@ pub async fn validate_group_deletion(
     .get_member_vec_from_group_name_vec(token, &[label.to_string()])
     .await?;
 
-  let xname_vec: Vec<&str> = xname_vec.iter().map(String::as_str).collect();
-
   let mut xname_map = infra
     .get_group_map_and_filter_by_group_vec(token, &xname_vec)
     .await?;

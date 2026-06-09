@@ -113,7 +113,7 @@ pub async fn migrate_nodes(
           token,
           target_name,
           parent_group_name,
-          &xnames.iter().map(String::as_str).collect::<Vec<&str>>(),
+          xnames,
           dry_run,
         )
         .await?;

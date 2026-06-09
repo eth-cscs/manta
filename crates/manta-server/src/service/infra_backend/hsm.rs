@@ -95,16 +95,21 @@ impl InfraContext<'_> {
     token: &str,
     target_hsm_name: &str,
     parent_hsm_name: &str,
-    xnames: &[&str],
+    xnames: &[String],
     dry_run: bool,
   ) -> Result<(Vec<String>, Vec<String>), Error> {
+    // Loosened from `&[&str]` to `&[String]` so callers don't have
+    // to materialise a temporary `Vec<&str>` just to satisfy the
+    // backend trait signature. The conversion now happens once,
+    // inside this wrapper.
+    let xnames_ref: Vec<&str> = xnames.iter().map(String::as_str).collect();
     self
       .backend
       .migrate_group_members(
         token,
         target_hsm_name,
         parent_hsm_name,
-        xnames,
+        &xnames_ref,
         dry_run,
       )
       .await
@@ -131,11 +136,14 @@ impl InfraContext<'_> {
   pub async fn get_group_map_and_filter_by_group_vec(
     &self,
     token: &str,
-    hsm_name_vec: &[&str],
+    hsm_name_vec: &[String],
   ) -> Result<HashMap<String, Vec<String>>, Error> {
+    // Same loosening as `migrate_group_members`; see comment there.
+    let names_ref: Vec<&str> =
+      hsm_name_vec.iter().map(String::as_str).collect();
     self
       .backend
-      .get_group_map_and_filter_by_group_vec(token, hsm_name_vec)
+      .get_group_map_and_filter_by_group_vec(token, &names_ref)
       .await
   }
 
@@ -188,17 +196,20 @@ impl InfraContext<'_> {
     &self,
     token: &str,
     group_name: &str,
-    members_to_remove: &[&str],
-    members_to_add: &[&str],
+    members_to_remove: &[String],
+    members_to_add: &[String],
   ) -> Result<(), Error> {
+    // Same loosening as `migrate_group_members`; see comment there.
+    // For the hot path in `hw_cluster::apply_group_updates` this
+    // halves the per-call allocation count (was 4 `Vec<&str>` round
+    // trips, now 2 inside this wrapper).
+    let remove_ref: Vec<&str> =
+      members_to_remove.iter().map(String::as_str).collect();
+    let add_ref: Vec<&str> =
+      members_to_add.iter().map(String::as_str).collect();
     self
       .backend
-      .update_group_members(
-        token,
-        group_name,
-        members_to_remove,
-        members_to_add,
-      )
+      .update_group_members(token, group_name, &remove_ref, &add_ref)
       .await
   }
 }

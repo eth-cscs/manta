@@ -533,14 +533,8 @@ pub async fn apply_group_updates(
       .update_group_members(
         shasta_token,
         target_group,
-        &old_target_members
-          .iter()
-          .map(String::as_str)
-          .collect::<Vec<&str>>(),
-        &new_target_members
-          .iter()
-          .map(String::as_str)
-          .collect::<Vec<&str>>(),
+        old_target_members,
+        new_target_members,
       )
       .await
       .map_err(|e| {
@@ -563,14 +557,8 @@ pub async fn apply_group_updates(
       .update_group_members(
         shasta_token,
         parent_group,
-        &old_parent_members
-          .iter()
-          .map(String::as_str)
-          .collect::<Vec<&str>>(),
-        &new_parent_members
-          .iter()
-          .map(String::as_str)
-          .collect::<Vec<&str>>(),
+        old_parent_members,
+        new_parent_members,
       )
       .await
       .map_err(|e| {
