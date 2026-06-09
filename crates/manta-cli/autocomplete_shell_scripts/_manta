@@ -451,7 +451,7 @@ _arguments "${_arguments_options[@]}" : \
 '--output=[Output format]:FORMAT:(json summary details pattern)' \
 '-h[Print help]' \
 '--help[Print help]' \
-':CLUSTER_NAME -- Group name:_default' \
+':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (nodes)
@@ -1016,9 +1016,6 @@ _arguments "${_arguments_options[@]}" : \
 '--kernel-parameters=[Kernel parameters to assign to the nodes]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
-'--do-not-reboot[Suppress the automatic reboot after updating boot parameters]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1040,14 +1037,11 @@ _arguments "${_arguments_options[@]}" : \
 '--kernel-parameters=[Kernel parameters to assign to all group members]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
-'--do-not-reboot[Suppress the automatic reboot after updating boot parameters]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
-':CLUSTER_NAME -- Group name:_default' \
+':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (help)
@@ -1096,8 +1090,6 @@ _arguments "${_arguments_options[@]}" : \
 '--output=[Output format]:FORMAT:(table json)' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1183,9 +1175,6 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Replace kernel parameters on every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
-'--do-not-reboot[Do not reboot nodes after applying changes]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1214,8 +1203,6 @@ _arguments "${_arguments_options[@]}" : \
 '--limit=[Limit to specific nodes, groups, or roles (OR by default; prefix with '\''&'\'' for AND or '\''!'\'' for NOT)]:VALUE:_default' \
 '-i[Include nodes marked as disabled in the hardware state manager]' \
 '--include-disabled[Include nodes marked as disabled in the hardware state manager]' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1371,9 +1358,6 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Remove the listed kernel parameters from every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
-'--do-not-reboot[Do not reboot nodes after applying changes]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1402,8 +1386,6 @@ _arguments "${_arguments_options[@]}" : \
 '--until=[Delete configurations last updated before this date (format\: %Y-%m-%d)]:DATE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
-'-y[Skip confirmation prompts]' \
-'--assume-yes[Skip confirmation prompts]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -1827,7 +1809,7 @@ _arguments "${_arguments_options[@]}" : \
 '--no-wait[Return as soon as the transition is queued; don'\''t poll for completion]' \
 '-h[Print help]' \
 '--help[Print help]' \
-':CLUSTER_NAME -- Group name:_default' \
+':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (nodes)
@@ -1903,7 +1885,7 @@ _arguments "${_arguments_options[@]}" : \
 '--no-wait[Return as soon as the transition is queued; don'\''t poll for completion]' \
 '-h[Print help]' \
 '--help[Print help]' \
-':CLUSTER_NAME -- Group name:_default' \
+':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (nodes)
@@ -1981,7 +1963,7 @@ _arguments "${_arguments_options[@]}" : \
 '--no-wait[Return as soon as the transition is queued; don'\''t poll for completion]' \
 '-h[Print help]' \
 '--help[Print help]' \
-':CLUSTER_NAME -- Group name:_default' \
+':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (nodes)

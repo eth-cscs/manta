@@ -1487,7 +1487,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__boot__subcmd__parameters)
-            opts="-H -p -k -i -d -y -o -h --hosts --params --kernel --initrd --dry-run --assume-yes --output --help"
+            opts="-H -p -k -i -d -o -h --hosts --params --kernel --initrd --dry-run --output --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1541,7 +1541,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__boot__subcmd__group)
-            opts="-i -b -r -k -y -d -o -h --boot-image --boot-image-configuration --runtime-configuration --kernel-parameters --assume-yes --do-not-reboot --dry-run --output --help <CLUSTER_NAME>"
+            opts="-i -b -r -k -d -o -h --boot-image --boot-image-configuration --runtime-configuration --kernel-parameters --dry-run --output --help <GROUP_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -1651,7 +1651,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__boot__subcmd__nodes)
-            opts="-i -b -r -k -y -d -o -h --boot-image --boot-image-configuration --runtime-configuration --kernel-parameters --assume-yes --do-not-reboot --dry-run --output --help <NODES>"
+            opts="-i -b -r -k -d -o -h --boot-image --boot-image-configuration --runtime-configuration --kernel-parameters --dry-run --output --help <NODES>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2019,7 +2019,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__kernel__subcmd__parameters)
-            opts="-n -H -y -d -o -h --nodes --hsm-group --group --assume-yes --do-not-reboot --dry-run --output --help <PARAMS>"
+            opts="-n -H -d -o -h --nodes --hsm-group --group --dry-run --output --help <PARAMS>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2281,7 +2281,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__apply__subcmd__template)
-            opts="-n -o -t -l -i -y -d -h --name --operation --template --limit --include-disabled --assume-yes --dry-run --help"
+            opts="-n -o -t -l -i -d -h --name --operation --template --limit --include-disabled --dry-run --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3069,7 +3069,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__delete__subcmd__configurations)
-            opts="-n -s -u -y -o -h --configuration-name --since --until --assume-yes --output --help"
+            opts="-n -s -u -o -h --configuration-name --since --until --output --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3381,7 +3381,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__delete__subcmd__kernel__subcmd__parameters)
-            opts="-n -H -y -d -o -h --nodes --hsm-group --group --assume-yes --do-not-reboot --dry-run --output --help <PARAMS>"
+            opts="-n -H -d -o -h --nodes --hsm-group --group --dry-run --output --help <PARAMS>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3721,7 +3721,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__get__subcmd__group__subcmd__hardware)
-            opts="-o -h --output --help <CLUSTER_NAME>"
+            opts="-o -h --output --help <GROUP_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5855,7 +5855,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__off__subcmd__group)
-            opts="-g -R -y -o -h --graceful --reason --assume-yes --no-wait --output --help <CLUSTER_NAME>"
+            opts="-g -R -y -o -h --graceful --reason --assume-yes --no-wait --output --help <GROUP_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5977,7 +5977,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__on__subcmd__group)
-            opts="-R -y -o -h --reason --assume-yes --no-wait --output --help <CLUSTER_NAME>"
+            opts="-R -y -o -h --reason --assume-yes --no-wait --output --help <GROUP_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -6099,7 +6099,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__power__subcmd__reset__subcmd__group)
-            opts="-g -y -o -r -h --graceful --assume-yes --no-wait --output --reason --help <CLUSTER_NAME>"
+            opts="-g -y -o -r -h --graceful --assume-yes --no-wait --output --reason --help <GROUP_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

@@ -333,7 +333,6 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from boot-parameters" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from boot-parameters" -s d -l dry-run -d 'Simulate the operation without making changes'
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from boot-parameters" -s y -l assume-yes -d 'Skip confirmation prompts'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from boot-parameters" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s i -l id -d 'Xname of the endpoint to update' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s n -l name -d 'Arbitrary user-provided name for the endpoint' -r
@@ -373,8 +372,6 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s H -l group -l hsm-group -d 'Replace kernel parameters on every node in this group' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s y -l assume-yes -d 'Skip confirmation prompts'
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -l do-not-reboot -d 'Do not reboot nodes after applying changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -s i -l image-id -d 'Image ID to use' -r
@@ -386,7 +383,6 @@ shutdown\t''"
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s t -l template -d 'Session template name' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s l -l limit -d 'Limit to specific nodes, groups, or roles (OR by default; prefix with \'&\' for AND or \'!\' for NOT)' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s i -l include-disabled -d 'Include nodes marked as disabled in the hardware state manager'
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s y -l assume-yes -d 'Skip confirmation prompts'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from help" -f -a "hardware" -d '[experimental] Rescale a group\'s hardware allocation'
@@ -428,8 +424,6 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s H -l group -l hsm-group -d 'Remove the listed kernel parameters from every node in this group' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
-complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s y -l assume-yes -d 'Skip confirmation prompts'
-complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -l do-not-reboot -d 'Do not reboot nodes after applying changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from boot-parameters" -s H -l hosts -d 'Xnames of the nodes' -r
@@ -441,7 +435,6 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s u -l until -d 'Delete configurations last updated before this date (format: %Y-%m-%d)' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
-complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s y -l assume-yes -d 'Skip confirmation prompts'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from session" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"

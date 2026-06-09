@@ -1,6 +1,6 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH manta 1  "manta 2.0.0-beta.50" 
+.TH manta 1  "manta 2.0.0-beta.53" 
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
 .SH NAME
@@ -247,7 +247,7 @@ Output format
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
-\fICLUSTER_NAME\fR
+\fIGROUP_NAME\fR
 Group name
 .SS "manta get nodes"
 Show node details and status
@@ -697,12 +697,6 @@ Configuration to apply to nodes after booting
 [\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
 Kernel parameters to assign to the nodes
 .TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
-.TP
-[\fB\-\-do\-not\-reboot\fR]
-Suppress the automatic reboot after updating boot parameters
-.TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
@@ -738,12 +732,6 @@ Configuration to apply to nodes after booting
 [\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
 Kernel parameters to assign to all group members
 .TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
-.TP
-[\fB\-\-do\-not\-reboot\fR]
-Suppress the automatic reboot after updating boot parameters
-.TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
@@ -753,7 +741,7 @@ Output format
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
-\fICLUSTER_NAME\fR
+\fIGROUP_NAME\fR
 Group name
 .SS "manta apply boot-parameters"
 Update boot parameters for nodes
@@ -772,9 +760,6 @@ S3 path to the initrd file
 .TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
-.TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -842,12 +827,6 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Replace kernel parameters on every node in this group
 .TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
-.TP
-[\fB\-\-do\-not\-reboot\fR]
-Do not reboot nodes after applying changes
-.TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
@@ -887,9 +866,6 @@ Limit to specific nodes, groups, or roles (OR by default; prefix with \*(Aq&\*(A
 .TP
 [\fB\-i\fR, \fB\-\-include\-disabled\fR]
 Include nodes marked as disabled in the hardware state manager
-.TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
 .TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
@@ -960,12 +936,6 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Remove the listed kernel parameters from every node in this group
 .TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
-.TP
-[\fB\-\-do\-not\-reboot\fR]
-Do not reboot nodes after applying changes
-.TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
@@ -1007,9 +977,6 @@ Delete configurations last updated after this date (format: %Y\-%m\-%d)
 .TP
 [\fB\-u\fR, \fB\-\-until\fR] \fI<DATE>\fR
 Delete configurations last updated before this date (format: %Y\-%m\-%d)
-.TP
-[\fB\-y\fR, \fB\-\-assume\-yes\fR]
-Skip confirmation prompts
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -1249,7 +1216,7 @@ Output format
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
-\fICLUSTER_NAME\fR
+\fIGROUP_NAME\fR
 Group name
 .SS "manta power on nodes"
 Power on a set of nodes
@@ -1296,7 +1263,7 @@ Output format
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
-\fICLUSTER_NAME\fR
+\fIGROUP_NAME\fR
 Group name
 .SS "manta power off nodes"
 Power off a set of nodes
@@ -1346,7 +1313,7 @@ Reason for the power operation
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
-\fICLUSTER_NAME\fR
+\fIGROUP_NAME\fR
 Group name
 .SS "manta power reset nodes"
 Reset a set of nodes
