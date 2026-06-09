@@ -1,10 +1,11 @@
 # Manta HTTP API Reference
 
-The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. The default port and TLS material come from `~/.config/manta/server.toml` (see [README.md](README.md#configuration-files)); the canonical port is **8443** and TLS is required by default. Omit `cert`/`key` from `[server]` (or pass empty) only for local plain-HTTP testing.
+The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. The default port and TLS material come from `~/.config/manta/server.toml` (see [README.md](README.md#configuration-files)); the canonical port is **8443** and TLS is required by default. The server fails closed without `cert` + `key` — pass `--allow-http` (or set `[server] allow_http = true`) to opt into plain-HTTP listen mode for local testing.
 
 ## TL;DR
 
 - **Base URL:** `https://<host>:8443/api/v1`
+- **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
 - **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, `/docs`, and `/api/v1/auth/*`.
 - **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
@@ -15,10 +16,12 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 ## Starting the server
 
 ```
-manta-server [--port 8443] [--listen-address 0.0.0.0] [--cert <cert.pem>] [--key <key.pem>]
+manta-server [--port 8443] [--listen-address 0.0.0.0] [--cert <cert.pem>] [--key <key.pem>] [--allow-http]
 ```
 
 Each flag overrides the corresponding `[server]` field in `server.toml` for that invocation. The CLI does not ship a `serve` subcommand — `manta-server` is its own binary.
+
+`--allow-http` is the only flag without a TLS-on counterpart: by default the server refuses to start when no cert/key is configured, so bearer tokens cannot accidentally land on the wire in cleartext. Pass it (or set `[server] allow_http = true`) for `localhost` smoke tests or for deployments where TLS terminates at an upstream proxy/sidecar.
 
 ## Required headers
 
