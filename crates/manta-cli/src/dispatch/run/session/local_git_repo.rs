@@ -11,7 +11,7 @@
 
 use std::path::{Path, PathBuf};
 
-use anyhow::{Error, anyhow};
+use anyhow::{Context, Error, anyhow};
 use git2::{Commit, ObjectType, Repository};
 
 /// Open a local Git repository at the given path.
@@ -80,13 +80,13 @@ pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
 pub fn parse_repo_name_from_remote(repo: &Repository) -> Result<String, Error> {
   let remote = repo
     .find_remote("origin")
-    .map_err(|e| anyhow!("Failed to find remote 'origin': {e}"))?;
+    .context("Failed to find remote 'origin'")?;
   // git2 0.21 changed `Remote::url()` to return `Result<&str, git2::Error>`
   // (rather than `Option<&str>`), with the Err carrying the underlying
   // libgit2 message — usually a UTF-8 decode failure on the stored URL.
   let url = remote
     .url()
-    .map_err(|e| anyhow!("Remote 'origin' URL is not valid UTF-8: {e}"))?;
+    .context("Remote 'origin' URL is not valid UTF-8")?;
   parse_repo_name_from_url(url)
     .ok_or_else(|| anyhow!("Remote URL has no '/' separator"))
 }

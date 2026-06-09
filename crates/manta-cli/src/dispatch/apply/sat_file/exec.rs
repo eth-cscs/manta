@@ -65,7 +65,7 @@ pub struct SatApplyOptions<'a> {
 fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
   if let Some(hook) = hook_opt {
     crate::common::hooks::check_hook_perms(hook_opt)
-      .map_err(|e| anyhow::anyhow!("{e}. File: {hook}"))?;
+      .with_context(|| format!("Hook script '{hook}'"))?;
     println!("{label}-hook script '{hook}' exists and is executable.");
   }
   Ok(())
@@ -87,7 +87,7 @@ pub async fn exec(
     opts.values_file_content_opt,
     opts.values_cli_opt,
   )
-  .map_err(|e| anyhow::anyhow!("{e}"))?;
+  .context("Failed to render SAT Jinja2 template")?;
 
   // 2. Parse into a structured value. The CLI carries the SAT file as
   //    `serde_json::Value` end-to-end — the server forwards it

@@ -4,7 +4,7 @@
 //! `get_api_token(ctx)` — `manta upgrade` talks to GitHub releases,
 //! not the manta server, so there's no token to bootstrap.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 use clap::ArgMatches;
 
 use crate::common::app_context::AppContext;
@@ -28,5 +28,5 @@ pub async fn handle_upgrade(
     upgrade::exec(check_only, dry_run, assume_yes, output_owned.as_deref())
   })
   .await
-  .map_err(|e| anyhow::anyhow!("upgrade task panicked: {e}"))?
+  .context("upgrade task panicked")?
 }
