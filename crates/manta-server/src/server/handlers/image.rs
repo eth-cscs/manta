@@ -45,7 +45,6 @@ pub async fn get_images(
 // DELETE /api/v1/images — with ?ids=id1,id2&dry_run=true
 // ---------------------------------------------------------------------------
 
-
 /// `DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.
 #[utoipa::path(delete, path = "/images", tag = "images",
   params(DeleteImagesQuery, SiteHeader),

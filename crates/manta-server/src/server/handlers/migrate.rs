@@ -93,20 +93,14 @@ fn confine_all(
 /// Resolve `state.migrate_backup_root` or reject with `BadRequest`.
 /// Operators must opt in to server-side filesystem writes — there is
 /// no built-in default root.
-fn require_backup_root(
-  ctx: &RequestCtx,
-) -> Result<&Path, BackendError> {
-  ctx
-    .state
-    .migrate_backup_root
-    .as_deref()
-    .ok_or_else(|| {
-      BackendError::BadRequest(
-        "migrate endpoints disabled: server has no [server] migrate_backup_root \
+fn require_backup_root(ctx: &RequestCtx) -> Result<&Path, BackendError> {
+  ctx.state.migrate_backup_root.as_deref().ok_or_else(|| {
+    BackendError::BadRequest(
+      "migrate endpoints disabled: server has no [server] migrate_backup_root \
          configured. Set it to an absolute, existing directory and restart."
-          .to_string(),
-      )
-    })
+        .to_string(),
+    )
+  })
 }
 
 /// `POST /api/v1/migrate/nodes` — move nodes between HSM groups.
@@ -188,11 +182,9 @@ pub async fn migrate_backup(
   // non-privileged users from triggering arbitrary writes via the
   // server process's UID.
   if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
-    return Err(to_handler_error(
-      BackendError::BadRequest(
-        "migrate backup requires admin privileges".to_string(),
-      ),
-    ));
+    return Err(to_handler_error(BackendError::BadRequest(
+      "migrate backup requires admin privileges".to_string(),
+    )));
   }
 
   // Confine the destination to `[server] migrate_backup_root`. Even
@@ -237,11 +229,9 @@ pub async fn migrate_restore(
   // chosen by the caller and rewrites CFS/HSM/IMS state — high
   // blast radius. Restrict to admin.
   if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
-    return Err(to_handler_error(
-      BackendError::BadRequest(
-        "migrate restore requires admin privileges".to_string(),
-      ),
-    ));
+    return Err(to_handler_error(BackendError::BadRequest(
+      "migrate restore requires admin privileges".to_string(),
+    )));
   }
 
   // Confine every supplied file path to `[server] migrate_backup_root`.
@@ -311,8 +301,7 @@ mod tests {
     let canon = canonical(&root);
     let file = canon.join("bos.yaml");
     fs::write(&file, "").unwrap();
-    let resolved =
-      confine_to_root(file.to_str().unwrap(), &canon).unwrap();
+    let resolved = confine_to_root(file.to_str().unwrap(), &canon).unwrap();
     assert!(resolved.starts_with(&canon));
   }
 
@@ -341,8 +330,7 @@ mod tests {
     let canon = canonical(&root);
     let file = canonical(&other).join("hsm.yaml");
     fs::write(&file, "").unwrap();
-    let err =
-      confine_to_root(file.to_str().unwrap(), &canon).unwrap_err();
+    let err = confine_to_root(file.to_str().unwrap(), &canon).unwrap_err();
     assert!(matches!(err, BackendError::BadRequest(_)));
   }
 

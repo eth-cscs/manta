@@ -48,22 +48,33 @@ pub async fn get_node_details(
   // it once. The other backends accept xname slices directly.
   let xname_filter = xnames.join(",");
 
-  let (cfs_components, boot_params_vec, hsm_components, cfs_sessions, groups) = tokio::try_join!(
-    infra.get_cfs_components(token, None, Some(&xname_filter), None),
-    infra.get_bootparameters(token, xnames),
-    infra.get_node_metadata_available(token),
-    // Successful sessions only — we use them to resolve image id →
-    // CFS configuration that built the image.
-    infra.get_sessions(
-      token, None, None, None, None, None, None, None, Some(true), None
-    ),
-    infra.get_groups(token, None),
-  )?;
+  let (cfs_components, boot_params_vec, hsm_components, cfs_sessions, groups) =
+    tokio::try_join!(
+      infra.get_cfs_components(token, None, Some(&xname_filter), None),
+      infra.get_bootparameters(token, xnames),
+      infra.get_node_metadata_available(token),
+      // Successful sessions only — we use them to resolve image id →
+      // CFS configuration that built the image.
+      infra.get_sessions(
+        token,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(true),
+        None
+      ),
+      infra.get_groups(token, None),
+    )?;
 
   // Build xname → comma-separated group label lookup once.
   let mut xname_to_groups: HashMap<String, Vec<String>> = HashMap::new();
   for group in &groups {
-    if let Some(member_ids) = group.members.as_ref().and_then(|m| m.ids.as_ref())
+    if let Some(member_ids) =
+      group.members.as_ref().and_then(|m| m.ids.as_ref())
     {
       for id in member_ids {
         xname_to_groups
@@ -126,7 +137,8 @@ pub async fn get_node_details(
         || (NOT_FOUND.to_string(), NOT_FOUND.to_string()),
         |bp| {
           (
-            bp.try_get_boot_image_id().unwrap_or_else(|| NOT_FOUND.to_string()),
+            bp.try_get_boot_image_id()
+              .unwrap_or_else(|| NOT_FOUND.to_string()),
             bp.params.clone(),
           )
         },

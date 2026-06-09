@@ -79,7 +79,6 @@ pub async fn get_sessions(
 // DELETE /api/v1/sessions/{name} — with ?dry_run=true support
 // ---------------------------------------------------------------------------
 
-
 /// DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.
 #[utoipa::path(delete, path = "/sessions/{name}", tag = "sessions",
   params(("name" = String, Path, description = "Session name"), DeleteSessionQuery, SiteHeader),

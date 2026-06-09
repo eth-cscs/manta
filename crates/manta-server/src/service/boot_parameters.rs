@@ -451,8 +451,8 @@ async fn collect_boot_images(
       }
     }
 
-    let fetched: Vec<(String, Image)> = futures::future::try_join_all(
-      unique_ids.iter().map(|id| async move {
+    let fetched: Vec<(String, Image)> =
+      futures::future::try_join_all(unique_ids.iter().map(|id| async move {
         let image = infra
           .get_images(shasta_token, Some(id.as_str()))
           .await?
@@ -462,9 +462,8 @@ async fn collect_boot_images(
           })?
           .clone();
         Ok::<_, Error>((id.clone(), image))
-      }),
-    )
-    .await?;
+      }))
+      .await?;
 
     for (id, image) in fetched {
       image_vec.insert(id, image);

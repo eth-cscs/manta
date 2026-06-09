@@ -55,7 +55,6 @@ pub async fn get_configurations(
 // DELETE /api/v1/configurations — with ?pattern=...&since=...&until=...&dry_run=true
 // ---------------------------------------------------------------------------
 
-
 /// `DELETE /api/v1/configurations` — delete CFS configurations and all derived artifacts.
 #[utoipa::path(delete, path = "/configurations", tag = "configurations",
   params(DeleteConfigurationsQuery, SiteHeader),

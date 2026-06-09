@@ -97,4 +97,3 @@ pub struct PostSatSessionTemplateResponse {
   #[schema(value_type = Option<serde_json::Value>)]
   pub session: Option<BosSession>,
 }
-

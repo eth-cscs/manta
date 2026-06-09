@@ -74,7 +74,6 @@ pub async fn get_groups(
 // DELETE /api/v1/groups/{label}
 // ---------------------------------------------------------------------------
 
-
 /// DELETE /groups/{label} — remove an HSM group.
 #[utoipa::path(delete, path = "/groups/{label}", tag = "groups",
   params(("label" = String, Path, description = "Group label"), DeleteGroupQuery, SiteHeader),

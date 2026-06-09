@@ -156,10 +156,11 @@ pub async fn validate_group_members_access(
   // Hash the accessible-xname set once. It can be cluster-scale (every
   // xname in every group the caller can see), so the previous
   // `.contains()` per target was O(target_count · accessible_count).
-  let accessible_set: std::collections::HashSet<&str> = all_xnames_user_has_access
-    .iter()
-    .map(String::as_str)
-    .collect();
+  let accessible_set: std::collections::HashSet<&str> =
+    all_xnames_user_has_access
+      .iter()
+      .map(String::as_str)
+      .collect();
   let invalid_xnames: Vec<String> = group_members_target_vec
     .iter()
     .filter(|group| !accessible_set.contains(group.as_str()))
@@ -187,8 +188,10 @@ mod tests {
 
   #[test]
   fn allows_when_every_target_is_in_available_set() {
-    let result =
-      validate_group_vec_access(&s(&["compute", "login"]), &s(&["compute", "login", "storage"]));
+    let result = validate_group_vec_access(
+      &s(&["compute", "login"]),
+      &s(&["compute", "login", "storage"]),
+    );
     assert!(result.is_ok(), "got {result:?}");
   }
 
@@ -218,8 +221,7 @@ mod tests {
 
   #[test]
   fn rejects_when_available_set_is_empty() {
-    let err =
-      validate_group_vec_access(&s(&["compute"]), &[]).unwrap_err();
+    let err = validate_group_vec_access(&s(&["compute"]), &[]).unwrap_err();
     assert!(matches!(err, Error::BadRequest(_)));
   }
 
@@ -227,11 +229,9 @@ mod tests {
   // across runs — important for CLI users grepping their failure log.
   #[test]
   fn error_message_sorts_offending_groups_alphabetically() {
-    let err = validate_group_vec_access(
-      &s(&["zeta", "alpha", "mu"]),
-      &s(&["other"]),
-    )
-    .unwrap_err();
+    let err =
+      validate_group_vec_access(&s(&["zeta", "alpha", "mu"]), &s(&["other"]))
+        .unwrap_err();
     let Error::BadRequest(msg) = err else {
       panic!("expected BadRequest, got {err:?}");
     };

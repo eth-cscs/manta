@@ -199,9 +199,7 @@ async fn add_hsts_header(
   let mut response = next.run(request).await;
   response.headers_mut().insert(
     axum::http::header::STRICT_TRANSPORT_SECURITY,
-    axum::http::HeaderValue::from_static(
-      "max-age=31536000; includeSubDomains",
-    ),
+    axum::http::HeaderValue::from_static("max-age=31536000; includeSubDomains"),
   );
   response
 }

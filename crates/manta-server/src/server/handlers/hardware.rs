@@ -73,7 +73,6 @@ pub async fn get_hardware_clusters_deprecated(
 // GET /api/v1/hardware-nodes-list
 // ---------------------------------------------------------------------------
 
-
 /// GET /hardware-nodes-list — hardware details for an explicit list of xnames.
 #[utoipa::path(get, path = "/hardware-nodes-list", tag = "hardware",
   params(HardwareNodesListQuery, SiteHeader),

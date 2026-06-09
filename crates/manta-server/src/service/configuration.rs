@@ -81,18 +81,17 @@ pub(crate) async fn get_deletion_candidates(
 ) -> Result<DeletionCandidates, Error> {
   validate_date_range(since, until)?;
 
-  let target_hsm_group_vec = if let Some(settings_hsm_group_name) =
-    settings_hsm_group_name_opt
-  {
-    // Defense-in-depth: today the handler always passes `None`, but
-    // if a future caller (CLI, another handler) routes a user-
-    // supplied group label through here, an unchecked group would
-    // let the caller cascade-delete configurations they don't own.
-    validate_user_group_access(infra, token, settings_hsm_group_name).await?;
-    vec![settings_hsm_group_name.to_string()]
-  } else {
-    infra.get_group_name_available(token).await?
-  };
+  let target_hsm_group_vec =
+    if let Some(settings_hsm_group_name) = settings_hsm_group_name_opt {
+      // Defense-in-depth: today the handler always passes `None`, but
+      // if a future caller (CLI, another handler) routes a user-
+      // supplied group label through here, an unchecked group would
+      // let the caller cascade-delete configurations they don't own.
+      validate_user_group_access(infra, token, settings_hsm_group_name).await?;
+      vec![settings_hsm_group_name.to_string()]
+    } else {
+      infra.get_group_name_available(token).await?
+    };
 
   infra
     .get_data_to_delete(

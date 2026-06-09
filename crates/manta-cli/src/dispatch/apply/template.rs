@@ -3,7 +3,9 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{BosOperation, MantaClient, PostTemplateSessionRequest};
+use crate::http_client::{
+  BosOperation, MantaClient, PostTemplateSessionRequest,
+};
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
