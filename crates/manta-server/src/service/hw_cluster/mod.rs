@@ -75,7 +75,8 @@ pub struct ApplyHwResult {
 // ── External API (re-exported from sub-modules) ─────────────────────────────
 
 pub use apply::{
-  add_hw_component, apply_hw_configuration, delete_hw_component,
+  ApplyHwConfigurationParams, add_hw_component, apply_hw_configuration,
+  delete_hw_component,
 };
 
 #[cfg(test)]

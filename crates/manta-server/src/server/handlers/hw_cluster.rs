@@ -178,14 +178,16 @@ pub async fn apply_hw_configuration(
 
   let result = crate::service::hw_cluster::apply_hw_configuration(
     &infra,
-    body.mode,
     &ctx.token,
-    &target,
-    &body.parent_cluster,
-    &body.pattern,
-    body.dry_run,
-    body.create_target_hsm_group,
-    body.delete_empty_parent_hsm_group,
+    crate::service::hw_cluster::ApplyHwConfigurationParams {
+      mode: body.mode,
+      target_group_name: &target,
+      parent_group_name: &body.parent_cluster,
+      pattern: &body.pattern,
+      dryrun: body.dry_run,
+      create_target_group: body.create_target_hsm_group,
+      delete_empty_parent_group: body.delete_empty_parent_hsm_group,
+    },
   )
   .await
   .map_err(to_handler_error)?;

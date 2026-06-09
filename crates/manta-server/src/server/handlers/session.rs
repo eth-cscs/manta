@@ -196,14 +196,16 @@ pub async fn create_session(
     &infra,
     &ctx.token,
     &gitea_token,
-    body.cfs_conf_sess_name.as_deref(),
-    body.playbook_yaml_file_name.as_deref(),
-    body.hsm_group.as_deref(),
-    &repo_name_refs,
-    &repo_commit_refs,
-    body.ansible_limit.as_deref(),
-    body.ansible_verbosity.as_deref(),
-    body.ansible_passthrough.as_deref(),
+    service::session::CreateCfsSessionParams {
+      cfs_conf_sess_name: body.cfs_conf_sess_name.as_deref(),
+      playbook_yaml_file_name: body.playbook_yaml_file_name.as_deref(),
+      group: body.hsm_group.as_deref(),
+      repo_names: &repo_name_refs,
+      repo_last_commit_ids: &repo_commit_refs,
+      ansible_limit: body.ansible_limit.as_deref(),
+      ansible_verbosity: body.ansible_verbosity.as_deref(),
+      ansible_passthrough: body.ansible_passthrough.as_deref(),
+    },
   )
   .await
   .map_err(to_handler_error)?;

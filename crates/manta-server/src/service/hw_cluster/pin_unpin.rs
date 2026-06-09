@@ -508,22 +508,38 @@ pub fn validate_resource_sufficiency(
   Ok(())
 }
 
+/// Inputs to [`apply_group_updates`] bundled to avoid a ten-arg
+/// positional call. Pairs the old and new membership lists per
+/// group; the function uses the pair to decide whether the parent
+/// will be left empty by the move.
+pub struct GroupUpdate<'a> {
+  /// Destination group label.
+  pub target_group: &'a str,
+  /// Source group label.
+  pub parent_group: &'a str,
+  /// Membership of the target group before the update.
+  pub old_target_members: &'a [String],
+  /// Membership of the parent group before the update.
+  pub old_parent_members: &'a [String],
+  /// Membership of the target group after the update.
+  pub new_target_members: &'a [String],
+  /// Membership of the parent group after the update.
+  pub new_parent_members: &'a [String],
+  /// When `true`, skip every backend mutation but still walk the plan.
+  pub dryrun: bool,
+  /// When `true` and the parent group has no remaining members after
+  /// the update, delete the parent group too.
+  pub delete_empty_parent: bool,
+}
+
 /// Apply group membership updates to both target and parent HSM groups.
-#[allow(clippy::too_many_arguments)]
 pub async fn apply_group_updates(
   infra: &InfraContext<'_>,
   shasta_token: &str,
-  target_group: &str,
-  parent_group: &str,
-  old_target_members: &[String],
-  old_parent_members: &[String],
-  new_target_members: &[String],
-  new_parent_members: &[String],
-  dryrun: bool,
-  delete_empty_parent: bool,
+  u: GroupUpdate<'_>,
 ) -> Result<(), Error> {
-  tracing::info!("Updating target HSM group '{}' members", target_group);
-  if dryrun {
+  tracing::info!("Updating target HSM group '{}' members", u.target_group);
+  if u.dryrun {
     tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
@@ -532,9 +548,9 @@ pub async fn apply_group_updates(
     infra
       .update_group_members(
         shasta_token,
-        target_group,
-        old_target_members,
-        new_target_members,
+        u.target_group,
+        u.old_target_members,
+        u.new_target_members,
       )
       .await
       .map_err(|e| {
@@ -544,21 +560,21 @@ pub async fn apply_group_updates(
       })?;
   }
 
-  tracing::info!("Updating parent HSM group '{}' members", parent_group);
-  if dryrun {
+  tracing::info!("Updating parent HSM group '{}' members", u.parent_group);
+  if u.dryrun {
     tracing::info!(
       "Dry run enabled, not modifying the \
        HSM groups on the system."
     );
   } else {
     let parent_will_be_empty =
-      old_target_members.len() == old_parent_members.len();
+      u.old_target_members.len() == u.old_parent_members.len();
     infra
       .update_group_members(
         shasta_token,
-        parent_group,
-        old_parent_members,
-        new_parent_members,
+        u.parent_group,
+        u.old_parent_members,
+        u.new_parent_members,
       )
       .await
       .map_err(|e| {
@@ -567,14 +583,14 @@ pub async fn apply_group_updates(
         ))
       })?;
 
-    if parent_will_be_empty && delete_empty_parent {
+    if parent_will_be_empty && u.delete_empty_parent {
       tracing::info!(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          been selected, removing it.",
-        parent_group
+        u.parent_group
       );
-      match infra.delete_group(shasta_token, parent_group).await {
+      match infra.delete_group(shasta_token, u.parent_group).await {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. \
@@ -588,7 +604,7 @@ pub async fn apply_group_updates(
         "Parent HSM group '{}' is now empty and \
          the option to delete empty groups has \
          NOT been selected, will not remove it.",
-        parent_group
+        u.parent_group
       );
     }
   }

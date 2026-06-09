@@ -174,31 +174,47 @@ pub async fn execute_session_deletion(
     .await
 }
 
+/// Parameters for [`create_cfs_session`]. Bundled to keep the
+/// service entry point readable at the call site (the handler-level
+/// `CreateSessionRequest` body folds 1:1 into this).
+pub struct CreateCfsSessionParams<'a> {
+  /// Optional caller-supplied session name; backend autogenerates one
+  /// when absent.
+  pub cfs_conf_sess_name: Option<&'a str>,
+  /// Optional playbook path inside the rendered configuration.
+  pub playbook_yaml_file_name: Option<&'a str>,
+  /// HSM group the session targets when no `ansible_limit` is given.
+  pub group: Option<&'a str>,
+  /// VCS repository names mirroring `repo_last_commit_ids`.
+  pub repo_names: &'a [&'a str],
+  /// Commit SHAs, one per `repo_names` entry.
+  pub repo_last_commit_ids: &'a [&'a str],
+  /// Hosts expression (xnames / NIDs / hostlist) limiting the session;
+  /// resolved to xnames before the CFS request.
+  pub ansible_limit: Option<&'a str>,
+  /// Ansible verbosity flag (`-v` .. `-vvv`).
+  pub ansible_verbosity: Option<&'a str>,
+  /// Arbitrary args forwarded to `ansible-playbook`.
+  pub ansible_passthrough: Option<&'a str>,
+}
+
 /// Create a CFS session, expanding the ansible-limit hosts expression
 /// to xnames first.
 ///
-/// `ansible_limit_opt` is parsed as a hostlist / NID / xname
+/// `params.ansible_limit` is parsed as a hostlist / NID / xname
 /// expression the same way other entry points do, then joined with
 /// commas for the CFS request — CFS itself is happy with either form
-/// but downstream tooling expects xnames. When `ansible_limit_opt`
+/// but downstream tooling expects xnames. When `params.ansible_limit`
 /// is `None`, the session targets the full group selected by
-/// `group_opt`. Returns
+/// `params.group`. Returns
 /// `(cfs_configuration_name, cfs_session_name)`.
-#[allow(clippy::too_many_arguments)]
 pub async fn create_cfs_session(
   infra: &InfraContext<'_>,
   token: &str,
   gitea_token: &str,
-  cfs_conf_sess_name: Option<&str>,
-  playbook_yaml_file_name_opt: Option<&str>,
-  group_opt: Option<&str>,
-  repo_name_vec: &[&str],
-  repo_last_commit_id_vec: &[&str],
-  ansible_limit_opt: Option<&str>,
-  ansible_verbosity: Option<&str>,
-  ansible_passthrough: Option<&str>,
+  params: CreateCfsSessionParams<'_>,
 ) -> Result<(String, String), Error> {
-  let ansible_limit = if let Some(ansible_limit) = ansible_limit_opt {
+  let ansible_limit = if let Some(ansible_limit) = params.ansible_limit {
     let xname_vec = node_ops::from_user_hosts_expression_to_xname_vec(
       infra,
       token,
@@ -215,14 +231,14 @@ pub async fn create_cfs_session(
     .apply_session(
       gitea_token,
       token,
-      cfs_conf_sess_name,
-      playbook_yaml_file_name_opt,
-      group_opt,
-      repo_name_vec,
-      repo_last_commit_id_vec,
+      params.cfs_conf_sess_name,
+      params.playbook_yaml_file_name,
+      params.group,
+      params.repo_names,
+      params.repo_last_commit_ids,
       ansible_limit.as_deref(),
-      ansible_verbosity,
-      ansible_passthrough,
+      params.ansible_verbosity,
+      params.ansible_passthrough,
     )
     .await
 }

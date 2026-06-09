@@ -24,18 +24,40 @@ use crate::server::common::app_context::InfraContext;
 /// (`Pin` / `Unpin`) picks which selection algorithm runs. `dryrun`
 /// shortcuts every backend mutation but still returns the would-be
 /// final memberships so the operator sees the plan.
-#[allow(clippy::too_many_arguments)]
+/// Parameters for [`apply_hw_configuration`].
+pub struct ApplyHwConfigurationParams<'a> {
+  /// `Pin` (capacity-aware selection) or `Unpin` (release all).
+  pub mode: HwClusterMode,
+  /// Destination HSM group that will receive nodes matching `pattern`.
+  pub target_group_name: &'a str,
+  /// Source HSM group nodes are drawn from when honouring `pattern`.
+  pub parent_group_name: &'a str,
+  /// Hardware-component request string, e.g. `"a100:8,milan:2"`.
+  pub pattern: &'a str,
+  /// When `true`, plan the moves but skip every backend mutation; the
+  /// returned `ApplyHwResult` still reflects the would-be membership.
+  pub dryrun: bool,
+  /// Create `target_group_name` if it doesn't already exist.
+  pub create_target_group: bool,
+  /// Delete the parent group when the move leaves it with no members.
+  pub delete_empty_parent_group: bool,
+}
+
+/// Service entry point for `POST /hardware-clusters/{target}/configuration`.
 pub async fn apply_hw_configuration(
   infra: &InfraContext<'_>,
-  mode: HwClusterMode,
   shasta_token: &str,
-  target_group_name: &str,
-  parent_group_name: &str,
-  pattern: &str,
-  dryrun: bool,
-  create_target_group: bool,
-  delete_empty_parent_group: bool,
+  p: ApplyHwConfigurationParams<'_>,
 ) -> Result<ApplyHwResult, Error> {
+  let ApplyHwConfigurationParams {
+    mode,
+    target_group_name,
+    parent_group_name,
+    pattern,
+    dryrun,
+    create_target_group,
+    delete_empty_parent_group,
+  } = p;
   let (user_defined_hw_component_vec, user_defined_hw_component_count_hashmap) =
     pin_unpin::parse_hw_pattern_usize(target_group_name, pattern)?;
 
@@ -109,14 +131,16 @@ pub async fn apply_hw_configuration(
   pin_unpin::apply_group_updates(
     infra,
     shasta_token,
-    target_group_name,
-    parent_group_name,
-    &target_hsm_group_member_vec,
-    &parent_hsm_group_member_vec,
-    &target_hsm_node_vec,
-    &parent_hsm_node_vec,
-    dryrun,
-    delete_empty_parent_group,
+    pin_unpin::GroupUpdate {
+      target_group: target_group_name,
+      parent_group: parent_group_name,
+      old_target_members: &target_hsm_group_member_vec,
+      old_parent_members: &parent_hsm_group_member_vec,
+      new_target_members: &target_hsm_node_vec,
+      new_parent_members: &parent_hsm_node_vec,
+      dryrun,
+      delete_empty_parent: delete_empty_parent_group,
+    },
   )
   .await?;
 
