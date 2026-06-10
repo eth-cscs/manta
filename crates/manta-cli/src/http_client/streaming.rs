@@ -1,12 +1,23 @@
-//! SSE log streaming endpoints.
+//! HAND-ROLLED — not generated from the OpenAPI spec.
 //!
+//! SSE (server-sent events) log streaming endpoint.
 //! `GET /sessions/{name}/logs` returns a `text/event-stream` body the
-//! CLI tails line-by-line. The progenitor-generated client doesn't
-//! handle SSE streams (its `get_session_logs` deserialises the
-//! response as a one-shot), so the stream lives on the raw
-//! `reqwest::Client` instead. Bearer auth comes from the default
-//! header set in [`crate::http_client::MantaClient::new_with_timeout`];
-//! the `X-Manta-Site` header is attached per call.
+//! CLI tails line-by-line.
+//!
+//! ## Why not auto-generated
+//!
+//! progenitor's `get_session_logs` deserialises the response as a
+//! one-shot JSON document — fine for short responses, useless for an
+//! open `text/event-stream` connection that streams lines indefinitely.
+//! The CLI needs the body as `impl AsyncBufRead`, so this endpoint
+//! stays on the raw `reqwest::Client` (`MantaClient::raw_client()`).
+//! Bearer auth comes from the default `Authorization` header set in
+//! [`crate::http_client::MantaClient::new_with_timeout`]; the
+//! `X-Manta-Site` header is attached per call.
+//!
+//! Adding a new streaming endpoint? Hand-roll it here. Everything
+//! else should be added to the server with `#[utoipa::path(...)]`
+//! and consumed through the regenerated `client.openapi.*` methods.
 
 use anyhow::{Context, bail};
 use futures::TryStreamExt;

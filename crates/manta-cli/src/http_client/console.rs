@@ -1,16 +1,26 @@
-//! WebSocket console endpoints for nodes and CFS sessions.
+//! HAND-ROLLED — not generated from the OpenAPI spec.
 //!
-//! Each public method (`console_node`, `console_session`) builds the
-//! `ws://` / `wss://` URL and delegates to `connect_console_ws`, which
-//! handles the upgrade, spawns a bridge task, and returns a pair of
-//! async pipes for stdin/stdout.
+//! WebSocket console endpoints for nodes and CFS sessions. Each
+//! public method (`console_node`, `console_session`) builds the
+//! `ws://` / `wss://` URL and delegates to `connect_console_ws`,
+//! which drives the HTTP-upgrade handshake (via tungstenite), spawns
+//! a bridge task, and returns a pair of async pipes for stdin/stdout.
 //!
-//! The progenitor-generated client provides `console_node_ws` and
-//! `console_session_ws`, but they expect a pre-built WebSocket upgrade
-//! response — they don't drive the upgrade themselves. Since the CLI
-//! needs the bidirectional WS stream, we still hand-roll the upgrade
-//! here (with tungstenite) and read the bearer token off the wrapper
-//! struct instead of taking it as a parameter.
+//! ## Why not auto-generated
+//!
+//! progenitor models endpoints as one-shot request/response pairs
+//! that deserialize a JSON body. The HTTP-upgrade dance, the
+//! bidirectional message loop, and the `Box<dyn AsyncWrite/AsyncRead>`
+//! return shape all fall outside that model. The progenitor-generated
+//! client does emit `console_node_ws` / `console_session_ws` stubs,
+//! but they expect a pre-built upgrade response — they don't drive
+//! the upgrade themselves. The CLI needs the bidirectional stream,
+//! so we hand-roll the upgrade here and read the bearer token off
+//! the wrapper struct instead of taking it as a parameter.
+//!
+//! Adding a new WebSocket endpoint? Hand-roll it here. Everything
+//! else should be added to the server with `#[utoipa::path(...)]`
+//! and consumed through the regenerated `client.openapi.*` methods.
 
 use anyhow::Context;
 

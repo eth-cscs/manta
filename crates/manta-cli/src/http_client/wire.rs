@@ -1,7 +1,11 @@
 //! URL-scheme rewriting + curl debug formatting with secrets redaction.
 //!
 //! Two unrelated concerns colocated because both touch the wire shape
-//! of an outbound request without doing any IO themselves.
+//! of an outbound request without doing any IO themselves. Used by
+//! the hand-rolled WebSocket / SSE paths (`console.rs`, `streaming.rs`)
+//! and by the wrapper's debug logging in `client.rs`. The auto-
+//! generated client handles its own URL construction and doesn't
+//! call into either helper.
 
 /// Convert an `http://` or `https://` base URL to the corresponding `ws://` / `wss://` URL.
 pub fn ws_base_url(http_url: &str) -> String {

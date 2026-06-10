@@ -1,11 +1,13 @@
-//! `MantaClient` — thin wrapper around the progenitor-generated
-//! `openapi_client::Client`, plus a `reqwest::Client` + token for the
-//! WebSocket / SSE paths that bypass the generated client.
+//! `MantaClient` — thin wrapper around the **auto-generated**
+//! `openapi_client::Client` (see `crate::openapi_client`), plus a
+//! `reqwest::Client` + token for the **hand-rolled** WebSocket /
+//! SSE paths that bypass the generated client.
 //!
-//! Dispatch handlers reach the API through `client.openapi.<method>(...)`
-//! and convert the progenitor result with [`OpenApiResultExt::into_anyhow`].
-//! Console / log-streaming endpoints sit on `impl MantaClient` (see
-//! `console.rs`, `streaming.rs`) and use the raw `reqwest::Client`
+//! Dispatch handlers reach the auto-generated API surface through
+//! `client.openapi.<method>(...)` and convert the progenitor result
+//! with [`OpenApiResultExt::into_anyhow`]. Hand-rolled console /
+//! log-streaming endpoints sit on `impl MantaClient` in `console.rs`
+//! and `streaming.rs` respectively, and use the raw `reqwest::Client`
 //! (with default `Authorization` header set in the constructor).
 //!
 //! Bearer auth is wired once in the constructor via

@@ -1,8 +1,13 @@
 //! Thin HTTP client for forwarding CLI calls to the manta server.
 //!
-//! Most of the API surface comes from the progenitor-generated typed
-//! client (`crate::openapi_client::Client`), wrapped in [`MantaClient`]
-//! (see `client.rs`). Dispatch handlers reach the API through:
+//! # Auto-generated vs. hand-rolled split
+//!
+//! Most of the API surface — every plain JSON request/response endpoint
+//! — comes from the **progenitor-generated** typed client at
+//! [`crate::openapi_client::Client`], wrapped in [`MantaClient`]
+//! (see `client.rs`). The generated client is regenerated on every
+//! build from `crates/manta-cli/openapi.json`. Dispatch handlers
+//! reach those endpoints through:
 //!
 //! ```ignore
 //! let client = MantaClient::from_app_ctx(ctx, Some(token))?;
@@ -15,10 +20,19 @@
 //!
 //! The progenitor result is converted via [`OpenApiResultExt::into_anyhow`].
 //!
-//! Two endpoint families don't fit the generated-client shape and
-//! live as `impl MantaClient` methods on the raw `reqwest::Client`:
-//! WebSocket consoles (`console.rs`) and the SSE log stream
-//! (`streaming.rs`).
+//! Two endpoint families do NOT fit the generated-client shape — they
+//! use HTTP upgrade or long-poll streaming protocols that progenitor
+//! doesn't model — and live as **hand-rolled** `impl MantaClient`
+//! methods on the raw `reqwest::Client`:
+//!
+//! - WebSocket consoles → `console.rs`
+//! - SSE log streaming  → `streaming.rs`
+//!
+//! When adding a new endpoint, the default path is: annotate the
+//! server handler with `#[utoipa::path(...)]`, regenerate the spec,
+//! and the generated client picks it up. Hand-rolling here is only
+//! the answer when the wire protocol falls outside the generated
+//! client's request/response model.
 
 mod client;
 mod console;
