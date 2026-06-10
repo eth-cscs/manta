@@ -16,7 +16,7 @@ pub use manta_shared::types::wire::queries::ClusterQuery;
   params(ClusterQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "List of group nodes", body = serde_json::Value),
+    (status = 200, description = "List of group nodes", body = Vec<manta_shared::types::dto::NodeDetails>),
     (status = 401, description = "Unauthorized",         body = ErrorResponse),
     (status = 500, description = "Internal error",       body = ErrorResponse),
   )
@@ -48,7 +48,7 @@ pub async fn get_groups_nodes(
   params(ClusterQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "[DEPRECATED] use /groups/nodes — list of group nodes", body = serde_json::Value),
+    (status = 200, description = "[DEPRECATED] use /groups/nodes — list of group nodes", body = Vec<manta_shared::types::dto::NodeDetails>),
     (status = 401, description = "Unauthorized",                                          body = ErrorResponse),
     (status = 500, description = "Internal error",                                        body = ErrorResponse),
   )

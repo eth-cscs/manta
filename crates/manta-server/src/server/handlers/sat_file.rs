@@ -74,6 +74,8 @@ pub use manta_shared::types::wire::sat_file::{
   request_body = PostSatConfigurationRequest,
   security(("bearerAuth" = [])),
   responses(
+    // CfsConfigurationResponse lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "Configuration applied",       body = serde_json::Value),
     (status = 401, description = "Unauthorized",                body = ErrorResponse),
     (status = 500, description = "Internal error",              body = ErrorResponse),
@@ -139,6 +141,8 @@ pub async fn post_sat_configuration(
   request_body = CreateImageCfsSessionRequest,
   security(("bearerAuth" = [])),
   responses(
+    // CfsSessionGetResponse lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 201, description = "CFS session created",         body = serde_json::Value),
     (status = 401, description = "Unauthorized",                body = ErrorResponse),
     (status = 500, description = "Internal error",              body = ErrorResponse),
@@ -198,6 +202,8 @@ pub async fn post_sat_image_cfs_session(
   request_body = StampImageFromSessionRequest,
   security(("bearerAuth" = [])),
   responses(
+    // Image (IMS) lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "Image stamped",               body = serde_json::Value),
     (status = 400, description = "Session not complete / no image", body = ErrorResponse),
     (status = 401, description = "Unauthorized",                body = ErrorResponse),

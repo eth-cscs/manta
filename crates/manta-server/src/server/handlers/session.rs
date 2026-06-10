@@ -34,6 +34,8 @@ pub use manta_shared::types::wire::queries::{
   params(SessionQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // CfsSessionGetResponse lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "List of sessions", body = serde_json::Value),
     (status = 400, description = "Bad request",      body = ErrorResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
@@ -85,6 +87,7 @@ pub async fn get_sessions(
   params(("name" = String, Path, description = "Session name"), DeleteSessionQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Session deleted or deletion preview", body = serde_json::Value),
     (status = 401, description = "Unauthorized",                        body = ErrorResponse),
     (status = 404, description = "Not found",                           body = ErrorResponse),
@@ -133,7 +136,7 @@ pub use manta_shared::types::wire::session::CreateSessionRequest;
   request_body = CreateSessionRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Session created",               body = serde_json::Value),
+    (status = 201, description = "Session created",               body = manta_shared::types::wire::responses::CreateSessionResponse),
     (status = 400, description = "Bad request",                   body = ErrorResponse),
     (status = 401, description = "Unauthorized",                  body = ErrorResponse),
     (status = 500, description = "Internal error",                body = ErrorResponse),

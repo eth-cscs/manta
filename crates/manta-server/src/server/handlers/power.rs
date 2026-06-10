@@ -34,6 +34,8 @@ pub use manta_shared::types::wire::power::{
   request_body = PowerRequest,
   security(("bearerAuth" = [])),
   responses(
+    // TransitionStartOutput lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "PCS transition started; returns TransitionStartOutput", body = serde_json::Value),
     (status = 400, description = "Bad request",            body = ErrorResponse),
     (status = 401, description = "Unauthorized",           body = ErrorResponse),
@@ -84,6 +86,8 @@ pub async fn post_power(
   params(SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // TransitionResponse lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "Transition snapshot",  body = serde_json::Value),
     (status = 401, description = "Unauthorized",         body = ErrorResponse),
     (status = 404, description = "Unknown transition id",body = ErrorResponse),

@@ -15,7 +15,7 @@ use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 
 /// Result of migrating nodes for a single parent→target pair.
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct NodeMigrationResult {
   /// HSM group that received the nodes.
   pub target_hsm_name: String,

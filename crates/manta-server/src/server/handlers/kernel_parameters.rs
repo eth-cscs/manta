@@ -19,7 +19,7 @@ pub use manta_shared::types::wire::queries::KernelParametersQuery;
   params(KernelParametersQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Kernel parameters", body = serde_json::Value),
+    (status = 200, description = "Kernel parameters", body = Vec<manta_backend_dispatcher::types::bss::BootParameters>),
     (status = 401, description = "Unauthorized",      body = ErrorResponse),
     (status = 500, description = "Internal error",    body = ErrorResponse),
   )
@@ -60,6 +60,7 @@ pub use manta_shared::types::wire::kernel_parameters::{
   request_body = ApplyKernelParametersRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Kernel parameters applied or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                          body = ErrorResponse),
     (status = 401, description = "Unauthorized",                         body = ErrorResponse),
@@ -153,6 +154,7 @@ pub use manta_shared::types::wire::kernel_parameters::AddKernelParametersRequest
   request_body = AddKernelParametersRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Parameters added or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                 body = ErrorResponse),
     (status = 401, description = "Unauthorized",                body = ErrorResponse),
@@ -230,6 +232,7 @@ pub use manta_shared::types::wire::kernel_parameters::DeleteKernelParametersRequ
   request_body = DeleteKernelParametersRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Parameters removed or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                   body = ErrorResponse),
     (status = 401, description = "Unauthorized",                  body = ErrorResponse),

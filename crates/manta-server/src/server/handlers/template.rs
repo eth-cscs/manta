@@ -23,6 +23,8 @@ pub use manta_shared::types::wire::queries::TemplateQuery;
   params(TemplateQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // BosSessionTemplate lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "List of session templates", body = serde_json::Value),
     (status = 401, description = "Unauthorized",              body = ErrorResponse),
     (status = 500, description = "Internal error",            body = ErrorResponse),
@@ -63,7 +65,10 @@ pub use manta_shared::types::wire::template::{
   request_body = PostTemplateSessionRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Dry run preview",  body = serde_json::Value),
+    // BosSession lives in manta-backend-dispatcher (third-party, no
+    // ToSchema) — kept as Value until upstream derives it.
     (status = 201, description = "Session created",  body = serde_json::Value),
     (status = 400, description = "Bad request",      body = ErrorResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),

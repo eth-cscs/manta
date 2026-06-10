@@ -21,7 +21,7 @@ pub use manta_shared::types::wire::queries::NodesQuery;
   params(NodesQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Node details",  body = serde_json::Value),
+    (status = 200, description = "Node details",  body = Vec<manta_shared::types::dto::NodeDetails>),
     (status = 400, description = "Bad request",   body = ErrorResponse),
     (status = 401, description = "Unauthorized",  body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
@@ -89,7 +89,7 @@ pub use manta_shared::types::wire::node::AddNodeRequest;
   request_body = AddNodeRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Node registered",  body = serde_json::Value),
+    (status = 201, description = "Node registered",  body = manta_shared::types::wire::responses::AddNodeResponse),
     (status = 400, description = "Bad request",      body = ErrorResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),

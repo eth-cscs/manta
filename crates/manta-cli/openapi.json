@@ -278,7 +278,12 @@
             "description": "Boot parameters",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BootParameters"
+                  }
+                }
               }
             }
           },
@@ -409,7 +414,9 @@
             "description": "Boot parameters created",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedResponse"
+                }
               }
             }
           },
@@ -556,7 +563,12 @@
             "description": "[DEPRECATED] use /groups/nodes — list of group nodes",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodeDetails"
+                  }
+                }
               }
             }
           },
@@ -834,7 +846,9 @@
             "description": "Ephemeral env created",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/EphemeralEnvResponse"
+                }
               }
             }
           },
@@ -901,7 +915,12 @@
             "description": "List of groups",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Group"
+                  }
+                }
               }
             }
           },
@@ -964,7 +983,9 @@
             "description": "Group created",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedResponse"
+                }
               }
             }
           },
@@ -1181,7 +1202,12 @@
             "description": "List of group nodes",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodeDetails"
+                  }
+                }
               }
             }
           },
@@ -2053,7 +2079,12 @@
             "description": "Kernel parameters",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BootParameters"
+                  }
+                }
               }
             }
           },
@@ -2341,7 +2372,9 @@
             "description": "Backup completed",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletedResponse"
+                }
               }
             }
           },
@@ -2406,7 +2439,9 @@
             "description": "Migration result",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/MigrateNodesResponse"
+                }
               }
             }
           },
@@ -2481,7 +2516,9 @@
             "description": "Restore completed",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CompletedResponse"
+                }
               }
             }
           },
@@ -2569,7 +2606,12 @@
             "description": "Node details",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NodeDetails"
+                  }
+                }
               }
             }
           },
@@ -2642,7 +2684,9 @@
             "description": "Node registered",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AddNodeResponse"
+                }
               }
             }
           },
@@ -3197,7 +3241,9 @@
             "description": "Endpoint registered",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedResponse"
+                }
               }
             }
           },
@@ -3785,7 +3831,9 @@
             "description": "Session created",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CreateSessionResponse"
+                }
               }
             }
           },
@@ -4371,6 +4419,19 @@
           }
         }
       },
+      "AddNodeResponse": {
+        "type": "object",
+        "description": "Response for `POST /api/v1/nodes` — echoes the registered xname.",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Physical location ID (xname) of the registered node."
+          }
+        }
+      },
       "AddNodesToGroupRequest": {
         "type": "object",
         "description": "Request body for `POST /api/v1/groups/{name}/members`.",
@@ -4619,6 +4680,19 @@
           "shutdown"
         ]
       },
+      "CompletedResponse": {
+        "type": "object",
+        "description": "Response for endpoints that simply confirm a backup / restore /\nlong-running migrate operation finished. Emitted by\n`POST /api/v1/migrate/backup` and `POST /api/v1/migrate/restore`.",
+        "required": [
+          "completed"
+        ],
+        "properties": {
+          "completed": {
+            "type": "boolean",
+            "description": "Always `true` on success."
+          }
+        }
+      },
       "CreateEphemeralEnvRequest": {
         "type": "object",
         "description": "Request body for `POST /ephemeral-env`.",
@@ -4740,6 +4814,37 @@
           }
         }
       },
+      "CreateSessionResponse": {
+        "type": "object",
+        "description": "Response for `POST /api/v1/sessions` — names of the created CFS\nsession and its underlying configuration.",
+        "required": [
+          "session_name",
+          "configuration_name"
+        ],
+        "properties": {
+          "configuration_name": {
+            "type": "string",
+            "description": "Name of the CFS configuration the session was attached to."
+          },
+          "session_name": {
+            "type": "string",
+            "description": "Name of the created CFS session."
+          }
+        }
+      },
+      "CreatedResponse": {
+        "type": "object",
+        "description": "Response for endpoints that simply confirm a write happened.\n\nEmitted by `POST /api/v1/redfish-endpoints`,\n`POST /api/v1/boot-parameters`, and `POST /api/v1/groups`.",
+        "required": [
+          "created"
+        ],
+        "properties": {
+          "created": {
+            "type": "boolean",
+            "description": "Always `true` on success."
+          }
+        }
+      },
       "DeleteBootParametersRequest": {
         "type": "object",
         "description": "Body for `DELETE /boot-parameters`.",
@@ -4827,6 +4932,32 @@
               "null"
             ],
             "description": "Hosts expression (xnames, NIDs, or hostlist notation); mutually\nexclusive with `hsm_group`."
+          }
+        }
+      },
+      "DeleteSessionResponse": {
+        "type": "object",
+        "description": "Response for `DELETE /api/v1/sessions/{name}` — echoes the deleted\nsession name when not in dry-run mode.",
+        "required": [
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "string",
+            "description": "Name of the deleted session."
+          }
+        }
+      },
+      "EphemeralEnvResponse": {
+        "type": "object",
+        "description": "Response for `POST /api/v1/ephemeral-env` — the freshly provisioned\nephemeral host.",
+        "required": [
+          "hostname"
+        ],
+        "properties": {
+          "hostname": {
+            "type": "string",
+            "description": "Hostname of the ephemeral environment."
           }
         }
       },
@@ -4936,6 +5067,40 @@
           }
         }
       },
+      "MigrateNodesPairResult": {
+        "type": "object",
+        "description": "One migration pair's result; mirrors\n`manta_server::service::migrate::NodeMigrationResult` on the wire.\nEmbedded inside [`MigrateNodesResponse`] without importing the\nserver-side type into the shared crate.",
+        "required": [
+          "target_hsm_name",
+          "parent_hsm_name",
+          "target_members",
+          "parent_members"
+        ],
+        "properties": {
+          "parent_hsm_name": {
+            "type": "string",
+            "description": "HSM group that the nodes were moved out of."
+          },
+          "parent_members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Remaining member list of the parent group after migration."
+          },
+          "target_hsm_name": {
+            "type": "string",
+            "description": "HSM group that received the nodes."
+          },
+          "target_members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Final member list of the target group after migration."
+          }
+        }
+      },
       "MigrateNodesRequest": {
         "type": "object",
         "description": "Request body for `POST /api/v1/migrate/nodes`.",
@@ -4970,6 +5135,30 @@
               "type": "string"
             },
             "description": "Destination HSM group names to move nodes into."
+          }
+        }
+      },
+      "MigrateNodesResponse": {
+        "type": "object",
+        "description": "Response for `POST /api/v1/migrate/nodes` — moved xnames plus a\nper-(target,parent) result list. Dry-run uses the same shape so the\nCLI consumes one type regardless of mode.",
+        "required": [
+          "xnames",
+          "results"
+        ],
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MigrateNodesPairResult"
+            },
+            "description": "Per (target, parent) pair migration result."
+          },
+          "xnames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Xnames moved (or that would have been moved, in dry-run)."
           }
         }
       },
@@ -5015,6 +5204,69 @@
           "overwrite": {
             "type": "boolean",
             "description": "When true, overwrite existing resources that conflict with the\nbackup."
+          }
+        }
+      },
+      "NodeDetails": {
+        "type": "object",
+        "description": "Per-node details returned by `GET /api/v1/nodes`.\n\nMirror of `csm_rs::node::types::NodeDetails` with identical fields\nand identical JSON wire format. No conversion impl is needed in\nthe server crate — the response is serialised straight from the\ncsm-rs type and the CLI deserialises it into this mirror.\n\nAll fields are wire-stringified (CSM serializes them that way);\ncallers parse them as needed for display or comparison.",
+        "required": [
+          "xname",
+          "nid",
+          "hsm",
+          "power_status",
+          "desired_configuration",
+          "configuration_status",
+          "enabled",
+          "error_count",
+          "boot_image_id",
+          "boot_configuration",
+          "kernel_params"
+        ],
+        "properties": {
+          "boot_configuration": {
+            "type": "string",
+            "description": "CFS configuration linked to the boot image."
+          },
+          "boot_image_id": {
+            "type": "string",
+            "description": "IMS image ID currently set as the boot image."
+          },
+          "configuration_status": {
+            "type": "string",
+            "description": "CFS configuration status (`\"configured\"`, `\"pending\"`,\n`\"failed\"`, etc.)."
+          },
+          "desired_configuration": {
+            "type": "string",
+            "description": "CFS desired-configuration name targeting this node."
+          },
+          "enabled": {
+            "type": "string",
+            "description": "`\"true\"` or `\"false\"` — whether the node is enabled in the\nhardware state manager."
+          },
+          "error_count": {
+            "type": "string",
+            "description": "Stringified count of recent CFS failures."
+          },
+          "hsm": {
+            "type": "string",
+            "description": "Comma-separated HSM group names this node belongs to."
+          },
+          "kernel_params": {
+            "type": "string",
+            "description": "Kernel command-line parameters as last reported by BSS."
+          },
+          "nid": {
+            "type": "string",
+            "description": "Numeric node ID as a string, e.g. `\"nid001313\"`."
+          },
+          "power_status": {
+            "type": "string",
+            "description": "Current power state reported by PCS (`\"On\"`, `\"Off\"`, `\"Ready\"`,\netc.)."
+          },
+          "xname": {
+            "type": "string",
+            "description": "Physical location ID, e.g. `x3000c0s1b0n0`."
           }
         }
       },

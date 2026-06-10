@@ -48,7 +48,7 @@ pub async fn get_available_groups(
   params(GroupQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "List of groups", body = serde_json::Value),
+    (status = 200, description = "List of groups", body = Vec<manta_backend_dispatcher::types::Group>),
     (status = 401, description = "Unauthorized",   body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
   )
@@ -120,7 +120,7 @@ pub async fn delete_group(
   request_body = manta_backend_dispatcher::types::Group,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Group created",    body = serde_json::Value),
+    (status = 201, description = "Group created",    body = manta_shared::types::wire::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 409, description = "Conflict",         body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),

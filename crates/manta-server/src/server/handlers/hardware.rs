@@ -18,6 +18,8 @@ pub use manta_shared::types::wire::queries::{
   params(HardwareClusterQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // Response wraps NodeSummary from manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "Hardware summary for group nodes", body = serde_json::Value),
     (status = 401, description = "Unauthorized",                      body = ErrorResponse),
     (status = 500, description = "Internal error",                    body = ErrorResponse),
@@ -53,6 +55,8 @@ pub async fn get_groups_hardware(
   params(HardwareClusterQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // Alias for the canonical handler — same NodeSummary third-party
+    // shape, kept as Value for the same reason.
     (status = 200, description = "[DEPRECATED] use /groups/hardware — hardware summary for group nodes", body = serde_json::Value),
     (status = 401, description = "Unauthorized",                                                          body = ErrorResponse),
     (status = 500, description = "Internal error",                                                        body = ErrorResponse),
@@ -78,6 +82,8 @@ pub async fn get_hardware_clusters_deprecated(
   params(HardwareNodesListQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // Response wraps NodeSummary from manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "Hardware details for specified nodes", body = serde_json::Value),
     (status = 400, description = "Bad request",                          body = ErrorResponse),
     (status = 401, description = "Unauthorized",                         body = ErrorResponse),

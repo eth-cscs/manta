@@ -16,6 +16,7 @@ pub use manta_shared::types::wire::hw_cluster::{
   request_body = AddHwComponentRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Members added or preview", body = serde_json::Value),
     (status = 401, description = "Unauthorized",             body = ErrorResponse),
     (status = 500, description = "Internal error",           body = ErrorResponse),
@@ -80,6 +81,7 @@ pub async fn add_hw_component(
   request_body = DeleteHwComponentRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Members removed or preview", body = serde_json::Value),
     (status = 401, description = "Unauthorized",               body = ErrorResponse),
     (status = 500, description = "Internal error",             body = ErrorResponse),
@@ -144,6 +146,7 @@ pub async fn delete_hw_component(
   request_body = ApplyHwConfigurationRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Configuration applied or preview", body = serde_json::Value),
     (status = 401, description = "Unauthorized",                     body = ErrorResponse),
     (status = 500, description = "Internal error",                   body = ErrorResponse),

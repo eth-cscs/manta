@@ -50,6 +50,7 @@ pub async fn get_images(
   params(DeleteImagesQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Images deleted or validation result", body = serde_json::Value),
     (status = 400, description = "Bad request",                         body = ErrorResponse),
     (status = 401, description = "Unauthorized",                        body = ErrorResponse),

@@ -25,6 +25,7 @@ pub mod migrate;
 pub mod node;
 pub mod power;
 pub mod queries;
+pub mod responses;
 pub mod sat_file;
 pub mod session;
 pub mod template;

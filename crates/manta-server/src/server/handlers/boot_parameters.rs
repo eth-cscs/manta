@@ -20,7 +20,7 @@ pub use manta_shared::types::wire::queries::BootParametersQuery;
   params(BootParametersQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Boot parameters",  body = serde_json::Value),
+    (status = 200, description = "Boot parameters",  body = Vec<manta_backend_dispatcher::types::bss::BootParameters>),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),
   )
@@ -104,7 +104,7 @@ pub async fn delete_boot_parameters(
   request_body = manta_backend_dispatcher::types::bss::BootParameters,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Boot parameters created",  body = serde_json::Value),
+    (status = 201, description = "Boot parameters created",  body = manta_shared::types::wire::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",             body = ErrorResponse),
     (status = 500, description = "Internal error",           body = ErrorResponse),
   )
@@ -176,6 +176,7 @@ pub use manta_shared::types::wire::boot_parameters::ApplyBootConfigRequest;
   request_body = ApplyBootConfigRequest,
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Boot config applied or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                    body = ErrorResponse),
     (status = 401, description = "Unauthorized",                   body = ErrorResponse),

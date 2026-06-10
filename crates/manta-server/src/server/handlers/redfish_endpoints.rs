@@ -24,6 +24,8 @@ pub use manta_shared::types::wire::queries::RedfishEndpointsQuery;
   params(RedfishEndpointsQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // RedfishEndpointArray lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "List of Redfish endpoints", body = serde_json::Value),
     (status = 401, description = "Unauthorized",              body = ErrorResponse),
     (status = 500, description = "Internal error",            body = ErrorResponse),
@@ -92,7 +94,7 @@ pub async fn delete_redfish_endpoint(
   request_body = UpdateRedfishEndpointParams,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Endpoint registered",  body = serde_json::Value),
+    (status = 201, description = "Endpoint registered",  body = manta_shared::types::wire::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",          body = ErrorResponse),
     (status = 500, description = "Internal error",        body = ErrorResponse),
   )

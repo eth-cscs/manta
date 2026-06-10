@@ -29,6 +29,7 @@ pub use manta_backend_dispatcher::types::{
 };
 
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 /// Per-node details returned by `GET /api/v1/nodes`.
 ///
@@ -39,7 +40,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// All fields are wire-stringified (CSM serializes them that way);
 /// callers parse them as needed for display or comparison.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct NodeDetails {
   /// Physical location ID, e.g. `x3000c0s1b0n0`.
   pub xname: String,

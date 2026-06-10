@@ -21,6 +21,8 @@ pub use manta_shared::types::wire::queries::{
   params(ConfigurationQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // CfsConfigurationResponse lives in manta-backend-dispatcher (third-party,
+    // no ToSchema) — kept as Value until upstream derives it.
     (status = 200, description = "List of configurations", body = serde_json::Value),
     (status = 401, description = "Unauthorized",           body = ErrorResponse),
     (status = 500, description = "Internal error",         body = ErrorResponse),
@@ -60,6 +62,7 @@ pub async fn get_configurations(
   params(DeleteConfigurationsQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
+    // dry_run/real result union — kept as Value until the union shape is formalised
     (status = 200, description = "Configurations deleted or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                       body = ErrorResponse),
     (status = 401, description = "Unauthorized",                      body = ErrorResponse),
