@@ -4,9 +4,10 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::cluster_status;
+use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
 use manta_shared::types::params::cluster::GetClusterParams;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
@@ -33,15 +34,25 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
   let summary_status = cli_args.get_flag("summary-status");
 
-  let node_details_list = MantaClient::from_app_ctx(ctx)?
-    .get_group_nodes(token, &params)
-    .await?;
+  let hsm = params
+    .group_name
+    .as_deref()
+    .or(params.settings_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let node_details_list = client
+    .openapi
+    .get_groups_nodes(hsm, params.status_filter.as_deref(), client.site_name())
+    .await
+    .into_anyhow()?;
 
   if summary_status {
-    println!(
-      "{}",
-      cluster_status::compute_summary_status(&node_details_list)
-    );
+    // cluster_status helpers live in manta-shared and consume the
+    // shared NodeDetails type. Both types are wire-identical, so
+    // round-tripping through JSON is the lightest conversion.
+    let shared: Vec<SharedNodeDetails> =
+      serde_json::from_value(serde_json::to_value(&node_details_list)?)?;
+    println!("{}", cluster_status::compute_summary_status(&shared));
   } else if nids_only {
     let node_nid_list: Vec<String> =
       node_details_list.iter().map(|nd| nd.nid.clone()).collect();

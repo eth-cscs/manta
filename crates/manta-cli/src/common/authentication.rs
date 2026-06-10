@@ -7,6 +7,7 @@
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{AuthServerUnreachable, MantaClient};
+use crate::openapi_client::types::{AuthTokenRequest, ValidateTokenRequest};
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
@@ -19,8 +20,8 @@ use std::{
 
 /// `true` if `err`'s typed-context chain contains
 /// [`AuthServerUnreachable`] — the marker we attach in
-/// `http_client::auth` whenever the auth-bearing send fails at
-/// TCP/timeout level. Used by every stage of `get_api_token`
+/// [`map_auth_error`] whenever the auth-bearing send fails at the
+/// TCP / timeout layer. Used by every stage of `get_api_token`
 /// (env var, cached file, interactive prompt) to bail out instead
 /// of falling through or re-prompting.
 ///
@@ -41,11 +42,40 @@ const AUTH_CACHE_FILE_SUFFIX: &str = "_auth";
 /// Maximum number of interactive login attempts before giving up.
 const MAX_LOGIN_ATTEMPTS: u32 = 3;
 
+/// Wrap a progenitor `Error<E>` from an `/auth/*` call into an
+/// `anyhow::Error`, attaching the typed [`AuthServerUnreachable`]
+/// marker whenever the failure was at the TCP / timeout layer.
+fn map_auth_error<E: std::fmt::Debug>(
+  err: progenitor_client::Error<E>,
+  url: &str,
+) -> anyhow::Error
+where
+  progenitor_client::Error<E>: std::fmt::Display,
+{
+  let unreachable = match &err {
+    progenitor_client::Error::CommunicationError(e) => {
+      e.is_connect() || e.is_timeout()
+    }
+    _ => false,
+  };
+  let message = format!("{err}");
+  if unreachable {
+    anyhow!(message).context(AuthServerUnreachable {
+      url: url.to_string(),
+    })
+  } else {
+    anyhow!(message)
+  }
+}
+
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
 /// is validated through `manta-server`.
 #[tracing::instrument(skip_all, fields(site = %ctx.site_name))]
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
+  // Auth endpoints are the ones that *obtain* or *check* the token,
+  // so we pass `None` as the bearer here; no default `Authorization`
+  // header gets attached.
   let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
   let site_name = ctx.site_name;
 
@@ -123,8 +153,52 @@ async fn get_token_from_env(client: &MantaClient) -> Result<String> {
     auth_token_env_name
   );
 
-  client.validate_token(&shasta_token).await?;
+  validate_token(client, &shasta_token).await?;
   Ok(shasta_token)
+}
+
+/// `POST /api/v1/auth/validate` — check whether the backend still
+/// accepts `token`. Wraps the progenitor call so callers see a
+/// clean `anyhow::Result<()>` plus the `AuthServerUnreachable`
+/// marker on connect-level failures.
+async fn validate_token(
+  client: &MantaClient,
+  token: &str,
+) -> anyhow::Result<()> {
+  let url = client.base_url().trim_end_matches("/api/v1").to_string();
+  client
+    .openapi
+    .auth_validate(
+      client.site_name(),
+      &ValidateTokenRequest {
+        token: token.to_owned(),
+      },
+    )
+    .await
+    .map(|_| ())
+    .map_err(|e| map_auth_error(e, &url))
+}
+
+/// `POST /api/v1/auth/token` — exchange Keycloak credentials for a CSM
+/// bearer token.
+async fn get_token(
+  client: &MantaClient,
+  username: &str,
+  password: &str,
+) -> anyhow::Result<String> {
+  let url = client.base_url().trim_end_matches("/api/v1").to_string();
+  let resp = client
+    .openapi
+    .auth_token(
+      client.site_name(),
+      &AuthTokenRequest {
+        username: username.to_owned(),
+        password: password.to_owned(),
+      },
+    )
+    .await
+    .map_err(|e| map_auth_error(e, &url))?;
+  Ok(resp.into_inner().token)
 }
 
 async fn get_token_from_local_file(
@@ -154,7 +228,7 @@ async fn get_token_from_local_file(
     "Authentication token found in filesystem. Check if it is still valid",
   );
 
-  client.validate_token(&shasta_token).await?;
+  validate_token(client, &shasta_token).await?;
   Ok(shasta_token)
 }
 
@@ -192,7 +266,7 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
 
   let password = Password::new().with_prompt("password").interact()?;
 
-  let mut shasta_token_rslt = client.get_token(&username, &password).await;
+  let mut shasta_token_rslt = get_token(client, &username, &password).await;
 
   let mut attempts = 0;
 
@@ -222,7 +296,7 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
       Input::new().with_prompt("username").interact_text()?;
     let password = Password::new().with_prompt("password").interact()?;
 
-    shasta_token_rslt = client.get_token(&username, &password).await;
+    shasta_token_rslt = get_token(client, &username, &password).await;
 
     attempts += 1;
   }

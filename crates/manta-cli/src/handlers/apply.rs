@@ -3,7 +3,10 @@
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::{dispatch, http_client::MantaClient};
+use crate::{
+  dispatch,
+  http_client::{MantaClient, OpenApiResultExt},
+};
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
 
@@ -141,14 +144,18 @@ pub async fn handle_apply(
         bail!("This command needs to run in interactive mode");
       }
       let image_id = m.req_str("image-id")?;
-      let server_url = ctx.manta_server_url;
-      let response = MantaClient::new(server_url, ctx.site_name)?
-        .create_ephemeral_env(&token, image_id)
-        .await?;
-      if let Some(hostname) = response.get("hostname").and_then(|v| v.as_str())
-      {
-        println!("{hostname}");
-      }
+      let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+      let response = client
+        .openapi
+        .create_ephemeral_env(
+          client.site_name(),
+          &crate::openapi_client::types::CreateEphemeralEnvRequest {
+            image_id: image_id.to_string(),
+          },
+        )
+        .await
+        .into_anyhow()?;
+      println!("{}", response.hostname);
     }
 
     Some(("boot-parameters", m)) => {
@@ -177,7 +184,7 @@ pub async fn handle_apply(
       let id = m
         .opt_string("id")
         .context("The 'id' argument is mandatory")?;
-      let params = manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams {
+      let params = crate::openapi_client::types::UpdateRedfishEndpointParams {
         id,
         name: m.opt_string("name"),
         hostname: m.opt_string("hostname"),

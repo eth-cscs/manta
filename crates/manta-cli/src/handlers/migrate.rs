@@ -4,7 +4,7 @@ use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::dispatch::migrate::nodes as migrate_nodes;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -32,9 +32,12 @@ pub async fn handle_migrate(
       let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
         None => {
-          MantaClient::new(ctx.manta_server_url, ctx.site_name)?
-            .get_available_groups(&token)
-            .await?
+          let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+          client
+            .openapi
+            .get_available_groups(client.site_name())
+            .await
+            .into_anyhow()?
         }
       };
       let to = vec![to.to_string()];

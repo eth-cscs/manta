@@ -4,7 +4,7 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
 
@@ -29,9 +29,17 @@ pub async fn exec(
   let params =
     parse_kernel_parameters_params(cli_args, ctx.settings_group_name_opt);
 
-  let boot_parameters = MantaClient::from_app_ctx(ctx)?
-    .get_kernel_parameters(token, &params)
-    .await?;
+  let group_name = params
+    .group_name
+    .as_deref()
+    .or(params.settings_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let boot_parameters = client
+    .openapi
+    .get_kernel_parameters(group_name, params.nodes.as_deref(), client.site_name())
+    .await
+    .into_anyhow()?;
 
   let output = cli_args.req_str("output")?;
   let filter_opt = cli_args.opt_str("filter");

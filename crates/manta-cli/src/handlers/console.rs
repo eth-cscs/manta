@@ -23,10 +23,9 @@ pub async fn handle_console(
       }
       let xname = m.req_str("XNAME")?;
 
-      let server_url = ctx.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::new(server_url, ctx.site_name)?
-        .console_node(&token, xname, cols, rows)
+      let (a_input, a_output) = MantaClient::from_app_ctx(ctx, Some(&token))?
+        .console_node(xname, cols, rows)
         .await?;
       let result = console_common::run_console_loop(a_input, a_output).await;
       console_common::handle_console_result(result);
@@ -37,10 +36,9 @@ pub async fn handle_console(
       }
       let session_name = m.req_str("SESSION_NAME")?;
 
-      let server_url = ctx.manta_server_url;
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::new(server_url, ctx.site_name)?
-        .console_session(&token, session_name, cols, rows)
+      let (a_input, a_output) = MantaClient::from_app_ctx(ctx, Some(&token))?
+        .console_session(session_name, cols, rows)
         .await?;
       let result = console_common::run_console_loop(a_input, a_output).await;
       console_common::handle_console_result(result);

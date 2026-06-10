@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, ContentArrangement, Table};
-use manta_shared::types::dto::NodeDetails;
+use crate::openapi_client::types::NodeDetails;
 
 use crate::common::multi_line::string_vec_to_multi_line_string;
 
@@ -187,7 +187,7 @@ mod tests {
   //! node, wide mode).
 
   use super::*;
-  use manta_shared::types::dto::NodeDetails;
+  use crate::openapi_client::types::NodeDetails;
 
   fn empty_node() -> NodeDetails {
     NodeDetails {

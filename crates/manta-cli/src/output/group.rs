@@ -1,8 +1,9 @@
 //! Table and JSON renderers for HSM group output.
 
 use comfy_table::{ContentArrangement, Table};
-use manta_shared::types::dto::Group;
 use nodeset::NodeSet;
+
+use crate::openapi_client::types::Group;
 
 /// Print HSM groups as a formatted table.
 pub fn print_table(group_vec: &[Group]) {
@@ -18,7 +19,11 @@ pub fn print_table(group_vec: &[Group]) {
   ]);
 
   for group in group_vec {
-    let mut group_members = group.get_members();
+    let mut group_members = group
+      .members
+      .as_ref()
+      .and_then(|m| m.ids.clone())
+      .unwrap_or_default();
     group_members.sort();
     let node_group: NodeSet =
       group_members.join(", ").parse().unwrap_or_default();

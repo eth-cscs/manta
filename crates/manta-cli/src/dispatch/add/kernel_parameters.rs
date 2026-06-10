@@ -1,7 +1,8 @@
 //! Implements the `manta add kernel-parameters` command.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{AddKernelParametersRequest, MantaClient};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::AddKernelParametersRequest;
 use crate::output::action_result;
 use anyhow::Error;
 
@@ -27,19 +28,22 @@ pub async fn exec(
   } else {
     None
   };
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .add_kernel_parameters(
-      token,
+      client.site_name(),
       &AddKernelParametersRequest {
         params: p.kernel_params.to_string(),
         xnames_expression: xnames_expression.map(str::to_string),
         hsm_group: p.hsm_group.map(str::to_string),
-        overwrite: p.overwrite,
-        project_sbps: false,
-        dry_run: p.dry_run,
+        overwrite: Some(p.overwrite),
+        project_sbps: Some(false),
+        dry_run: Some(p.dry_run),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

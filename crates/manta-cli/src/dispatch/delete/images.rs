@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// Delete IMS images and their linked artifacts.
@@ -19,9 +19,13 @@ pub async fn exec(
     image_id_vec.join(", "),
   );
 
-  let result = MantaClient::from_app_ctx(ctx)?
-    .delete_images(token, image_id_vec, dry_run)
-    .await?;
+  let ids = image_id_vec.join(",");
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
+    .delete_images(Some(dry_run), &ids, client.site_name())
+    .await
+    .into_anyhow()?;
   if dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

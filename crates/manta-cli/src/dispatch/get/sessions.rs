@@ -1,11 +1,12 @@
 //! Implements the `manta get sessions` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
+use manta_shared::types::dto::CfsSessionGetResponse;
 use manta_shared::types::params::session::GetSessionParams;
 
 /// Parse CLI arguments into typed [`GetSessionParams`].
@@ -47,9 +48,31 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_session_params(cli_args);
 
-  let sessions = MantaClient::from_app_ctx(ctx)?
-    .get_sessions(token, &params)
-    .await?;
+  let xnames_csv = if params.xnames.is_empty() {
+    None
+  } else {
+    Some(params.xnames.join(","))
+  };
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let raw = client
+    .openapi
+    .get_sessions(
+      params.group.as_deref(),
+      params.limit.map(i32::from),
+      params.max_age.as_deref(),
+      params.min_age.as_deref(),
+      params.name.as_deref(),
+      params.session_type.as_deref(),
+      params.status.as_deref(),
+      xnames_csv.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
+
+  let sessions: Vec<CfsSessionGetResponse> = serde_json::from_value(raw)
+    .context("Failed to deserialize CFS sessions list")?;
 
   let output_opt = cli_args.opt_str("output");
   output::session::print(&sessions, output_opt)?;

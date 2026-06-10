@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::boot_parameters::GetBootParametersParams;
 
@@ -32,9 +32,21 @@ pub async fn exec(
   let params =
     parse_boot_parameters_params(cli_args, ctx.settings_group_name_opt);
 
-  let boot_parameters = MantaClient::from_app_ctx(ctx)?
-    .get_boot_parameters(token, &params)
-    .await?;
+  let group_name = params
+    .group_name
+    .as_deref()
+    .or(params.settings_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let boot_parameters = client
+    .openapi
+    .get_boot_parameters(
+      group_name,
+      params.host_expression.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
 
   output::boot_parameters::print(&boot_parameters)?;
 

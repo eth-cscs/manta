@@ -1,7 +1,8 @@
 //! Implements the `manta apply boot nodes` command.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{ApplyBootConfigRequest, MantaClient};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::ApplyBootConfigRequest;
 use crate::output::action_result;
 
 use anyhow::Error;
@@ -22,9 +23,11 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .apply_boot_config(
-      token,
+      client.site_name(),
       &ApplyBootConfigRequest {
         hosts_expression: p.hosts_expression.to_string(),
         boot_image_id: p.boot_image.map(str::to_string),
@@ -33,10 +36,11 @@ pub async fn exec(
           .map(str::to_string),
         kernel_parameters: p.kernel_parameters.map(str::to_string),
         runtime_configuration: p.runtime_configuration.map(str::to_string),
-        dry_run: p.dry_run,
+        dry_run: Some(p.dry_run),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

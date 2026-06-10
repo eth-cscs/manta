@@ -3,7 +3,8 @@
 use anyhow::{Error, anyhow};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::DeleteHwComponentRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -29,16 +30,21 @@ pub async fn exec(
     .parent_group
     .or(ctx.settings_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .delete_hw_component(
-      token,
       target,
-      parent,
-      p.pattern,
-      p.delete_group,
-      p.dry_run,
+      client.site_name(),
+      &DeleteHwComponentRequest {
+        parent_cluster: parent.to_string(),
+        pattern: p.pattern.to_string(),
+        delete_hsm_group: Some(p.delete_group),
+        dry_run: Some(p.dry_run),
+      },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   let message = if p.dry_run {
     "Dry run enabled, not modifying the HSM groups on the system."
   } else {

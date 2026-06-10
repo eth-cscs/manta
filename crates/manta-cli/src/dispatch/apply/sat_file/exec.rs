@@ -150,8 +150,8 @@ pub async fn exec(
   // 7a. Dispatch the plan element-by-element. The CLI accumulates
   //     `ref_name → image_id` across calls and builds the same
   //     four-list response the legacy endpoint used to return.
-  let client = MantaClient::from_app_ctx(ctx)?;
-  let result = dispatch::dispatch_plan(&client, token, plan, opts).await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = dispatch::dispatch_plan(&client, plan, opts).await?;
 
   crate::common::hooks::run_hook_if_present(opts.posthook_opt, "post")?;
 

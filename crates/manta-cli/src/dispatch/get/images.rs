@@ -1,11 +1,12 @@
 //! Implements the `manta get images` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
+use manta_shared::types::dto::Image;
 use manta_shared::types::params::image::GetImagesParams;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
@@ -31,9 +32,25 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_images_params(cli_args);
 
-  let images = MantaClient::from_app_ctx(ctx)?
-    .get_images(token, &params)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let raw = client
+    .openapi
+    .get_images(
+      params.id.as_deref(),
+      params.limit.map(i32::from),
+      params.pattern.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
+
+  // The server returns IMS images as a JSON array. Deserialize into
+  // manta-shared's `Image` type so the renderer keeps working.
+  let images: Vec<Image> = raw
+    .into_iter()
+    .map(serde_json::from_value)
+    .collect::<Result<Vec<_>, _>>()
+    .context("Failed to deserialize IMS images list")?;
 
   output::image::print(&images);
 

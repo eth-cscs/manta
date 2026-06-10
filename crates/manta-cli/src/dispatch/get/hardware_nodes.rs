@@ -3,7 +3,7 @@
 use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::hardware::GetHardwareNodesListParams;
 
@@ -31,9 +31,12 @@ pub async fn exec(
     .get_one::<String>("output")
     .map_or("table", String::as_str);
 
-  let json = MantaClient::from_app_ctx(ctx)?
-    .get_hardware_nodes_list(token, &params)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let json = client
+    .openapi
+    .get_hardware_nodes_list(&params.host_expression, client.site_name())
+    .await
+    .into_anyhow()?;
 
   output::hardware::print_nodes_list(&json, output)?;
   Ok(())

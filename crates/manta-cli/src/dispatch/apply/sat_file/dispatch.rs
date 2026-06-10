@@ -22,7 +22,10 @@ use serde_json::Value;
 use super::{
   exec::SatApplyOptions, image_pipeline::run_image_pipeline, plan::SatElement,
 };
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{
+  PostSatConfigurationRequest, PostSatSessionTemplateRequest,
+};
 
 /// Dispatch every element in the plan in order. For each `Image`, the
 /// resulting `Image` value (from `run_image_pipeline`) carries an `id`
@@ -38,7 +41,6 @@ use crate::http_client::MantaClient;
 /// the two paths.
 pub async fn dispatch_plan(
   client: &MantaClient,
-  token: &str,
   plan: Vec<SatElement>,
   opts: &SatApplyOptions<'_>,
 ) -> anyhow::Result<Value> {
@@ -52,8 +54,17 @@ pub async fn dispatch_plan(
     match element {
       SatElement::Configuration(body) => {
         let cfg = client
-          .apply_sat_configuration(token, &body, opts.overwrite, opts.dry_run)
-          .await?;
+          .openapi
+          .post_sat_configuration(
+            client.site_name(),
+            &PostSatConfigurationRequest {
+              configuration: body,
+              overwrite: Some(opts.overwrite),
+              dry_run: Some(opts.dry_run),
+            },
+          )
+          .await
+          .into_anyhow()?;
         configurations.push(cfg);
       }
       SatElement::Image(body) => {
@@ -64,7 +75,7 @@ pub async fn dispatch_plan(
           .unwrap_or("<unnamed>")
           .to_string();
 
-        let img = run_image_pipeline(client, token, &body, &ref_lookup, opts)
+        let img = run_image_pipeline(client, &body, &ref_lookup, opts)
           .await
           .with_context(|| format!("building SAT image '{display_name}'"))?;
 
@@ -77,26 +88,21 @@ pub async fn dispatch_plan(
       }
       SatElement::SessionTemplate(body) => {
         let resp = client
-          .apply_sat_session_template(
-            token,
-            &body,
-            &ref_lookup,
-            opts.reboot,
-            opts.dry_run,
+          .openapi
+          .post_sat_session_template(
+            client.site_name(),
+            &PostSatSessionTemplateRequest {
+              session_template: body,
+              ref_lookup: ref_lookup.clone(),
+              reboot: Some(opts.reboot),
+              dry_run: Some(opts.dry_run),
+            },
           )
-          .await?;
-        // Server response shape: { template, session? }.
-        let mut obj = match resp {
-          Value::Object(o) => o,
-          other => anyhow::bail!(
-            "session_template response was not an object: {other}"
-          ),
-        };
-        if let Some(tpl) = obj.remove("template") {
-          session_templates.push(tpl);
-        }
-        if let Some(Value::Object(_)) = obj.get("session")
-          && let Some(s) = obj.remove("session")
+          .await
+          .into_anyhow()?;
+        session_templates.push(resp.template);
+        if let Some(s) = resp.session
+          && matches!(s, Value::Object(_))
         {
           bos_sessions.push(s);
         }

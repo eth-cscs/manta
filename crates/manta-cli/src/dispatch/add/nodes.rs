@@ -4,7 +4,8 @@ use anyhow::{Error, bail};
 
 use crate::common;
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::AddNodesToGroupRequest;
 use crate::output::action_result;
 
 /// Add/assign a list of xnames to an HSM group.
@@ -35,9 +36,22 @@ pub async fn exec(
     return Ok(());
   }
 
-  let (_added, updated_members) = MantaClient::from_app_ctx(ctx)?
-    .add_nodes_to_group(token, target_hsm_name, hosts_expression)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let resp = client
+    .openapi
+    .add_nodes_to_group(
+      target_hsm_name,
+      client.site_name(),
+      &AddNodesToGroupRequest {
+        hosts_expression: hosts_expression.to_string(),
+      },
+    )
+    .await
+    .into_anyhow()?;
+
+  // Mirror the historical tuple shape (_added, updated_members), then
+  // hand the final membership to the action-result printer.
+  let updated_members = resp.final_members;
 
   action_result::print_with_data(
     &format!("HSM '{target_hsm_name}' members updated"),

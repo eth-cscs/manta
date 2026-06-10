@@ -3,7 +3,7 @@
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::group::GetGroupParams;
 
@@ -26,9 +26,12 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_group_params(cli_args, ctx.settings_group_name_opt);
 
-  let groups = MantaClient::from_app_ctx(ctx)?
-    .get_groups(token, &params)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let groups = client
+    .openapi
+    .get_groups(params.group_name.as_deref(), client.site_name())
+    .await
+    .into_anyhow()?;
 
   let output: &String = cli_args
     .get_one("output")

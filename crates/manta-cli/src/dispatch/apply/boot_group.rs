@@ -1,10 +1,10 @@
 //! Implements the `manta apply boot group` command.
 
 use anyhow::{anyhow, bail};
-use manta_shared::types::params::group::GetGroupParams;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{ApplyBootConfigRequest, MantaClient};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::ApplyBootConfigRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -28,17 +28,13 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
-  let client = MantaClient::from_app_ctx(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
 
   let groups = client
-    .get_groups(
-      token,
-      &GetGroupParams {
-        group_name: Some(p.hsm_group_name.to_string()),
-        settings_group_name: None,
-      },
-    )
-    .await?;
+    .openapi
+    .get_groups(Some(p.hsm_group_name), client.site_name())
+    .await
+    .into_anyhow()?;
   let group = groups
     .into_iter()
     .next()
@@ -49,8 +45,9 @@ pub async fn exec(
   }
 
   let result = client
+    .openapi
     .apply_boot_config(
-      token,
+      client.site_name(),
       &ApplyBootConfigRequest {
         hosts_expression: xnames.join(","),
         boot_image_id: p.boot_image.map(str::to_string),
@@ -59,10 +56,11 @@ pub async fn exec(
           .map(str::to_string),
         kernel_parameters: p.kernel_parameters.map(str::to_string),
         runtime_configuration: p.runtime_configuration.map(str::to_string),
-        dry_run: p.dry_run,
+        dry_run: Some(p.dry_run),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

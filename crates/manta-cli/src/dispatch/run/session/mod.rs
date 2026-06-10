@@ -8,7 +8,8 @@ use clap::ArgMatches;
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::common::confirm;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::CreateSessionRequest;
 use crate::output::action_result;
 
 mod local_git_repo;
@@ -108,32 +109,35 @@ async fn run_session(
     check_local_repos(repos_paths)?;
 
   // Create CFS session via server
-  let (cfs_configuration_name, cfs_session_name) =
-    MantaClient::from_app_ctx(ctx)?
-      .create_session(
-        shasta_token,
-        &crate::http_client::CreateSessionRequest {
-          cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
-          playbook_yaml_file_name: playbook_yaml_file_name_opt
-            .map(str::to_string),
-          hsm_group: group_name_opt.map(str::to_string),
-          repo_names: repo_name_vec.clone(),
-          repo_last_commit_ids: repo_last_commit_id_vec.clone(),
-          ansible_limit: ansible_limit_opt.map(str::to_string),
-          ansible_verbosity: ansible_verbosity.map(str::to_string),
-          ansible_passthrough: ansible_passthrough.map(str::to_string),
-        },
-      )
-      .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
+  let created = client
+    .openapi
+    .create_session(
+      client.site_name(),
+      &CreateSessionRequest {
+        cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
+        playbook_yaml_file_name: playbook_yaml_file_name_opt
+          .map(str::to_string),
+        hsm_group: group_name_opt.map(str::to_string),
+        repo_names: repo_name_vec.clone(),
+        repo_last_commit_ids: repo_last_commit_id_vec.clone(),
+        ansible_limit: ansible_limit_opt.map(str::to_string),
+        ansible_verbosity: ansible_verbosity.map(str::to_string),
+        ansible_passthrough: ansible_passthrough.map(str::to_string),
+      },
+    )
+    .await
+    .into_anyhow()?;
+  let cfs_configuration_name = created.configuration_name;
+  let cfs_session_name = created.session_name;
 
   // Watch logs (CLI concern: println)
   if watch_logs {
     tracing::info!("Fetching logs ...");
 
     use tokio::io::AsyncBufReadExt as _;
-    let client = MantaClient::from_app_ctx(ctx)?;
     let reader = client
-      .stream_session_logs(shasta_token, &cfs_session_name, timestamps)
+      .stream_session_logs(&cfs_session_name, timestamps)
       .await
       .context("Failed to get CFS session log stream from server")?;
     let mut lines = reader.lines();

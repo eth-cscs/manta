@@ -3,7 +3,8 @@
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{MantaClient, MigrateRestoreRequest};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::MigrateRestoreRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -75,19 +76,22 @@ pub async fn exec(
   println!();
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
-  MantaClient::from_app_ctx(ctx)?
-    .restore_vcluster(
-      token,
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .migrate_restore(
+      client.site_name(),
       &MigrateRestoreRequest {
         bos_file: bos_file.map(str::to_string),
         cfs_file: cfs_file.map(str::to_string),
         hsm_file: hsm_file.map(str::to_string),
         ims_file: ims_file.map(str::to_string),
         image_dir: image_dir.map(str::to_string),
-        overwrite,
+        overwrite: Some(overwrite),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
 
   crate::common::hooks::run_hook_if_present(posthook, "post")?;
 

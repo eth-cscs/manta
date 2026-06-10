@@ -3,7 +3,7 @@
 //! — hence the longer filename.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 use chrono::NaiveDateTime;
 
@@ -22,15 +22,18 @@ pub async fn exec(
 ) -> Result<(), anyhow::Error> {
   let since_str = p.since.map(|d| d.to_string());
   let until_str = p.until.map(|d| d.to_string());
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .delete_configurations(
-      token,
+      Some(false),
       p.configuration_name_pattern,
       since_str.as_deref(),
       until_str.as_deref(),
-      false,
+      client.site_name(),
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   action_result::print_with_data("Configurations deleted", &result, p.output)?;
   Ok(())
 }

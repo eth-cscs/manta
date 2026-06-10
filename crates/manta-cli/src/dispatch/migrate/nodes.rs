@@ -3,7 +3,8 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::MigrateNodesRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -21,16 +22,21 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .migrate_nodes(
-      token,
-      p.target_groups,
-      p.parent_groups,
-      p.hosts_expression,
-      p.dry_run,
-      p.create_group,
+      client.site_name(),
+      &MigrateNodesRequest {
+        target_hsm_names: p.target_groups.to_vec(),
+        parent_hsm_names: p.parent_groups.to_vec(),
+        hosts_expression: p.hosts_expression.to_string(),
+        dry_run: Some(p.dry_run),
+        create_hsm_group: Some(p.create_group),
+      },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   let message = if p.dry_run {
     "dry-run enabled, changes not persisted."
   } else {

@@ -4,6 +4,13 @@
 //! `ws://` / `wss://` URL and delegates to `connect_console_ws`, which
 //! handles the upgrade, spawns a bridge task, and returns a pair of
 //! async pipes for stdin/stdout.
+//!
+//! The progenitor-generated client provides `console_node_ws` and
+//! `console_session_ws`, but they expect a pre-built WebSocket upgrade
+//! response — they don't drive the upgrade themselves. Since the CLI
+//! needs the bidirectional WS stream, we still hand-roll the upgrade
+//! here (with tungstenite) and read the bearer token off the wrapper
+//! struct instead of taking it as a parameter.
 
 use anyhow::Context;
 
@@ -16,7 +23,6 @@ impl MantaClient {
   /// returned `AsyncRead` delivers console output back to the terminal.
   pub async fn console_node(
     &self,
-    token: &str,
     xname: &str,
     cols: u16,
     rows: u16,
@@ -31,13 +37,12 @@ impl MantaClient {
       cols,
       rows,
     );
-    self.connect_console_ws(token, &url).await
+    self.connect_console_ws(&url).await
   }
 
   /// Open a WebSocket console to a CFS session container.
   pub async fn console_session(
     &self,
-    token: &str,
     session_name: &str,
     cols: u16,
     rows: u16,
@@ -52,7 +57,7 @@ impl MantaClient {
       cols,
       rows,
     );
-    self.connect_console_ws(token, &url).await
+    self.connect_console_ws(&url).await
   }
 
   /// Connect to a WebSocket URL with bearer auth and return stdin/stdout pipes.
@@ -63,7 +68,6 @@ impl MantaClient {
   /// - an `AsyncRead` to read console output (received as Binary WS frames)
   async fn connect_console_ws(
     &self,
-    token: &str,
     url: &str,
   ) -> anyhow::Result<(
     Box<dyn tokio::io::AsyncWrite + Unpin + Send>,
@@ -74,6 +78,11 @@ impl MantaClient {
     use tokio_tungstenite::tungstenite::Message;
     use tokio_tungstenite::tungstenite::client::IntoClientRequest;
     use tokio_tungstenite::tungstenite::http::HeaderValue;
+
+    let token = self.token.as_deref().context(
+      "WebSocket console requires an authenticated client; construct \
+       MantaClient with Some(token)",
+    )?;
 
     let mut req = url.into_client_request().context("Invalid WebSocket URL")?;
     req.headers_mut().insert(

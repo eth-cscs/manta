@@ -4,9 +4,9 @@ use anyhow::Error;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::UpdateRedfishEndpointParams;
 use crate::output::action_result;
-use manta_shared::types::params::redfish_endpoints::UpdateRedfishEndpointParams;
 
 /// CLI adapter for `manta add redfish-endpoint`.
 pub async fn exec(
@@ -46,9 +46,12 @@ pub async fn exec(
     template_id,
   };
 
-  MantaClient::from_app_ctx(ctx)?
-    .add_redfish_endpoint(token, params)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .add_redfish_endpoint(client.site_name(), &params)
+    .await
+    .into_anyhow()?;
 
   let output_opt = cli_args.opt_str("output");
   action_result::print(

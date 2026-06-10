@@ -8,4 +8,6 @@
 //! The generated code lives in `$OUT_DIR/openapi_client.rs` so it
 //! stays out of the source tree and out of `cargo publish` packaging.
 
+#![allow(dead_code)]
+#![allow(clippy::all)]
 include!(concat!(env!("OUT_DIR"), "/openapi_client.rs"));

@@ -1,7 +1,8 @@
 //! Implements the `manta add hardware` command.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::AddHwComponentRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -19,16 +20,21 @@ pub async fn exec(
   shasta_token: &str,
   p: ExecParams<'_>,
 ) -> anyhow::Result<()> {
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
+  let result = client
+    .openapi
     .add_hw_component(
-      shasta_token,
       p.target_group,
-      p.parent_group,
-      p.pattern,
-      p.create_group,
-      p.dry_run,
+      client.site_name(),
+      &AddHwComponentRequest {
+        parent_cluster: p.parent_group.to_string(),
+        pattern: p.pattern.to_string(),
+        create_hsm_group: Some(p.create_group),
+        dry_run: Some(p.dry_run),
+      },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   let message = if p.dry_run {
     "Dryrun enabled, not modifying the groups on the system."
   } else {

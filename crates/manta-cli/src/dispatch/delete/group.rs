@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// CLI adapter for `manta delete group`.
@@ -14,9 +14,12 @@ pub async fn exec(
   force: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
-  MantaClient::from_app_ctx(ctx)?
-    .delete_group(token, label, force)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .delete_group(label, Some(force), client.site_name())
+    .await
+    .into_anyhow()?;
 
   action_result::print(&format!("Group '{label}' deleted"), output_opt)?;
 

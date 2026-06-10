@@ -39,10 +39,12 @@ use serde_json::Value;
 use tokio::io::AsyncBufReadExt as _;
 
 use manta_shared::types::dto::CfsSessionGetResponse;
-use manta_shared::types::params::session::GetSessionParams;
 
 use super::exec::SatApplyOptions;
-use crate::http_client::{CreateImageCfsSessionRequest, MantaClient};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{
+  CreateImageCfsSessionRequest, StampImageFromSessionRequest,
+};
 
 /// Poll interval for the no-`--watch-logs` monitor branch. Long enough
 /// that we don't hammer the server (CFS sessions take minutes to
@@ -69,25 +71,34 @@ const NOT_VISIBLE_BUDGET: Duration = Duration::from_secs(5 * 60);
 /// summary list unchanged.
 pub async fn run_image_pipeline(
   client: &MantaClient,
-  token: &str,
   image: &Value,
   ref_lookup: &HashMap<String, String>,
   opts: &SatApplyOptions<'_>,
 ) -> anyhow::Result<Value> {
   // 1. Translate the SAT image entry into a CFS session and create it.
-  let session = client
-    .create_image_cfs_session(
-      token,
+  let session_value = client
+    .openapi
+    .post_sat_image_cfs_session(
+      client.site_name(),
       &CreateImageCfsSessionRequest {
         image: image.clone(),
         ref_lookup: ref_lookup.clone(),
-        ansible_verbosity: opts.ansible_verbosity_opt,
+        ansible_verbosity: opts.ansible_verbosity_opt.map(i32::from),
         ansible_passthrough: opts.ansible_passthrough_opt.map(str::to_string),
-        dry_run: opts.dry_run,
+        dry_run: Some(opts.dry_run),
       },
     )
     .await
+    .into_anyhow()
     .context("create CFS session from SAT image entry")?;
+
+  // Server returns the freshly-created session as JSON. Round-trip
+  // into manta-shared's typed shape so `.status()` /
+  // `.get_first_result_id()` (helpers on the dto type) stay
+  // available without rebuilding them on the generated client.
+  let session: CfsSessionGetResponse =
+    serde_json::from_value(session_value.clone())
+      .context("deserialise CFS session response")?;
 
   let session_name = session.name.clone();
   let image_name = image
@@ -115,27 +126,29 @@ pub async fn run_image_pipeline(
 
   // 2. Monitor the session until it reports terminal status.
   if opts.watch_logs {
-    stream_session_until_terminal(
-      client,
-      token,
-      &session_name,
-      opts.timestamps,
-    )
-    .await?;
+    stream_session_until_terminal(client, &session_name, opts.timestamps)
+      .await?;
   } else {
-    poll_session_until_terminal(client, token, &session_name).await?;
+    poll_session_until_terminal(client, &session_name).await?;
   }
 
   // 3. Stamp + PATCH the produced IMS image (server does the fetch +
   //    derive + PATCH).
   let stamped = client
-    .stamp_image_from_cfs_session(token, &session_name)
+    .openapi
+    .post_sat_image_stamp(
+      client.site_name(),
+      &StampImageFromSessionRequest {
+        cfs_session_name: session_name.clone(),
+      },
+    )
     .await
+    .into_anyhow()
     .with_context(|| {
       format!("stamp image from CFS session '{session_name}'")
     })?;
 
-  serde_json::to_value(&stamped).context("serialise stamped image")
+  Ok(stamped)
 }
 
 /// `--watch-logs` branch: stream the SSE log feed to stdout until the
@@ -146,13 +159,12 @@ pub async fn run_image_pipeline(
 /// still-running session and 400 on the missing `result_id`.
 async fn stream_session_until_terminal(
   client: &MantaClient,
-  token: &str,
   session_name: &str,
   timestamps: bool,
 ) -> anyhow::Result<()> {
   tracing::info!("Streaming logs for CFS session '{session_name}' ...");
   let reader = client
-    .stream_session_logs(token, session_name, timestamps)
+    .stream_session_logs(session_name, timestamps)
     .await
     .with_context(|| {
       format!("open SSE log stream for CFS session '{session_name}'")
@@ -168,13 +180,12 @@ async fn stream_session_until_terminal(
     }
   }
 
-  poll_session_until_terminal(client, token, session_name).await
+  poll_session_until_terminal(client, session_name).await
 }
 
 /// Default branch: poll session status until terminal.
 async fn poll_session_until_terminal(
   client: &MantaClient,
-  token: &str,
   session_name: &str,
 ) -> anyhow::Result<()> {
   tracing::info!(
@@ -194,7 +205,7 @@ async fn poll_session_until_terminal(
         POLL_BUDGET.as_secs() / 3600,
       );
     }
-    match fetch_session_opt(client, token, session_name).await? {
+    match fetch_session_opt(client, session_name).await? {
       None => {
         // Session may still be creating in CFS; retry until we cross
         // NOT_VISIBLE_BUDGET, then bail — a session that never appears
@@ -242,22 +253,29 @@ async fn poll_session_until_terminal(
 /// retries); the caller decides whether to error or wait.
 async fn fetch_session_opt(
   client: &MantaClient,
-  token: &str,
   session_name: &str,
 ) -> anyhow::Result<Option<CfsSessionGetResponse>> {
-  let params = GetSessionParams {
-    group: None,
-    xnames: Vec::new(),
-    min_age: None,
-    max_age: None,
-    session_type: None,
-    status: None,
-    name: Some(session_name.to_string()),
-    limit: None,
-  };
-  let sessions = client
-    .get_sessions(token, &params)
+  let sessions_value = client
+    .openapi
+    .get_sessions(
+      None,
+      None,
+      None,
+      None,
+      Some(session_name),
+      None,
+      None,
+      None,
+      client.site_name(),
+    )
     .await
+    .into_anyhow()
     .with_context(|| format!("fetch CFS session '{session_name}'"))?;
+
+  // Server returns an array under the wire shape. Round-trip into
+  // the typed shape so callers keep using `.status()`.
+  let sessions: Vec<CfsSessionGetResponse> =
+    serde_json::from_value(sessions_value)
+      .context("deserialise CFS session list response")?;
   Ok(sessions.into_iter().next())
 }

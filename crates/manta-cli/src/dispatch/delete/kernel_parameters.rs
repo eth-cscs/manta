@@ -1,7 +1,8 @@
 //! Implements the `manta delete kernel-parameters` command.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::DeleteKernelParametersRequest;
 use crate::output::action_result;
 use anyhow::Error;
 
@@ -21,15 +22,20 @@ pub async fn exec(
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let xnames_expression = if p.hsm_group.is_none() { p.nodes } else { None };
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .delete_kernel_parameters(
-      token,
-      p.kernel_params,
-      xnames_expression,
-      p.hsm_group,
-      p.dry_run,
+      client.site_name(),
+      &DeleteKernelParametersRequest {
+        params: p.kernel_params.to_string(),
+        xnames_expression: xnames_expression.map(str::to_string),
+        hsm_group: p.hsm_group.map(str::to_string),
+        dry_run: Some(p.dry_run),
+      },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

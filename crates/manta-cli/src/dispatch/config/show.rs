@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use anyhow::{Context, Error};
 use config::{Config, Value};
 
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::config_summary::{self, ConfigSummary};
 use manta_shared::common::config::get_cli_config_file_path;
 
@@ -32,8 +32,13 @@ async fn show(
   let settings_parent_hsm_group =
     settings.get_string("parent_hsm_group").unwrap_or_default();
 
-  let hsm_group_available_opt = if let Some(shasta_token) = shasta_token_opt {
-    match client.get_available_groups(&shasta_token).await {
+  let hsm_group_available_opt = if shasta_token_opt.is_some() {
+    match client
+      .openapi
+      .get_available_groups(client.site_name())
+      .await
+      .into_anyhow()
+    {
       Ok(groups) => Some(groups),
       Err(e) => {
         tracing::warn!("Failed to fetch available HSM groups: {}", e);

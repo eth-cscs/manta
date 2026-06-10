@@ -1,11 +1,12 @@
 //! Implements the `manta get templates` command.
 
-use anyhow::Error;
+use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
+use manta_shared::types::dto::BosSessionTemplate;
 use manta_shared::types::params::template::GetTemplateParams;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
@@ -35,9 +36,28 @@ pub async fn exec(
 ) -> Result<(), Error> {
   let params = parse_template_params(cli_args, ctx.settings_group_name_opt);
 
-  let templates = MantaClient::from_app_ctx(ctx)?
-    .get_templates(token, &params)
-    .await?;
+  let group_name = params
+    .group_name
+    .as_deref()
+    .or(params.settings_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let raw = client
+    .openapi
+    .get_templates(
+      group_name,
+      params.limit.map(i32::from),
+      params.name.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
+
+  // Server returns the BOS session template list as `serde_json::Value`;
+  // deserialize into the manta-shared typed shape so the renderer can
+  // use its accessor methods unchanged.
+  let templates: Vec<BosSessionTemplate> = serde_json::from_value(raw)
+    .context("Failed to deserialise BOS session template list")?;
 
   let output_opt = cli_args.req_str("output")?;
 

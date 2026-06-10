@@ -3,10 +3,10 @@
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use anyhow::{Context, Error};
 use clap::ArgMatches;
-use manta_shared::types::params::session::GetSessionParams;
+use manta_shared::types::dto::CfsSessionGetResponse;
 
 /// Dispatch the `manta log` command to stream CFS session logs.
 ///
@@ -23,45 +23,52 @@ pub async fn handle_log(
   let timestamps = cli_log.get_flag("timestamps");
 
   use tokio::io::AsyncBufReadExt as _;
-  let server_url = ctx.manta_server_url;
-  let client = MantaClient::new(server_url, ctx.site_name)?;
+  let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
 
-  // Try user input as a session name first, then as an xname.
-  let sessions_rslt = client
+  // Try user input as a session name first, then as an xname. The
+  // generated `get_sessions` returns `serde_json::Value`; we round-trip
+  // into the typed shape so the existing `.name` field access works.
+  let by_name = client
+    .openapi
     .get_sessions(
-      &token,
-      &GetSessionParams {
-        name: Some(user_input.to_string()),
-        xnames: vec![],
-        group: None,
-        min_age: None,
-        max_age: None,
-        session_type: None,
-        status: None,
-        limit: Some(1),
-      },
+      None,
+      Some(1),
+      None,
+      None,
+      Some(user_input),
+      None,
+      None,
+      None,
+      client.site_name(),
     )
-    .await;
+    .await
+    .into_anyhow()
+    .ok()
+    .and_then(|v| serde_json::from_value::<Vec<CfsSessionGetResponse>>(v).ok());
 
-  let session_name = if let Ok([s, ..]) = sessions_rslt.as_deref() {
-    s.name.clone()
+  let session_name = if let Some(first) =
+    by_name.as_ref().and_then(|sessions| sessions.first())
+  {
+    first.name.clone()
   } else {
-    let by_xname = client
+    let raw = client
+      .openapi
       .get_sessions(
-        &token,
-        &GetSessionParams {
-          name: None,
-          xnames: vec![user_input.to_string()],
-          group: None,
-          min_age: None,
-          max_age: None,
-          session_type: None,
-          status: None,
-          limit: Some(1),
-        },
+        None,
+        Some(1),
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(user_input),
+        client.site_name(),
       )
       .await
+      .into_anyhow()
       .context("Failed to query CFS sessions by xname")?;
+    let by_xname: Vec<CfsSessionGetResponse> = serde_json::from_value(raw)
+      .context("Failed to deserialize CFS sessions list")?;
     by_xname
       .into_iter()
       .next()
@@ -71,7 +78,7 @@ pub async fn handle_log(
   };
 
   let reader = client
-    .stream_session_logs(&token, &session_name, timestamps)
+    .stream_session_logs(&session_name, timestamps)
     .await
     .context("Failed to get CFS session log stream from server")?;
 

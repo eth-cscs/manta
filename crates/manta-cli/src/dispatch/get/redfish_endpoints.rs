@@ -4,7 +4,7 @@ use anyhow::Error;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::redfish_endpoints::GetRedfishEndpointsParams;
 
@@ -30,9 +30,19 @@ pub async fn exec(
   let params = parse_redfish_endpoints_params(cli_args);
   let output = cli_args.opt_str("output").unwrap_or("table");
 
-  let endpoints = MantaClient::from_app_ctx(ctx)?
-    .get_redfish_endpoints(token, &params)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let endpoints = client
+    .openapi
+    .get_redfish_endpoints(
+      params.fqdn.as_deref(),
+      params.id.as_deref(),
+      params.ipaddress.as_deref(),
+      params.macaddr.as_deref(),
+      params.uuid.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
 
   output::redfish_endpoints::print(&endpoints, output)?;
   Ok(())

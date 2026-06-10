@@ -4,8 +4,9 @@ use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::configuration::print_table_struct;
+use manta_shared::types::dto::CfsConfigurationResponse;
 use manta_shared::types::params::configuration::GetConfigurationParams;
 
 /// Parse CLI arguments into typed [`GetConfigurationParams`].
@@ -39,9 +40,32 @@ pub async fn exec(
   let params =
     parse_configuration_params(cli_args, ctx.settings_group_name_opt);
 
-  let cfs_configuration_vec = MantaClient::from_app_ctx(ctx)?
-    .get_configurations(token, &params)
-    .await?;
+  let group_name = params
+    .group_name
+    .as_deref()
+    .or(params.settings_hsm_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let raw = client
+    .openapi
+    .get_configurations(
+      group_name,
+      params.limit.map(i32::from),
+      params.name.as_deref(),
+      params.pattern.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
+
+  // The server's response is `Vec<CfsConfigurationResponse>` wire-side;
+  // the generated client surfaces it as `serde_json::Value` because
+  // the schema is sourced from csm-rs (not declared on the manta
+  // server's typed annotations). Round-trip into the typed shape so
+  // the table renderer keeps its existing signature.
+  let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
+    serde_json::from_value(raw)
+      .context("Failed to deserialise CFS configurations response")?;
 
   if cfs_configuration_vec.is_empty() {
     bail!("No CFS configuration found!");

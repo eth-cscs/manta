@@ -5,9 +5,9 @@ use clap::ArgMatches;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::{ApplyHwConfigurationRequest, MantaClient};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{ApplyHwConfigurationRequest, HwClusterMode};
 use crate::output::action_result;
-use manta_shared::types::params::hw_cluster::HwClusterMode;
 
 /// Apply a hardware cluster configuration (pin or unpin).
 pub async fn exec(
@@ -44,20 +44,23 @@ pub async fn exec(
   let parent = parent_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No parent HSM group specified")?;
-  let result = MantaClient::from_app_ctx(ctx)?
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
     .apply_hw_configuration(
-      token,
       target,
+      client.site_name(),
       &ApplyHwConfigurationRequest {
         parent_cluster: parent.to_string(),
         pattern: pattern.to_string(),
-        mode,
-        dry_run: dryrun,
-        create_target_hsm_group,
-        delete_empty_parent_hsm_group,
+        mode: Some(mode),
+        dry_run: Some(dryrun),
+        create_target_hsm_group: Some(create_target_hsm_group),
+        delete_empty_parent_hsm_group: Some(delete_empty_parent_hsm_group),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   let output_opt = cli_apply_hw_group.opt_str("output");
   let message = if dryrun {
     "Dry run enabled, not modifying the HSM groups on the system."

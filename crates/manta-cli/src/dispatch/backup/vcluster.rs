@@ -3,7 +3,8 @@
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::MigrateBackupRequest;
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -63,9 +64,18 @@ pub async fn exec(
 
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
-  MantaClient::from_app_ctx(ctx)?
-    .backup_vcluster(token, bos, destination)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .migrate_backup(
+      client.site_name(),
+      &MigrateBackupRequest {
+        bos: bos.map(str::to_string),
+        destination: destination.map(str::to_string),
+      },
+    )
+    .await
+    .into_anyhow()?;
   tracing::debug!("Migrate backup completed successfully.");
 
   crate::common::hooks::run_hook_if_present(posthook, "post")?;

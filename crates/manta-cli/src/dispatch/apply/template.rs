@@ -3,9 +3,8 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{
-  BosOperation, MantaClient, PostTemplateSessionRequest,
-};
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{BosOperation, PostTemplateSessionRequest};
 use crate::output::action_result;
 
 pub struct ExecParams<'a> {
@@ -32,19 +31,22 @@ pub async fn exec(
       "unknown BOS operation '{other}' (expected boot/reboot/shutdown)"
     ),
   };
-  let result = MantaClient::from_app_ctx(ctx)?
-    .apply_template_session(
-      token,
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let result = client
+    .openapi
+    .post_template_session(
       p.template_name,
+      client.site_name(),
       &PostTemplateSessionRequest {
         operation,
         limit: p.limit.to_string(),
         session_name: p.session_name.map(str::to_string),
-        include_disabled: p.include_disabled,
-        dry_run: p.dry_run,
+        include_disabled: Some(p.include_disabled),
+        dry_run: Some(p.dry_run),
       },
     )
-    .await?;
+    .await
+    .into_anyhow()?;
   let message = if p.dry_run {
     "Dry-run enabled. No changes persisted into the system."
   } else {

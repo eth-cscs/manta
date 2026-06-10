@@ -3,7 +3,7 @@
 use anyhow::{Context, Error, bail};
 use toml_edit::value;
 
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
@@ -16,7 +16,7 @@ use manta_shared::common::config::{read_config_toml, write_config_toml};
 /// `"Parent HSM group"`).
 pub async fn set_hsm_config_value(
   client: &MantaClient,
-  shasta_token: &str,
+  _shasta_token: &str,
   new_hsm: &str,
   toml_key: &str,
   label: &str,
@@ -24,20 +24,25 @@ pub async fn set_hsm_config_value(
   let (path, mut doc) = read_config_toml()?;
 
   let mut settings_group_available_vec = client
-    .get_available_groups(shasta_token)
+    .openapi
+    .get_available_groups(client.site_name())
     .await
+    .into_anyhow()
     .unwrap_or_default();
 
   settings_group_available_vec
     .retain(|role| !role.eq("offline_access") && !role.eq("uma_authorization"));
 
   // VALIDATION
-  // If 'group_available' is empty (admin user), fetch all HSM
-  // groups via the server to validate the requested group exists.
+  // If 'group_available' is empty (admin user), fetch every group the
+  // server exposes via `GET /groups` so the requested group can be
+  // validated.
   let group_available_vec = if settings_group_available_vec.is_empty() {
     client
-      .get_all_groups(shasta_token)
+      .openapi
+      .get_groups(None, client.site_name())
       .await
+      .into_anyhow()
       .context("Failed to fetch HSM groups")?
       .into_iter()
       .map(|hsm_group| hsm_group.label)

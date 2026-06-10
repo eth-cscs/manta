@@ -2,7 +2,7 @@
 
 use crate::common;
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// Delete or cancel a CFS session.
@@ -23,9 +23,12 @@ pub async fn exec(
     action_result::print("Operation cancelled by user", output_opt)?;
     return Ok(());
   }
-  MantaClient::from_app_ctx(ctx)?
-    .delete_session(token, session_name, dry_run)
-    .await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .delete_session(session_name, Some(dry_run), client.site_name())
+    .await
+    .into_anyhow()?;
   action_result::print(
     &format!("Session '{session_name}' deleted"),
     output_opt,

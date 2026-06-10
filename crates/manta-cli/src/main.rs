@@ -10,6 +10,8 @@ mod common;
 mod dispatch;
 mod handlers;
 mod http_client;
+#[allow(missing_docs)]
+mod openapi_client;
 mod output;
 
 use crate::common::app_context::AppContext;

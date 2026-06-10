@@ -3,7 +3,7 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::params::hardware::GetHardwareClusterParams;
 
@@ -30,9 +30,17 @@ pub async fn exec(
     .get_one::<String>("output")
     .map_or("summary", String::as_str);
 
-  let json = MantaClient::from_app_ctx(ctx)?
-    .get_hardware_clusters(token, &params)
-    .await?;
+  let hsm = params
+    .group_name
+    .as_deref()
+    .or(params.settings_hsm_group_name.as_deref());
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let json = client
+    .openapi
+    .get_groups_hardware(hsm, client.site_name())
+    .await
+    .into_anyhow()?;
 
   output::hardware::print_cluster(&json, output)?;
   Ok(())

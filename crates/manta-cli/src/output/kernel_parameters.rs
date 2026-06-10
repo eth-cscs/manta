@@ -3,7 +3,8 @@
 use std::collections::HashMap;
 
 use comfy_table::{Cell, ContentArrangement, Table};
-use manta_shared::types::dto::BootParameters;
+
+use crate::openapi_client::types::BootParameters;
 
 /// Print kernel boot parameters grouped by common
 /// parameter sets.
@@ -59,7 +60,7 @@ fn group_boot_params_by_kernel_params(
 
   for boot_parameters in boot_parameters_vec {
     let mut host_vec = boot_parameters.hosts.clone();
-    let kernel_params = boot_parameters.params.clone();
+    let kernel_params = boot_parameters.params.clone().unwrap_or_default();
 
     let kernel_params_vec: Vec<String> = kernel_params
       .split_whitespace()
@@ -95,7 +96,7 @@ mod tests {
   fn make_boot_params(hosts: Vec<&str>, params: &str) -> BootParameters {
     BootParameters {
       hosts: hosts.into_iter().map(String::from).collect(),
-      params: params.to_string(),
+      params: Some(params.to_string()),
       ..Default::default()
     }
   }

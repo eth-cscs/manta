@@ -4,9 +4,9 @@ use anyhow::{Context, Error, bail};
 
 use crate::common;
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{AddNodesToGroupRequest, Group};
 use crate::output::action_result;
-use manta_shared::types::dto::Group;
 
 pub struct ExecParams<'a> {
   pub label: &'a str,
@@ -51,11 +51,25 @@ pub async fn exec(
     return Ok(());
   }
 
-  let client = MantaClient::from_app_ctx(ctx)?;
-  client.create_group(auth_token, grp).await?;
+  let client = MantaClient::from_app_ctx(ctx, Some(auth_token))?;
+  client
+    .openapi
+    .create_group(client.site_name(), &grp)
+    .await
+    .into_anyhow()?;
 
   if let Some(expr) = p.hosts_expression {
-    client.add_nodes_to_group(auth_token, p.label, expr).await?;
+    client
+      .openapi
+      .add_nodes_to_group(
+        p.label,
+        client.site_name(),
+        &AddNodesToGroupRequest {
+          hosts_expression: expr.to_string(),
+        },
+      )
+      .await
+      .into_anyhow()?;
   }
 
   action_result::print(&format!("Group '{}' created", p.label), p.output)?;

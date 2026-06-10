@@ -16,7 +16,8 @@ use serde_json::Value;
 
 use crate::common;
 use crate::common::app_context::AppContext;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::{PowerRequest, PowerTargetType};
 use crate::output::action_result;
 
 /// How long the CLI sleeps between snapshot polls. Matches the
@@ -83,11 +84,11 @@ impl PowerAction {
 
   /// Convert into the typed wire enum sent in the `POST /power`
   /// request body.
-  fn to_wire(self) -> crate::http_client::PowerAction {
+  fn to_wire(self) -> crate::openapi_client::types::PowerAction {
     match self {
-      PowerAction::On => crate::http_client::PowerAction::On,
-      PowerAction::Off => crate::http_client::PowerAction::Off,
-      PowerAction::Reset => crate::http_client::PowerAction::Reset,
+      PowerAction::On => crate::openapi_client::types::PowerAction::On,
+      PowerAction::Off => crate::openapi_client::types::PowerAction::Off,
+      PowerAction::Reset => crate::openapi_client::types::PowerAction::Reset,
     }
   }
 }
@@ -116,13 +117,7 @@ pub async fn exec_nodes(
   {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(
-    ctx,
-    token,
-    &opts,
-    crate::http_client::PowerTargetType::Nodes,
-  )
-  .await
+  dispatch_and_wait(ctx, token, &opts, PowerTargetType::Nodes).await
 }
 
 /// Execute a power action against all nodes in an HSM group.
@@ -138,13 +133,7 @@ pub async fn exec_cluster(
   {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(
-    ctx,
-    token,
-    &opts,
-    crate::http_client::PowerTargetType::Cluster,
-  )
-  .await
+  dispatch_and_wait(ctx, token, &opts, PowerTargetType::Cluster).await
 }
 
 /// POST `/power` to start the transition, then (unless `no_wait`)
@@ -155,18 +144,22 @@ async fn dispatch_and_wait(
   ctx: &AppContext<'_>,
   token: &str,
   opts: &PowerOpts<'_>,
-  target_type: crate::http_client::PowerTargetType,
+  target_type: PowerTargetType,
 ) -> Result<(), Error> {
   let action_str = opts.action.wire();
-  let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
 
-  let req = crate::http_client::PowerRequest {
+  let req = PowerRequest {
     action: opts.action.to_wire(),
     host_expression: opts.target.to_string(),
     target_type,
-    force: opts.force,
+    force: Some(opts.force),
   };
-  let started = client.power(token, &req).await?;
+  let started = client
+    .openapi
+    .post_power(client.site_name(), &req)
+    .await
+    .into_anyhow()?;
   let transition_id = started
     .get("transitionID")
     .and_then(Value::as_str)
@@ -187,7 +180,7 @@ async fn dispatch_and_wait(
     return Ok(());
   }
 
-  let final_snapshot = poll_until_done(&client, token, &transition_id).await?;
+  let final_snapshot = poll_until_done(&client, &transition_id).await?;
 
   let failed = failed_count(&final_snapshot);
   let message = if failed > 0 {
@@ -208,10 +201,13 @@ async fn dispatch_and_wait(
 /// returned to the caller for the summary print.
 async fn poll_until_done(
   client: &MantaClient,
-  token: &str,
   transition_id: &str,
 ) -> Result<Value, Error> {
-  let mut snapshot = client.power_transition(token, transition_id).await?;
+  let mut snapshot = client
+    .openapi
+    .get_power_transition(transition_id, client.site_name())
+    .await
+    .into_anyhow()?;
 
   for attempt in 1..=MAX_POLL_ATTEMPTS {
     tracing::info!(
@@ -224,7 +220,11 @@ async fn poll_until_done(
     }
 
     tokio::time::sleep(POLL_INTERVAL).await;
-    snapshot = client.power_transition(token, transition_id).await?;
+    snapshot = client
+      .openapi
+      .get_power_transition(transition_id, client.site_name())
+      .await
+      .into_anyhow()?;
   }
 
   bail!(

@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// CLI adapter for `manta add boot-parameters`.
@@ -54,9 +54,22 @@ pub async fn exec(
     cloud_init,
   };
 
-  MantaClient::from_app_ctx(ctx)?
-    .add_boot_parameters(token, &bp)
-    .await?;
+  // Convert from manta-shared's BootParameters to the generated
+  // openapi_client::types::BootParameters via serde round-trip:
+  // the two share the JSON wire shape but differ in Rust-level
+  // field optionality / integer width (u32 vs i32).
+  let bp_wire: crate::openapi_client::types::BootParameters =
+    serde_json::from_value(
+      serde_json::to_value(&bp).context("Failed to serialize BootParameters")?,
+    )
+    .context("Failed to convert BootParameters to wire type")?;
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .add_boot_parameters(client.site_name(), &bp_wire)
+    .await
+    .into_anyhow()?;
 
   let output_opt = cli_args.opt_str("output");
   action_result::print("Boot parameters created successfully", output_opt)?;
