@@ -1,6 +1,10 @@
 //! HSM node queries, registration, and deletion, with rollback on partial failure.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::{
+  component::ComponentTrait, group::GroupTrait,
+  hardware_inventory::HardwareInventory,
+};
 use manta_backend_dispatcher::types::{
   ComponentArrayPostArray, ComponentCreate, HWInventoryByLocationList,
 };
@@ -76,7 +80,7 @@ pub async fn delete_node(
 ) -> Result<(), Error> {
   validate_user_group_members_access(infra, token, &[id.to_string()]).await?;
 
-  infra.delete_node(token, id).await
+  infra.backend.delete_node(token, id).await.map(|_| ())
 }
 
 /// Register a new HSM component, attach an optional hardware
@@ -121,7 +125,7 @@ pub async fn add_node(
     force: Some(true),
   };
 
-  infra.post_nodes(token, components).await?;
+  infra.backend.post_nodes(token, components).await?;
 
   tracing::info!("Node saved '{}'", id);
 
@@ -149,7 +153,11 @@ pub async fn add_node(
 
   if let Some(hw_inventory) = hw_inventory_opt {
     tracing::info!("Adding hardware inventory for '{}'", id);
-    if let Err(error) = infra.post_inventory_hardware(token, hw_inventory).await
+    if let Err(error) = infra
+      .backend
+      .post_inventory_hardware(token, hw_inventory)
+      .await
+      .map(|_| ())
     {
       rollback_node(infra, token, id).await;
       return Err(error);
@@ -157,7 +165,12 @@ pub async fn add_node(
   }
 
   // Add node to group
-  if let Err(error) = infra.post_member(token, group, id).await {
+  if let Err(error) = infra
+    .backend
+    .post_member(token, group, id)
+    .await
+    .map(|_| ())
+  {
     rollback_node(infra, token, id).await;
     return Err(error);
   }
@@ -182,7 +195,7 @@ async fn read_hw_inventory(
 /// Rollback helper: attempt to delete a node that was partially created.
 async fn rollback_node(infra: &InfraContext<'_>, token: &str, id: &str) {
   tracing::warn!("Rolling back: attempting to delete node '{}'", id);
-  let delete_node_rslt = infra.delete_node(token, id).await;
+  let delete_node_rslt = infra.backend.delete_node(token, id).await;
   if delete_node_rslt.is_ok() {
     tracing::info!("Rollback: node '{}' deleted", id);
   }

@@ -6,7 +6,11 @@ use std::collections::HashMap;
 use std::sync::LazyLock;
 
 use hostlist_parser::parse;
-use manta_backend_dispatcher::{error::Error, types::Component};
+use manta_backend_dispatcher::{
+  error::Error,
+  interfaces::hsm::{component::ComponentTrait, group::GroupTrait},
+  types::Component,
+};
 use regex::Regex;
 
 // Compile-time constant pattern — .expect() is safe here because
@@ -126,7 +130,7 @@ pub async fn from_user_hosts_expression_to_xname_vec(
   is_include_siblings: bool,
 ) -> Result<Vec<String>, Error> {
   let node_metadata_available_vec =
-    infra.get_node_metadata_available(shasta_token).await?;
+    infra.backend.get_node_metadata_available(shasta_token).await?;
 
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,
@@ -242,10 +246,13 @@ pub async fn get_curated_group_from_xname_hostlist(
   let mut hsm_group_summary: HashMap<String, Vec<String>> = HashMap::new();
 
   let hsm_name_available_vec =
-    infra.get_group_name_available(auth_token).await?;
+    infra.backend.get_group_name_available(auth_token).await?;
 
+  let names_ref: Vec<&str> =
+    hsm_name_available_vec.iter().map(String::as_str).collect();
   let hsm_group_available_map = infra
-    .get_group_map_and_filter_by_group_vec(auth_token, &hsm_name_available_vec)
+    .backend
+    .get_group_map_and_filter_by_group_vec(auth_token, &names_ref)
     .await?;
 
   // Filter hsm group members. Pre-compute a hash of the requested
@@ -325,6 +332,7 @@ pub async fn resolve_target_nodes(
     .await?;
 
     infra
+      .backend
       .get_member_vec_from_group_name_vec(token, &[target_group.to_string()])
       .await
   } else {

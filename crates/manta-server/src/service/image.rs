@@ -1,6 +1,8 @@
 //! IMS image queries and safety-checked deletion (rejects images that boot live nodes).
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
+use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
@@ -19,7 +21,8 @@ pub async fn get_images(
   token: &str,
   params: &GetImagesParams,
 ) -> Result<Vec<Image>, Error> {
-  let mut image_vec = infra.get_images(token, params.id.as_deref()).await?;
+  let mut image_vec =
+    infra.backend.get_images(token, params.id.as_deref()).await?;
 
   if let Some(limit) = params.limit {
     image_vec.truncate(limit as usize);
@@ -56,7 +59,7 @@ pub async fn validate_image_deletion(
     )
     .await?;
 
-  let boot_parameter_vec = infra.get_all_bootparameters(token).await?;
+  let boot_parameter_vec = infra.backend.get_all_bootparameters(token).await?;
 
   // Check if any requested image is used to boot nodes
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
@@ -139,7 +142,7 @@ pub async fn delete_images(
 
   let mut deleted = Vec::new();
   for image_id in image_id_vec {
-    match infra.delete_image(token, image_id).await {
+    match infra.backend.delete_image(token, image_id).await {
       Ok(()) => {
         tracing::info!("Image {} deleted successfully", image_id);
         deleted.push((*image_id).to_string());

@@ -3,14 +3,34 @@
 
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
+use manta_backend_dispatcher::interfaces::delete_configurations_and_data_related::DeleteConfigurationsAndDataRelatedTrait;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
+use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::{
   validate_user_group_access, validate_user_group_vec_access,
 };
-use crate::service::infra_backend::DeletionCandidates;
 pub use manta_shared::types::params::configuration::GetConfigurationParams;
+
+/// Data gathered for deletion review and execution.
+#[derive(serde::Serialize)]
+pub struct DeletionCandidates {
+  /// CFS sessions whose desired-config matches a candidate configuration.
+  pub cfs_sessions_to_delete: Vec<CfsSessionGetResponse>,
+  /// BOS session templates to delete: `(name, cfs_config, description)`.
+  pub bos_sessiontemplate_tuples: Vec<(String, String, String)>,
+  /// IMS image IDs to delete (built by the matching sessions).
+  pub image_ids: Vec<String>,
+  /// Names of the configurations selected for deletion.
+  pub configuration_names: Vec<String>,
+  /// CFS sessions summary tuples: `(name, config_name, status)`.
+  pub cfs_session_tuples: Vec<(String, String, String)>,
+  /// Full configuration objects selected for deletion.
+  pub configurations: Vec<CfsConfigurationResponse>,
+}
 
 /// List CFS configurations the caller may see.
 ///
@@ -28,6 +48,7 @@ pub async fn get_configurations(
     vec![group.clone()]
   } else {
     infra
+      .backend
       .get_group_available(token)
       .await?
       .iter()
@@ -41,6 +62,7 @@ pub async fn get_configurations(
   let limit_ref = params.limit.as_ref();
 
   let cfs_configuration_vec = infra
+    .backend
     .get_and_filter_configuration(
       token,
       params.name.as_deref(),
@@ -90,10 +112,18 @@ pub(crate) async fn get_deletion_candidates(
       validate_user_group_access(infra, token, settings_hsm_group_name).await?;
       vec![settings_hsm_group_name.to_string()]
     } else {
-      infra.get_group_name_available(token).await?
+      infra.backend.get_group_name_available(token).await?
     };
 
-  infra
+  let (
+    cfs_sessions_to_delete,
+    bos_sessiontemplate_tuples,
+    image_ids,
+    configuration_names,
+    cfs_session_tuples,
+    configurations,
+  ) = infra
+    .backend
     .get_data_to_delete(
       token,
       &target_hsm_group_vec,
@@ -101,7 +131,15 @@ pub(crate) async fn get_deletion_candidates(
       since,
       until,
     )
-    .await
+    .await?;
+  Ok(DeletionCandidates {
+    cfs_sessions_to_delete,
+    bos_sessiontemplate_tuples,
+    image_ids,
+    configuration_names,
+    cfs_session_tuples,
+    configurations,
+  })
 }
 
 /// Validate that a `(since, until)` date range is well-ordered.
@@ -148,7 +186,8 @@ pub(crate) async fn delete_configurations_and_derivatives(
     .collect();
 
   infra
-    .delete_configurations_and_dependents(
+    .backend
+    .delete(
       token,
       &candidates.configuration_names,
       &candidates.image_ids,

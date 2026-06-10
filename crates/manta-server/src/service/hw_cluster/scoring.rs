@@ -9,7 +9,8 @@ use std::{collections::HashMap, sync::Arc, time::Instant};
 
 use comfy_table::Color;
 use manta_backend_dispatcher::{
-  error::Error, interfaces::hsm::hardware_inventory::HardwareInventory,
+  error::Error,
+  interfaces::hsm::{group::GroupTrait, hardware_inventory::HardwareInventory},
 };
 use serde_json::Value;
 use tokio::sync::Semaphore;
@@ -616,6 +617,7 @@ pub async fn fetch_group_hw_inventory(
   mem_lcm: u64,
 ) -> Result<(Vec<String>, NodeHwCountVec, HashMap<String, usize>), Error> {
   let member_vec: Vec<String> = infra
+    .backend
     .get_member_vec_from_group_name_vec(shasta_token, &[group_name.to_string()])
     .await
     .map_err(|e| {

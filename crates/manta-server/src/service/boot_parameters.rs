@@ -2,6 +2,7 @@
 
 use manta_backend_dispatcher::{
   error::Error,
+  interfaces::{bss::BootParametersTrait, cfs::CfsTrait, ims::ImsTrait},
   types::{
     Group,
     bss::BootParameters,
@@ -53,7 +54,7 @@ pub async fn get_boot_parameters(
 
   validate_user_group_members_access(infra, token, &xname_vec).await?;
 
-  infra.get_bootparameters(token, &xname_vec).await
+  infra.backend.get_bootparameters(token, &xname_vec).await
 }
 
 /// Remove the BSS boot-parameter record for each host in `hosts`.
@@ -80,7 +81,11 @@ pub async fn delete_boot_parameters(
   validate_user_group_members_access(infra, token, &boot_parameters.hosts)
     .await?;
 
-  infra.delete_bootparameters(token, &boot_parameters).await
+  infra
+    .backend
+    .delete_bootparameters(token, &boot_parameters)
+    .await
+    .map(|_| ())
 }
 
 /// Create a new BSS boot-parameter record for `boot_parameters.hosts`.
@@ -96,7 +101,7 @@ pub async fn add_boot_parameters(
   validate_user_group_members_access(infra, token, &boot_parameters.hosts)
     .await?;
 
-  infra.add_bootparameters(token, boot_parameters).await
+  infra.backend.add_bootparameters(token, boot_parameters).await
 }
 
 /// Replace the BSS boot-parameter record for `params.hosts` with the
@@ -124,7 +129,7 @@ pub async fn update_boot_parameters(
 
   tracing::debug!("new boot params: {:#?}", boot_parameters);
 
-  infra.update_bootparameters(token, &boot_parameters).await
+  infra.backend.update_bootparameters(token, &boot_parameters).await
 }
 
 /// Result of preparing boot configuration changes.
@@ -177,7 +182,7 @@ pub(crate) async fn prepare_boot_config(
   validate_user_group_members_access(infra, token, &xname_vec).await?;
 
   let mut current_node_boot_param_vec: Vec<BootParameters> =
-    infra.get_bootparameters(token, &xname_vec).await?;
+    infra.backend.get_bootparameters(token, &xname_vec).await?;
 
   let new_boot_image_opt = get_new_boot_image(
     infra,
@@ -243,7 +248,7 @@ pub(crate) async fn persist_boot_config(
   for boot_parameter in &changeset.boot_param_vec {
     tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
     let component_patch_rep =
-      infra.update_bootparameters(token, boot_parameter).await;
+      infra.backend.update_bootparameters(token, boot_parameter).await;
     tracing::debug!(
       "Component boot parameters resp:\n{:#?}",
       component_patch_rep
@@ -256,6 +261,7 @@ pub(crate) async fn persist_boot_config(
     );
 
     infra
+      .backend
       .update_runtime_configuration(
         token,
         &changeset.xname_vec,
@@ -269,7 +275,7 @@ pub(crate) async fn persist_boot_config(
         Error::MissingField("Image id is missing".to_string())
       })?;
       let patch_image: PatchImage = image.clone().into();
-      infra.update_image(token, &image_id, &patch_image).await?;
+      infra.backend.update_image(token, &image_id, &patch_image).await?;
     }
   } else {
     tracing::info!("Runtime configuration does not change.");
@@ -304,7 +310,7 @@ async fn get_new_boot_image(
       )));
     }
 
-    infra.filter_images(&mut image_vec)?;
+    infra.backend.filter_images(&mut image_vec)?;
 
     let most_recent_image = image_vec.iter().last().ok_or_else(|| {
       Error::NotFound("No image found for configuration".to_string())
@@ -320,6 +326,7 @@ async fn get_new_boot_image(
   } else if let Some(boot_image_id) = new_boot_image_id_opt {
     tracing::info!("Boot image id '{}' provided", boot_image_id);
     let image_in_csm_vec = infra
+      .backend
       .get_images(shasta_token, new_boot_image_id_opt)
       .await?;
 
@@ -454,6 +461,7 @@ async fn collect_boot_images(
     let fetched: Vec<(String, Image)> =
       futures::future::try_join_all(unique_ids.iter().map(|id| async move {
         let image = infra
+          .backend
           .get_images(shasta_token, Some(id.as_str()))
           .await?
           .first()

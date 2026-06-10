@@ -6,6 +6,7 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -35,6 +36,7 @@ pub async fn get_available_groups(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
   let names = infra
+    .backend
     .get_group_name_available(&ctx.token)
     .await
     .map_err(to_handler_error)?;

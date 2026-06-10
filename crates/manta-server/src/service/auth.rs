@@ -11,6 +11,7 @@
 use std::time::Instant;
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
 
 use crate::server::common::app_context::InfraContext;
 
@@ -32,6 +33,7 @@ pub async fn get_api_token(
   tracing::info!(user = %username, "backend: requesting token");
   let started = Instant::now();
   infra
+    .backend
     .get_api_token(username, password)
     .await
     .inspect(|_| {
@@ -67,6 +69,7 @@ pub async fn validate_api_token(
   tracing::info!("backend: validating token");
   let started = Instant::now();
   infra
+    .backend
     .validate_api_token(token)
     .await
     .inspect(|()| {

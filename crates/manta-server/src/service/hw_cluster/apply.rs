@@ -4,7 +4,9 @@
 
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::{error::Error, types::Group};
+use manta_backend_dispatcher::{
+  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
+};
 
 use super::{
   AddHwResult, ApplyHwResult, DeleteHwResult, HwClusterMode,
@@ -161,6 +163,7 @@ async fn ensure_add_target_group_exists(
   create_hsm_group: bool,
 ) -> Result<(), Error> {
   if infra
+    .backend
     .get_group(shasta_token, target_hsm_group_name)
     .await
     .is_ok()
@@ -195,7 +198,7 @@ async fn ensure_add_target_group_exists(
     members: None,
     exclusive_group: Some("false".to_string()),
   };
-  infra.add_group(shasta_token, group).await?;
+  infra.backend.add_group(shasta_token, group).await?;
   Ok(())
 }
 
@@ -311,6 +314,7 @@ pub async fn add_hw_component(
     .collect();
 
   let mut target_hsm_node_vec: Vec<String> = infra
+    .backend
     .get_member_vec_from_group_name_vec(
       shasta_token,
       &[target_name.to_string()],
@@ -323,10 +327,12 @@ pub async fn add_hw_component(
   if !dryrun {
     for xname in &nodes_to_move {
       infra
+        .backend
         .delete_member_from_group(shasta_token, parent_group_name, xname)
         .await?;
 
       infra
+        .backend
         .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
         .await?;
     }
@@ -374,6 +380,7 @@ async fn handle_empty_target(
      selected, removing it."
   );
   match infra
+    .backend
     .delete_group(shasta_token, target_hsm_group_name)
     .await
   {
@@ -429,10 +436,12 @@ async fn apply_node_moves(
 ) -> Result<(), Error> {
   for xname in nodes {
     infra
+      .backend
       .delete_member_from_group(shasta_token, target_group, xname.as_str())
       .await?;
 
     infra
+      .backend
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
       .await?;
   }
@@ -445,7 +454,7 @@ async fn apply_node_moves(
          removing it.",
         target_group
       );
-      match infra.delete_group(shasta_token, target_group).await {
+      match infra.backend.delete_group(shasta_token, target_group).await {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. This always \
@@ -487,7 +496,7 @@ pub async fn delete_hw_component(
   dryrun: bool,
   delete_group: bool,
 ) -> Result<DeleteHwResult, Error> {
-  match infra.get_group(token, target_group_name).await {
+  match infra.backend.get_group(token, target_group_name).await {
     Ok(_) => {}
     Err(_) => {
       return Err(Error::NotFound(format!(

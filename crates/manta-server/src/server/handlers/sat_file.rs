@@ -42,6 +42,13 @@
 //! method bodies stopped doing anything beyond plumbing.
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
+use manta_backend_dispatcher::interfaces::apply_sat_file::{
+  ApplyConfigurationParams as BackendApplyConfigurationParams,
+  ApplyImageCreateSessionParams as BackendApplyImageCreateSessionParams,
+  ApplyImageStampParams as BackendApplyImageStampParams,
+  ApplySessionTemplateParams as BackendApplySessionTemplateParams, SatTrait,
+};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
@@ -102,15 +109,18 @@ pub async fn post_sat_configuration(
   // convention used for other non-group-scoped handlers (see
   // ARCHITECTURE.md "Security model").
   let cfg = infra
-    .apply_configuration(
-      &ctx.token,
-      &gitea_token,
+    .backend
+    .apply_configuration(BackendApplyConfigurationParams {
+      shasta_token: &ctx.token,
       vault_base_url,
+      site_name: infra.site_name,
       k8s_api_url,
-      body.configuration,
-      body.dry_run,
-      body.overwrite,
-    )
+      gitea_base_url: infra.gitea_base_url,
+      gitea_token: &gitea_token,
+      configuration: body.configuration,
+      dry_run: body.dry_run,
+      overwrite: body.overwrite,
+    })
     .await
     .map_err(to_handler_error)?;
 
@@ -158,16 +168,18 @@ pub async fn post_sat_image_cfs_session(
     .map_err(to_handler_error)?;
 
   let session = infra
-    .create_image_cfs_session(
-      &ctx.token,
+    .backend
+    .apply_sat_image_create_session(BackendApplyImageCreateSessionParams {
+      shasta_token: &ctx.token,
       vault_base_url,
+      site_name: infra.site_name,
       k8s_api_url,
-      body.image,
-      body.ref_lookup,
-      body.ansible_verbosity,
-      body.ansible_passthrough.as_deref(),
-      body.dry_run,
-    )
+      image: body.image,
+      ref_lookup: body.ref_lookup,
+      ansible_verbosity: body.ansible_verbosity,
+      ansible_passthrough: body.ansible_passthrough.as_deref(),
+      dry_run: body.dry_run,
+    })
     .await
     .map_err(to_handler_error)?;
 
@@ -220,7 +232,11 @@ pub async fn post_sat_image_stamp(
     .map_err(to_handler_error)?;
 
   let image = infra
-    .stamp_image_from_cfs_session(&ctx.token, &body.cfs_session_name)
+    .backend
+    .apply_sat_image_stamp_from_session(BackendApplyImageStampParams {
+      shasta_token: &ctx.token,
+      cfs_session_name: &body.cfs_session_name,
+    })
     .await
     .map_err(to_handler_error)?;
 
@@ -266,14 +282,22 @@ pub async fn post_sat_session_template(
     .await
     .map_err(to_handler_error)?;
 
+  let hsm_group_available_vec = infra
+    .backend
+    .get_group_name_available(&ctx.token)
+    .await
+    .map_err(to_handler_error)?;
+
   let (template, session) = infra
-    .apply_session_template(
-      &ctx.token,
-      body.session_template,
-      body.ref_lookup,
-      body.reboot,
-      body.dry_run,
-    )
+    .backend
+    .apply_session_template(BackendApplySessionTemplateParams {
+      shasta_token: &ctx.token,
+      session_template: body.session_template,
+      ref_lookup: body.ref_lookup,
+      hsm_group_available_vec: &hsm_group_available_vec,
+      reboot: body.reboot,
+      dry_run: body.dry_run,
+    })
     .await
     .map_err(to_handler_error)?;
 

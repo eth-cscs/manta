@@ -21,6 +21,11 @@
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::{
+  bss::BootParametersTrait,
+  cfs::CfsTrait,
+  hsm::{component::ComponentTrait, group::GroupTrait},
+};
 use manta_shared::types::dto::NodeDetails;
 
 use crate::server::common::app_context::InfraContext;
@@ -50,12 +55,14 @@ pub async fn get_node_details(
 
   let (cfs_components, boot_params_vec, hsm_components, cfs_sessions, groups) =
     tokio::try_join!(
-      infra.get_cfs_components(token, None, Some(&xname_filter), None),
-      infra.get_bootparameters(token, xnames),
-      infra.get_node_metadata_available(token),
+      infra
+        .backend
+        .get_cfs_components(token, None, Some(&xname_filter), None),
+      infra.backend.get_bootparameters(token, xnames),
+      infra.backend.get_node_metadata_available(token),
       // Successful sessions only — we use them to resolve image id →
       // CFS configuration that built the image.
-      infra.get_sessions(
+      infra.backend.get_sessions(
         token,
         None,
         None,
@@ -67,7 +74,7 @@ pub async fn get_node_details(
         Some(true),
         None
       ),
-      infra.get_groups(token, None),
+      infra.backend.get_groups(token, None),
     )?;
 
   // Build xname → comma-separated group label lookup once.

@@ -1,6 +1,7 @@
 //! Cluster-scoped node detail queries using HSM group membership.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_shared::types::dto::NodeDetails;
 
 use crate::server::common::app_context::InfraContext;
@@ -25,6 +26,7 @@ pub async fn get_cluster_nodes(
     vec![group.clone()]
   } else {
     infra
+      .backend
       .get_group_available(token)
       .await?
       .iter()
@@ -36,6 +38,7 @@ pub async fn get_cluster_nodes(
   validate_user_group_vec_access(infra, token, &target_group_vec).await?;
 
   let mut group_vec_node_list = infra
+    .backend
     .get_member_vec_from_group_name_vec(token, &target_group_vec)
     .await?;
 

@@ -12,6 +12,7 @@ use axum::{
   },
 };
 use futures::{AsyncBufReadExt, StreamExt};
+use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 
 use super::{
@@ -266,7 +267,14 @@ pub async fn get_session_logs(
   };
 
   let logs_stream = infra
-    .get_session_logs_stream(&ctx.token, &name, q.timestamps, &k8s)
+    .backend
+    .get_session_logs_stream(
+      &ctx.token,
+      infra.site_name,
+      &name,
+      q.timestamps,
+      &k8s,
+    )
     .await
     .map_err(to_handler_error)?;
 

@@ -4,7 +4,10 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::hsm::hardware_inventory::HardwareInventory;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::interfaces::hsm::{
+  component::ComponentTrait, hardware_inventory::HardwareInventory,
+};
 use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
 
@@ -121,6 +124,7 @@ pub async fn get_hardware_cluster(
     vec![group.clone()]
   } else {
     infra
+      .backend
       .get_group_available(token)
       .await?
       .iter()
@@ -138,7 +142,7 @@ pub async fn get_hardware_cluster(
     })?
     .clone();
 
-  let hsm_group = infra.get_group(token, &hsm_group_name).await?;
+  let hsm_group = infra.backend.get_group(token, &hsm_group_name).await?;
 
   let members = hsm_group
     .members
@@ -193,7 +197,7 @@ pub async fn get_hardware_nodes_list(
   params: &GetHardwareNodesListParams,
 ) -> Result<HardwareNodesListResult, Error> {
   let node_metadata_available_vec =
-    infra.get_node_metadata_available(token).await?;
+    infra.backend.get_node_metadata_available(token).await?;
 
   let node_list = from_hosts_expression_to_xname_vec(
     &params.host_expression,

@@ -1,6 +1,7 @@
 //! Authorization helpers: validate user access to HSM groups and their members.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::server::common::{app_context::InfraContext, jwt_ops};
 
@@ -23,7 +24,7 @@ pub async fn validate_user_group_access(
     return Ok(());
   }
 
-  let group_available_vec = infra.get_group_name_available(token).await?;
+  let group_available_vec = infra.backend.get_group_name_available(token).await?;
 
   validate_group_vec_access(&[group_name.to_string()], &group_available_vec)
 }
@@ -45,7 +46,7 @@ pub async fn validate_user_group_vec_access(
     return Ok(());
   }
 
-  let group_available_vec = infra.get_group_name_available(token).await?;
+  let group_available_vec = infra.backend.get_group_name_available(token).await?;
 
   validate_group_vec_access(group_vec, &group_available_vec)
 }
@@ -122,7 +123,7 @@ pub async fn validate_user_group_members_access(
   }
 
   let hsm_groups_user_has_access =
-    infra.get_group_name_available(token).await?;
+    infra.backend.get_group_name_available(token).await?;
 
   validate_group_members_access(
     infra,
@@ -150,6 +151,7 @@ pub async fn validate_group_members_access(
   }
 
   let all_xnames_user_has_access = infra
+    .backend
     .get_member_vec_from_group_name_vec(token, hsm_groups_user_has_access)
     .await?;
 

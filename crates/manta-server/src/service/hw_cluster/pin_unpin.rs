@@ -4,7 +4,9 @@
 
 use std::collections::HashMap;
 
-use manta_backend_dispatcher::{error::Error, types::Group};
+use manta_backend_dispatcher::{
+  error::Error, interfaces::hsm::group::GroupTrait, types::Group,
+};
 
 use super::{NodeHwCountVec, scoring};
 use crate::server::common::app_context::InfraContext;
@@ -433,6 +435,7 @@ pub async fn ensure_target_group_exists(
   create_target_hsm_group: bool,
 ) -> Result<(), Error> {
   if infra
+    .backend
     .get_group(shasta_token, target_hsm_group_name)
     .await
     .is_ok()
@@ -470,9 +473,13 @@ pub async fn ensure_target_group_exists(
     members: None,
     exclusive_group: Some("false".to_string()),
   };
-  infra.add_group(shasta_token, group).await.map_err(|e| {
-    Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
-  })?;
+  infra
+    .backend
+    .add_group(shasta_token, group)
+    .await
+    .map_err(|e| {
+      Error::BadRequest(format!("Unable to create new target HSM group: {e}"))
+    })?;
   Ok(())
 }
 
@@ -545,12 +552,17 @@ pub async fn apply_group_updates(
        HSM groups on the system."
     );
   } else {
+    let target_remove_ref: Vec<&str> =
+      u.old_target_members.iter().map(String::as_str).collect();
+    let target_add_ref: Vec<&str> =
+      u.new_target_members.iter().map(String::as_str).collect();
     infra
+      .backend
       .update_group_members(
         shasta_token,
         u.target_group,
-        u.old_target_members,
-        u.new_target_members,
+        &target_remove_ref,
+        &target_add_ref,
       )
       .await
       .map_err(|e| {
@@ -569,12 +581,17 @@ pub async fn apply_group_updates(
   } else {
     let parent_will_be_empty =
       u.old_target_members.len() == u.old_parent_members.len();
+    let parent_remove_ref: Vec<&str> =
+      u.old_parent_members.iter().map(String::as_str).collect();
+    let parent_add_ref: Vec<&str> =
+      u.new_parent_members.iter().map(String::as_str).collect();
     infra
+      .backend
       .update_group_members(
         shasta_token,
         u.parent_group,
-        u.old_parent_members,
-        u.new_parent_members,
+        &parent_remove_ref,
+        &parent_add_ref,
       )
       .await
       .map_err(|e| {
@@ -590,7 +607,7 @@ pub async fn apply_group_updates(
          been selected, removing it.",
         u.parent_group
       );
-      match infra.delete_group(shasta_token, u.parent_group).await {
+      match infra.backend.delete_group(shasta_token, u.parent_group).await {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. \

@@ -1,6 +1,10 @@
 //! CFS session queries, creation, deletion, and console-readiness validation.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
+use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
+use manta_backend_dispatcher::interfaces::cfs::CfsTrait;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::cfs::component::Component;
@@ -40,6 +44,7 @@ pub async fn get_sessions(
     vec![group.clone()]
   } else {
     infra
+      .backend
       .get_group_available(token)
       .await?
       .iter()
@@ -51,6 +56,7 @@ pub async fn get_sessions(
   validate_user_group_members_access(infra, token, &params.xnames).await?;
 
   infra
+    .backend
     .get_and_filter_sessions(
       token,
       target_group_vec,
@@ -111,7 +117,7 @@ pub async fn prepare_session_deletion(
   let start = std::time::Instant::now();
 
   let (cfs_session_vec, cfs_component_vec, bss_bootparameters_vec) = tokio::try_join!(
-    infra.get_and_filter_sessions(
+    infra.backend.get_and_filter_sessions(
       token,
       target_group_vec,
       Vec::new(),
@@ -123,8 +129,8 @@ pub async fn prepare_session_deletion(
       None,
       None,
     ),
-    infra.get_cfs_components(token, None, None, None),
-    infra.get_all_bootparameters(token),
+    infra.backend.get_cfs_components(token, None, None, None),
+    infra.backend.get_all_bootparameters(token),
   )?;
 
   tracing::info!(
@@ -163,6 +169,7 @@ pub async fn execute_session_deletion(
   dry_run: bool,
 ) -> Result<(), Error> {
   infra
+    .backend
     .delete_and_cancel_session(
       token,
       &deletion_ctx.group_available_vec,
@@ -228,8 +235,10 @@ pub async fn create_cfs_session(
   };
 
   infra
+    .backend
     .apply_session(
       gitea_token,
+      infra.gitea_base_url,
       token,
       params.cfs_conf_sess_name,
       params.playbook_yaml_file_name,
@@ -263,6 +272,7 @@ pub async fn validate_session_access(
   session_name: &str,
 ) -> Result<CfsSessionGetResponse, Error> {
   let sessions = infra
+    .backend
     .get_and_filter_sessions(
       token,
       Vec::new(),
@@ -284,7 +294,7 @@ pub async fn validate_session_access(
 
   let target_groups = session.get_target_hsm().unwrap_or_default();
   if !target_groups.is_empty() {
-    let accessible = infra.get_group_name_available(token).await?;
+    let accessible = infra.backend.get_group_name_available(token).await?;
     if let Some(unauthorized) =
       target_groups.iter().find(|g| !accessible.contains(g))
     {
@@ -327,6 +337,7 @@ pub async fn validate_console_session(
   name: &str,
 ) -> Result<(), Error> {
   let sessions = infra
+    .backend
     .get_and_filter_sessions(
       token,
       Vec::new(),

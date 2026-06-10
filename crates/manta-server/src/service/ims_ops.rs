@@ -2,7 +2,11 @@
 //! cross-reference images by CFS configuration name (e.g. boot-config
 //! application, SAT-file rendering).
 
-use manta_backend_dispatcher::{error::Error, types::ims::Image};
+use manta_backend_dispatcher::{
+  error::Error,
+  interfaces::{cfs::CfsTrait, ims::ImsTrait},
+  types::ims::Image,
+};
 
 use crate::server::common::app_context::InfraContext;
 
@@ -27,6 +31,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
   );
 
   let cfs_session_vec = infra
+    .backend
     .get_sessions(
       shasta_token,
       None,
@@ -66,7 +71,7 @@ pub async fn get_image_vec_related_cfs_configuration_name(
       );
 
       let image_vec_rslt =
-        infra.get_images(shasta_token, Some(&image_id)).await;
+        infra.backend.get_images(shasta_token, Some(&image_id)).await;
 
       match image_vec_rslt {
         Ok(mut image_vec) => {

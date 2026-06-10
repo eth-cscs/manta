@@ -7,6 +7,8 @@
 //! `get_power_transition`) every few seconds until it completes.
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::interfaces::pcs::PCSTrait;
 use manta_backend_dispatcher::types::pcs::transitions::types::{
   TransitionResponse, TransitionStartOutput,
 };
@@ -37,6 +39,7 @@ pub async fn resolve_target_xnames(
   let xnames = match target_type {
     PowerTargetType::Cluster => {
       infra
+        .backend
         .get_member_vec_from_group_name_vec(
           token,
           std::slice::from_ref(&host_expression.to_string()),
@@ -79,6 +82,7 @@ pub async fn apply_power(
   validate_user_group_members_access(infra, token, &params.xnames).await?;
 
   infra
+    .backend
     .pcs_transitions_post(
       token,
       pcs_operation(params.action, params.force),
@@ -116,7 +120,7 @@ pub async fn get_power_transition(
   token: &str,
   transition_id: &str,
 ) -> Result<TransitionResponse, Error> {
-  let transition = infra.pcs_transitions_get(token, transition_id).await?;
+  let transition = infra.backend.pcs_transitions_get(token, transition_id).await?;
 
   let xnames: Vec<String> =
     transition.tasks.iter().map(|t| t.xname.clone()).collect();

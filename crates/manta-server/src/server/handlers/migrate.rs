@@ -4,6 +4,8 @@ use std::path::{Path, PathBuf};
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::error::Error as BackendError;
+use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
+use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -195,6 +197,7 @@ pub async fn migrate_backup(
   let destination = confined.into_iter().next().flatten();
 
   infra
+    .backend
     .migrate_backup(&ctx.token, body.bos.as_deref(), destination.as_deref())
     .await
     .map_err(to_handler_error)?;
@@ -258,6 +261,7 @@ pub async fn migrate_restore(
   let image_dir = iter.next().flatten();
 
   infra
+    .backend
     .migrate_restore(
       &ctx.token,
       bos_file.as_deref(),
@@ -265,6 +269,9 @@ pub async fn migrate_restore(
       hsm_file.as_deref(),
       ims_file.as_deref(),
       image_dir.as_deref(),
+      body.overwrite,
+      body.overwrite,
+      body.overwrite,
       body.overwrite,
     )
     .await

@@ -1,13 +1,14 @@
 //! Node migration between HSM groups.
 //!
-//! vCluster backup/restore are 1:1 pass-throughs to `InfraContext`;
-//! handlers call those directly. Only `migrate_nodes` carries real
-//! orchestration (hosts-expression resolution, HSM-group curation,
-//! per-pair member migration).
+//! vCluster backup/restore are 1:1 pass-throughs to the backend
+//! dispatcher; handlers call those directly. Only `migrate_nodes`
+//! carries real orchestration (hosts-expression resolution,
+//! HSM-group curation, per-pair member migration).
 
 use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
@@ -88,7 +89,7 @@ pub async fn migrate_nodes(
   let mut results = Vec::new();
 
   for target_name in target_group_name_vec {
-    if infra.get_group(token, target_name).await.is_ok() {
+    if infra.backend.get_group(token, target_name).await.is_ok() {
       tracing::debug!("The group '{target_name}' exists, good.");
     } else if create_group {
       tracing::info!(
@@ -108,12 +109,14 @@ pub async fn migrate_nodes(
     }
 
     for (parent_group_name, xnames) in &group_summary {
+      let xnames_ref: Vec<&str> = xnames.iter().map(String::as_str).collect();
       let (mut target_members, mut parent_members) = infra
+        .backend
         .migrate_group_members(
           token,
           target_name,
           parent_group_name,
-          xnames,
+          &xnames_ref,
           dry_run,
         )
         .await?;
