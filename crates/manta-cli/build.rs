@@ -86,13 +86,13 @@ fn generate_openapi_client() -> Result<(), Error> {
 ///   in `allOf` since 3.0 disallows siblings to `$ref`.
 fn downconvert_to_openapi_30(value: &mut serde_json::Value) {
   if let serde_json::Value::Object(obj) = value {
-    if let Some(serde_json::Value::String(v)) = obj.get("openapi") {
-      if v.starts_with("3.1") {
-        obj.insert(
-          "openapi".to_string(),
-          serde_json::Value::String("3.0.3".to_string()),
-        );
-      }
+    if let Some(serde_json::Value::String(v)) = obj.get("openapi")
+      && v.starts_with("3.1")
+    {
+      obj.insert(
+        "openapi".to_string(),
+        serde_json::Value::String("3.0.3".to_string()),
+      );
     }
 
     if let Some(serde_json::Value::Array(types)) = obj.get("type").cloned() {
