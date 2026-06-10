@@ -27,6 +27,14 @@ path = "src/main.rs"
 clap                      = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete             = "4.5.66"
 clap_mangen               = "0.3.0"
+# OpenAPI client codegen — reads crates/manta-cli/openapi.json
+# (regenerated via `cargo run -p manta-server -- --emit-openapi`)
+# and emits a typed reqwest client at build time into OUT_DIR.
+progenitor                = "0.14"
+openapiv3                 = "2"
+serde_json                = "1.0.140"
+prettyplease              = "0.2"
+syn                       = "2"
 
 [dependencies]
 # --- START MANTA DEPENDENCIES ---
@@ -76,6 +84,10 @@ self_update = { version = "0.44", default-features = false, features = ["reqwest
 xz2 = "0.1"
 tar = "0.4"
 semver = "1.0"
+# Runtime support for the progenitor-generated API client. The generated
+# code in OUT_DIR (see build.rs) references types from this crate.
+progenitor-client = "0.14"
+bytes = "1"
 
 # Server-only deps (axum, axum-server, utoipa*, tower-http, rustls,
 # rustls-pemfile) moved to crates/manta-server with the HTTP server itself.

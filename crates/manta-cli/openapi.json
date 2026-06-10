@@ -1,0 +1,5358 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Manta API",
+    "description": "REST API for managing CSM/OpenCHAMI HPC clusters via manta.",
+    "contact": {
+      "name": "Manuel Sopena Ballesteros",
+      "email": "msopena@cscs.ch"
+    },
+    "license": {
+      "name": ""
+    },
+    "version": "2.0.0-beta.53"
+  },
+  "servers": [
+    {
+      "url": "/api/v1",
+      "description": "manta API v1"
+    }
+  ],
+  "paths": {
+    "/auth/token": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "POST /api/v1/auth/token — exchange username/password for a CSM token.",
+        "operationId": "auth_token",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/validate": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "POST /api/v1/auth/validate — check whether a CSM token is still valid.",
+        "operationId": "auth_validate",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Token is valid"
+          },
+          "401": {
+            "description": "Token rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/boot-config": {
+      "post": {
+        "tags": [
+          "boot-parameters"
+        ],
+        "summary": "`POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.",
+        "operationId": "apply_boot_config",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyBootConfigRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Boot config applied or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/boot-parameters": {
+      "get": {
+        "tags": [
+          "boot-parameters"
+        ],
+        "summary": "GET /boot-parameters — fetch BSS boot parameters for a group or node list.",
+        "operationId": "get_boot_parameters",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group whose members' boot parameters should be returned.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "nodes",
+            "in": "query",
+            "description": "Explicit comma-separated xnames; mutually exclusive with\n`hsm_group`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Boot parameters",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "boot-parameters"
+        ],
+        "summary": "PUT /boot-parameters — update boot image, kernel params, or runtime config for nodes.",
+        "operationId": "update_boot_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBootParametersParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Boot parameters updated"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "boot-parameters"
+        ],
+        "summary": "POST /boot-parameters — create a new BSS boot parameters entry.",
+        "operationId": "add_boot_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BootParameters"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Boot parameters created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "boot-parameters"
+        ],
+        "summary": "DELETE /boot-parameters — remove BSS boot parameter entries for specified hosts.",
+        "operationId": "delete_boot_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteBootParametersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Boot parameters removed"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/clusters": {
+      "get": {
+        "tags": [
+          "clusters"
+        ],
+        "summary": "DEPRECATED alias for `GET /groups/nodes`. Logs a server-side warning,\nthen delegates to the canonical handler. Old path kept for one\nrelease.",
+        "operationId": "get_clusters_deprecated",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group name to list nodes for. When omitted the response\ncovers every group the bearer token can access.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Optional power-status filter (e.g. `ON`, `OFF`, `READY`).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "[DEPRECATED] use /groups/nodes — list of group nodes",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/configurations": {
+      "get": {
+        "tags": [
+          "configurations"
+        ],
+        "summary": "GET /configurations — list CFS configurations with optional name/pattern/group filters.",
+        "operationId": "get_configurations",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Exact configuration name to fetch.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "pattern",
+            "in": "query",
+            "description": "Glob pattern matched against configuration names.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group whose associated configurations should be returned.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cap on the number of configurations returned (most recent first).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of configurations",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "configurations"
+        ],
+        "summary": "`DELETE /api/v1/configurations` — delete CFS configurations and all derived artifacts.",
+        "operationId": "delete_configurations",
+        "parameters": [
+          {
+            "name": "pattern",
+            "in": "query",
+            "description": "Glob pattern to match configuration names.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "ISO-8601 lower bound — only delete configurations created after\nthis date.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "ISO-8601 upper bound — only delete configurations created before\nthis date.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "description": "When true, return deletion candidates without removing anything.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configurations deleted or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/ephemeral-env": {
+      "post": {
+        "tags": [
+          "ephemeral-env"
+        ],
+        "summary": "`POST /api/v1/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.",
+        "operationId": "create_ephemeral_env",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEphemeralEnvRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Ephemeral env created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "GET /groups — list HSM groups, optionally filtered by name.",
+        "operationId": "get_groups",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Exact group name; returns all groups when `None`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of groups",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "POST /groups — create a new HSM group.",
+        "operationId": "create_group",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Group"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Group created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/available": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "GET /groups/available — list HSM group names the token can access.",
+        "description": "Backs CLI authorization helpers that used to call\n`backend.get_group_name_available` directly.",
+        "operationId": "get_available_groups",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of accessible group names",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/hardware": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "GET /groups/hardware — summarize hardware components per node for a group.",
+        "operationId": "get_groups_hardware",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group name to inventory. When omitted the response covers\nevery group the bearer token can access.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hardware summary for group nodes",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/nodes": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "GET /groups/nodes — list nodes in a group with optional status filter.",
+        "operationId": "get_groups_nodes",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group name to list nodes for. When omitted the response\ncovers every group the bearer token can access.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Optional power-status filter (e.g. `ON`, `OFF`, `READY`).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of group nodes",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/{label}": {
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "DELETE /groups/{label} — remove an HSM group.",
+        "operationId": "delete_group",
+        "parameters": [
+          {
+            "name": "label",
+            "in": "path",
+            "description": "Group label",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "description": "Delete even if the group still has members (default: `false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Group removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/{name}/members": {
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "POST /groups/{name}/members — replace a group's member list from a host expression.",
+        "operationId": "add_nodes_to_group",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Group name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNodesToGroupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Members updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddNodesToGroupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "`DELETE /api/v1/groups/{name}/members` — remove nodes from an HSM group.",
+        "operationId": "delete_group_members",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Group name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteGroupMembersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Members removed"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/hardware-clusters": {
+      "get": {
+        "tags": [
+          "hardware"
+        ],
+        "summary": "DEPRECATED alias for `GET /groups/hardware`. Logs a server-side\nwarning and delegates to the canonical handler. Old path kept for\none release.",
+        "operationId": "get_hardware_clusters_deprecated",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group name to inventory. When omitted the response covers\nevery group the bearer token can access.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "[DEPRECATED] use /groups/hardware — hardware summary for group nodes",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/hardware-clusters/{target}/configuration": {
+      "post": {
+        "tags": [
+          "hardware"
+        ],
+        "summary": "`POST /api/v1/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.",
+        "operationId": "apply_hw_configuration",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "path",
+            "description": "Target cluster name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyHwConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration applied or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/hardware-clusters/{target}/members": {
+      "post": {
+        "tags": [
+          "hardware"
+        ],
+        "summary": "`POST /api/v1/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.",
+        "operationId": "add_hw_component",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "path",
+            "description": "Target cluster name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddHwComponentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Members added or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "hardware"
+        ],
+        "summary": "`DELETE /api/v1/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.",
+        "operationId": "delete_hw_component",
+        "parameters": [
+          {
+            "name": "target",
+            "in": "path",
+            "description": "Target cluster name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteHwComponentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Members removed or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/hardware-nodes-list": {
+      "get": {
+        "tags": [
+          "hardware"
+        ],
+        "summary": "GET /hardware-nodes-list — hardware details for an explicit list of xnames.",
+        "operationId": "get_hardware_nodes_list",
+        "parameters": [
+          {
+            "name": "xnames",
+            "in": "query",
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation). The field\nname is retained for wire stability.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hardware details for specified nodes",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "GET /health — liveness probe; returns `{\"status\":\"ok\"}`.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "Server is healthy"
+          }
+        }
+      }
+    },
+    "/images": {
+      "get": {
+        "tags": [
+          "images"
+        ],
+        "summary": "GET /images — list IMS images sorted by creation time.",
+        "operationId": "get_images",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Exact IMS image ID; returns just that image when set.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "pattern",
+            "in": "query",
+            "description": "Regex matched against image name. Accepted here but applied by\nthe CLI after the response is returned — the server does not\nfilter on it.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cap on the number of images returned (most recent first).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of images",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {}
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "images"
+        ],
+        "summary": "`DELETE /api/v1/images` — delete IMS images by ID; validates only when `dry_run=true`.",
+        "operationId": "delete_images",
+        "parameters": [
+          {
+            "name": "ids",
+            "in": "query",
+            "description": "Comma-separated list of IMS image IDs to delete.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "description": "When true, validate deletion eligibility without removing\nanything.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Images deleted or validation result",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/kernel-parameters": {
+      "get": {
+        "tags": [
+          "kernel-parameters"
+        ],
+        "summary": "GET /kernel-parameters — fetch BSS kernel parameters for a group or node list.",
+        "operationId": "get_kernel_parameters",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group whose members' kernel parameters should be returned.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "nodes",
+            "in": "query",
+            "description": "Explicit comma-separated xnames; mutually exclusive with\n`hsm_group`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kernel parameters",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "kernel-parameters"
+        ],
+        "summary": "`DELETE /api/v1/kernel-parameters` — remove named kernel parameters from node BSS entries.",
+        "operationId": "delete_kernel_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteKernelParametersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Parameters removed or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/kernel-parameters/add": {
+      "post": {
+        "tags": [
+          "kernel-parameters"
+        ],
+        "summary": "`POST /api/v1/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.",
+        "operationId": "add_kernel_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddKernelParametersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Parameters added or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/kernel-parameters/apply": {
+      "post": {
+        "tags": [
+          "kernel-parameters"
+        ],
+        "summary": "`POST /api/v1/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.",
+        "operationId": "apply_kernel_parameters",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyKernelParametersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Kernel parameters applied or preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/migrate/backup": {
+      "post": {
+        "tags": [
+          "migrate"
+        ],
+        "summary": "`POST /api/v1/migrate/backup` — export BOS session templates to backup files.",
+        "operationId": "migrate_backup",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateBackupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Backup completed",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/migrate/nodes": {
+      "post": {
+        "tags": [
+          "migrate"
+        ],
+        "summary": "`POST /api/v1/migrate/nodes` — move nodes between HSM groups.",
+        "operationId": "migrate_nodes",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateNodesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Migration result",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/migrate/restore": {
+      "post": {
+        "tags": [
+          "migrate"
+        ],
+        "summary": "`POST /api/v1/migrate/restore` — import BOS session templates and related artifacts from backup.",
+        "operationId": "migrate_restore",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MigrateRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Restore completed",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/nodes": {
+      "get": {
+        "tags": [
+          "nodes"
+        ],
+        "summary": "GET /nodes — fetch node details for a given xname expression.",
+        "operationId": "get_nodes",
+        "parameters": [
+          {
+            "name": "xname",
+            "in": "query",
+            "description": "Comma-separated xnames, NIDs, or hostlist expression\n(e.g. `x3000c0s1b0n[0-3]`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "include_siblings",
+            "in": "query",
+            "description": "Expand results to include nodes sharing the same blade.",
+            "required": false,
+            "schema": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Optional power-status filter (e.g. `ON`, `OFF`, `READY`).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Node details",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "nodes"
+        ],
+        "summary": "POST /nodes — register a new node in HSM and add it to a group.",
+        "operationId": "add_node",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddNodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Node registered",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/nodes/{id}": {
+      "delete": {
+        "tags": [
+          "nodes"
+        ],
+        "summary": "DELETE /nodes/{id} — remove a node from HSM by xname or NID.",
+        "operationId": "delete_node",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Node xname or NID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Node removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/nodes/{xname}/console": {
+      "get": {
+        "tags": [
+          "console"
+        ],
+        "summary": "`WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.",
+        "operationId": "console_node_ws",
+        "parameters": [
+          {
+            "name": "xname",
+            "in": "path",
+            "description": "Node xname",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cols",
+            "in": "query",
+            "description": "Initial terminal width in columns (default `80`).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "rows",
+            "in": "query",
+            "description": "Initial terminal height in rows (default `24`).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/power": {
+      "post": {
+        "tags": [
+          "power"
+        ],
+        "summary": "`POST /api/v1/power` — start a PCS power transition (on / off /\nreset) against nodes or all members of a cluster and return the\ntransition id **immediately**. Does not block until the\ntransition completes — the CLI is responsible for polling\n`GET /power/transitions/{id}` until the snapshot reports\n`transitionStatus = \"completed\"`.",
+        "description": "Returns a `TransitionStartOutput` (`{ transitionID, operation }`)\nas JSON. Callers can hand the `transitionID` to\n[`get_power_transition`].",
+        "operationId": "post_power",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PowerRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "PCS transition started; returns TransitionStartOutput",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/power/transitions/{id}": {
+      "get": {
+        "tags": [
+          "power"
+        ],
+        "summary": "`GET /api/v1/power/transitions/{id}` — fetch the current snapshot\nof a PCS power transition (status, task counts, per-task detail).\nCalled by the CLI's poll loop after `POST /power` returns the id.",
+        "operationId": "get_power_transition",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transition snapshot",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown transition id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/redfish-endpoints": {
+      "get": {
+        "tags": [
+          "redfish-endpoints"
+        ],
+        "summary": "GET /redfish-endpoints — list HSM Redfish endpoints with optional filters.",
+        "operationId": "get_redfish_endpoints",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "description": "Exact endpoint ID (BMC xname) filter.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "fqdn",
+            "in": "query",
+            "description": "FQDN substring filter.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "uuid",
+            "in": "query",
+            "description": "UUID exact-match filter.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "macaddr",
+            "in": "query",
+            "description": "MAC-address exact-match filter (colon-separated hex).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "ipaddress",
+            "in": "query",
+            "description": "IP-address exact-match filter (IPv4 or IPv6).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of Redfish endpoints",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "redfish-endpoints"
+        ],
+        "summary": "PUT /redfish-endpoints — update an existing Redfish endpoint's properties.",
+        "operationId": "update_redfish_endpoint",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRedfishEndpointParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Endpoint updated"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "redfish-endpoints"
+        ],
+        "summary": "POST /redfish-endpoints — register a new Redfish endpoint in HSM.",
+        "operationId": "add_redfish_endpoint",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRedfishEndpointParams"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Endpoint registered",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/redfish-endpoints/{id}": {
+      "delete": {
+        "tags": [
+          "redfish-endpoints"
+        ],
+        "summary": "DELETE /redfish-endpoints/{id} — remove a Redfish endpoint from HSM.",
+        "operationId": "delete_redfish_endpoint",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "BMC xname",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Endpoint removed"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sat-file/configurations": {
+      "post": {
+        "tags": [
+          "sat-file"
+        ],
+        "summary": "`POST /api/v1/sat-file/configurations` — apply a single SAT\nconfiguration entry. Returns the created `CfsConfigurationResponse`.",
+        "operationId": "post_sat_configuration",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostSatConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration applied",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sat-file/images/cfs-session": {
+      "post": {
+        "tags": [
+          "sat-file"
+        ],
+        "summary": "`POST /api/v1/sat-file/images/cfs-session` — translate one SAT\n`images[]` entry into a CFS session payload and create it. Returns\nthe freshly-created [`CfsSessionGetResponse`] so the CLI can drive\nthe monitor + stamp steps itself.",
+        "operationId": "post_sat_image_cfs_session",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateImageCfsSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "CFS session created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sat-file/images/stamp": {
+      "post": {
+        "tags": [
+          "sat-file"
+        ],
+        "summary": "`POST /api/v1/sat-file/images/stamp` — fetch the named CFS session,\nderive the provenance stamp, and PATCH the produced IMS image.",
+        "description": "Performs two boundary checks before delegating to the backend:\nthe caller must have access to every HSM group the session\ntargets, and the session must have produced a result image. See\n[`crate::service::session::validate_session_access`] +\n[`crate::service::session::require_result_image`].",
+        "operationId": "post_sat_image_stamp",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StampImageFromSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Image stamped",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Session not complete / no image",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sat-file/session-templates": {
+      "post": {
+        "tags": [
+          "sat-file"
+        ],
+        "summary": "`POST /api/v1/sat-file/session-templates` — apply a single SAT\nsession_template entry. Returns the created BOS session template\nand (if `reboot` was set and we're not in dry-run) the BOS session\nthat was kicked off to reboot the targeted nodes.",
+        "operationId": "post_sat_session_template",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostSatSessionTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Session template applied",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostSatSessionTemplateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sessions": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "GET /sessions — list CFS sessions with optional filters.",
+        "operationId": "get_sessions",
+        "parameters": [
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group whose sessions should be returned.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "xnames",
+            "in": "query",
+            "description": "Filter to sessions whose `ansible_limit` mentions any of these\ncomma-separated xnames.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "min_age",
+            "in": "query",
+            "description": "Lower-bound session age expressed as a duration string\n(e.g. `\"1h\"`, `\"2d\"`).",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "max_age",
+            "in": "query",
+            "description": "Upper-bound session age expressed as a duration string.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "session_type",
+            "in": "query",
+            "description": "Session type filter: `\"image\"` or `\"runtime\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status filter: `\"pending\"`, `\"running\"`, or `\"complete\"`.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Exact session name.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cap on the number of sessions returned (most recent first).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of sessions",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "`POST /api/v1/sessions` — create a CFS session from one or more git repositories.",
+        "operationId": "create_session",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sessions/{name}": {
+      "delete": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.",
+        "operationId": "delete_session",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Session name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "description": "When true, return deletion context without actually deleting\n(default: `false`).",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session deleted or deletion preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sessions/{name}/console": {
+      "get": {
+        "tags": [
+          "console"
+        ],
+        "summary": "`WS /api/v1/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.",
+        "operationId": "console_session_ws",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Session name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cols",
+            "in": "query",
+            "description": "Initial terminal width in columns (default `80`).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "rows",
+            "in": "query",
+            "description": "Initial terminal height in rows (default `24`).",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket upgrade"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/sessions/{name}/logs": {
+      "get": {
+        "tags": [
+          "sessions"
+        ],
+        "summary": "`GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.",
+        "operationId": "get_session_logs",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Session name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "timestamps",
+            "in": "query",
+            "description": "When true, prefix each log line with its timestamp.",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE log stream"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/templates": {
+      "get": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "GET /templates — list BOS session templates with optional filters.",
+        "operationId": "get_templates",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "description": "Exact template name.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "hsm_group",
+            "in": "query",
+            "description": "HSM group whose associated templates should be returned.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Cap on the number of templates returned (most recent first).",
+            "required": false,
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of session templates",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/templates/{name}/sessions": {
+      "post": {
+        "tags": [
+          "templates"
+        ],
+        "summary": "`POST /api/v1/templates/{name}/sessions` — create a BOS session from a session template.",
+        "operationId": "post_template_session",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Template name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostTemplateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Dry run preview",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "201": {
+            "description": "Session created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddHwComponentRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/hardware-clusters/{target}/members`.\n\nMoves nodes matching `pattern` out of `parent_cluster` and into\nthe path-level target cluster.",
+        "required": [
+          "parent_cluster",
+          "pattern"
+        ],
+        "properties": {
+          "create_hsm_group": {
+            "type": "boolean",
+            "description": "Create the target HSM group if it does not already exist."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the planned changes without modifying group\nmembership."
+          },
+          "parent_cluster": {
+            "type": "string",
+            "description": "Source HSM group that donates nodes matching `pattern`."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Hardware component pattern used to select which nodes to move."
+          }
+        }
+      },
+      "AddKernelParametersRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/kernel-parameters/add` (append mode).",
+        "required": [
+          "params"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the computed changeset without applying it."
+          },
+          "hsm_group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target HSM group; all members are resolved to xnames."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "When true, overwrite parameters that already exist."
+          },
+          "params": {
+            "type": "string",
+            "description": "Space-separated kernel parameter `key=value` pairs to add."
+          },
+          "project_sbps": {
+            "type": "boolean",
+            "description": "Whether to project SBPS images (default `true`)."
+          },
+          "xnames_expression": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation); mutually\nexclusive with `hsm_group`."
+          }
+        }
+      },
+      "AddNodeRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/nodes`.",
+        "required": [
+          "id",
+          "group"
+        ],
+        "properties": {
+          "arch": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional architecture tag: `\"X86\"`, `\"ARM\"`, or `\"Other\"`."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether to register the node as enabled. Defaults to `false`\n(disabled) per serde's default for `bool`; the CLI's\n`manta add node` flips the polarity via `--disabled`."
+          },
+          "group": {
+            "type": "string",
+            "description": "Initial HSM group the node belongs to."
+          },
+          "id": {
+            "type": "string",
+            "description": "Physical location ID (xname) of the node, e.g. `x3000c0s1b0n0`."
+          }
+        }
+      },
+      "AddNodesToGroupRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/groups/{name}/members`.",
+        "required": [
+          "hosts_expression"
+        ],
+        "properties": {
+          "hosts_expression": {
+            "type": "string",
+            "description": "Hostlist expression (xnames, NIDs, or hostlist notation)\nidentifying the new member set for the group."
+          }
+        }
+      },
+      "AddNodesToGroupResponse": {
+        "type": "object",
+        "description": "Response body for `POST /api/v1/groups/{name}/members`.\n\nThe `removed` field name is retained for wire stability; its value\nis the final, sorted membership of the group after the update —\n**not** a list of removed nodes.",
+        "required": [
+          "added",
+          "final_members"
+        ],
+        "properties": {
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Xnames that were added to the group as part of this request."
+          },
+          "final_members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Final, sorted membership of the group after the update."
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Deprecated alias for [`Self::final_members`]. Carries the same\nvalue so existing clients reading `removed` keep working for one\nrelease; new clients should read `final_members`. Scheduled for\nremoval in the next major bump — at which point the\n`#[serde(alias = \"removed\")]` on `final_members` keeps inbound\ncompatibility for anyone POSTing back the old name."
+          }
+        }
+      },
+      "ApplyBootConfigRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).",
+        "required": [
+          "hosts_expression"
+        ],
+        "properties": {
+          "boot_image_configuration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CFS configuration name associated with the boot image; the\nserver resolves the most recent image built against this\nconfiguration when `boot_image_id` is absent."
+          },
+          "boot_image_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IMS image ID to set as the boot image."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the computed changeset without persisting it."
+          },
+          "hosts_expression": {
+            "type": "string",
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation) naming\nthe target nodes."
+          },
+          "kernel_parameters": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Kernel command-line parameters to apply."
+          },
+          "runtime_configuration": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CFS configuration to assign as the runtime desired-config."
+          }
+        }
+      },
+      "ApplyHwConfigurationRequest": {
+        "type": "object",
+        "description": "Request body for\n`POST /api/v1/hardware-clusters/{target}/configuration`.",
+        "required": [
+          "parent_cluster",
+          "pattern"
+        ],
+        "properties": {
+          "create_target_hsm_group": {
+            "type": "boolean",
+            "description": "Create the target HSM group if absent (default `true`)."
+          },
+          "delete_empty_parent_hsm_group": {
+            "type": "boolean",
+            "description": "Delete the parent HSM group if it becomes empty (default `true`)."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the planned changes without modifying group\nmembership."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/HwClusterMode",
+            "description": "Whether to pin nodes into the target cluster or unpin them back\nto the parent. Defaults to `Pin`."
+          },
+          "parent_cluster": {
+            "type": "string",
+            "description": "Source (parent) HSM group supplying nodes."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Hardware component pattern selecting which nodes to pin/unpin."
+          }
+        }
+      },
+      "ApplyKernelParametersRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/kernel-parameters/apply`.",
+        "required": [
+          "operation",
+          "params"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the computed changeset without applying it."
+          },
+          "hsm_group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target HSM group; all members are resolved to xnames."
+          },
+          "operation": {
+            "$ref": "#/components/schemas/KernelParamOp",
+            "description": "Which mutation to perform: add, apply (replace), or delete."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Only relevant for the `Add` operation."
+          },
+          "params": {
+            "type": "string",
+            "description": "Space-separated kernel parameter `key=value` pairs."
+          },
+          "project_sbps": {
+            "type": "boolean",
+            "description": "Whether to project SBPS images (default `true`)."
+          },
+          "xnames_expression": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation); mutually\nexclusive with `hsm_group`."
+          }
+        }
+      },
+      "AuthTokenRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/auth/token`.",
+        "required": [
+          "username",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "Keycloak password. Never logged by the server (the\n`/auth/*` sub-router is wrapped by `strip_body_for_logs`)."
+          },
+          "username": {
+            "type": "string",
+            "description": "Keycloak username submitted to the configured backend."
+          }
+        }
+      },
+      "AuthTokenResponse": {
+        "type": "object",
+        "description": "Response body for `POST /api/v1/auth/token`.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Bearer token issued by the backend (CSM or OpenCHAMI Keycloak).\nPass this as `Authorization: Bearer <token>` on every\nsubsequent request."
+          }
+        }
+      },
+      "BootParameters": {
+        "type": "object",
+        "properties": {
+          "cloud-init": {},
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "initrd": {
+            "type": "string"
+          },
+          "kernel": {
+            "type": "string"
+          },
+          "macs": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "nids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          "params": {
+            "type": "string"
+          }
+        }
+      },
+      "BosOperation": {
+        "type": "string",
+        "description": "BOS session operation to run against the template's node list.",
+        "enum": [
+          "boot",
+          "reboot",
+          "shutdown"
+        ]
+      },
+      "CreateEphemeralEnvRequest": {
+        "type": "object",
+        "description": "Request body for `POST /ephemeral-env`.",
+        "required": [
+          "image_id"
+        ],
+        "properties": {
+          "image_id": {
+            "type": "string",
+            "description": "IMS image ID to boot the ephemeral environment from."
+          }
+        }
+      },
+      "CreateImageCfsSessionRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/sat-file/images/cfs-session`.\n\nCarries one entry from the SAT file's `images` section plus the\nCLI's accumulated `ref_lookup` and the ansible knobs the CFS\nsession needs.",
+        "required": [
+          "image"
+        ],
+        "properties": {
+          "ansible_passthrough": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Extra arguments forwarded verbatim to `ansible-playbook`."
+          },
+          "ansible_verbosity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32",
+            "description": "Ansible verbosity level (0–4) for the CFS session that builds\nthe image.",
+            "minimum": 0
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate without creating; the server returns a mocked complete\nsession with a `DRYRUN-<uuid>` result id."
+          },
+          "image": {
+            "description": "One SAT `images[]` entry as a structured value."
+          },
+          "ref_lookup": {
+            "type": "object",
+            "description": "`ref_name.or(name) -> image_id` map for previously-created\nimages. The backend uses it to resolve `base.image_ref` chains.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CreateSessionRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/sessions`.\n\nThe CLI submits this when the user runs `manta run session`; the\nserver deserialises it in `handlers::session::create_session`.\n`repo_names` and `repo_last_commit_ids` are parallel-indexed —\n`repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.",
+        "required": [
+          "repo_names",
+          "repo_last_commit_ids"
+        ],
+        "properties": {
+          "ansible_limit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ansible `--limit` expression restricting which xnames are\ntargeted (the service-layer authz check rejects group names —\npre-resolve them client-side)."
+          },
+          "ansible_passthrough": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Extra arguments forwarded verbatim to `ansible-playbook`."
+          },
+          "ansible_verbosity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ansible verbosity level (e.g. `\"-v\"`, `\"-vvv\"`)."
+          },
+          "cfs_conf_sess_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Explicit name for the CFS session and configuration;\nauto-generated when absent."
+          },
+          "hsm_group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target HSM group name."
+          },
+          "playbook_yaml_file_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Ansible playbook filename inside the repository."
+          },
+          "repo_last_commit_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Git commit SHAs matching each entry in `repo_names`."
+          },
+          "repo_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Git repository names (parallel-indexed with\n`repo_last_commit_ids`)."
+          }
+        }
+      },
+      "DeleteBootParametersRequest": {
+        "type": "object",
+        "description": "Body for `DELETE /boot-parameters`.",
+        "required": [
+          "hosts"
+        ],
+        "properties": {
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Xnames whose BSS boot-parameter entries should be deleted."
+          }
+        }
+      },
+      "DeleteGroupMembersRequest": {
+        "type": "object",
+        "description": "Request body for `DELETE /api/v1/groups/{name}/members`.",
+        "required": [
+          "xnames_expression"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, validate the request without modifying group\nmembership."
+          },
+          "xnames_expression": {
+            "type": "string",
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation)\nidentifying nodes to remove."
+          }
+        }
+      },
+      "DeleteHwComponentRequest": {
+        "type": "object",
+        "description": "Request body for `DELETE /api/v1/hardware-clusters/{target}/members`.",
+        "required": [
+          "parent_cluster",
+          "pattern"
+        ],
+        "properties": {
+          "delete_hsm_group": {
+            "type": "boolean",
+            "description": "Delete the target HSM group if it becomes empty after the\noperation."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the planned changes without modifying group\nmembership."
+          },
+          "parent_cluster": {
+            "type": "string",
+            "description": "Destination HSM group that receives nodes moved out of the\ntarget cluster."
+          },
+          "pattern": {
+            "type": "string",
+            "description": "Hardware component pattern used to select which nodes to move\nback."
+          }
+        }
+      },
+      "DeleteKernelParametersRequest": {
+        "type": "object",
+        "description": "Request body for `DELETE /api/v1/kernel-parameters`.",
+        "required": [
+          "params"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, return the computed changeset without applying it."
+          },
+          "hsm_group": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Target HSM group; all members are resolved to xnames."
+          },
+          "params": {
+            "type": "string",
+            "description": "Space-separated parameter names (or `key=value` pairs) to\nremove."
+          },
+          "xnames_expression": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation); mutually\nexclusive with `hsm_group`."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Standard JSON error body returned by all failed endpoints.",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable explanation of the failure. Never includes\nstack traces, credentials, or internal type names."
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "exclusiveGroup": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "members": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/Member"
+              }
+            ]
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "HwClusterMode": {
+        "type": "string",
+        "description": "Whether the hw cluster operation moves nodes into the target (Pin) or\nreleases them back (Unpin).",
+        "enum": [
+          "pin",
+          "unpin"
+        ]
+      },
+      "KernelParamOp": {
+        "type": "string",
+        "description": "Which kernel-parameter mutation to perform on\n`POST /api/v1/kernel-parameters/apply`.",
+        "enum": [
+          "add",
+          "apply",
+          "delete"
+        ]
+      },
+      "Member": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "MigrateBackupRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/migrate/backup`.",
+        "properties": {
+          "bos": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BOS session template name (or filter) to back up."
+          },
+          "destination": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Filesystem path where backup files will be written."
+          }
+        }
+      },
+      "MigrateNodesRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/migrate/nodes`.",
+        "required": [
+          "target_hsm_names",
+          "parent_hsm_names",
+          "hosts_expression"
+        ],
+        "properties": {
+          "create_hsm_group": {
+            "type": "boolean",
+            "description": "Create the target HSM group if it does not already exist."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, validate the migration plan without modifying any\ngroup membership."
+          },
+          "hosts_expression": {
+            "type": "string",
+            "description": "Node-set expression (xnames, NIDs, or hostlist notation)\nselecting which nodes to migrate."
+          },
+          "parent_hsm_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Source HSM group names the nodes currently belong to."
+          },
+          "target_hsm_names": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Destination HSM group names to move nodes into."
+          }
+        }
+      },
+      "MigrateRestoreRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/migrate/restore`.",
+        "properties": {
+          "bos_file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path to the BOS session template backup file."
+          },
+          "cfs_file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path to the CFS configuration backup file."
+          },
+          "hsm_file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path to the HSM group backup file."
+          },
+          "image_dir": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Directory containing the image layer tarballs."
+          },
+          "ims_file": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Path to the IMS image metadata backup file."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "When true, overwrite existing resources that conflict with the\nbackup."
+          }
+        }
+      },
+      "PostSatConfigurationRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/sat-file/configurations`.\n\nCarries one entry from the SAT file's `configurations` section\nplus per-call flags. csm-rs owns the SAT schema; the CLI and server\njust shuttle the entry through as `serde_json::Value`.",
+        "required": [
+          "configuration"
+        ],
+        "properties": {
+          "configuration": {
+            "description": "One SAT `configurations[]` entry as a structured value."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate without creating; the response contains a mock\nconfiguration."
+          },
+          "overwrite": {
+            "type": "boolean",
+            "description": "Overwrite an existing CFS configuration of the same name."
+          }
+        }
+      },
+      "PostSatSessionTemplateRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/sat-file/session-templates`.\n\nCarries one entry from the SAT file's `session_templates` section\nplus the CLI's accumulated `ref_lookup` and per-call flags.",
+        "required": [
+          "session_template"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "Validate without creating; the response contains a mock template\nand, if `reboot` was set, no session is returned."
+          },
+          "reboot": {
+            "type": "boolean",
+            "description": "After creating the template, trigger a BOS session to reboot the\ntargeted nodes through it."
+          },
+          "ref_lookup": {
+            "type": "object",
+            "description": "`ref_name.or(name) -> image_id` map for previously-created\nimages; the backend uses it to resolve `image.image_ref`.",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "propertyNames": {
+              "type": "string"
+            }
+          },
+          "session_template": {
+            "description": "One SAT `session_templates[]` entry as a structured value."
+          }
+        }
+      },
+      "PostSatSessionTemplateResponse": {
+        "type": "object",
+        "description": "Response body for `POST /api/v1/sat-file/session-templates`.\n\n`session` is populated when `reboot` was true and a BOS session\nwas created.",
+        "required": [
+          "template"
+        ],
+        "properties": {
+          "session": {
+            "description": "The BOS session created by the reboot, if any."
+          },
+          "template": {
+            "description": "The created (or mock, in dry-run) BOS session template."
+          }
+        }
+      },
+      "PostTemplateSessionRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/templates/{name}/sessions`.",
+        "required": [
+          "operation",
+          "limit"
+        ],
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, validate the session parameters without creating a\nBOS session."
+          },
+          "include_disabled": {
+            "type": "boolean",
+            "description": "When true, include nodes marked as disabled."
+          },
+          "limit": {
+            "type": "string",
+            "description": "Ansible limit expression restricting which template nodes are\ntargeted."
+          },
+          "operation": {
+            "$ref": "#/components/schemas/BosOperation",
+            "description": "BOS operation to run (boot, reboot, or shutdown)."
+          },
+          "session_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional explicit name for the BOS session; auto-generated when\nabsent."
+          }
+        }
+      },
+      "PowerAction": {
+        "type": "string",
+        "description": "The power operation to apply to a list of xnames.",
+        "enum": [
+          "on",
+          "off",
+          "reset"
+        ]
+      },
+      "PowerRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/power`.",
+        "required": [
+          "action",
+          "host_expression",
+          "target_type"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/PowerAction",
+            "description": "Power operation to perform."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Pass `--force` to the underlying power operation (forceful\nshutdown/reset)."
+          },
+          "host_expression": {
+            "type": "string",
+            "description": "For `Nodes`: hosts expression (xnames, NIDs, or hostlist\nnotation). For `Cluster`: the HSM group name."
+          },
+          "target_type": {
+            "$ref": "#/components/schemas/PowerTargetType",
+            "description": "Whether `host_expression` is a node expression or a cluster\nname."
+          }
+        }
+      },
+      "PowerTargetType": {
+        "type": "string",
+        "description": "Whether the caller's `host_expression` is a hosts expression\n(xnames / NIDs / hostlist) or a single HSM group name whose\nmembers should be targeted.",
+        "enum": [
+          "nodes",
+          "cluster"
+        ]
+      },
+      "StampImageFromSessionRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/sat-file/images/stamp`.",
+        "required": [
+          "cfs_session_name"
+        ],
+        "properties": {
+          "cfs_session_name": {
+            "type": "string",
+            "description": "Name of the (already terminal-complete) CFS session whose result\nimage should be stamped with `manta.image_session.*` provenance."
+          }
+        }
+      },
+      "UpdateBootParametersParams": {
+        "type": "object",
+        "description": "Typed parameters for updating boot parameters.",
+        "required": [
+          "hosts",
+          "params",
+          "kernel",
+          "initrd"
+        ],
+        "properties": {
+          "hosts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Target node xnames."
+          },
+          "initrd": {
+            "type": "string",
+            "description": "S3 path to the initrd image."
+          },
+          "kernel": {
+            "type": "string",
+            "description": "S3 path to the kernel image."
+          },
+          "macs": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "MAC addresses corresponding to `hosts` (optional alternate identifier)."
+          },
+          "nids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            },
+            "description": "Node IDs corresponding to `hosts` (optional alternate identifier)."
+          },
+          "params": {
+            "type": "string",
+            "description": "Kernel command-line parameters string."
+          }
+        }
+      },
+      "UpdateRedfishEndpointParams": {
+        "type": "object",
+        "description": "Typed parameters for updating/adding a Redfish endpoint.",
+        "required": [
+          "id",
+          "enabled",
+          "use_ssdp",
+          "mac_required",
+          "rediscover_on_update"
+        ],
+        "properties": {
+          "domain": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Domain portion of the BMC FQDN."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the endpoint is enabled for discovery."
+          },
+          "fqdn": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Full FQDN; overrides hostname+domain when set."
+          },
+          "hostname": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Hostname portion of the BMC FQDN."
+          },
+          "id": {
+            "type": "string",
+            "description": "Xname identifying the BMC (e.g. `x3000c0s1b0`)."
+          },
+          "ip_address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BMC IP address (IPv4 or IPv6)."
+          },
+          "mac_addr": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BMC MAC address (colon-separated)."
+          },
+          "mac_required": {
+            "type": "boolean",
+            "description": "Whether a MAC address is required for geolocation."
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional human-readable name."
+          },
+          "password": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BMC password for Redfish authentication."
+          },
+          "rediscover_on_update": {
+            "type": "boolean",
+            "description": "Trigger a rediscovery pass when the endpoint is updated."
+          },
+          "template_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "ID of a discovery template to apply."
+          },
+          "use_ssdp": {
+            "type": "boolean",
+            "description": "Use SSDP for automatic endpoint discovery."
+          },
+          "user": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BMC username for Redfish authentication."
+          }
+        }
+      },
+      "ValidateTokenRequest": {
+        "type": "object",
+        "description": "Request body for `POST /api/v1/auth/validate`.",
+        "required": [
+          "token"
+        ],
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "Bearer token to validate against the backend."
+          }
+        }
+      },
+      "XnameId": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

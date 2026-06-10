@@ -161,7 +161,26 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
            Use only when TLS terminates upstream (reverse proxy, sidecar).",
         ),
     )
+    .arg(
+      Arg::new("emit-openapi")
+        .long("emit-openapi")
+        .action(clap::ArgAction::SetTrue)
+        .help(
+          "Dump the OpenAPI spec to stdout as JSON and exit. Used to \
+           regenerate crates/manta-cli/openapi.json after handler or \
+           schema changes — no config file is read.",
+        ),
+    )
     .get_matches();
+
+  if cli.get_flag("emit-openapi") {
+    use utoipa::OpenApi;
+    let spec = manta_server::server::api_doc::ApiDoc::openapi()
+      .to_pretty_json()
+      .map_err(|e| format!("Failed to serialise OpenAPI spec: {e}"))?;
+    println!("{spec}");
+    return Ok(());
+  }
 
   let settings = manta_config::get_server_configuration()
     .map_err(|e| format!("Could not read server configuration: {e}"))?;
