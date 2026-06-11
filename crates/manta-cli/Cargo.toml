@@ -53,7 +53,30 @@ regex              = { workspace = true }
 nodeset = "0.5.0"
 chrono = { version = "0.4.41", default-features = false }
 anyhow = { version = "1.0.44", default-features = false }
-reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "json", "rustls", "socks", "stream"] } # We need native-tls-vendored feature to be able to compile on `musl` target
+# --- reqwest version split (workspace 0.12 vs manta-cli 0.13) ---
+#
+# manta-cli pins reqwest 0.13 directly (not `workspace = true`)
+# because `progenitor-client 0.14` — the runtime support for the
+# build.rs-generated API client — requires reqwest 0.13.
+#
+# The rest of the workspace stays on reqwest 0.12 because csm-rs
+# (and therefore manta-server) needs kube, and the kube/k8s-openapi
+# ecosystem still pins reqwest 0.12.x transitively — verified at
+# kube 2.0.1 AND kube 3.1.0.
+#
+# Consequence: the manta binary links BOTH reqwest 0.12 and 0.13.
+# Two crates pull in 0.12 through manta-shared and the trait crate
+# (`manta-backend-dispatcher`), both for a single `NetError(reqwest::Error)`
+# variant in their error enums; nothing structurally introspects
+# the stored reqwest error, so refactoring those variants to
+# `NetError(String)` would let us drop reqwest from both crates
+# and eliminate the duplication. That refactor is sibling-crate
+# breaking work and is deferred.
+#
+# Cost of the duplication: a few MB of extra binary size and ~30s
+# extra cold compile. Revisit when (a) we do the sibling error
+# refactor, or (b) kube ecosystem catches up to reqwest 0.13.
+reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "json", "rustls", "socks", "stream"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.34"
