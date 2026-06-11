@@ -5,6 +5,10 @@ use super::*;
 impl CfsTrait for StaticBackendDispatcher {
   type T = Pin<Box<dyn AsyncBufRead + Send>>;
 
+  async fn get_cfs_health(&self) -> Result<(), Error> {
+    dispatch!(self, get_cfs_health)
+  }
+
   async fn get_session_logs_stream(
     &self,
     token: &str,

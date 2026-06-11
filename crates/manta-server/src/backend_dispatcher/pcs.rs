@@ -6,9 +6,28 @@
 //! `power_*_sync` trait methods (server-side polling loop) have been
 //! removed.
 
+use manta_backend_dispatcher::types::pcs::power_status::types::PowerStatusAll;
+
 use super::*;
 
 impl PCSTrait for StaticBackendDispatcher {
+  async fn power_status(
+    &self,
+    auth_token: &str,
+    nodes: &[String],
+    power_status_filter: Option<&str>,
+    management_state_filter: Option<&str>,
+  ) -> Result<PowerStatusAll, Error> {
+    dispatch!(
+      self,
+      power_status,
+      auth_token,
+      nodes,
+      power_status_filter,
+      management_state_filter
+    )
+  }
+
   async fn pcs_transitions_post(
     &self,
     auth_token: &str,

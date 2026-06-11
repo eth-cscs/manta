@@ -108,6 +108,7 @@ mod cfs;
 mod cluster_session;
 mod cluster_template;
 mod component;
+mod component_ethernet_interface;
 mod console;
 mod delete_configurations;
 mod get_images;
