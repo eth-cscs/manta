@@ -5,7 +5,7 @@ use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-use crate::handlers::{
+use crate::dispatch::{
   add, apply, backup, config, console, delete, gen_autocomplete, gen_man, get,
   log, migrate, power, restore, run, upgrade,
 };

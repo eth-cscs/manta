@@ -10,12 +10,28 @@ use std::ffi::OsString;
 use std::fs::{self, File};
 use std::path::PathBuf;
 
-use anyhow::{Context, Result, anyhow};
-use clap::Command;
+use anyhow::{Context, Error, Result, anyhow};
+use clap::{ArgMatches, Command};
 use serde_json::json;
 
 use crate::build::manpage;
+use crate::common::app_context::AppContext;
 use crate::output::action_result;
+
+/// Dispatch `manta gen-man`.
+///
+/// Like `gen-autocomplete`, this handler does NOT call
+/// `get_api_token` — installing man pages is purely local.
+pub async fn handle_gen_man(
+  cli_gen_man: &ArgMatches,
+  _ctx: &AppContext<'_>,
+) -> Result<(), Error> {
+  let path = cli_gen_man.get_one::<PathBuf>("path").cloned();
+  let output_opt = cli_gen_man.get_one::<String>("output").map(String::as_str);
+
+  let cli = crate::build::build_cli();
+  exec(cli, path, output_opt)
+}
 
 /// Generate and install the consolidated `manta.1` man page.
 pub fn exec(

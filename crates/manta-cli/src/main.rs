@@ -8,7 +8,6 @@
 mod build;
 mod common;
 mod dispatch;
-mod handlers;
 mod http_client;
 #[allow(missing_docs)]
 mod openapi_client;
@@ -101,7 +100,7 @@ async fn run_cli(
   };
 
   let cli_result =
-    crate::handlers::process::process_cli(&cli_matches, &app_context).await;
+    crate::dispatch::process::process_cli(&cli_matches, &app_context).await;
 
   cli_result.map_err(Into::into)
 }

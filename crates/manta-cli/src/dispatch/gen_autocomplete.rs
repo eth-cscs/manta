@@ -14,8 +14,21 @@ use clap::{ArgMatches, Command};
 use clap_complete::{Shell, generate, generate_to};
 use serde_json::json;
 
+use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::output::action_result;
+
+/// Dispatch `manta gen-autocomplete`.
+///
+/// Like `manta upgrade`, this handler does NOT call `get_api_token` —
+/// generating shell-completion scripts is purely local.
+pub async fn handle_gen_autocomplete(
+  cli_gen_autocomplete: &ArgMatches,
+  _ctx: &AppContext<'_>,
+) -> Result<(), Error> {
+  let cli = crate::build::build_cli();
+  exec(cli, cli_gen_autocomplete)
+}
 
 /// Generate (and by default install) the shell completion script.
 pub fn exec(mut cli: Command, cli_gen_autocomplete: &ArgMatches) -> Result<()> {

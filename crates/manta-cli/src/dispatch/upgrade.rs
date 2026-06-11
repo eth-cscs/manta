@@ -31,14 +31,41 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, anyhow, bail};
+use anyhow::{Context, Error, Result, anyhow, bail};
+use clap::ArgMatches;
 use semver::Version;
 use serde_json::{Value, json};
 use tar::Archive;
 use xz2::read::XzDecoder;
 
+use crate::common::app_context::AppContext;
 use crate::common::confirm::confirm;
 use crate::output::action_result;
+
+/// Dispatch the `manta upgrade` command.
+///
+/// Like `gen_autocomplete` and `gen_man`, this handler does NOT call
+/// `get_api_token(ctx)` — `manta upgrade` talks to GitHub releases,
+/// not the manta server, so there's no token to bootstrap.
+pub async fn handle_upgrade(
+  cli_upgrade: &ArgMatches,
+  _ctx: &AppContext<'_>,
+) -> Result<(), Error> {
+  let check_only = cli_upgrade.get_flag("check");
+  let dry_run = cli_upgrade.get_flag("dry-run");
+  let assume_yes = cli_upgrade.get_flag("assume-yes");
+  let output_owned: Option<String> =
+    cli_upgrade.get_one::<String>("output").cloned();
+
+  // The upgrade flow uses blocking I/O (reqwest::blocking +
+  // xz2 + tar + fs::rename); off-load to a blocking thread to
+  // keep the Tokio runtime free.
+  tokio::task::spawn_blocking(move || {
+    exec(check_only, dry_run, assume_yes, output_owned.as_deref())
+  })
+  .await
+  .context("upgrade task panicked")?
+}
 
 const REPO_OWNER: &str = "eth-cscs";
 const REPO_NAME: &str = "manta";
