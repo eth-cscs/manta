@@ -1,7 +1,7 @@
 //! Runtime backend selector — wraps either a CSM or an OpenCHAMI backend
 //! behind a single enum so the rest of the codebase is backend-agnostic.
 
-use csm_rs::backend_connector::Csm;
+use csm_rs::ShastaClient;
 use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
@@ -14,8 +14,8 @@ use ochami_rs::backend_connector::Ochami;
 #[allow(clippy::upper_case_acronyms)]
 pub enum StaticBackendDispatcher {
   /// HPE Cray System Management (CSM) backend, used by Alps-style
-  /// deployments. Wraps a `csm-rs` HTTP client.
-  CSM(Csm),
+  /// deployments. Wraps a `csm-rs` HTTP client (`ShastaClient`).
+  CSM(ShastaClient),
   /// OpenCHAMI backend, used by sites running the open-source CSM
   /// alternative. Wraps an `ochami-rs` HTTP client.
   OCHAMI(Ochami),
@@ -42,7 +42,11 @@ impl StaticBackendDispatcher {
     socks5_proxy: Option<&str>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert, socks5_proxy)?)),
+      "csm" => Ok(Self::CSM(ShastaClient::new(
+        base_url,
+        root_cert,
+        socks5_proxy.map(str::to_string),
+      )?)),
       "ochami" => {
         Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy)))
       }

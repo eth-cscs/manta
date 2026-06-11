@@ -15,7 +15,16 @@ impl PCSTrait for StaticBackendDispatcher {
     operation: &str,
     nodes: &[String],
   ) -> Result<TransitionStartOutput, Error> {
-    dispatch!(self, pcs_transitions_post, auth_token, operation, nodes)
+    // Same trait-vs-inherent name clash as `pcs_transitions_get`:
+    // disambiguate explicitly.
+    match self {
+      Self::CSM(b) => {
+        PCSTrait::pcs_transitions_post(b, auth_token, operation, nodes).await
+      }
+      Self::OCHAMI(b) => {
+        PCSTrait::pcs_transitions_post(b, auth_token, operation, nodes).await
+      }
+    }
   }
 
   async fn pcs_transitions_get(
@@ -23,6 +32,17 @@ impl PCSTrait for StaticBackendDispatcher {
     auth_token: &str,
     transition_id: &str,
   ) -> Result<TransitionResponse, Error> {
-    dispatch!(self, pcs_transitions_get, auth_token, transition_id)
+    // ShastaClient has an inherent `pcs_transitions_get` that takes
+    // only the token and returns a Vec. Disambiguate via the trait so
+    // the resolver picks the trait method (single transition by id),
+    // not the inherent one.
+    match self {
+      Self::CSM(b) => {
+        PCSTrait::pcs_transitions_get(b, auth_token, transition_id).await
+      }
+      Self::OCHAMI(b) => {
+        PCSTrait::pcs_transitions_get(b, auth_token, transition_id).await
+      }
+    }
   }
 }

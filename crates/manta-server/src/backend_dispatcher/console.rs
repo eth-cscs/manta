@@ -1,34 +1,25 @@
 //! `ConsoleTrait` impl for `StaticBackendDispatcher`.
 
+use manta_backend_dispatcher::interfaces::console::{ConsoleAttachment, TermSize};
+
 use super::*;
 
 impl ConsoleTrait for StaticBackendDispatcher {
-  type T = Box<dyn AsyncWrite + Unpin + Send>;
-  type U = Box<dyn AsyncRead + Unpin + Send>;
-
   async fn attach_to_node_console(
     &self,
     token: &str,
     site_name: &str,
     xname: &str,
-    width: u16,
-    height: u16,
+    initial_size: TermSize,
     k8s: &K8sDetails,
-  ) -> Result<
-    (
-      Box<dyn AsyncWrite + Unpin + Send>,
-      Box<dyn AsyncRead + Unpin + Send>,
-    ),
-    Error,
-  > {
+  ) -> Result<ConsoleAttachment, Error> {
     dispatch!(
       self,
       attach_to_node_console,
       token,
       site_name,
       xname,
-      width,
-      height,
+      initial_size,
       k8s
     )
   }
@@ -38,24 +29,16 @@ impl ConsoleTrait for StaticBackendDispatcher {
     token: &str,
     site_name: &str,
     session_name: &str,
-    width: u16,
-    height: u16,
+    initial_size: TermSize,
     k8s: &K8sDetails,
-  ) -> Result<
-    (
-      Box<dyn AsyncWrite + Unpin + Send>,
-      Box<dyn AsyncRead + Unpin + Send>,
-    ),
-    Error,
-  > {
+  ) -> Result<ConsoleAttachment, Error> {
     dispatch!(
       self,
       attach_to_session_console,
       token,
       site_name,
       session_name,
-      width,
-      height,
+      initial_size,
       k8s
     )
   }

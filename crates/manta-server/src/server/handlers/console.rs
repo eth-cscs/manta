@@ -11,9 +11,10 @@ use axum::{
 };
 use futures::StreamExt;
 use manta_backend_dispatcher::{
-  interfaces::console::ConsoleTrait,
+  interfaces::console::{ConsoleAttachment, ConsoleTrait, TermSize},
   types::{K8sAuth, K8sDetails},
 };
+use tokio::sync::mpsc::Sender;
 use tokio::io::AsyncWriteExt;
 
 use super::{
@@ -86,12 +87,23 @@ pub async fn console_node_ws(
       match site
         .backend
         .attach_to_node_console(
-          &token, &site_name, &xname, q.cols, q.rows, &k8s,
+          &token,
+          &site_name,
+          &xname,
+          TermSize {
+            width: q.cols,
+            height: q.rows,
+          },
+          &k8s,
         )
         .await
       {
-        Ok((console_in, console_out)) => {
-          run_console_bridge(socket, console_in, console_out, timeout).await;
+        Ok(ConsoleAttachment {
+          stdin,
+          stdout,
+          resize,
+        }) => {
+          run_console_bridge(socket, stdin, stdout, resize, timeout).await;
           tracing::info!("WebSocket console closed for node {xname}");
         }
         Err(e) => {
@@ -163,12 +175,23 @@ pub async fn console_session_ws(
       match site
         .backend
         .attach_to_session_console(
-          &token, &site_name, &name, q.cols, q.rows, &k8s,
+          &token,
+          &site_name,
+          &name,
+          TermSize {
+            width: q.cols,
+            height: q.rows,
+          },
+          &k8s,
         )
         .await
       {
-        Ok((console_in, console_out)) => {
-          run_console_bridge(socket, console_in, console_out, timeout).await;
+        Ok(ConsoleAttachment {
+          stdin,
+          stdout,
+          resize,
+        }) => {
+          run_console_bridge(socket, stdin, stdout, resize, timeout).await;
           tracing::info!("WebSocket console closed for session {name}");
         }
         Err(e) => {
@@ -202,8 +225,10 @@ impl ConsoleSocket for WebSocket {
 /// Bridge a WebSocket connection to a console's stdin/stdout streams.
 ///
 /// - Binary and text WS frames are forwarded as raw bytes to console stdin.
-/// - Text frames matching `{"type":"resize","cols":N,"rows":N}` are silently
-///   consumed (dynamic resize is not yet supported by the ConsoleTrait).
+/// - Text frames matching `{"type":"resize","cols":N,"rows":N}` are parsed
+///   and forwarded to `resize`; the backend implementation pushes them
+///   onto the underlying transport's resize channel (k8s exec subprotocol
+///   channel 4). The bytes are not forwarded to stdin.
 /// - Console stdout is forwarded as Binary WS frames.
 /// - Either side closing or erroring terminates the bridge.
 /// - The bridge closes automatically after `inactivity_timeout` of silence
@@ -212,6 +237,7 @@ async fn run_console_bridge<S: ConsoleSocket>(
   mut socket: S,
   mut console_in: Box<dyn tokio::io::AsyncWrite + Unpin + Send>,
   console_out: Box<dyn tokio::io::AsyncRead + Unpin + Send>,
+  resize: Sender<TermSize>,
   inactivity_timeout: std::time::Duration,
 ) {
   let mut out_stream = tokio_util::io::ReaderStream::new(console_out);
@@ -227,10 +253,24 @@ async fn run_console_bridge<S: ConsoleSocket>(
           }
           Some(Ok(Message::Text(text))) => {
             deadline = tokio::time::Instant::now() + inactivity_timeout;
-            // Consume resize control messages silently; forward everything else.
+            // Resize control messages are parsed and forwarded to the
+            // backend's resize channel; everything else goes to stdin.
             if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text)
               && v.get("type").and_then(|t| t.as_str()) == Some("resize")
             {
+              let cols = v.get("cols").and_then(|c| c.as_u64()).unwrap_or(0);
+              let rows = v.get("rows").and_then(|r| r.as_u64()).unwrap_or(0);
+              if cols > 0 && rows > 0 && cols <= u64::from(u16::MAX) && rows <= u64::from(u16::MAX) {
+                #[allow(clippy::cast_possible_truncation)]
+                let size = TermSize {
+                  width: cols as u16,
+                  height: rows as u16,
+                };
+                // Drop the event on a full channel rather than blocking
+                // the bridge; resize is idempotent state, not a sequence
+                // of deltas.
+                let _ = resize.try_send(size);
+              }
               continue;
             }
             if console_in.write_all(text.as_bytes()).await.is_err() { break; }
@@ -368,12 +408,14 @@ mod tests {
     let (socket, _in_tx, _out_rx) = new_mock_socket();
     let console_in = Box::new(tokio::io::sink());
     let console_out = Box::new(PendingReader);
+    let (resize_tx, _resize_rx) = mpsc::channel(8);
 
     let mut handle = tokio::spawn(async move {
       run_console_bridge(
         socket,
         console_in,
         console_out,
+        resize_tx,
         Duration::from_secs(60),
       )
       .await;
@@ -396,12 +438,14 @@ mod tests {
     let (socket, in_tx, _out_rx) = new_mock_socket();
     let console_in = Box::new(tokio::io::sink());
     let console_out = Box::new(PendingReader);
+    let (resize_tx, _resize_rx) = mpsc::channel(8);
 
     let mut handle = tokio::spawn(async move {
       run_console_bridge(
         socket,
         console_in,
         console_out,
+        resize_tx,
         Duration::from_secs(60),
       )
       .await;
@@ -429,20 +473,23 @@ mod tests {
   }
 
   #[tokio::test(start_paused = true)]
-  async fn resize_text_resets_deadline_but_is_not_forwarded() {
-    // The test exercises two guarantees in one shot:
+  async fn resize_text_forwards_to_resize_channel_and_resets_deadline() {
+    // The test exercises three guarantees in one shot:
     //   - deadline resets on any client text frame (including resize)
-    //   - the resize JSON itself is consumed, never written to stdin
+    //   - the resize JSON itself is parsed, never written to stdin
+    //   - parsed cols/rows are forwarded to the backend's resize channel
     let (socket, in_tx, _out_rx) = new_mock_socket();
     let written: Arc<Mutex<Vec<u8>>> = Default::default();
     let console_in = Box::new(CaptureWriter(written.clone()));
     let console_out = Box::new(PendingReader);
+    let (resize_tx, mut resize_rx) = mpsc::channel(8);
 
     let mut handle = tokio::spawn(async move {
       run_console_bridge(
         socket,
         console_in,
         console_out,
+        resize_tx,
         Duration::from_secs(60),
       )
       .await;
@@ -461,11 +508,17 @@ mod tests {
       !bridge_exited_within(&mut handle, Duration::from_secs(30)).await,
       "deadline was not reset by resize message"
     );
-    // The resize JSON must not have been forwarded to stdin.
+    // The resize JSON must not have been written to stdin.
     assert!(
       written.lock().unwrap().is_empty(),
-      "resize text frame was forwarded to console stdin (should be consumed)"
+      "resize text frame was forwarded to console stdin (should be parsed)"
     );
+    // The parsed size must have been forwarded to the resize channel.
+    let size = resize_rx
+      .try_recv()
+      .expect("resize message should have been forwarded to the resize channel");
+    assert_eq!(size.width, 120);
+    assert_eq!(size.height, 40);
 
     handle.abort();
   }
@@ -475,12 +528,14 @@ mod tests {
     let (socket, in_tx, _out_rx) = new_mock_socket();
     let console_in = Box::new(tokio::io::sink());
     let console_out = Box::new(PendingReader);
+    let (resize_tx, _resize_rx) = mpsc::channel(8);
 
     let mut handle = tokio::spawn(async move {
       run_console_bridge(
         socket,
         console_in,
         console_out,
+        resize_tx,
         Duration::from_secs(3600),
       )
       .await;
@@ -510,12 +565,14 @@ mod tests {
     // stay alive past 60s; we assert the opposite below.
     let console_out =
       Box::new(std::io::Cursor::new(b"chunk".to_vec()).chain(PendingReader));
+    let (resize_tx, _resize_rx) = mpsc::channel(8);
 
     let mut handle = tokio::spawn(async move {
       run_console_bridge(
         socket,
         console_in,
         console_out,
+        resize_tx,
         Duration::from_secs(60),
       )
       .await;

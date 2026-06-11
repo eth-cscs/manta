@@ -15,7 +15,6 @@ use std::pin::Pin;
 use chrono::NaiveDateTime;
 use futures::AsyncBufRead;
 use serde_json::Value;
-use tokio::io::{AsyncRead, AsyncWrite};
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPin;
