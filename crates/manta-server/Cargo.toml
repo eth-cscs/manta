@@ -68,6 +68,15 @@ toml            = "0.9"
 # `test-util` adds `tokio::time::pause()` so the console-bridge tests
 # can fast-forward the inactivity timer without actually sleeping.
 tokio           = { workspace = true, features = ["test-util"] }
+# AST parsing for the dispatcher-coverage integration test
+# (`tests/dispatcher_coverage.rs`). Reads the trait crate's source
+# files via `cargo metadata` and the dispatcher wrapper's source via
+# `CARGO_MANIFEST_DIR`, then compares trait methods to impl methods.
+# `syn` avoids the comment-block false positives a regex would hit;
+# `serde_json` parses cargo's metadata output (already a runtime dep,
+# listed here is a no-op for selection but documents the test's use).
+syn             = { version = "2", features = ["full", "parsing"] }
+serde_json      = { workspace = true }
 
 # Suppress cargo-release's per-crate git tag for this crate. The shared
 # workspace tag is owned by manta-cli (see its [package.metadata.release]
