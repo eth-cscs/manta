@@ -52,14 +52,6 @@ pub struct CompletedResponse {
   pub completed: bool,
 }
 
-/// Response for `DELETE /api/v1/sessions/{name}` — echoes the deleted
-/// session name when not in dry-run mode.
-#[derive(Debug, Serialize, Deserialize, ToSchema)]
-pub struct DeleteSessionResponse {
-  /// Name of the deleted session.
-  pub deleted: String,
-}
-
 /// One migration pair's result; mirrors
 /// `manta_server::service::migrate::NodeMigrationResult` on the wire.
 /// Embedded inside [`MigrateNodesResponse`] without importing the

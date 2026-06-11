@@ -4935,19 +4935,6 @@
           }
         }
       },
-      "DeleteSessionResponse": {
-        "type": "object",
-        "description": "Response for `DELETE /api/v1/sessions/{name}` — echoes the deleted\nsession name when not in dry-run mode.",
-        "required": [
-          "deleted"
-        ],
-        "properties": {
-          "deleted": {
-            "type": "string",
-            "description": "Name of the deleted session."
-          }
-        }
-      },
       "EphemeralEnvResponse": {
         "type": "object",
         "description": "Response for `POST /api/v1/ephemeral-env` — the freshly provisioned\nephemeral host.",
@@ -5584,17 +5571,6 @@
           "token": {
             "type": "string",
             "description": "Bearer token to validate against the backend."
-          }
-        }
-      },
-      "XnameId": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": [
-              "string",
-              "null"
-            ]
           }
         }
       }

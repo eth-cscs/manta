@@ -25,6 +25,11 @@
 //! `text/event-stream` long-poll bodies, so those endpoints stay
 //! hand-written.
 
-#![allow(dead_code)]
+// `clippy::all` stays: generated code routinely trips style lints
+// (uninlined format args, `::std::vec::Vec`, redundant lifetimes, …)
+// that would require modifying progenitor's templates to fix.
+// `dead_code` is NOT silenced — if the spec drifts and a generated
+// type stops being consumed, we want the warning to surface so the
+// unused schema can be trimmed from `server/api_doc.rs`.
 #![allow(clippy::all)]
 include!(concat!(env!("OUT_DIR"), "/openapi_client.rs"));
