@@ -32,6 +32,20 @@ impl SatTrait for StaticBackendDispatcher {
     dispatch!(self, apply_image, params)
   }
 
+  async fn apply_sat_image_create_session(
+    &self,
+    params: ApplyImageCreateSessionParams<'_>,
+  ) -> Result<CfsSessionGetResponse, Error> {
+    dispatch!(self, apply_sat_image_create_session, params)
+  }
+
+  async fn apply_sat_image_stamp_from_session(
+    &self,
+    params: ApplyImageStampParams<'_>,
+  ) -> Result<Image, Error> {
+    dispatch!(self, apply_sat_image_stamp_from_session, params)
+  }
+
   async fn apply_session_template(
     &self,
     params: ApplySessionTemplateParams<'_>,

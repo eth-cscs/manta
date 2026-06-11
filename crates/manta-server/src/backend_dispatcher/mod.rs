@@ -19,8 +19,9 @@ use serde_json::Value;
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPin;
 use manta_backend_dispatcher::interfaces::apply_sat_file::{
-  ApplyConfigurationParams, ApplyImageParams, ApplySatFileParams,
-  ApplySessionTemplateParams, SatTrait,
+  ApplyConfigurationParams, ApplyImageCreateSessionParams, ApplyImageParams,
+  ApplyImageStampParams, ApplySatFileParams, ApplySessionTemplateParams,
+  SatTrait,
 };
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;
