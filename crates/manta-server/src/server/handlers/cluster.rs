@@ -9,7 +9,7 @@ use crate::service;
 // GET /api/v1/groups/nodes
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::ClusterQuery;
+pub use manta_shared::types::api::queries::ClusterQuery;
 
 /// GET /groups/nodes — list nodes in a group with optional status filter.
 #[utoipa::path(get, path = "/groups/nodes", tag = "groups",

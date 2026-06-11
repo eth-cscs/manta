@@ -15,7 +15,7 @@ use crate::service::authorization::{
   validate_user_group_members_access, validate_user_group_vec_access,
 };
 use crate::service::node_ops;
-pub use manta_shared::types::params::session::GetSessionParams;
+pub use manta_shared::types::api::session::GetSessionParams;
 
 /// List CFS sessions visible to the caller, applying every filter on
 /// `params`.

@@ -7,7 +7,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::dto::Image;
-use manta_shared::types::params::image::GetImagesParams;
+use manta_shared::types::api::image::GetImagesParams;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
 fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {

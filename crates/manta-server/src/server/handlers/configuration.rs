@@ -12,7 +12,7 @@ use crate::service;
 // GET /api/v1/configurations
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::{
+pub use manta_shared::types::api::queries::{
   ConfigurationQuery, DeleteConfigurationsQuery,
 };
 

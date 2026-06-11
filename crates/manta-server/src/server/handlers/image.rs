@@ -9,7 +9,7 @@ use crate::service;
 // GET /api/v1/images
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::{DeleteImagesQuery, ImageQuery};
+pub use manta_shared::types::api::queries::{DeleteImagesQuery, ImageQuery};
 
 /// GET /images — list IMS images sorted by creation time.
 #[utoipa::path(get, path = "/images", tag = "images",

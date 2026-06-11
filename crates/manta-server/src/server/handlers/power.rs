@@ -15,7 +15,7 @@ use crate::service;
 // POST /api/v1/power — Power on/off/reset nodes or cluster
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::power::{
+pub use manta_shared::types::api::power::{
   PowerAction, PowerRequest, PowerTargetType,
 };
 

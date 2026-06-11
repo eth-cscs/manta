@@ -7,7 +7,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::dto::CfsSessionGetResponse;
-use manta_shared::types::params::session::GetSessionParams;
+use manta_shared::types::api::session::GetSessionParams;
 
 /// Parse CLI arguments into typed [`GetSessionParams`].
 fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {

@@ -16,7 +16,7 @@ use crate::service::authorization::{
   validate_user_group_members_access, validate_user_group_vec_access,
 };
 use crate::service::node_ops::from_hosts_expression_to_xname_vec;
-pub use manta_shared::types::params::hardware::{
+pub use manta_shared::types::api::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
 };
 

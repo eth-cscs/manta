@@ -14,7 +14,7 @@ use crate::service::authorization::{
   validate_user_group_members_access, validate_user_group_vec_access,
 };
 use crate::service::node_ops::validate_xname_format;
-pub use manta_shared::types::params::template::{
+pub use manta_shared::types::api::template::{
   ApplyTemplateParams, GetTemplateParams,
 };
 

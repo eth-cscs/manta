@@ -10,7 +10,7 @@ use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
-pub use manta_shared::types::wire::migrate::{
+pub use manta_shared::types::api::migrate::{
   MigrateBackupRequest, MigrateNodesRequest, MigrateRestoreRequest,
 };
 
@@ -111,7 +111,7 @@ fn require_backup_root(ctx: &RequestCtx) -> Result<&Path, BackendError> {
   request_body = MigrateNodesRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Migration result", body = manta_shared::types::wire::responses::MigrateNodesResponse),
+    (status = 200, description = "Migration result", body = manta_shared::types::api::responses::MigrateNodesResponse),
     (status = 400, description = "Bad request",      body = ErrorResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),
@@ -166,7 +166,7 @@ pub async fn migrate_nodes(
   request_body = MigrateBackupRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Backup completed",      body = manta_shared::types::wire::responses::CompletedResponse),
+    (status = 200, description = "Backup completed",      body = manta_shared::types::api::responses::CompletedResponse),
     (status = 401, description = "Unauthorized",          body = ErrorResponse),
     (status = 500, description = "Internal error",        body = ErrorResponse),
   )
@@ -215,7 +215,7 @@ pub async fn migrate_backup(
   request_body = MigrateRestoreRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 200, description = "Restore completed",  body = manta_shared::types::wire::responses::CompletedResponse),
+    (status = 200, description = "Restore completed",  body = manta_shared::types::api::responses::CompletedResponse),
     (status = 401, description = "Unauthorized",       body = ErrorResponse),
     (status = 500, description = "Internal error",     body = ErrorResponse),
   )

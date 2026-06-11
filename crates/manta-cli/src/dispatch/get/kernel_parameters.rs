@@ -6,7 +6,7 @@ use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
-use manta_shared::types::params::kernel_parameters::GetKernelParametersParams;
+use manta_shared::types::api::kernel_parameters::GetKernelParametersParams;
 
 /// Parse CLI arguments into typed [`GetKernelParametersParams`].
 fn parse_kernel_parameters_params(

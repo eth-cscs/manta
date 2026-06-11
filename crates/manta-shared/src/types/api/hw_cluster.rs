@@ -1,10 +1,9 @@
-//! Wire types for the `POST /api/v1/hardware-clusters/{target}/*`
-//! and `DELETE /api/v1/hardware-clusters/{target}/members` endpoints.
+//! HTTP request/response bodies and shared types for the
+//! `POST /api/v1/hardware-clusters/{target}/*` and
+//! `DELETE /api/v1/hardware-clusters/{target}/members` endpoints.
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-
-pub use crate::types::params::hw_cluster::HwClusterMode;
 
 /// Request body for `POST /api/v1/hardware-clusters/{target}/members`.
 ///
@@ -70,4 +69,20 @@ pub struct ApplyHwConfigurationRequest {
 
 fn default_true() -> bool {
   true
+}
+
+/// Whether the hw cluster operation moves nodes into the target (Pin) or
+/// releases them back (Unpin).
+#[derive(
+  Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, ToSchema,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum HwClusterMode {
+  /// Move nodes matching the hardware pattern from the parent cluster
+  /// into the target cluster.
+  #[default]
+  Pin,
+  /// Move nodes matching the hardware pattern from the target cluster
+  /// back to the parent cluster.
+  Unpin,
 }

@@ -1,5 +1,6 @@
-//! Wire types for `POST /api/v1/groups/{name}/members` and
-//! `DELETE /api/v1/groups/{name}/members`.
+//! HTTP request/response bodies and CLI-built parameter structs for
+//! the HSM group endpoints (`/api/v1/groups`,
+//! `/api/v1/groups/{name}/members`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -43,4 +44,15 @@ pub struct DeleteGroupMembersRequest {
   /// membership.
   #[serde(default)]
   pub dry_run: bool,
+}
+
+/// Typed parameters for fetching HSM groups.
+#[derive(Debug)]
+pub struct GetGroupParams {
+  /// Exact group name to fetch; returns all groups when `None`.
+  pub group_name: Option<String>,
+  /// Operator default from `~/.config/manta/cli.toml`'s
+  /// `group_name`; used to scope results when `group_name` is
+  /// absent but a configured default exists.
+  pub settings_group_name: Option<String>,
 }

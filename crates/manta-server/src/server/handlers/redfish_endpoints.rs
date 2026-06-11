@@ -9,7 +9,7 @@ use axum::{
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
-use manta_shared::types::params::redfish_endpoints::{
+use manta_shared::types::api::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
 
@@ -17,7 +17,7 @@ use manta_shared::types::params::redfish_endpoints::{
 // GET /api/v1/redfish-endpoints
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::RedfishEndpointsQuery;
+pub use manta_shared::types::api::queries::RedfishEndpointsQuery;
 
 /// GET /redfish-endpoints — list HSM Redfish endpoints with optional filters.
 #[utoipa::path(get, path = "/redfish-endpoints", tag = "redfish-endpoints",
@@ -94,7 +94,7 @@ pub async fn delete_redfish_endpoint(
   request_body = UpdateRedfishEndpointParams,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Endpoint registered",  body = manta_shared::types::wire::responses::CreatedResponse),
+    (status = 201, description = "Endpoint registered",  body = manta_shared::types::api::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",          body = ErrorResponse),
     (status = 500, description = "Internal error",        body = ErrorResponse),
   )

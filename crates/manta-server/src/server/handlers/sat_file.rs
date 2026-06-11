@@ -63,7 +63,7 @@ use super::{
 // POST /api/v1/sat-file/configurations — Apply one SAT configuration entry
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::sat_file::{
+pub use manta_shared::types::api::sat_file::{
   CreateImageCfsSessionRequest, PostSatConfigurationRequest,
   PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
   StampImageFromSessionRequest,

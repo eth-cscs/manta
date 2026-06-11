@@ -23,7 +23,7 @@ pub struct CreateEphemeralEnvRequest {
   request_body = CreateEphemeralEnvRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Ephemeral env created", body = manta_shared::types::wire::responses::EphemeralEnvResponse),
+    (status = 201, description = "Ephemeral env created", body = manta_shared::types::api::responses::EphemeralEnvResponse),
     (status = 401, description = "Unauthorized",          body = ErrorResponse),
     (status = 500, description = "Internal error",        body = ErrorResponse),
   )

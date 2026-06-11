@@ -14,7 +14,7 @@ use crate::service;
 // GET /api/v1/nodes
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::NodesQuery;
+pub use manta_shared::types::api::queries::NodesQuery;
 
 /// GET /nodes — fetch node details for a given xname expression.
 #[utoipa::path(get, path = "/nodes", tag = "nodes",
@@ -81,7 +81,7 @@ pub async fn delete_node(
 // POST /api/v1/nodes
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::node::AddNodeRequest;
+pub use manta_shared::types::api::node::AddNodeRequest;
 
 /// POST /nodes — register a new node in HSM and add it to a group.
 #[utoipa::path(post, path = "/nodes", tag = "nodes",
@@ -89,7 +89,7 @@ pub use manta_shared::types::wire::node::AddNodeRequest;
   request_body = AddNodeRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Node registered",  body = manta_shared::types::wire::responses::AddNodeResponse),
+    (status = 201, description = "Node registered",  body = manta_shared::types::api::responses::AddNodeResponse),
     (status = 400, description = "Bad request",      body = ErrorResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),

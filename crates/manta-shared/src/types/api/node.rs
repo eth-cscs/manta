@@ -1,5 +1,5 @@
-//! Wire types for `POST /api/v1/nodes` (register a new HSM
-//! component).
+//! HTTP request/response bodies and CLI-built parameter structs for
+//! the node endpoints (`/api/v1/nodes`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -18,4 +18,16 @@ pub struct AddNodeRequest {
   pub enabled: bool,
   /// Optional architecture tag: `"X86"`, `"ARM"`, or `"Other"`.
   pub arch: Option<String>,
+}
+
+/// Typed parameters for fetching node details.
+pub struct GetNodesParams {
+  /// Comma-separated xnames, NIDs, or hostlist expression
+  /// (e.g. `x3000c0s1b0n[0-3]`).
+  pub host_expression: String,
+  /// When true, also return nodes sharing a power supply with any
+  /// requested node.
+  pub include_siblings: bool,
+  /// Optional power-status filter (e.g. `ON`, `OFF`, `READY`).
+  pub status_filter: Option<String>,
 }

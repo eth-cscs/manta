@@ -13,7 +13,7 @@ use crate::service;
 // GET /api/v1/boot-parameters
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::BootParametersQuery;
+pub use manta_shared::types::api::queries::BootParametersQuery;
 
 /// GET /boot-parameters — fetch BSS boot parameters for a group or node list.
 #[utoipa::path(get, path = "/boot-parameters", tag = "boot-parameters",
@@ -104,7 +104,7 @@ pub async fn delete_boot_parameters(
   request_body = manta_backend_dispatcher::types::bss::BootParameters,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Boot parameters created",  body = manta_shared::types::wire::responses::CreatedResponse),
+    (status = 201, description = "Boot parameters created",  body = manta_shared::types::api::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",             body = ErrorResponse),
     (status = 500, description = "Internal error",           body = ErrorResponse),
   )
@@ -168,7 +168,7 @@ pub async fn update_boot_parameters(
 // POST /api/v1/boot-config — Apply boot configuration (with ?dry_run=true)
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::boot_parameters::ApplyBootConfigRequest;
+pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
 
 /// `POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.
 #[utoipa::path(post, path = "/boot-config", tag = "boot-parameters",

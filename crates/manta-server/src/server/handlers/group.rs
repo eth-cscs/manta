@@ -15,7 +15,7 @@ use crate::service;
 // GET /api/v1/groups
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::{DeleteGroupQuery, GroupQuery};
+pub use manta_shared::types::api::queries::{DeleteGroupQuery, GroupQuery};
 
 /// GET /groups/available — list HSM group names the token can access.
 ///
@@ -120,7 +120,7 @@ pub async fn delete_group(
   request_body = manta_backend_dispatcher::types::Group,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Group created",    body = manta_shared::types::wire::responses::CreatedResponse),
+    (status = 201, description = "Group created",    body = manta_shared::types::api::responses::CreatedResponse),
     (status = 401, description = "Unauthorized",     body = ErrorResponse),
     (status = 409, description = "Conflict",         body = ErrorResponse),
     (status = 500, description = "Internal error",   body = ErrorResponse),
@@ -160,7 +160,7 @@ pub async fn create_group(
 // POST /api/v1/groups/{name}/members
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::group::{
+pub use manta_shared::types::api::group::{
   AddNodesToGroupRequest, AddNodesToGroupResponse, DeleteGroupMembersRequest,
 };
 

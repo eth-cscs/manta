@@ -10,7 +10,7 @@ use crate::{
   server::common::{app_context::InfraContext, jwt_ops},
   service::authorization::validate_user_group_members_access,
 };
-pub use manta_shared::types::params::redfish_endpoints::{
+pub use manta_shared::types::api::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
 };
 

@@ -5,7 +5,7 @@ use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
-pub use manta_shared::types::wire::hw_cluster::{
+pub use manta_shared::types::api::hw_cluster::{
   AddHwComponentRequest, ApplyHwConfigurationRequest, DeleteHwComponentRequest,
   HwClusterMode,
 };

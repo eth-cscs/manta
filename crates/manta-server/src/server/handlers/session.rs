@@ -25,7 +25,7 @@ use crate::service;
 // GET /api/v1/sessions
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::{
+pub use manta_shared::types::api::queries::{
   DeleteSessionQuery, SessionQuery,
 };
 
@@ -128,7 +128,7 @@ pub async fn delete_session(
 // POST /api/v1/sessions — Create CFS session
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::session::CreateSessionRequest;
+pub use manta_shared::types::api::session::CreateSessionRequest;
 
 /// `POST /api/v1/sessions` — create a CFS session from one or more git repositories.
 #[utoipa::path(post, path = "/sessions", tag = "sessions",
@@ -136,7 +136,7 @@ pub use manta_shared::types::wire::session::CreateSessionRequest;
   request_body = CreateSessionRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 201, description = "Session created",               body = manta_shared::types::wire::responses::CreateSessionResponse),
+    (status = 201, description = "Session created",               body = manta_shared::types::api::responses::CreateSessionResponse),
     (status = 400, description = "Bad request",                   body = ErrorResponse),
     (status = 401, description = "Unauthorized",                  body = ErrorResponse),
     (status = 500, description = "Internal error",                body = ErrorResponse),
@@ -226,7 +226,7 @@ pub async fn create_session(
 // GET /api/v1/sessions/{name}/logs — Stream CFS session logs via SSE
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::SessionLogsQuery;
+pub use manta_shared::types::api::queries::SessionLogsQuery;
 
 /// `GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
 #[utoipa::path(get, path = "/sessions/{name}/logs", tag = "sessions",

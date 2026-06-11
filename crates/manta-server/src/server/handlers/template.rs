@@ -16,7 +16,7 @@ use crate::service;
 // GET /api/v1/templates
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::TemplateQuery;
+pub use manta_shared::types::api::queries::TemplateQuery;
 
 /// GET /templates — list BOS session templates with optional filters.
 #[utoipa::path(get, path = "/templates", tag = "templates",
@@ -55,7 +55,7 @@ pub async fn get_templates(
 // POST /api/v1/templates/{name}/sessions — Create BOS session from template
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::template::{
+pub use manta_shared::types::api::template::{
   BosOperation, PostTemplateSessionRequest,
 };
 

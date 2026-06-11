@@ -13,7 +13,7 @@ use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::{
   validate_user_group_access, validate_user_group_vec_access,
 };
-pub use manta_shared::types::params::configuration::GetConfigurationParams;
+pub use manta_shared::types::api::configuration::GetConfigurationParams;
 
 /// Data gathered for deletion review and execution.
 #[derive(serde::Serialize)]

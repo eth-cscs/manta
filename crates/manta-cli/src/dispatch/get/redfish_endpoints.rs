@@ -6,7 +6,7 @@ use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
-use manta_shared::types::params::redfish_endpoints::GetRedfishEndpointsParams;
+use manta_shared::types::api::redfish_endpoints::GetRedfishEndpointsParams;
 
 /// Parse CLI arguments into typed [`GetRedfishEndpointsParams`].
 fn parse_redfish_endpoints_params(

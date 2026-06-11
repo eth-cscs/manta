@@ -8,7 +8,7 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::cluster_status;
 use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
-use manta_shared::types::params::node::GetNodesParams;
+use manta_shared::types::api::node::GetNodesParams;
 
 /// Parse CLI arguments into typed [`GetNodesParams`].
 fn parse_nodes_params(

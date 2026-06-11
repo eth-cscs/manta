@@ -7,7 +7,7 @@ use manta_shared::types::dto::NodeDetails;
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_vec_access;
 use crate::service::node_details;
-pub use manta_shared::types::params::cluster::GetClusterParams;
+pub use manta_shared::types::api::cluster::GetClusterParams;
 
 /// Fetch full node details for every member of the requested HSM
 /// groups.

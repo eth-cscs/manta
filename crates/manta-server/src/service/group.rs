@@ -11,7 +11,7 @@ use crate::service::authorization::{
   validate_group_vec_access, validate_user_group_members_access,
 };
 use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
-pub use manta_shared::types::params::group::GetGroupParams;
+pub use manta_shared::types::api::group::GetGroupParams;
 
 /// Resolve the caller's accessible groups (`Vec<Group>`) and the
 /// target-label vector in a single backend round-trip.

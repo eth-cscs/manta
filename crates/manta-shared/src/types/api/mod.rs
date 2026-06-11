@@ -1,10 +1,11 @@
-//! HTTP request / response body types shared between `manta-cli`
-//! (Serialize side) and `manta-server` (Deserialize side).
+//! Single-namespace API types shared between `manta-cli` (Serialize
+//! side) and `manta-server` (Deserialize side).
 //!
-//! Each sub-module owns one resource's wire shapes. Both sides of the
-//! HTTP boundary import the same struct, so a field rename can no
-//! longer drift between the CLI and the server — the compiler enforces
-//! the contract.
+//! Each submodule owns one resource end-to-end: HTTP request/response
+//! bodies, query-string structs, and CLI-built parameter structs all
+//! sit next to each other rather than being split across parallel
+//! `wire/` and `params/` namespaces. Cross-cutting query and response
+//! shapes live in [`queries`] and [`responses`].
 //!
 //! Convention:
 //!
@@ -16,15 +17,24 @@
 //!   the utoipa derives for OpenAPI; the CLI uses `Serialize`.
 //! - Field-level docs describe wire semantics. They show up in both
 //!   the OpenAPI spec and the rustdoc the CLI consumes.
+//!
+//! Types re-exported from `manta-backend-dispatcher` (response DTOs
+//! owned by upstream crates) live in [`super::dto`], which is kept
+//! separate because it serves a different concern: types we don't own.
 
 pub mod boot_parameters;
+pub mod cluster;
+pub mod configuration;
 pub mod group;
+pub mod hardware;
 pub mod hw_cluster;
+pub mod image;
 pub mod kernel_parameters;
 pub mod migrate;
 pub mod node;
 pub mod power;
 pub mod queries;
+pub mod redfish_endpoints;
 pub mod responses;
 pub mod sat_file;
 pub mod session;

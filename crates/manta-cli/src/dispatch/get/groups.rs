@@ -5,7 +5,7 @@ use anyhow::{Context, Error, bail};
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
-use manta_shared::types::params::group::GetGroupParams;
+use manta_shared::types::api::group::GetGroupParams;
 
 /// Parse CLI arguments into typed [`GetGroupParams`].
 fn parse_group_params(

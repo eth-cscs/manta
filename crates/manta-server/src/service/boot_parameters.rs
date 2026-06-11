@@ -15,7 +15,7 @@ use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
 use crate::service::ims_ops::get_image_vec_related_cfs_configuration_name;
 use crate::service::node_ops;
-pub use manta_shared::types::params::boot_parameters::{
+pub use manta_shared::types::api::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
 };
 

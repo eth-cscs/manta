@@ -15,7 +15,7 @@ use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_details;
 use crate::service::node_ops::from_user_hosts_expression_to_xname_vec;
-pub use manta_shared::types::params::node::GetNodesParams;
+pub use manta_shared::types::api::node::GetNodesParams;
 
 /// Fetch HSM node details for the targets named by
 /// `params.host_expression`.

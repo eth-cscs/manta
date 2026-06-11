@@ -7,7 +7,7 @@ use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::dto::BosSessionTemplate;
-use manta_shared::types::params::template::GetTemplateParams;
+use manta_shared::types::api::template::GetTemplateParams;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
 fn parse_template_params(

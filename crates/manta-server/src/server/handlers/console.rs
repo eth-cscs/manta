@@ -26,7 +26,7 @@ use crate::service;
 // WS /api/v1/nodes/{xname}/console — Interactive node console
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::wire::queries::ConsoleQuery;
+pub use manta_shared::types::api::queries::ConsoleQuery;
 
 /// `WS /api/v1/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",

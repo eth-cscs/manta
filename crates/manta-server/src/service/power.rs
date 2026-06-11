@@ -16,7 +16,7 @@ use manta_backend_dispatcher::types::pcs::transitions::types::{
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
-pub use manta_shared::types::params::power::{
+pub use manta_shared::types::api::power::{
   ApplyPowerParams, PowerAction, PowerTargetType,
 };
 

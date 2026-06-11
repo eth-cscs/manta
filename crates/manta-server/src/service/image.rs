@@ -9,7 +9,7 @@ use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
-pub use manta_shared::types::params::image::GetImagesParams;
+pub use manta_shared::types::api::image::GetImagesParams;
 
 /// Fetch IMS images from the backend, sorted by creation time.
 ///
