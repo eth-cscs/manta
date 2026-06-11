@@ -1878,7 +1878,7 @@
           {
             "name": "pattern",
             "in": "query",
-            "description": "Regex matched against image name. Accepted here but applied by\nthe CLI after the response is returned — the server does not\nfilter on it.",
+            "description": "Glob pattern matched against image name; applied server-side\n(`service::image::get_images`). Invalid glob returns 400.",
             "required": false,
             "schema": {
               "type": [

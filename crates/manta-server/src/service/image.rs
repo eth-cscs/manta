@@ -13,9 +13,12 @@ pub use manta_shared::types::api::image::GetImagesParams;
 
 /// Fetch IMS images from the backend, sorted by creation time.
 ///
-/// Honors `params.id` and `params.limit`. The `pattern` regex is applied
-/// by the CLI client after the response is received; the service does
-/// not filter on name here.
+/// Filters server-side by `params.pattern` (glob syntax, matched
+/// against `image.name`) and caps the result at `params.limit`.
+///
+/// An invalid glob (unbalanced bracket, malformed range, …) returns
+/// [`Error::BadRequest`] with the parser's message; the caller's
+/// handler layer maps that to HTTP 400.
 pub async fn get_images(
   infra: &InfraContext<'_>,
   token: &str,
@@ -24,6 +27,8 @@ pub async fn get_images(
   let mut image_vec =
     infra.backend.get_images(token, params.id.as_deref()).await?;
 
+  image_vec = apply_pattern_filter(image_vec, params.pattern.as_deref())?;
+
   if let Some(limit) = params.limit {
     image_vec.truncate(limit as usize);
   }
@@ -31,6 +36,30 @@ pub async fn get_images(
   image_vec.sort_by_key(|image| image.created.clone());
 
   Ok(image_vec)
+}
+
+/// Pure helper that retains only images whose `name` matches `pattern`
+/// (glob syntax). `None` pattern is a no-op pass-through. Split out so
+/// the filter can be unit-tested without standing up an
+/// `InfraContext` / backend mock.
+fn apply_pattern_filter(
+  image_vec: Vec<Image>,
+  pattern: Option<&str>,
+) -> Result<Vec<Image>, Error> {
+  let Some(pattern) = pattern else {
+    return Ok(image_vec);
+  };
+  let matcher = globset::Glob::new(pattern)
+    .map_err(|e| {
+      Error::BadRequest(format!("invalid glob pattern '{pattern}': {e}"))
+    })?
+    .compile_matcher();
+  Ok(
+    image_vec
+      .into_iter()
+      .filter(|img| matcher.is_match(&img.name))
+      .collect(),
+  )
 }
 
 /// Refuse a planned image delete that would orphan a live boot path
@@ -166,4 +195,112 @@ fn get_restricted_image_ids(
     .iter()
     .map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
     .collect()
+}
+
+#[cfg(test)]
+mod tests {
+  //! Unit tests for the pure `apply_pattern_filter` helper. The
+  //! async wrapper `get_images` adds no logic beyond glue, so testing
+  //! the helper covers the behaviour: pattern compilation, name
+  //! matching, and the BadRequest path on invalid globs.
+
+  use super::apply_pattern_filter;
+  use manta_backend_dispatcher::error::Error;
+  use manta_backend_dispatcher::types::ims::Image;
+
+  fn image(name: &str) -> Image {
+    Image {
+      name: name.to_string(),
+      ..Default::default()
+    }
+  }
+
+  #[test]
+  fn no_pattern_returns_all_images_unchanged() {
+    let input = vec![image("a"), image("b"), image("c")];
+    let out = apply_pattern_filter(input.clone(), None).expect("None is no-op");
+    assert_eq!(out.len(), 3);
+    assert_eq!(out[0].name, "a");
+    assert_eq!(out[2].name, "c");
+  }
+
+  #[test]
+  fn star_glob_matches_everything() {
+    let input = vec![image("compute-a"), image("login-b")];
+    let out = apply_pattern_filter(input, Some("*")).expect("'*' is valid");
+    assert_eq!(out.len(), 2);
+  }
+
+  #[test]
+  fn prefix_star_keeps_only_matching_subset() {
+    let input = vec![
+      image("compute-a"),
+      image("compute-b"),
+      image("login-a"),
+      image("storage-3"),
+    ];
+    let out =
+      apply_pattern_filter(input, Some("compute-*")).expect("'compute-*' valid");
+    assert_eq!(out.len(), 2);
+    assert!(out.iter().all(|i| i.name.starts_with("compute-")));
+  }
+
+  #[test]
+  fn pattern_with_no_matches_returns_empty() {
+    let input = vec![image("compute-a"), image("login-b")];
+    let out = apply_pattern_filter(input, Some("nomatch-*"))
+      .expect("'nomatch-*' is valid even when nothing matches");
+    assert!(out.is_empty());
+  }
+
+  #[test]
+  fn invalid_glob_returns_bad_request() {
+    let input = vec![image("anything")];
+    let err = apply_pattern_filter(input, Some("[unclosed"))
+      .expect_err("'[unclosed' is malformed");
+    match err {
+      Error::BadRequest(msg) => {
+        assert!(
+          msg.contains("invalid glob pattern"),
+          "error message should explain the glob is bad; got: {msg}"
+        );
+        assert!(
+          msg.contains("'[unclosed'"),
+          "error should quote the offending pattern; got: {msg}"
+        );
+      }
+      other => panic!("expected BadRequest, got {other:?}"),
+    }
+  }
+
+  #[test]
+  fn question_mark_matches_single_char() {
+    // Lock the globset semantics for `?`: matches exactly one
+    // character. If we ever swap libraries, this test will fail
+    // and force a deliberate decision rather than silent drift.
+    let input = vec![
+      image("a"),       // 1 char — no match (pattern needs >=2)
+      image("ab"),      // 2 chars — match
+      image("abc"),     // 3 chars — match
+      image("abcd"),    // 4 chars — no match
+    ];
+    let out =
+      apply_pattern_filter(input, Some("a??")).expect("'a??' is valid");
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0].name, "abc");
+  }
+
+  #[test]
+  fn character_class_matches_any_listed_char() {
+    let input = vec![
+      image("compute-a"),
+      image("compute-b"),
+      image("compute-c"),
+      image("compute-d"),
+    ];
+    let out =
+      apply_pattern_filter(input, Some("compute-[abc]")).expect("class valid");
+    assert_eq!(out.len(), 3);
+    assert!(!out.iter().any(|i| i.name == "compute-d"));
+  }
 }

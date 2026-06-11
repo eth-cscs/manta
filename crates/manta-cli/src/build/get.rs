@@ -188,9 +188,9 @@ pub fn subcommand_get_node_details() -> Command {
 
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
-    .about("List IMS images (filter by id, name regex, or recency; sorted most-recent first)")
+    .about("List IMS images (filter by id, name glob, or recency; sorted most-recent first)")
     .arg(arg!(-i --id <IMAGE_ID> "Show only the image with this exact ID"))
-    .arg(arg!(-p --pattern <PATTERN> "Regex matched against image name (applied client-side)"))
+    .arg(arg!(-p --pattern <PATTERN> "Glob matched against image name (e.g. 'compute-*'); applied server-side. Invalid glob returns 400."))
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")

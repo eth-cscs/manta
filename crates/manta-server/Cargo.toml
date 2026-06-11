@@ -43,6 +43,11 @@ base64             = { workspace = true }
 chrono             = { workspace = true }
 rdkafka            = { workspace = true }
 comfy-table        = "7.2.2"
+# Glob-pattern matching for service-layer filters like `get_images`
+# `--pattern`. Already a transitive workspace dep via csm-rs; promoting
+# to a direct dep here so manta-server's filtering code doesn't depend
+# on csm-rs's feature flags keeping it in the graph.
+globset            = "0.4"
 hostlist-parser    = "0.1.6"
 regex              = { workspace = true }
 reqwest            = { workspace = true }

@@ -136,9 +136,8 @@ pub struct TemplateQuery {
 pub struct ImageQuery {
   /// Exact IMS image ID; returns just that image when set.
   pub id: Option<String>,
-  /// Regex matched against image name. Accepted here but applied by
-  /// the CLI after the response is returned — the server does not
-  /// filter on it.
+  /// Glob pattern matched against image name; applied server-side
+  /// (`service::image::get_images`). Invalid glob returns 400.
   pub pattern: Option<String>,
   /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,

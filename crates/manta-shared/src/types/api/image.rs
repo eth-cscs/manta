@@ -4,7 +4,8 @@
 pub struct GetImagesParams {
   /// Exact IMS image ID; returns just that image when set.
   pub id: Option<String>,
-  /// Regex to filter images by name.
+  /// Glob pattern matched against image name; applied server-side.
+  /// Invalid glob returns HTTP 400.
   pub pattern: Option<String>,
   /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,
