@@ -63,8 +63,15 @@ pub fn build_cli() -> Command {
     .version(env!("CARGO_PKG_VERSION"))
     .arg_required_else_help(true)
     .arg(
+      // `.global(true)` propagates the flag to every subcommand so
+      // users can place `--site <name>` anywhere on the command
+      // line, including after the subcommand name (e.g.
+      // `manta get sessions --site prealps`). main.rs reads the
+      // value off the top-level matches via clap's automatic
+      // promotion — no per-subcommand parsing is required.
       arg!(--site <SITE_NAME> "Override the active site for this invocation")
-        .required(false),
+        .required(false)
+        .global(true),
     )
     .subcommand(config::subcommand_config())
     .subcommand(get::subcommand_get())
@@ -128,10 +135,33 @@ mod tests {
   }
 
   #[test]
-  fn site_flag_is_root_level_only() {
-    let matches = build_cli()
-      .get_matches_from(["manta", "--site", "alps", "config", "show"]);
+  fn site_flag_accepted_after_subcommand_at_top() {
+    // After `.global(true)`: `--site` works following any subcommand,
+    // not just at the position before it.
+    let matches = build_cli().get_matches_from([
+      "manta", "get", "sessions", "--site", "prealps",
+    ]);
     let site = matches.get_one::<String>("site");
-    assert_eq!(site.map(String::as_str), Some("alps"));
+    assert_eq!(site.map(String::as_str), Some("prealps"));
   }
+
+  #[test]
+  fn site_flag_accepted_after_nested_subcommand() {
+    // Two-level subcommand path (`apply boot nodes …`) still surfaces
+    // the global value back through the top-level matches.
+    let matches = build_cli().get_matches_from([
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--site",
+      "alpsb",
+      "--boot-image",
+      "abc-123",
+      "x1000c0s0b0n0",
+    ]);
+    let site = matches.get_one::<String>("site");
+    assert_eq!(site.map(String::as_str), Some("alpsb"));
+  }
+
 }

@@ -41,6 +41,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand show 'Show current configuration values'
@@ -51,10 +52,12 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;config;show'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;set'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand hsm 'Set the active node group'
@@ -64,18 +67,22 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;set;hsm'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;set;parent-hsm'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;set;site'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;set;log'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -97,6 +104,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;config;set;help;help'= {
         }
         &'manta;config;unset'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand hsm 'Clear the active node group'
@@ -105,14 +113,17 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;unset;hsm'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;unset;parent-hsm'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;config;unset;auth'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -166,6 +177,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;config;help;help'= {
         }
         &'manta;get'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand groups 'List node groups visible to your token (or look up one by name)'
@@ -176,7 +188,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name regex, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -185,10 +197,12 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;groups'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;get;hardware'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand nodes 'Show hardware inventory for a set of nodes'
@@ -197,6 +211,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;hardware;nodes'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -228,6 +243,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -H 'Node group name. Returns sessions targeting this group or its members'
             cand --group 'Node group name. Returns sessions targeting this group or its members'
             cand --hsm-group 'Node group name. Returns sessions targeting this group or its members'
+            cand --site 'Override the active site for this invocation'
             cand -m 'Return only the most recent session (equivalent to --limit 1)'
             cand --most-recent 'Return only the most recent session (equivalent to --limit 1)'
             cand -h 'Print help'
@@ -245,6 +261,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -H 'Show only configurations whose layers target this group'
             cand --group 'Show only configurations whose layers target this group'
             cand --hsm-group 'Show only configurations whose layers target this group'
+            cand --site 'Override the active site for this invocation'
             cand -m 'Return only the most recent (equivalent to --limit 1)'
             cand --most-recent 'Return only the most recent (equivalent to --limit 1)'
             cand -h 'Print help'
@@ -260,6 +277,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Show only templates whose boot sets target this group'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -m 'Return only the most recent (equivalent to --limit 1)'
             cand --most-recent 'Return only the most recent (equivalent to --limit 1)'
             cand -h 'Print help'
@@ -270,6 +288,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --status 'Filter nodes by status'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -n 'Print NIDs on a single line'
             cand --nids-only-one-line 'Print NIDs on a single line'
             cand -x 'Print xnames on a single line'
@@ -282,6 +301,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;group-hardware'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -290,6 +310,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --status 'Filter nodes by status'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -n 'Print NIDs on a single line'
             cand --nids-only-one-line 'Print NIDs on a single line'
             cand -T 'Show a node status summary: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node''s configuration failed'
@@ -302,10 +323,11 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;images'= {
             cand -i 'Show only the image with this exact ID'
             cand --id 'Show only the image with this exact ID'
-            cand -p 'Regex matched against image name (applied client-side)'
-            cand --pattern 'Regex matched against image name (applied client-side)'
+            cand -p 'Glob matched against image name (e.g. ''compute-*''); applied server-side. Invalid glob returns 400.'
+            cand --pattern 'Glob matched against image name (e.g. ''compute-*''); applied server-side. Invalid glob returns 400.'
             cand -l 'Return only the <VALUE> most recent images'
             cand --limit 'Return only the <VALUE> most recent images'
+            cand --site 'Override the active site for this invocation'
             cand -m 'Return only the most recent (equivalent to --limit 1)'
             cand --most-recent 'Return only the most recent (equivalent to --limit 1)'
             cand -h 'Print help'
@@ -317,6 +339,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Show boot parameters for every node in this group'
             cand -n 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
             cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -330,6 +353,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --filter 'Comma-separated list of parameter names to show. eg: ''console,bad_page,crashkernel,hugepagelist,root'''
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -346,6 +370,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --ipaddress 'Filter by IP address (empty string matches endpoints without an IP)'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -358,7 +383,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name regex, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -394,6 +419,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;help;help'= {
         }
         &'manta;add'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand node 'Register a new node in the hardware state manager'
@@ -417,6 +443,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --arch 'Node architecture'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Register the node as disabled'
             cand --disabled 'Register the node as disabled'
             cand -h 'Print help (see more with ''--help'')'
@@ -429,6 +456,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -443,6 +471,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -457,6 +486,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --parent-cluster 'Group that donates the components'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -c 'Create the target group if it does not exist'
@@ -482,6 +512,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --cloud-init 'Cloud-init script'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -y 'Skip confirmation prompts'
@@ -497,6 +528,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Append kernel parameters to every node in this group'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -O 'Overwrite the value if the parameter already exists'
             cand --overwrite 'Overwrite the value if the parameter already exists'
             cand -y 'Skip confirmation prompts'
@@ -530,6 +562,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --template-id 'Discovery template ID'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -e 'Enable the endpoint upon creation'
             cand --enabled 'Enable the endpoint upon creation'
             cand -U 'Use SSDP for discovery if the endpoint supports it'
@@ -564,6 +597,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --template-id 'Discovery template ID'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -e 'Enable the endpoint upon creation'
             cand --enabled 'Enable the endpoint upon creation'
             cand -U 'Use SSDP for discovery if the endpoint supports it'
@@ -602,6 +636,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;add;help;help'= {
         }
         &'manta;apply'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand hardware '[experimental] Rescale a group''s hardware allocation'
@@ -616,6 +651,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;apply;hardware'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand group '[experimental] Rescale a group''s hardware allocation'
@@ -632,6 +668,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --parent-cluster 'Group that donates or receives the redistributed nodes'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -c 'Create the target group if it does not exist'
@@ -669,6 +706,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -a 'Command to run after successful processing. eg: --post-hook "echo hello"'
             cand --post-hook 'Command to run after successful processing. eg: --post-hook "echo hello"'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand --reboot 'Reboot nodes after applying session templates'
             cand -o 'Overwrite an existing configuration with the same name'
             cand --overwrite-configuration 'Overwrite an existing configuration with the same name'
@@ -688,6 +726,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;apply;boot'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand nodes 'Update boot parameters for a set of nodes'
@@ -705,6 +744,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --kernel-parameters 'Kernel parameters to assign to the nodes'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -721,6 +761,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --kernel-parameters 'Kernel parameters to assign to all group members'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -748,6 +789,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --initrd 'S3 path to the initrd file'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
@@ -776,6 +818,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --template-id 'Discovery template ID'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -e 'Enable the endpoint'
             cand --enabled 'Enable the endpoint'
             cand -U 'Use SSDP for discovery if the endpoint supports it'
@@ -810,6 +853,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --template-id 'Discovery template ID'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -e 'Enable the endpoint'
             cand --enabled 'Enable the endpoint'
             cand -U 'Use SSDP for discovery if the endpoint supports it'
@@ -829,6 +873,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Replace kernel parameters on every node in this group'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
@@ -837,6 +882,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;ephemeral-environment'= {
             cand -i 'Image ID to use'
             cand --image-id 'Image ID to use'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
@@ -849,6 +895,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --template 'Session template name'
             cand -l 'Limit to specific nodes, groups, or roles (OR by default; prefix with ''&'' for AND or ''!'' for NOT)'
             cand --limit 'Limit to specific nodes, groups, or roles (OR by default; prefix with ''&'' for AND or ''!'' for NOT)'
+            cand --site 'Override the active site for this invocation'
             cand -i 'Include nodes marked as disabled in the hardware state manager'
             cand --include-disabled 'Include nodes marked as disabled in the hardware state manager'
             cand -d 'Simulate the operation without making changes'
@@ -895,6 +942,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;help;help'= {
         }
         &'manta;delete'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Delete a node group'
@@ -913,6 +961,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;delete;group'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -f 'Force deletion'
             cand --force 'Force deletion'
             cand -h 'Print help (see more with ''--help'')'
@@ -921,6 +970,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;delete;node'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
@@ -931,6 +981,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --nodes 'Xnames, NIDs, or a hostlist expression. eg: ''x1003c1s7b0n0,x1003c1s7b0n1'', ''nid001313,nid001314'', ''x1003c1s7b0n[0-1],x1003c1s7b1n0'', ''nid00131[0-9]'''
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -944,6 +995,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Remove the listed kernel parameters from every node in this group'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
@@ -954,6 +1006,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hosts 'Xnames of the nodes'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -966,12 +1019,14 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --until 'Delete configurations last updated before this date (format: %Y-%m-%d)'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;delete;session'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -y 'Skip confirmation prompts'
             cand --assume-yes 'Skip confirmation prompts'
             cand -d 'Simulate the operation without making changes'
@@ -982,6 +1037,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;delete;images'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
@@ -998,6 +1054,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --parent-cluster 'Group that receives the freed components'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -D 'Delete the group if empty after this operation'
@@ -1011,6 +1068,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --id 'Xname of the Redfish endpoint to delete'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -1019,6 +1077,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --id 'Xname of the Redfish endpoint to delete'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -1058,6 +1117,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;delete;help;help'= {
         }
         &'manta;migrate'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand nodes 'Move nodes between clusters'
@@ -1070,6 +1130,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --to 'Destination cluster to move nodes to'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help'
@@ -1084,6 +1145,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;migrate;help;help'= {
         }
         &'manta;backup'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand vcluster 'Back up a virtual cluster (images, boot settings, group membership)'
@@ -1100,6 +1162,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --post-hook 'Command to run after a successful backup. eg: --post-hook "echo hello"'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
@@ -1112,6 +1175,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;backup;help;help'= {
         }
         &'manta;restore'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand vcluster 'Restore a virtual cluster from a backup bundle'
@@ -1133,6 +1197,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -a 'Command to run after a successful restore. eg: --post-hook "echo hello"'
             cand --post-hook 'Command to run after a successful restore. eg: --post-hook "echo hello"'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -o 'Overwrite existing data'
             cand --overwrite 'Overwrite existing data'
             cand -h 'Print help'
@@ -1147,6 +1212,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;restore;help;help'= {
         }
         &'manta;run'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand session 'Create and run a configuration session from a local repo'
@@ -1170,6 +1236,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --hsm-group 'Run the session against every node in this group'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -w 'Stream session logs to stdout'
             cand --watch-logs 'Stream session logs to stdout'
             cand -t 'Show log timestamps'
@@ -1186,6 +1253,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;run;help;help'= {
         }
         &'manta;power'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand on 'Power on nodes or a group'
@@ -1194,6 +1262,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;power;on'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Power on all nodes in a group'
@@ -1205,6 +1274,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --reason 'Reason for the power operation'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -y 'Skip confirmation prompts'
             cand --assume-yes 'Skip confirmation prompts'
             cand --no-wait 'Return as soon as the transition is queued; don''t poll for completion'
@@ -1214,6 +1284,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;on;nodes'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -y 'Skip confirmation prompts'
             cand --assume-yes 'Skip confirmation prompts'
             cand --no-wait 'Return as soon as the transition is queued; don''t poll for completion'
@@ -1232,6 +1303,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;on;help;help'= {
         }
         &'manta;power;off'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Power off all nodes in a group'
@@ -1243,6 +1315,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --reason 'Reason for the power operation'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -g 'Perform a graceful shutdown'
             cand --graceful 'Perform a graceful shutdown'
             cand -y 'Skip confirmation prompts'
@@ -1254,6 +1327,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;off;nodes'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -g 'Perform a graceful shutdown'
             cand --graceful 'Perform a graceful shutdown'
             cand -y 'Skip confirmation prompts'
@@ -1274,6 +1348,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;off;help;help'= {
         }
         &'manta;power;reset'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand group 'Reset all nodes in a group'
@@ -1285,6 +1360,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --output 'Output format'
             cand -r 'Reason for the power operation'
             cand --reason 'Reason for the power operation'
+            cand --site 'Override the active site for this invocation'
             cand -g 'Perform a graceful reboot'
             cand --graceful 'Perform a graceful reboot'
             cand -y 'Skip confirmation prompts'
@@ -1296,6 +1372,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;reset;nodes'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -g 'Perform a graceful reboot'
             cand --graceful 'Perform a graceful reboot'
             cand -y 'Skip confirmation prompts'
@@ -1348,12 +1425,14 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;power;help;help'= {
         }
         &'manta;log'= {
+            cand --site 'Override the active site for this invocation'
             cand -t 'Show log timestamps'
             cand --timestamps 'Show log timestamps'
             cand -h 'Print help'
             cand --help 'Print help'
         }
         &'manta;console'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
             cand node 'Connect to a node''s serial console'
@@ -1361,10 +1440,12 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;console;node'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;console;target-ansible'= {
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -1386,6 +1467,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --path 'Override the default install directory'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand --print 'Emit the script to stdout instead of installing it'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
@@ -1395,12 +1477,14 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --path 'Directory to write `manta.1` into (defaults to $XDG_DATA_HOME/man/man1)'
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;upgrade'= {
             cand -o 'Output format'
             cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
             cand -c 'Check for a newer version and print it, but don''t apply'
             cand --check 'Check for a newer version and print it, but don''t apply'
             cand -d 'Show what would happen without downloading or replacing'
@@ -1469,7 +1553,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name regex, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'

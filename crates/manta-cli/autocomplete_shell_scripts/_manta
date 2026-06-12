@@ -31,6 +31,7 @@ _manta() {
         case $line[1] in
             (config)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__config_commands" \
@@ -47,12 +48,14 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (set)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__config__subcmd__set_commands" \
@@ -67,6 +70,7 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (hsm)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':HSM_GROUP_NAME -- Node group name:_default' \
@@ -74,6 +78,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (parent-hsm)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':HSM_GROUP_NAME -- Node group name:_default' \
@@ -81,6 +86,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (site)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':SITE_NAME -- Site name:_default' \
@@ -88,6 +94,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (log)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':LOG_LEVEL -- Log verbosity level:(error warn info debug trace)' \
@@ -135,6 +142,7 @@ esac
 ;;
 (unset)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__config__subcmd__unset_commands" \
@@ -149,18 +157,21 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (hsm)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (parent-hsm)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
 ;;
 (auth)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -291,6 +302,7 @@ esac
 ;;
 (get)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__get_commands" \
@@ -307,6 +319,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(json table)' \
 '--output=[Output format]:FORMAT:(json table)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 '::VALUE -- Group name (lists all groups if omitted):_default' \
@@ -314,6 +327,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (hardware)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__get__subcmd__hardware_commands" \
@@ -330,6 +344,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':VALUE -- Xnames, NIDs, or a hostlist expression.
@@ -386,6 +401,7 @@ _arguments "${_arguments_options[@]}" : \
 '-H+[Node group name. Returns sessions targeting this group or its members]:GROUP_NAME:_default' \
 '--group=[Node group name. Returns sessions targeting this group or its members]:GROUP_NAME:_default' \
 '--hsm-group=[Node group name. Returns sessions targeting this group or its members]:GROUP_NAME:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-m[Return only the most recent session (equivalent to --limit 1)]' \
 '--most-recent[Return only the most recent session (equivalent to --limit 1)]' \
 '-h[Print help]' \
@@ -405,6 +421,7 @@ _arguments "${_arguments_options[@]}" : \
 '-H+[Show only configurations whose layers target this group]:GROUP_NAME:_default' \
 '--group=[Show only configurations whose layers target this group]:GROUP_NAME:_default' \
 '--hsm-group=[Show only configurations whose layers target this group]:GROUP_NAME:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-m[Return only the most recent (equivalent to --limit 1)]' \
 '--most-recent[Return only the most recent (equivalent to --limit 1)]' \
 '-h[Print help]' \
@@ -422,6 +439,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Show only templates whose boot sets target this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(json table)' \
 '--output=[Output format]:FORMAT:(json table)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-m[Return only the most recent (equivalent to --limit 1)]' \
 '--most-recent[Return only the most recent (equivalent to --limit 1)]' \
 '-h[Print help]' \
@@ -434,6 +452,7 @@ _arguments "${_arguments_options[@]}" : \
 '--status=[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
 '-o+[Output format]:FORMAT:(table table-wide json summary)' \
 '--output=[Output format]:FORMAT:(table table-wide json summary)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-n[Print NIDs on a single line]' \
 '--nids-only-one-line[Print NIDs on a single line]' \
 '-x[Print xnames on a single line]' \
@@ -449,6 +468,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(json summary details pattern)' \
 '--output=[Output format]:FORMAT:(json summary details pattern)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':GROUP_NAME -- Group name:_default' \
@@ -460,6 +480,7 @@ _arguments "${_arguments_options[@]}" : \
 '--status=[Filter nodes by status]:VALUE:(OFF ON READY STANDBY PENDING FAILED CONFIGURED)' \
 '-o+[Output format]:FORMAT:(table table-wide json summary)' \
 '--output=[Output format]:FORMAT:(table table-wide json summary)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-n[Print NIDs on a single line]' \
 '--nids-only-one-line[Print NIDs on a single line]' \
 '-T[Show a node status summary\: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node'\''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node'\''s configuration failed]' \
@@ -477,10 +498,11 @@ eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
 _arguments "${_arguments_options[@]}" : \
 '-i+[Show only the image with this exact ID]:IMAGE_ID:_default' \
 '--id=[Show only the image with this exact ID]:IMAGE_ID:_default' \
-'-p+[Regex matched against image name (applied client-side)]:PATTERN:_default' \
-'--pattern=[Regex matched against image name (applied client-side)]:PATTERN:_default' \
+'-p+[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
+'--pattern=[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
 '-l+[Return only the <VALUE> most recent images]:VALUE:_default' \
 '--limit=[Return only the <VALUE> most recent images]:VALUE:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-m[Return only the most recent (equivalent to --limit 1)]' \
 '--most-recent[Return only the most recent (equivalent to --limit 1)]' \
 '-h[Print help]' \
@@ -494,6 +516,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Show boot parameters for every node in this group]:GROUP_NAME:_default' \
 '-n+[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
 '--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -509,6 +532,7 @@ _arguments "${_arguments_options[@]}" : \
 '--filter=[Comma-separated list of parameter names to show. eg\: '\''console,bad_page,crashkernel,hugepagelist,root'\'']:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -527,6 +551,7 @@ _arguments "${_arguments_options[@]}" : \
 '--ipaddress=[Filter by IP address (empty string matches endpoints without an IP)]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -621,6 +646,7 @@ esac
 ;;
 (add)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__add_commands" \
@@ -645,6 +671,7 @@ _arguments "${_arguments_options[@]}" : \
 '--arch=[Node architecture]:VALUE:(X86 ARM Other)' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Register the node as disabled]' \
 '--disabled[Register the node as disabled]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -659,6 +686,7 @@ _arguments "${_arguments_options[@]}" : \
 '--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -675,6 +703,7 @@ _arguments "${_arguments_options[@]}" : \
 '--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -691,6 +720,7 @@ _arguments "${_arguments_options[@]}" : \
 '--parent-cluster=[Group that donates the components]:NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-c[Create the target group if it does not exist]' \
@@ -718,6 +748,7 @@ _arguments "${_arguments_options[@]}" : \
 '--cloud-init=[Cloud-init script]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-y[Skip confirmation prompts]' \
@@ -735,6 +766,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Append kernel parameters to every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-O[Overwrite the value if the parameter already exists]' \
 '--overwrite[Overwrite the value if the parameter already exists]' \
 '-y[Skip confirmation prompts]' \
@@ -772,6 +804,7 @@ _arguments "${_arguments_options[@]}" : \
 '--template-id=[Discovery template ID]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-e[Enable the endpoint upon creation]' \
 '--enabled[Enable the endpoint upon creation]' \
 '-U[Use SSDP for discovery if the endpoint supports it]' \
@@ -808,6 +841,7 @@ _arguments "${_arguments_options[@]}" : \
 '--template-id=[Discovery template ID]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-e[Enable the endpoint upon creation]' \
 '--enabled[Enable the endpoint upon creation]' \
 '-U[Use SSDP for discovery if the endpoint supports it]' \
@@ -874,6 +908,7 @@ esac
 ;;
 (apply)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__apply_commands" \
@@ -888,6 +923,7 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (hardware)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__apply__subcmd__hardware_commands" \
@@ -912,6 +948,7 @@ _arguments "${_arguments_options[@]}" : \
 '--parent-cluster=[Group that donates or receives the redistributed nodes]:PARENT_GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-c[Create the target group if it does not exist]' \
@@ -971,6 +1008,7 @@ _arguments "${_arguments_options[@]}" : \
 '-a+[Command to run after successful processing. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
 '--post-hook=[Command to run after successful processing. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '--reboot[Reboot nodes after applying session templates]' \
 '-o[Overwrite an existing configuration with the same name]' \
 '--overwrite-configuration[Overwrite an existing configuration with the same name]' \
@@ -992,6 +1030,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (boot)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__apply__subcmd__boot_commands" \
@@ -1016,6 +1055,7 @@ _arguments "${_arguments_options[@]}" : \
 '--kernel-parameters=[Kernel parameters to assign to the nodes]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1037,6 +1077,7 @@ _arguments "${_arguments_options[@]}" : \
 '--kernel-parameters=[Kernel parameters to assign to all group members]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1088,6 +1129,7 @@ _arguments "${_arguments_options[@]}" : \
 '--initrd=[S3 path to the initrd file]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1118,6 +1160,7 @@ _arguments "${_arguments_options[@]}" : \
 '--template-id=[Discovery template ID]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-e[Enable the endpoint]' \
 '--enabled[Enable the endpoint]' \
 '-U[Use SSDP for discovery if the endpoint supports it]' \
@@ -1154,6 +1197,7 @@ _arguments "${_arguments_options[@]}" : \
 '--template-id=[Discovery template ID]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-e[Enable the endpoint]' \
 '--enabled[Enable the endpoint]' \
 '-U[Use SSDP for discovery if the endpoint supports it]' \
@@ -1175,6 +1219,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Replace kernel parameters on every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1187,6 +1232,7 @@ eg\: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M:_default' \
 _arguments "${_arguments_options[@]}" : \
 '-i+[Image ID to use]:IMAGE_ID:_default' \
 '--image-id=[Image ID to use]:IMAGE_ID:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -1201,6 +1247,7 @@ _arguments "${_arguments_options[@]}" : \
 '--template=[Session template name]:VALUE:_default' \
 '-l+[Limit to specific nodes, groups, or roles (OR by default; prefix with '\''&'\'' for AND or '\''!'\'' for NOT)]:VALUE:_default' \
 '--limit=[Limit to specific nodes, groups, or roles (OR by default; prefix with '\''&'\'' for AND or '\''!'\'' for NOT)]:VALUE:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-i[Include nodes marked as disabled in the hardware state manager]' \
 '--include-disabled[Include nodes marked as disabled in the hardware state manager]' \
 '-d[Simulate the operation without making changes]' \
@@ -1303,6 +1350,7 @@ esac
 ;;
 (delete)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__delete_commands" \
@@ -1319,6 +1367,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-f[Force deletion]' \
 '--force[Force deletion]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1330,6 +1379,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 ':VALUE -- Xname of the node to remove:_default' \
@@ -1343,6 +1393,7 @@ _arguments "${_arguments_options[@]}" : \
 '--nodes=[Xnames, NIDs, or a hostlist expression. eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'', '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'']:NODES:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1358,6 +1409,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Remove the listed kernel parameters from every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1372,6 +1424,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hosts=[Xnames of the nodes]:XNAMES:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1386,6 +1439,7 @@ _arguments "${_arguments_options[@]}" : \
 '--until=[Delete configurations last updated before this date (format\: %Y-%m-%d)]:DATE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -1394,6 +1448,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-y[Skip confirmation prompts]' \
 '--assume-yes[Skip confirmation prompts]' \
 '-d[Simulate the operation without making changes]' \
@@ -1407,6 +1462,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1427,6 +1483,7 @@ _arguments "${_arguments_options[@]}" : \
 '--parent-cluster=[Group that receives the freed components]:PARENT_GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-D[Delete the group if empty after this operation]' \
@@ -1442,6 +1499,7 @@ _arguments "${_arguments_options[@]}" : \
 '--id=[Xname of the Redfish endpoint to delete]:XNAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1452,6 +1510,7 @@ _arguments "${_arguments_options[@]}" : \
 '--id=[Xname of the Redfish endpoint to delete]:XNAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1522,6 +1581,7 @@ esac
 ;;
 (migrate)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__migrate_commands" \
@@ -1542,6 +1602,7 @@ _arguments "${_arguments_options[@]}" : \
 '--to=[Destination cluster to move nodes to]:NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help]' \
@@ -1580,6 +1641,7 @@ esac
 ;;
 (backup)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__backup_commands" \
@@ -1604,6 +1666,7 @@ _arguments "${_arguments_options[@]}" : \
 '--post-hook=[Command to run after a successful backup. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -1638,6 +1701,7 @@ esac
 ;;
 (restore)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__restore_commands" \
@@ -1667,6 +1731,7 @@ _arguments "${_arguments_options[@]}" : \
 '-a+[Command to run after a successful restore. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
 '--post-hook=[Command to run after a successful restore. eg\: --post-hook "echo hello"]:SCRIPT:_default' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-o[Overwrite existing data]' \
 '--overwrite[Overwrite existing data]' \
 '-h[Print help]' \
@@ -1703,6 +1768,7 @@ esac
 ;;
 (run)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__run_commands" \
@@ -1734,6 +1800,7 @@ _arguments "${_arguments_options[@]}" : \
 '--hsm-group=[Run the session against every node in this group]:GROUP_NAME:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-w[Stream session logs to stdout]' \
 '--watch-logs[Stream session logs to stdout]' \
 '-t[Show log timestamps]' \
@@ -1772,6 +1839,7 @@ esac
 ;;
 (power)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__power_commands" \
@@ -1786,6 +1854,7 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (on)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__power__subcmd__on_commands" \
@@ -1804,6 +1873,7 @@ _arguments "${_arguments_options[@]}" : \
 '--reason=[Reason for the power operation]:TEXT:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-y[Skip confirmation prompts]' \
 '--assume-yes[Skip confirmation prompts]' \
 '--no-wait[Return as soon as the transition is queued; don'\''t poll for completion]' \
@@ -1816,6 +1886,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-y[Skip confirmation prompts]' \
 '--assume-yes[Skip confirmation prompts]' \
 '--no-wait[Return as soon as the transition is queued; don'\''t poll for completion]' \
@@ -1860,6 +1931,7 @@ esac
 ;;
 (off)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__power__subcmd__off_commands" \
@@ -1878,6 +1950,7 @@ _arguments "${_arguments_options[@]}" : \
 '--reason=[Reason for the power operation]:TEXT:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-g[Perform a graceful shutdown]' \
 '--graceful[Perform a graceful shutdown]' \
 '-y[Skip confirmation prompts]' \
@@ -1892,6 +1965,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-g[Perform a graceful shutdown]' \
 '--graceful[Perform a graceful shutdown]' \
 '-y[Skip confirmation prompts]' \
@@ -1938,6 +2012,7 @@ esac
 ;;
 (reset)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__power__subcmd__reset_commands" \
@@ -1956,6 +2031,7 @@ _arguments "${_arguments_options[@]}" : \
 '--output=[Output format]:FORMAT:(table json)' \
 '-r+[Reason for the power operation]:TEXT:_default' \
 '--reason=[Reason for the power operation]:TEXT:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-g[Perform a graceful reboot]' \
 '--graceful[Perform a graceful reboot]' \
 '-y[Skip confirmation prompts]' \
@@ -1970,6 +2046,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-g[Perform a graceful reboot]' \
 '--graceful[Perform a graceful reboot]' \
 '-y[Skip confirmation prompts]' \
@@ -2112,6 +2189,7 @@ esac
 ;;
 (log)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-t[Show log timestamps]' \
 '--timestamps[Show log timestamps]' \
 '-h[Print help]' \
@@ -2122,6 +2200,7 @@ eg\: x1003c1s7b0n0, nid001313, zinal, batcher-64d35a81-d0e1-496d-9eda-0010e502f2
 ;;
 (console)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ":: :_manta__subcmd__console_commands" \
@@ -2136,6 +2215,7 @@ _arguments "${_arguments_options[@]}" : \
         case $line[1] in
             (node)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 ':XNAME -- Node xname or NID:_default' \
@@ -2143,6 +2223,7 @@ _arguments "${_arguments_options[@]}" : \
 ;;
 (target-ansible)
 _arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help]' \
 '--help[Print help]' \
 ':SESSION_NAME -- Configuration session name:_default' \
@@ -2188,6 +2269,7 @@ _arguments "${_arguments_options[@]}" : \
 '--path=[Override the default install directory]:PATH:_files -/' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '(-p --path)--print[Emit the script to stdout instead of installing it]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
@@ -2199,6 +2281,7 @@ _arguments "${_arguments_options[@]}" : \
 '--path=[Directory to write \`manta.1\` into (defaults to \$XDG_DATA_HOME/man/man1)]:PATH:_files -/' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -2207,6 +2290,7 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-c[Check for a newer version and print it, but don'\''t apply]' \
 '--check[Check for a newer version and print it, but don'\''t apply]' \
 '-d[Show what would happen without downloading or replacing]' \
@@ -3566,7 +3650,7 @@ _manta__subcmd__get_commands() {
 'group-nodes:Show node details and status for a group' \
 'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name regex, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -3641,7 +3725,7 @@ _manta__subcmd__get__subcmd__help_commands() {
 'group-nodes:Show node details and status for a group' \
 'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name regex, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -4080,7 +4164,7 @@ _manta__subcmd__help__subcmd__get_commands() {
 'group-nodes:Show node details and status for a group' \
 'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name regex, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \

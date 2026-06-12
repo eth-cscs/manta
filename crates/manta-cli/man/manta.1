@@ -30,6 +30,9 @@ Print version
 .SS "manta config"
 Show or change CLI\-side settings (active site, default node group, log level)
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config show"
@@ -38,15 +41,24 @@ Show current configuration values
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config set"
 Set a configuration value
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config set hsm"
 Set the active node group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -56,6 +68,9 @@ Node group name
 .SS "manta config set parent-hsm"
 Set the parent node group
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -63,6 +78,9 @@ Print help
 Node group name
 .SS "manta config set site"
 Set the active site
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -72,6 +90,9 @@ Site name
 .SS "manta config set log"
 Set the log verbosity level
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -80,25 +101,40 @@ Log verbosity level
 .SS "manta config unset"
 Clear a configuration value
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config unset hsm"
 Clear the active node group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config unset parent-hsm"
 Clear the parent node group
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta config unset auth"
 Clear the cached authentication token
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get"
 Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -108,6 +144,9 @@ List node groups visible to your token (or look up one by name)
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -116,6 +155,9 @@ Group name (lists all groups if omitted)
 .SS "manta get hardware"
 Inspect hardware components
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get hardware nodes"
@@ -123,6 +165,9 @@ Show hardware inventory for a set of nodes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -164,6 +209,9 @@ Xnames, NIDs, or hostlist expression. Returns sessions targeting these nodes or 
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Node group name. Returns sessions targeting this group or its members
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get configurations"
@@ -187,6 +235,9 @@ Output format
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Show only configurations whose layers target this group
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get templates"
@@ -206,6 +257,9 @@ Show only templates whose boot sets target this group
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -233,6 +287,9 @@ FAILED      — at least one node\*(Aqs configuration failed
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -243,6 +300,9 @@ Show hardware inventory for a group
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -273,6 +333,9 @@ Also show sibling nodes that share a power supply with the requested nodes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -281,19 +344,22 @@ Xnames, NIDs, or a hostlist expression.
 eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .SS "manta get images"
-List IMS images (filter by id, name regex, or recency; sorted most\-recent first)
+List IMS images (filter by id, name glob, or recency; sorted most\-recent first)
 .TP
 [\fB\-i\fR, \fB\-\-id\fR] \fI<IMAGE_ID>\fR
 Show only the image with this exact ID
 .TP
 [\fB\-p\fR, \fB\-\-pattern\fR] \fI<PATTERN>\fR
-Regex matched against image name (applied client\-side)
+Glob matched against image name (e.g. \*(Aqcompute\-*\*(Aq); applied server\-side. Invalid glob returns 400.
 .TP
 [\fB\-m\fR, \fB\-\-most\-recent\fR]
 Return only the most recent (equivalent to \-\-limit 1)
 .TP
 [\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
 Return only the <VALUE> most recent images
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -307,6 +373,9 @@ Show boot parameters for every node in this group
 Xnames, NIDs, or a hostlist expression.
 eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -327,6 +396,9 @@ eg: \*(Aqconsole,bad_page,crashkernel,hugepagelist,root\*(Aq
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -351,10 +423,16 @@ Filter by IP address (empty string matches endpoints without an IP)
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta add"
 Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -381,6 +459,9 @@ Register the node as disabled
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta add nodes"
@@ -402,6 +483,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta add group"
@@ -420,6 +504,9 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -443,6 +530,9 @@ Create the target group if it does not exist
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -479,6 +569,9 @@ Skip confirmation prompts
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta add kernel-parameters"
@@ -506,6 +599,9 @@ Do not reboot nodes after applying changes
 .TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -561,15 +657,24 @@ Discovery template ID
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta apply"
 Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta apply hardware"
 [experimental] Rescale a group\*(Aqs hardware allocation
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -605,6 +710,9 @@ Allow any available nodes to be selected
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
@@ -668,10 +776,16 @@ Simulate the operation without making changes
 [\fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta apply boot"
 Update boot parameters and runtime configuration
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -702,6 +816,9 @@ Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
@@ -738,6 +855,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
@@ -763,6 +883,9 @@ Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -814,6 +937,9 @@ Discovery template ID
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta apply kernel-parameters"
@@ -833,6 +959,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -846,6 +975,9 @@ Returns an SSH hostname once the environment is ready (usually within a few seco
 .TP
 \fB\-i\fR, \fB\-\-image\-id\fR \fI<IMAGE_ID>\fR
 Image ID to use
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
@@ -870,10 +1002,16 @@ Include nodes marked as disabled in the hardware state manager
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta delete"
 Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -888,6 +1026,9 @@ Force deletion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
@@ -898,6 +1039,9 @@ Remove a node from the hardware state manager (the node disappears from the inve
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
@@ -923,6 +1067,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta delete kernel-parameters"
@@ -942,6 +1089,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -956,6 +1106,9 @@ Xnames of the nodes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -981,6 +1134,9 @@ Delete configurations last updated before this date (format: %Y\-%m\-%d)
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta delete session"
@@ -998,6 +1154,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
@@ -1011,6 +1170,9 @@ Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1039,6 +1201,9 @@ Delete the group if empty after this operation
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta delete redfish-endpoints"
@@ -1050,10 +1215,16 @@ Xname of the Redfish endpoint to delete
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta migrate"
 Move nodes between groups
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1072,6 +1243,9 @@ Simulate the operation without making changes
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1080,6 +1254,9 @@ Xnames, NIDs, or a hostlist expression.
 eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq
 .SS "manta backup"
 Back up a virtual cluster (images, boot settings, group membership) to disk
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1105,10 +1282,16 @@ eg: \-\-post\-hook "echo hello"
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta restore"
 Restore a virtual cluster from a backup bundle
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1144,10 +1327,16 @@ Overwrite existing data
 [\fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta run"
 Create and run a configuration session from a local Ansible repo
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1186,15 +1375,24 @@ Run the session against every node in this group
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta power"
 Power nodes on, off, or reset (reboot); waits for the transition unless \-\-no\-wait is set
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta power on"
 Power on nodes or a group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1213,6 +1411,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1230,6 +1431,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1239,6 +1443,9 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .SS "manta power off"
 Power off nodes or a group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1260,6 +1467,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1280,6 +1490,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1289,6 +1502,9 @@ eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .SS "manta power reset"
 Reset (reboot) nodes or a group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1310,6 +1526,9 @@ Output format
 [\fB\-r\fR, \fB\-\-reason\fR] \fI<TEXT>\fR
 Reason for the power operation
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1330,6 +1549,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1343,6 +1565,9 @@ Stream configuration session logs to stdout (accepts session, node, group, or NI
 [\fB\-t\fR, \fB\-\-timestamps\fR]
 Show log timestamps
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .TP
@@ -1352,6 +1577,9 @@ eg: x1003c1s7b0n0, nid001313, zinal, batcher\-64d35a81\-d0e1\-496d\-9eda\-0010e5
 .SS "manta console"
 Attach to a node\*(Aqs serial console, or to a configuration session\*(Aqs Ansible container
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta console node"
@@ -1360,6 +1588,9 @@ Connect to a node\*(Aqs serial console.
 Accepts an xname or NID.
 eg: \*(Aqx1003c1s7b0n0\*(Aq or \*(Aqnid001313\*(Aq
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .TP
@@ -1367,6 +1598,9 @@ Print help (see a summary with \*(Aq\-h\*(Aq)
 Node xname or NID
 .SS "manta console target-ansible"
 Connect to the Ansible target container of a configuration session
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
@@ -1394,6 +1628,9 @@ Emit the script to stdout instead of installing it
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
 .SS "manta gen-man"
@@ -1408,6 +1645,9 @@ Directory to write `manta.1` into (defaults to $XDG_DATA_HOME/man/man1)
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
@@ -1427,6 +1667,9 @@ Skip the confirmation prompt before replacing the binary
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help (see a summary with \*(Aq\-h\*(Aq)
