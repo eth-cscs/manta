@@ -352,6 +352,16 @@ eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
 '\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
 && ret=0
 ;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(json summary details pattern)' \
+'--output=[Output format]:FORMAT:(json summary details pattern)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+':GROUP_NAME -- Group name:_default' \
+&& ret=0
+;;
 (help)
 _arguments "${_arguments_options[@]}" : \
 ":: :_manta__subcmd__get__subcmd__hardware__subcmd__help_commands" \
@@ -365,6 +375,10 @@ _arguments "${_arguments_options[@]}" : \
         curcontext="${curcontext%:*:*}:manta-get-hardware-help-command-$line[1]:"
         case $line[1] in
             (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -462,16 +476,6 @@ _arguments "${_arguments_options[@]}" : \
 '-h[Print help]' \
 '--help[Print help]' \
 ':HSM_GROUP_NAME -- Group name:_default' \
-&& ret=0
-;;
-(group-hardware)
-_arguments "${_arguments_options[@]}" : \
-'-o+[Output format]:FORMAT:(json summary details pattern)' \
-'--output=[Output format]:FORMAT:(json summary details pattern)' \
-'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-':GROUP_NAME -- Group name:_default' \
 && ret=0
 ;;
 (nodes)
@@ -588,6 +592,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
         esac
     ;;
 esac
@@ -605,10 +613,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (group-nodes)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(group-hardware)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -704,6 +708,7 @@ _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'--dry-run[Validate input and print the payload(s) that would be sent to the backend without making changes]' \
 '-h[Print help]' \
 '--help[Print help]' \
 && ret=0
@@ -1370,6 +1375,8 @@ _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-f[Force deletion]' \
 '--force[Force deletion]' \
+'-d[Validate input and print the request that would be sent to the backend without making changes]' \
+'--dry-run[Validate input and print the request that would be sent to the backend without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 ':VALUE -- Name of the group to delete:_default' \
@@ -2425,6 +2432,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
         esac
     ;;
 esac
@@ -2442,10 +2453,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (group-nodes)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(group-hardware)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -3648,7 +3655,6 @@ _manta__subcmd__get_commands() {
 'configurations:List CFS configurations (filter by name, glob, group, or recency)' \
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
-'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
@@ -3668,11 +3674,6 @@ _manta__subcmd__get__subcmd__configurations_commands() {
     local commands; commands=()
     _describe -t commands 'manta get configurations commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__get__subcmd__group-hardware_commands] )) ||
-_manta__subcmd__get__subcmd__group-hardware_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta get group-hardware commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__get__subcmd__group-nodes_commands] )) ||
 _manta__subcmd__get__subcmd__group-nodes_commands() {
     local commands; commands=()
@@ -3687,17 +3688,29 @@ _manta__subcmd__get__subcmd__groups_commands() {
 _manta__subcmd__get__subcmd__hardware_commands() {
     local commands; commands=(
 'nodes:Show hardware inventory for a set of nodes' \
+'group:Show hardware inventory for a group' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta get hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__group_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware group commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help_commands] )) ||
 _manta__subcmd__get__subcmd__hardware__subcmd__help_commands() {
     local commands; commands=(
 'nodes:Show hardware inventory for a set of nodes' \
+'group:Show hardware inventory for a group' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta get hardware help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__group_commands] )) ||
+_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get hardware help group commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__help_commands] )) ||
 _manta__subcmd__get__subcmd__hardware__subcmd__help__subcmd__help_commands() {
@@ -3723,7 +3736,6 @@ _manta__subcmd__get__subcmd__help_commands() {
 'configurations:List CFS configurations (filter by name, glob, group, or recency)' \
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
-'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
@@ -3743,11 +3755,6 @@ _manta__subcmd__get__subcmd__help__subcmd__configurations_commands() {
     local commands; commands=()
     _describe -t commands 'manta get help configurations commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__group-hardware_commands] )) ||
-_manta__subcmd__get__subcmd__help__subcmd__group-hardware_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta get help group-hardware commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__get__subcmd__help__subcmd__group-nodes_commands] )) ||
 _manta__subcmd__get__subcmd__help__subcmd__group-nodes_commands() {
     local commands; commands=()
@@ -3762,8 +3769,14 @@ _manta__subcmd__get__subcmd__help__subcmd__groups_commands() {
 _manta__subcmd__get__subcmd__help__subcmd__hardware_commands() {
     local commands; commands=(
 'nodes:Show hardware inventory for a set of nodes' \
+'group:Show hardware inventory for a group' \
     )
     _describe -t commands 'manta get help hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__group_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help hardware group commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__nodes_commands] )) ||
 _manta__subcmd__get__subcmd__help__subcmd__hardware__subcmd__nodes_commands() {
@@ -4162,7 +4175,6 @@ _manta__subcmd__help__subcmd__get_commands() {
 'configurations:List CFS configurations (filter by name, glob, group, or recency)' \
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
-'group-hardware:Show hardware inventory for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
@@ -4181,11 +4193,6 @@ _manta__subcmd__help__subcmd__get__subcmd__configurations_commands() {
     local commands; commands=()
     _describe -t commands 'manta help get configurations commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__group-hardware_commands] )) ||
-_manta__subcmd__help__subcmd__get__subcmd__group-hardware_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help get group-hardware commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__help__subcmd__get__subcmd__group-nodes_commands] )) ||
 _manta__subcmd__help__subcmd__get__subcmd__group-nodes_commands() {
     local commands; commands=()
@@ -4200,8 +4207,14 @@ _manta__subcmd__help__subcmd__get__subcmd__groups_commands() {
 _manta__subcmd__help__subcmd__get__subcmd__hardware_commands() {
     local commands; commands=(
 'nodes:Show hardware inventory for a set of nodes' \
+'group:Show hardware inventory for a group' \
     )
     _describe -t commands 'manta help get hardware commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__group_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get hardware group commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__nodes_commands] )) ||
 _manta__subcmd__help__subcmd__get__subcmd__hardware__subcmd__nodes_commands() {

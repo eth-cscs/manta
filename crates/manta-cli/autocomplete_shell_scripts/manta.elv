@@ -186,7 +186,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
             cand group-nodes 'Show node details and status for a group'
-            cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
@@ -206,6 +205,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand nodes 'Show hardware inventory for a set of nodes'
+            cand group 'Show hardware inventory for a group'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;get;hardware;nodes'= {
@@ -215,11 +215,21 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'manta;get;hardware;group'= {
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'manta;get;hardware;help'= {
             cand nodes 'Show hardware inventory for a set of nodes'
+            cand group 'Show hardware inventory for a group'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;get;hardware;help;nodes'= {
+        }
+        &'manta;get;hardware;help;group'= {
         }
         &'manta;get;hardware;help;help'= {
         }
@@ -295,13 +305,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --xnames-only-one-line 'Print xnames on a single line'
             cand -T 'Show a group status summary: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node''s configuration failed'
             cand --summary-status 'Show a group status summary: OK          — all nodes booted and configured OFF         — at least one node is OFF ON          — no nodes OFF, at least one is ON STANDBY     — at least one node''s heartbeat is lost UNCONFIGURED — all nodes READY but at least one is still being configured FAILED      — at least one node''s configuration failed'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;get;group-hardware'= {
-            cand -o 'Output format'
-            cand --output 'Output format'
-            cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -381,7 +384,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
             cand group-nodes 'Show node details and status for a group'
-            cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
@@ -393,8 +395,11 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;get;help;hardware'= {
             cand nodes 'Show hardware inventory for a set of nodes'
+            cand group 'Show hardware inventory for a group'
         }
         &'manta;get;help;hardware;nodes'= {
+        }
+        &'manta;get;help;hardware;group'= {
         }
         &'manta;get;help;sessions'= {
         }
@@ -403,8 +408,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;help;templates'= {
         }
         &'manta;get;help;group-nodes'= {
-        }
-        &'manta;get;help;group-hardware'= {
         }
         &'manta;get;help;nodes'= {
         }
@@ -472,6 +475,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -o 'Output format'
             cand --output 'Output format'
             cand --site 'Override the active site for this invocation'
+            cand --dry-run 'Validate input and print the payload(s) that would be sent to the backend without making changes'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -964,6 +968,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --site 'Override the active site for this invocation'
             cand -f 'Force deletion'
             cand --force 'Force deletion'
+            cand -d 'Validate input and print the request that would be sent to the backend without making changes'
+            cand --dry-run 'Validate input and print the request that would be sent to the backend without making changes'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
@@ -1551,7 +1557,6 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
             cand templates 'List BOS session templates (filter by name, group, or recency)'
             cand group-nodes 'Show node details and status for a group'
-            cand group-hardware 'Show hardware inventory for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
@@ -1562,8 +1567,11 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;get;hardware'= {
             cand nodes 'Show hardware inventory for a set of nodes'
+            cand group 'Show hardware inventory for a group'
         }
         &'manta;help;get;hardware;nodes'= {
+        }
+        &'manta;help;get;hardware;group'= {
         }
         &'manta;help;get;sessions'= {
         }
@@ -1572,8 +1580,6 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;get;templates'= {
         }
         &'manta;help;get;group-nodes'= {
-        }
-        &'manta;help;get;group-hardware'= {
         }
         &'manta;help;get;nodes'= {
         }
