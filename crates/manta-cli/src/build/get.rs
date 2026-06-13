@@ -41,10 +41,11 @@ pub fn subcommand_get_hardware() -> Command {
     .arg_required_else_help(true)
     .about("Inspect hardware components")
     .subcommand(subcommand_get_hardware_nodes())
+    .subcommand(subcommand_get_hardware_group())
 }
 
-pub fn subcommand_get_group_hardware() -> Command {
-  Command::new("group-hardware")
+pub fn subcommand_get_hardware_group() -> Command {
+  Command::new("group")
     .arg_required_else_help(true)
     .about("Show hardware inventory for a group")
     .arg(arg!(<GROUP_NAME> "Group name").required(true))
@@ -256,7 +257,6 @@ pub fn subcommand_get() -> Command {
     .subcommand(subcommand_get_cfs_configuration())
     .subcommand(subcommand_get_bos_template())
     .subcommand(subcommand_get_group_nodes())
-    .subcommand(subcommand_get_group_hardware())
     .subcommand(subcommand_get_node_details())
     .subcommand(subcommand_get_images())
     .subcommand(subcommand_get_boot_parameters())

@@ -2,7 +2,7 @@
 
 pub mod boot_parameters;
 pub mod configurations;
-pub mod group_hardware;
+pub mod hardware_group;
 pub mod group_nodes;
 pub mod groups;
 pub mod hardware_nodes;
@@ -18,9 +18,9 @@ use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch `manta get` subcommands (groups, hardware, sessions,
-/// configurations, templates, group-nodes, group-hardware, nodes,
-/// images, boot-parameters, kernel-parameters, redfish-endpoints).
+/// Dispatch `manta get` subcommands (groups, hardware [nodes, group],
+/// sessions, configurations, templates, group-nodes, nodes, images,
+/// boot-parameters, kernel-parameters, redfish-endpoints).
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -30,11 +30,9 @@ pub async fn handle_get(
   match cli_get.subcommand() {
     Some(("groups", m)) => groups::exec(ctx, &token, m).await?,
     Some(("group-nodes", m)) => group_nodes::exec(ctx, &token, m).await?,
-    Some(("group-hardware", m)) => {
-      group_hardware::exec(ctx, &token, m).await?;
-    }
     Some(("hardware", m)) => match m.subcommand() {
       Some(("nodes", m)) => hardware_nodes::exec(ctx, &token, m).await?,
+      Some(("group", m)) => hardware_group::exec(ctx, &token, m).await?,
       Some((other, _)) => bail!("Unknown 'get hardware' subcommand: {other}"),
       None => bail!("No 'get hardware' subcommand provided"),
     },

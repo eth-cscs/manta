@@ -1,4 +1,4 @@
-//! Implements the `manta get group-hardware` command.
+//! Implements the `manta get hardware group` command.
 
 use anyhow::Error;
 
@@ -18,7 +18,7 @@ fn parse_hardware_cluster_params(
   }
 }
 
-/// CLI adapter for `manta get group-hardware`.
+/// CLI adapter for `manta get hardware group`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -50,14 +50,13 @@ pub async fn exec(
 mod tests {
   use super::*;
 
-  fn hw_cluster_cmd() -> clap::Command {
-    crate::build::get::subcommand_get_group_hardware()
+  fn hw_group_cmd() -> clap::Command {
+    crate::build::get::subcommand_get_hardware_group()
   }
 
   #[test]
   fn parse_positional_only_leaves_settings_unset() {
-    let matches =
-      hw_cluster_cmd().get_matches_from(["group-hardware", "compute"]);
+    let matches = hw_group_cmd().get_matches_from(["group", "compute"]);
     let params = parse_hardware_cluster_params(&matches, None);
     assert_eq!(params.group_name.as_deref(), Some("compute"));
     assert!(params.settings_hsm_group_name.is_none());
@@ -65,8 +64,7 @@ mod tests {
 
   #[test]
   fn parse_settings_hsm_group_preserved_alongside_positional() {
-    let matches =
-      hw_cluster_cmd().get_matches_from(["group-hardware", "compute"]);
+    let matches = hw_group_cmd().get_matches_from(["group", "compute"]);
     let params = parse_hardware_cluster_params(&matches, Some("default"));
     assert_eq!(params.settings_hsm_group_name.as_deref(), Some("default"));
   }
