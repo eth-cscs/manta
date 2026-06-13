@@ -43,7 +43,7 @@ forms have now been removed. The canonical names:
 | `manta apply boot cluster` | `manta apply boot group` |
 | `manta apply hardware cluster` | `manta apply hardware group` |
 | `manta get cluster` | `manta get group-nodes` |
-| `manta get hardware cluster` | `manta get group-hardware` |
+| `manta get hardware cluster` | `manta get hardware group` |
 | `manta power on cluster` | `manta power on group` |
 | `manta power off cluster` | `manta power off group` |
 | `manta power reset cluster` | `manta power reset group` |
@@ -147,7 +147,7 @@ manta get groups
 manta get groups my-cluster -o json
 ```
 
-### get group-hardware \<GROUP_NAME\>
+### get hardware group \<GROUP_NAME\>
 
 List hardware components in a group.
 
@@ -163,12 +163,12 @@ Output modes:
 - `json` — raw JSON
 
 ```
-manta get group-hardware gpu-cluster -o details
+manta get hardware group gpu-cluster -o details
 ```
 
 ### get hardware nodes \<VALUE\>
 
-Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get group-hardware --output details` but scoped to specific nodes instead of an entire group.
+Per-node hardware component breakdown for an explicit list of nodes. Equivalent to `get hardware group --output details` but scoped to specific nodes instead of an entire group.
 
 | Arg/Flag | Type | Required | Default | Description |
 |----------|------|----------|---------|-------------|

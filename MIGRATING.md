@@ -27,7 +27,7 @@ If you skim only one section, make it
 | **Binaries** | One — `manta` (CLI talks to CSM/OCHAMI direct) | Two — `manta` (CLI) and `manta-server` (HTTPS API in front of CSM/OCHAMI) |
 | **Auth target** | Each user's CLI authenticates to the backend directly | CLI authenticates to `manta-server`; the server holds the backend creds and tokens |
 | **Config file** | Single `~/.config/manta/config.toml` mixing CLI + backend + (in some setups) server fields | Split into `cli.toml` (workstation) and `server.toml` (server host); the CLI strictly does not need backend URLs |
-| **CLI verbs** | `apply session`, `apply boot cluster`, `migrate vCluster backup`, `get cluster`, `get hardware cluster`, `power on/off/reset cluster`, `add-nodes-to-groups`, `remove-nodes-from-groups`, `apply hardware cluster`, `update boot-parameters`, `update redfish-endpoints`, `config gen-autocomplete`, … | Renamed and the old forms removed: `run session`, `apply boot group`, `backup vcluster`, `get group-nodes`, `get group-hardware`, `power on/off/reset group`, `add nodes`, `delete nodes`, `apply hardware group`, `apply boot-parameters`, `apply redfish-endpoint`, `gen-autocomplete`, … The full mapping is in §1.4 below |
+| **CLI verbs** | `apply session`, `apply boot cluster`, `migrate vCluster backup`, `get cluster`, `get hardware cluster`, `power on/off/reset cluster`, `add-nodes-to-groups`, `remove-nodes-from-groups`, `apply hardware cluster`, `update boot-parameters`, `update redfish-endpoints`, `config gen-autocomplete`, … | Renamed and the old forms removed: `run session`, `apply boot group`, `backup vcluster`, `get group-nodes`, `get hardware group`, `power on/off/reset group`, `add nodes`, `delete nodes`, `apply hardware group`, `apply boot-parameters`, `apply redfish-endpoint`, `gen-autocomplete`, … The full mapping is in §1.4 below |
 | **CLI flags** | `--hsm-group`, `--target-cluster`, `--parent-cluster`, `--create-hsm-group`, … | `--group`, `--target-group`, `--parent-group`, `--create-group`, … Old flag names retained as visible clap aliases |
 | **CLI output** | Mix of plain `println!` and ad-hoc JSON dumps; `--output json` only on some `get` commands | Every mutating command honours `-o/--output {table,json}`; JSON envelope is `{"status":"ok","message":"...","data":...}` |
 | **HTTP API** | None — there was no server | Documented REST + WebSocket API on `manta-server`; see [API.md](API.md) |
@@ -133,7 +133,7 @@ singular spelling.)
 | `manta apply boot cluster <N>` | `manta apply boot group <N>` |
 | `manta apply hardware cluster` | `manta apply hardware group` |
 | `manta get cluster <N>` | `manta get group-nodes <N>` |
-| `manta get hardware cluster <N>` | `manta get group-hardware <N>` |
+| `manta get hardware cluster <N>` | `manta get hardware group <N>` |
 | `manta power on cluster <N>` | `manta power on group <N>` |
 | `manta power off cluster <N>` | `manta power off group <N>` |
 | `manta power reset cluster <N>` | `manta power reset group <N>` |
@@ -493,6 +493,25 @@ for one transition release; new clients should read
 is emitted on every response. Browsers ignore HSTS over plain HTTP
 per RFC 6797, so this is a no-op under `allow_http = true` and
 active otherwise — no client-side action needed.
+
+### 5.6. `get group-hardware` moved under `get hardware`
+
+`manta get group-hardware <GROUP_NAME>` is removed. The canonical
+form is now `manta get hardware group <GROUP_NAME>`, alongside the
+existing `manta get hardware nodes <VALUE>` under the same parent.
+Flags and behaviour are unchanged; only the command path changed.
+
+Scripts and shell completions calling the old form must be updated.
+There is no alias — the old path errors with clap's standard
+"unrecognised subcommand 'group-hardware'".
+
+```
+# before
+manta get group-hardware gpu-cluster -o details
+
+# after
+manta get hardware group gpu-cluster -o details
+```
 
 ---
 
