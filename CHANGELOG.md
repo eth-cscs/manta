@@ -2,6 +2,65 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.54] - 2026-06-14
+
+### Bug Fixes
+
+- Relax root_ca_cert_file check under --allow-http
+- Collapse nested if in build.rs downconvert
+- Wire missing SatTrait methods through the static dispatcher
+- Cover all remaining trait methods in static dispatcher
+
+### Build
+
+- Generate API client from server OpenAPI spec
+- Trim unused OpenAPI schemas; drop dead_code allow
+
+### Documentation
+
+- Qualify intra-doc link to validate_user_group_vec_access
+- Qualify intra-doc link to http_client::PowerAction
+- Refresh user docs for the beta.51 batch of changes
+- Surface --allow-http as the test-environment shortcut in TL;DR
+- Clarify auto-generated vs hand-rolled http_client split
+- Explain reqwest 0.12/0.13 split in Cargo.toml
+- Document `get group-hardware` → `get hardware group` rename
+- Stamp 2.0.0 version headers; document --site global, glob image filter, 300s timeout
+
+### Features
+
+- Tighten utoipa response types for OpenAPI codegen
+- Implement --pattern filter using glob syntax
+- Make --site global so it's accepted after any subcommand
+- [**breaking**] Move `get group-hardware` under `get hardware group`
+- Add --dry-run to `add group` and `delete group`
+- Unwrap progenitor ErrorResponse to `HTTP <status>: <message>`
+- Propagate backend HTTP status; bump request_timeout to 300s
+
+### Miscellaneous Tasks
+
+- Regenerate man pages + shell completions [skip ci]
+- Regenerate shell completion scripts after get-group-hardware rename
+- Regenerate man page after get-group-hardware rename
+- Update .gitignore
+
+### Refactor
+
+- Delete service/infra_backend/ wrapper layer
+- Migrate http_client to progenitor-generated client
+- Collapse wire+params namespaces into api/
+- Adopt ConsoleTrait resize channel + ShastaClient
+- Collapse handlers/ into dispatch/
+- Fix intra-doc links and document types::api modules
+
+### Styling
+
+- Apply rustfmt [skip ci]
+
+### Testing
+
+- CI guardrail that StaticBackendDispatcher covers all trait methods
+
 ## [2.0.0-beta.53] - 2026-06-09
 
 ### Miscellaneous Tasks
