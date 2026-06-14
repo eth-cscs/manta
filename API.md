@@ -615,6 +615,65 @@ curl -k -X DELETE "$MANTA_HOST/api/v1/images?ids=uuid-1,uuid-2&dry_run=true" \
 
 ---
 
+## Summary
+
+### GET /summary
+
+Image-centric flat projection of every CFS configuration, CFS session, BOS session template, and IMS image the bearer token can see. One row per IMS image; orphan images (no producing session, no booting template) still produce a row with `null` in the optional columns. No query parameters in v1. Per-resource group-access scoping is preserved, so the summary cannot include rows you couldn't list via `/configurations`, `/sessions`, `/templates`, or `/images` directly.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/summary" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
+**Response 200** — `Vec<BackendSummary>`, sorted by `image_id` ascending. Each row carries:
+
+| Field | Type | Description |
+|---|---|---|
+| `image_id` | string | IMS image id. Row anchor; always present. |
+| `name` | string | IMS image name. Always present. |
+| `configuration_name` | string \| null | CFS configuration the image was built with (`Image.configuration`). |
+| `session_name` | string \| null | First CFS session in name order whose `status.artifacts[*].result_id` contains this `image_id`. |
+| `session_result_id` | string \| null | Echo of `image_id` whenever `session_name` is set. |
+| `session_configuration_name` | string \| null | That session's `configuration.name`. Usually equals `configuration_name` but can drift if the image was re-tagged after the session completed. |
+| `bos_sessiontemplate` | string \| null | First BOS session template in name order whose `boot_sets[*].path` references this `image_id`. |
+| `bos_sessiontemplate_boot_image` | string \| null | Echo of `image_id` whenever `bos_sessiontemplate` is set. |
+
+If multiple sessions produced the same image, only the first in name order populates the `session_*` columns. Same rule for templates.
+
+Sample body:
+
+```jsonc
+[
+  {
+    "image_id": "img-abcd",
+    "name": "ncn-1.6-base",
+    "configuration_name": "ncn-1.6",
+    "session_name": "session-a",
+    "session_result_id": "img-abcd",
+    "session_configuration_name": "ncn-1.6",
+    "bos_sessiontemplate": "tmpl-ncn-1.6",
+    "bos_sessiontemplate_boot_image": "img-abcd"
+  },
+  {
+    "image_id": "img-orphan",
+    "name": "uploaded-by-hand",
+    "configuration_name": null,
+    "session_name": null,
+    "session_result_id": null,
+    "session_configuration_name": null,
+    "bos_sessiontemplate": null,
+    "bos_sessiontemplate_boot_image": null
+  }
+]
+```
+
+**Response 401** — missing or expired bearer token.
+**Response 500** — any of the four upstream fetches failed.
+
+---
+
 ## Boot parameters
 
 ### GET /boot-parameters
