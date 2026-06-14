@@ -64,6 +64,9 @@ pub mod responses;
 pub mod sat_file;
 /// CFS session request/response bodies (`/api/v1/sessions`).
 pub mod session;
+/// Aggregate summary of CFS configurations + sessions + BOS templates +
+/// IMS images flattened into image-centric rows (`/api/v1/summary`).
+pub mod summary;
 /// BOS session-template request/response bodies (`/api/v1/templates`,
 /// `/api/v1/templates/{name}/sessions`).
 pub mod template;
