@@ -4712,12 +4712,26 @@
             ],
             "description": "Echo of `image_id` whenever `bos_sessiontemplate` is `Some(_)`.\nCarried explicitly so the row is self-describing."
           },
+          "configuration_last_updated": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`last_updated` of the CFS configuration referenced by\n`configuration_name`. `None` if the configuration was not\nreturned by the configurations list."
+          },
           "configuration_name": {
             "type": [
               "string",
               "null"
             ],
             "description": "CFS configuration the image was built with\n(`Image.configuration`)."
+          },
+          "image_created": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "IMS image `created` timestamp (`Image.created`)."
           },
           "image_id": {
             "type": "string",
@@ -4747,6 +4761,13 @@
               "null"
             ],
             "description": "Echo of `image_id` whenever `session_name` is `Some(_)`. Carried\nexplicitly so the row is self-describing."
+          },
+          "session_start_time": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "`status.session.start_time` of the producing CFS session."
           }
         }
       },

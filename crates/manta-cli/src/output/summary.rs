@@ -25,18 +25,24 @@ fn print_table(rows: &[BackendSummary]) {
   table.set_header(vec![
     "Image ID",
     "Image name",
+    "Image created",
     "Built-with configuration",
+    "Config last updated",
     "Producing session",
     "Session configuration",
+    "Session start",
     "BOS template",
   ]);
   for row in rows {
     table.add_row(vec![
       row.image_id.as_str(),
       row.name.as_str(),
+      row.image_created.as_deref().unwrap_or("-"),
       row.configuration_name.as_deref().unwrap_or("-"),
+      row.configuration_last_updated.as_deref().unwrap_or("-"),
       row.session_name.as_deref().unwrap_or("-"),
       row.session_configuration_name.as_deref().unwrap_or("-"),
+      row.session_start_time.as_deref().unwrap_or("-"),
       row.bos_sessiontemplate.as_deref().unwrap_or("-"),
     ]);
   }
