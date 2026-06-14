@@ -10,7 +10,7 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.53"
+    "version": "2.0.0-beta.54"
   },
   "servers": [
     {
@@ -4137,6 +4137,66 @@
         ]
       }
     },
+    "/summary": {
+      "get": {
+        "tags": [
+          "summary"
+        ],
+        "summary": "GET /summary — image-centric flat projection of every CFS\nconfiguration, CFS session, BOS session template, and IMS image\nvisible to the caller. One row per IMS image; see\n[`BackendSummary`] for column semantics.",
+        "operationId": "get_summary",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backend summary rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackendSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/templates": {
       "get": {
         "tags": [
@@ -4627,6 +4687,66 @@
           "token": {
             "type": "string",
             "description": "Bearer token issued by the backend (CSM or OpenCHAMI Keycloak).\nPass this as `Authorization: Bearer <token>` on every\nsubsequent request."
+          }
+        }
+      },
+      "BackendSummary": {
+        "type": "object",
+        "description": "One row of the backend-data summary, anchored on an IMS image.\n\nEvery IMS image visible to the caller produces exactly one row.\nThe row's `image_id` and `name` are always populated; the rest are\n`Option<String>` and are filled in only when the corresponding\nrelation resolves.",
+        "required": [
+          "image_id",
+          "name"
+        ],
+        "properties": {
+          "bos_sessiontemplate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "BOS session template whose `boot_sets[*].path` references this\n`image_id`. If multiple templates match, the first one in name\norder wins."
+          },
+          "bos_sessiontemplate_boot_image": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Echo of `image_id` whenever `bos_sessiontemplate` is `Some(_)`.\nCarried explicitly so the row is self-describing."
+          },
+          "configuration_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CFS configuration the image was built with\n(`Image.configuration`)."
+          },
+          "image_id": {
+            "type": "string",
+            "description": "IMS image id (`Image.id`). Row anchor."
+          },
+          "name": {
+            "type": "string",
+            "description": "IMS image name (`Image.name`)."
+          },
+          "session_configuration_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "That session's own `configuration.name`. Usually equals\n`configuration_name` but they can drift if the image was\nre-tagged after the session completed."
+          },
+          "session_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "CFS session whose `status.artifacts[*].result_id` contains\nthis `image_id`. If multiple sessions match, the first one in\nname order wins."
+          },
+          "session_result_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Echo of `image_id` whenever `session_name` is `Some(_)`. Carried\nexplicitly so the row is self-describing."
           }
         }
       },

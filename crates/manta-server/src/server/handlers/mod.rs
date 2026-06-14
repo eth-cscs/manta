@@ -45,6 +45,7 @@ mod power;
 mod redfish_endpoints;
 mod sat_file;
 mod session;
+mod summary;
 mod template;
 
 pub use auth::*;
@@ -64,6 +65,7 @@ pub use power::*;
 pub use redfish_endpoints::*;
 pub use sat_file::*;
 pub use session::*;
+pub use summary::*;
 pub use template::*;
 
 // ---------------------------------------------------------------------------
