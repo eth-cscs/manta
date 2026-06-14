@@ -1,14 +1,11 @@
 //! `manta config` subcommands.
 
 pub mod set_hsm;
-pub mod set_hsm_shared;
 pub mod set_log;
-pub mod set_parent_hsm;
 pub mod set_site;
 pub mod show;
 pub mod unset_auth;
 pub mod unset_hsm;
-pub mod unset_parent_hsm;
 
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
@@ -35,11 +32,6 @@ pub async fn handle_config(
         let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
         set_hsm::exec(m, &client, &token).await?;
       }
-      Some(("parent-hsm", m)) => {
-        let token = get_api_token(ctx).await?;
-        let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
-        set_parent_hsm::exec(m, &client, &token).await?;
-      }
       Some(("site", m)) => set_site::exec(m)?,
       Some(("log", m)) => set_log::exec(m)?,
       Some((other, _)) => bail!("Unknown 'config set' subcommand: {other}"),
@@ -47,7 +39,6 @@ pub async fn handle_config(
     },
     Some(("unset", m)) => match m.subcommand() {
       Some(("hsm", _)) => unset_hsm::exec()?,
-      Some(("parent-hsm", _)) => unset_parent_hsm::exec()?,
       Some(("auth", _)) => unset_auth::exec()?,
       Some((other, _)) => bail!("Unknown 'config unset' subcommand: {other}"),
       None => bail!("No 'config unset' subcommand provided"),

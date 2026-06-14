@@ -56,14 +56,12 @@ complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "hsm" -d 'Set the active node group'
-complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "parent-hsm" -d 'Set the parent node group'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "site" -d 'Set the active site'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "log" -d 'Set the log verbosity level'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "hsm" -d 'Clear the active node group'
-complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "parent-hsm" -d 'Clear the parent node group'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "auth" -d 'Clear the cached authentication token'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "show" -d 'Show current configuration values'

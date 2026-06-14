@@ -76,14 +76,6 @@ _arguments "${_arguments_options[@]}" : \
 ':HSM_GROUP_NAME -- Node group name:_default' \
 && ret=0
 ;;
-(parent-hsm)
-_arguments "${_arguments_options[@]}" : \
-'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-':HSM_GROUP_NAME -- Node group name:_default' \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
@@ -113,10 +105,6 @@ _arguments "${_arguments_options[@]}" : \
         curcontext="${curcontext%:*:*}:manta-config-set-help-command-$line[1]:"
         case $line[1] in
             (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(parent-hsm)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -162,13 +150,6 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
-(parent-hsm)
-_arguments "${_arguments_options[@]}" : \
-'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-&& ret=0
-;;
 (auth)
 _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
@@ -189,10 +170,6 @@ _arguments "${_arguments_options[@]}" : \
         curcontext="${curcontext%:*:*}:manta-config-unset-help-command-$line[1]:"
         case $line[1] in
             (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(parent-hsm)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -244,10 +221,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(parent-hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -273,10 +246,6 @@ _arguments "${_arguments_options[@]}" : \
         curcontext="${curcontext%:*:*}:manta-config-help-unset-command-$line[1]:"
         case $line[1] in
             (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(parent-hsm)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2352,10 +2321,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(parent-hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2381,10 +2346,6 @@ _arguments "${_arguments_options[@]}" : \
         curcontext="${curcontext%:*:*}:manta-help-config-unset-command-$line[1]:"
         case $line[1] in
             (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(parent-hsm)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -3271,7 +3232,6 @@ _manta__subcmd__config__subcmd__help__subcmd__help_commands() {
 _manta__subcmd__config__subcmd__help__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
-'parent-hsm:Set the parent node group' \
 'site:Set the active site' \
 'log:Set the log verbosity level' \
     )
@@ -3287,11 +3247,6 @@ _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help set log commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config help set parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands() {
     local commands; commands=()
@@ -3306,7 +3261,6 @@ _manta__subcmd__config__subcmd__help__subcmd__show_commands() {
 _manta__subcmd__config__subcmd__help__subcmd__unset_commands() {
     local commands; commands=(
 'hsm:Clear the active node group' \
-'parent-hsm:Clear the parent node group' \
 'auth:Clear the cached authentication token' \
     )
     _describe -t commands 'manta config help unset commands' commands "$@"
@@ -3321,16 +3275,10 @@ _manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help unset hsm commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config help unset parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__set_commands] )) ||
 _manta__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
-'parent-hsm:Set the parent node group' \
 'site:Set the active site' \
 'log:Set the log verbosity level' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -3341,7 +3289,6 @@ _manta__subcmd__config__subcmd__set_commands() {
 _manta__subcmd__config__subcmd__set__subcmd__help_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
-'parent-hsm:Set the parent node group' \
 'site:Set the active site' \
 'log:Set the log verbosity level' \
 'help:Print this message or the help of the given subcommand(s)' \
@@ -3363,11 +3310,6 @@ _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set help log commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config set help parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands() {
     local commands; commands=()
@@ -3383,11 +3325,6 @@ _manta__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set log commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__set__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config set parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__site_commands() {
     local commands; commands=()
@@ -3402,7 +3339,6 @@ _manta__subcmd__config__subcmd__show_commands() {
 _manta__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'hsm:Clear the active node group' \
-'parent-hsm:Clear the parent node group' \
 'auth:Clear the cached authentication token' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3417,7 +3353,6 @@ _manta__subcmd__config__subcmd__unset__subcmd__auth_commands() {
 _manta__subcmd__config__subcmd__unset__subcmd__help_commands() {
     local commands; commands=(
 'hsm:Clear the active node group' \
-'parent-hsm:Clear the parent node group' \
 'auth:Clear the cached authentication token' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3438,20 +3373,10 @@ _manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset help hsm commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config unset help parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__hsm_commands] )) ||
 _manta__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset hsm commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config unset parent-hsm commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__console_commands] )) ||
 _manta__subcmd__console_commands() {
@@ -4017,7 +3942,6 @@ _manta__subcmd__help__subcmd__config_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
-'parent-hsm:Set the parent node group' \
 'site:Set the active site' \
 'log:Set the log verbosity level' \
     )
@@ -4033,11 +3957,6 @@ _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config set log commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help config set parent-hsm commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands() {
     local commands; commands=()
@@ -4052,7 +3971,6 @@ _manta__subcmd__help__subcmd__config__subcmd__show_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'hsm:Clear the active node group' \
-'parent-hsm:Clear the parent node group' \
 'auth:Clear the cached authentication token' \
     )
     _describe -t commands 'manta help config unset commands' commands "$@"
@@ -4066,11 +3984,6 @@ _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__auth_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config unset hsm commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands] )) ||
-_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent-hsm_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help config unset parent-hsm commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__console_commands] )) ||
 _manta__subcmd__help__subcmd__console_commands() {

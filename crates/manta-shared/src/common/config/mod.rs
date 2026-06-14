@@ -162,7 +162,6 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
 /// Minimal CLI config sample shown in the NotFound error.
 const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
 site = "<site_name>"
-parent_hsm_group = ""
 manta_server_url = "https://manta-server.example.com:8443"
 
 [sites.<site_name>]
@@ -174,8 +173,7 @@ root_ca_cert_file = "alps_root_cert.pem"
 /// Migration mapping shown when a legacy `config.toml` is detected.
 const CLI_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
-  copy these fields verbatim:        log, site, parent_hsm_group,
-                                     auditor, sites
+  copy these fields verbatim:        log, site, auditor, sites
   add CLI-only (now required):       manta_server_url = \"https://...\"
                                      (CLI talks only to the manta server)
   drop (no longer recognised):       sites.<X>.manta_server_url, audit_file
@@ -211,8 +209,7 @@ Migration from ~/.config/manta/config.toml:
   copy these fields verbatim:        log, auditor, sites
   add new [server] section:          listen_address, port, cert, key,
                                      console_inactivity_timeout_secs
-  drop (CLI-only):                   site, parent_hsm_group, hsm_group,
-                                     manta_server_url
+  drop (CLI-only):                   site, hsm_group, manta_server_url
   drop (no longer recognised):       sites.<X>.manta_server_url, audit_file";
 
 fn missing_config_message(
@@ -410,7 +407,6 @@ mod tests {
     let good = write_tmp_toml(
       r#"log = "info"
 site = "alps"
-parent_hsm_group = ""
 manta_server_url = "https://example:8443"
 "#,
     );

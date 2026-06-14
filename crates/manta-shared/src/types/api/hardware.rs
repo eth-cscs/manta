@@ -6,7 +6,7 @@ pub struct GetHardwareClusterParams {
   /// Cluster group name to inventory; `None` falls back to the
   /// operator default.
   pub group_name: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_hsm_group`, used when
+  /// Operator default from `cli.toml`'s `hsm_group`, used when
   /// `group_name` is absent.
   pub settings_hsm_group_name: Option<String>,
 }

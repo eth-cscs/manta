@@ -93,14 +93,6 @@ Set the default target HSM group.
 manta config set hsm compute
 ```
 
-### config set parent-hsm \<HSM_GROUP_NAME\>
-
-Set the parent (resource pool) HSM group.
-
-```
-manta config set parent-hsm nodes_free
-```
-
 ### config set site \<SITE_NAME\>
 
 Set the active site (must match a `[sites.<name>]` entry in config).
@@ -120,10 +112,6 @@ manta config set log debug
 ### config unset hsm
 
 Remove the default HSM group.
-
-### config unset parent-hsm
-
-Remove the parent HSM group.
 
 ### config unset auth
 

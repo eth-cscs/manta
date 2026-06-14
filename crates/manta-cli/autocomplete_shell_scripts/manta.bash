@@ -253,9 +253,6 @@ _manta() {
             manta__subcmd__config__subcmd__help__subcmd__set,log)
                 cmd="manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log"
                 ;;
-            manta__subcmd__config__subcmd__help__subcmd__set,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent__subcmd__hsm"
-                ;;
             manta__subcmd__config__subcmd__help__subcmd__set,site)
                 cmd="manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site"
                 ;;
@@ -265,9 +262,6 @@ _manta() {
             manta__subcmd__config__subcmd__help__subcmd__unset,hsm)
                 cmd="manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm"
                 ;;
-            manta__subcmd__config__subcmd__help__subcmd__unset,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent__subcmd__hsm"
-                ;;
             manta__subcmd__config__subcmd__set,help)
                 cmd="manta__subcmd__config__subcmd__set__subcmd__help"
                 ;;
@@ -276,9 +270,6 @@ _manta() {
                 ;;
             manta__subcmd__config__subcmd__set,log)
                 cmd="manta__subcmd__config__subcmd__set__subcmd__log"
-                ;;
-            manta__subcmd__config__subcmd__set,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__set__subcmd__parent__subcmd__hsm"
                 ;;
             manta__subcmd__config__subcmd__set,site)
                 cmd="manta__subcmd__config__subcmd__set__subcmd__site"
@@ -292,9 +283,6 @@ _manta() {
             manta__subcmd__config__subcmd__set__subcmd__help,log)
                 cmd="manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log"
                 ;;
-            manta__subcmd__config__subcmd__set__subcmd__help,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent__subcmd__hsm"
-                ;;
             manta__subcmd__config__subcmd__set__subcmd__help,site)
                 cmd="manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site"
                 ;;
@@ -307,9 +295,6 @@ _manta() {
             manta__subcmd__config__subcmd__unset,hsm)
                 cmd="manta__subcmd__config__subcmd__unset__subcmd__hsm"
                 ;;
-            manta__subcmd__config__subcmd__unset,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__unset__subcmd__parent__subcmd__hsm"
-                ;;
             manta__subcmd__config__subcmd__unset__subcmd__help,auth)
                 cmd="manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__auth"
                 ;;
@@ -318,9 +303,6 @@ _manta() {
                 ;;
             manta__subcmd__config__subcmd__unset__subcmd__help,hsm)
                 cmd="manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm"
-                ;;
-            manta__subcmd__config__subcmd__unset__subcmd__help,parent-hsm)
-                cmd="manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent__subcmd__hsm"
                 ;;
             manta__subcmd__console,help)
                 cmd="manta__subcmd__console__subcmd__help"
@@ -625,9 +607,6 @@ _manta() {
             manta__subcmd__help__subcmd__config__subcmd__set,log)
                 cmd="manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log"
                 ;;
-            manta__subcmd__help__subcmd__config__subcmd__set,parent-hsm)
-                cmd="manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent__subcmd__hsm"
-                ;;
             manta__subcmd__help__subcmd__config__subcmd__set,site)
                 cmd="manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site"
                 ;;
@@ -636,9 +615,6 @@ _manta() {
                 ;;
             manta__subcmd__help__subcmd__config__subcmd__unset,hsm)
                 cmd="manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm"
-                ;;
-            manta__subcmd__help__subcmd__config__subcmd__unset,parent-hsm)
-                cmd="manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent__subcmd__hsm"
                 ;;
             manta__subcmd__help__subcmd__console,node)
                 cmd="manta__subcmd__help__subcmd__console__subcmd__node"
@@ -2580,7 +2556,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__help__subcmd__set)
-            opts="hsm parent-hsm site log"
+            opts="hsm site log"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2608,20 +2584,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__config__subcmd__help__subcmd__set__subcmd__parent__subcmd__hsm)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2664,7 +2626,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__help__subcmd__unset)
-            opts="hsm parent-hsm auth"
+            opts="hsm auth"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2705,22 +2667,8 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__parent__subcmd__hsm)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__config__subcmd__set)
-            opts="-h --site --help hsm parent-hsm site log help"
+            opts="-h --site --help hsm site log help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2738,7 +2686,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__set__subcmd__help)
-            opts="hsm parent-hsm site log help"
+            opts="hsm site log help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2780,20 +2728,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__config__subcmd__set__subcmd__help__subcmd__parent__subcmd__hsm)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -2857,24 +2791,6 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__config__subcmd__set__subcmd__parent__subcmd__hsm)
-            opts="-h --site --help <GROUP_NAME>"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --site)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__config__subcmd__set__subcmd__site)
             opts="-h --site --help <SITE_NAME>"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
@@ -2920,7 +2836,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__unset)
-            opts="-h --site --help hsm parent-hsm auth help"
+            opts="-h --site --help hsm auth help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -2956,7 +2872,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__config__subcmd__unset__subcmd__help)
-            opts="hsm parent-hsm auth help"
+            opts="hsm auth help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3011,39 +2927,7 @@ _manta() {
             COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
             return 0
             ;;
-        manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__parent__subcmd__hsm)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
         manta__subcmd__config__subcmd__unset__subcmd__hsm)
-            opts="-h --site --help"
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                --site)
-                    COMPREPLY=($(compgen -f "${cur}"))
-                    return 0
-                    ;;
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__config__subcmd__unset__subcmd__parent__subcmd__hsm)
             opts="-h --site --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -5008,7 +4892,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__config__subcmd__set)
-            opts="hsm parent-hsm site log"
+            opts="hsm site log"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5036,20 +4920,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__config__subcmd__set__subcmd__parent__subcmd__hsm)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
@@ -5092,7 +4962,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__config__subcmd__unset)
-            opts="hsm parent-hsm auth"
+            opts="hsm auth"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 4 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -5120,20 +4990,6 @@ _manta() {
             return 0
             ;;
         manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm)
-            opts=""
-            if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
-                COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-                return 0
-            fi
-            case "${prev}" in
-                *)
-                    COMPREPLY=()
-                    ;;
-            esac
-            COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
-            return 0
-            ;;
-        manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__parent__subcmd__hsm)
             opts=""
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 5 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )

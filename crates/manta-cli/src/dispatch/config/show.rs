@@ -29,8 +29,6 @@ async fn show(
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
   let settings_hsm_group = settings.get_string("hsm_group").unwrap_or_default();
-  let settings_parent_hsm_group =
-    settings.get_string("parent_hsm_group").unwrap_or_default();
 
   let hsm_group_available_opt = if shasta_token_opt.is_some() {
     match client
@@ -67,7 +65,6 @@ async fn show(
     current_site: site_name,
     groups_available: hsm_group_available_opt,
     current_hsm: settings_hsm_group,
-    parent_hsm: settings_parent_hsm_group,
   };
 
   config_summary::print(&summary, output_opt)?;

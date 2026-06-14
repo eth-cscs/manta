@@ -11,7 +11,7 @@ pub struct GetConfigurationParams {
   pub pattern: Option<String>,
   /// Group whose associated configurations should be returned.
   pub group_name: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_hsm_group`, used
+  /// Operator default from `cli.toml`'s `hsm_group`, used
   /// as a fallback for `group_name`.
   pub settings_hsm_group_name: Option<String>,
   /// Lower-bound timestamp (configurations last updated at or after

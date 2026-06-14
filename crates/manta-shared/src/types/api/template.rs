@@ -55,7 +55,7 @@ pub struct GetTemplateParams {
   pub name: Option<String>,
   /// Group whose associated templates should be returned.
   pub group_name: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_hsm_group`, used
+  /// Operator default from `cli.toml`'s `hsm_group`, used
   /// as a fallback for `group_name`.
   pub settings_group_name: Option<String>,
   /// Cap on the number of templates returned (most recent first).

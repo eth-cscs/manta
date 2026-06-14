@@ -10,11 +10,6 @@ pub fn subcommand_config() -> Command {
     // ID preserved as "HSM_GROUP_NAME" for handler compatibility
     .arg(arg!(<HSM_GROUP_NAME> "Node group name").value_name("GROUP_NAME"));
 
-  let subcommand_config_set_parent_hsm = Command::new("parent-hsm")
-    .about("Set the parent node group")
-    // ID preserved as "HSM_GROUP_NAME" for handler compatibility
-    .arg(arg!(<HSM_GROUP_NAME> "Node group name").value_name("GROUP_NAME"));
-
   let subcommand_config_set_site = Command::new("site")
     .about("Set the active site")
     .arg(arg!(<SITE_NAME> "Site name"));
@@ -28,9 +23,6 @@ pub fn subcommand_config() -> Command {
 
   let subcommand_config_unset_hsm =
     Command::new("hsm").about("Clear the active node group");
-
-  let subcommand_config_unset_parent_hsm =
-    Command::new("parent-hsm").about("Clear the parent node group");
 
   let subcommand_config_unset_auth =
     Command::new("auth").about("Clear the cached authentication token");
@@ -48,7 +40,6 @@ pub fn subcommand_config() -> Command {
         .arg_required_else_help(true)
         .about("Set a configuration value")
         .subcommand(subcommand_config_set_hsm)
-        .subcommand(subcommand_config_set_parent_hsm)
         .subcommand(subcommand_config_set_site)
         .subcommand(subcommand_config_set_log),
     )
@@ -57,7 +48,6 @@ pub fn subcommand_config() -> Command {
         .arg_required_else_help(true)
         .about("Clear a configuration value")
         .subcommand(subcommand_config_unset_hsm)
-        .subcommand(subcommand_config_unset_parent_hsm)
         .subcommand(subcommand_config_unset_auth),
     )
 }

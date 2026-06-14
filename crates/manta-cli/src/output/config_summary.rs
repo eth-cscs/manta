@@ -28,8 +28,6 @@ pub struct ConfigSummary {
   pub groups_available: Option<Vec<String>>,
   /// Active default HSM group from `hsm_group = "..."`.
   pub current_hsm: String,
-  /// Active parent HSM group from `parent_hsm_group = "..."`.
-  pub parent_hsm: String,
 }
 
 /// Render `summary` to stdout. Plain text by default (one line per
@@ -53,7 +51,6 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
     );
     println!("Groups available: {groups}");
     println!("Current HSM: {}", summary.current_hsm);
-    println!("Parent HSM: {}", summary.parent_hsm);
   }
   Ok(())
 }
@@ -71,7 +68,6 @@ mod tests {
       current_site: "alps".to_string(),
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
       current_hsm: "compute".to_string(),
-      parent_hsm: "nodes_free".to_string(),
     }
   }
 
@@ -96,7 +92,6 @@ mod tests {
     assert_eq!(v["current_site"], "alps");
     assert_eq!(v["groups_available"][0], "compute");
     assert_eq!(v["current_hsm"], "compute");
-    assert_eq!(v["parent_hsm"], "nodes_free");
   }
 
   #[test]

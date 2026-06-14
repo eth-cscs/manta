@@ -76,7 +76,7 @@ the migration mapping when first run with no `cli.toml` present. The
 mapping is:
 
 ```
-copy these fields verbatim:        log, site, parent_hsm_group, auditor
+copy these fields verbatim:        log, site, auditor
 add CLI-only (now required):       manta_server_url = "https://..."
                                    (CLI talks only to the manta server)
 drop (no longer recognised):       audit_file (audit emission is
@@ -92,7 +92,6 @@ Minimal v2 `cli.toml`:
 ```toml
 log = "info"
 site = "alps"
-parent_hsm_group = ""
 manta_server_url = "https://manta-server.example.com:8443"
 ```
 
@@ -286,8 +285,7 @@ host, the migration mapping is:
 copy these fields verbatim:        log, auditor, sites
 add new [server] section:          listen_address, port, cert, key,
                                    console_inactivity_timeout_secs
-drop (CLI-only):                   site, parent_hsm_group, hsm_group,
-                                   manta_server_url
+drop (CLI-only):                   site, hsm_group, manta_server_url
 drop (no longer recognised):       audit_file (audit emission is
                                    Kafka-only via [auditor.kafka])
 drop (no longer recognised):       sites.<X>.manta_server_url
@@ -514,6 +512,25 @@ manta get group-hardware gpu-cluster -o details
 # after
 manta get hardware group gpu-cluster -o details
 ```
+
+### 5.7. `parent_hsm_group` removed from `cli.toml`
+
+The `parent_hsm_group = "..."` key in `~/.config/manta/cli.toml`
+never fed any backend call. It was read at startup, shown by
+`manta config show`, and writable via
+`manta config set parent-hsm` / `manta config unset parent-hsm`,
+but no command consulted it as a default — every fallback path
+already used `hsm_group`. Operators upgrading from an earlier
+v2 beta should:
+
+- Remove the `parent_hsm_group = "..."` line from `cli.toml`
+  (a leftover line is silently ignored, but the field is no
+  longer parsed into `CliConfiguration`).
+- Stop calling `manta config set parent-hsm <NAME>` and
+  `manta config unset parent-hsm` — both subcommands are gone
+  and now error with clap's standard "unrecognised subcommand".
+- `manta config show` no longer prints a `Parent HSM: …` line.
+  Scripts scraping that line need to drop it.
 
 ---
 

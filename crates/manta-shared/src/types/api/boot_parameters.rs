@@ -39,7 +39,7 @@ pub struct GetBootParametersParams {
   /// Hosts expression (xnames, NIDs, or hostlist notation); mutually
   /// exclusive with `group_name`.
   pub host_expression: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_hsm_group`, used
+  /// Operator default from `cli.toml`'s `hsm_group`, used
   /// when neither `group_name` nor `host_expression` is supplied.
   pub settings_group_name: Option<String>,
 }

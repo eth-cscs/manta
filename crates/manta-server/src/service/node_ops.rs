@@ -309,7 +309,7 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 ///    [`crate::service::authorization::validate_user_group_access`],
 ///    then expanded to member xnames.
 /// 3. `settings_group_name_opt` — the group configured in
-///    `cli.toml`'s `parent_hsm_group`; same treatment as (2).
+///    `cli.toml`'s `hsm_group`; same treatment as (2).
 ///
 /// Returns a sorted, deduplicated `Vec<String>` of xnames.
 pub async fn resolve_target_nodes(

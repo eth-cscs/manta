@@ -21,9 +21,6 @@ pub struct CliConfiguration {
   /// The server validates that the name matches one of its configured
   /// sites; the CLI does no local validation.
   pub site: String,
-  /// Default HSM group threaded into commands that accept
-  /// `--hsm-group` when none is supplied on the command line.
-  pub parent_hsm_group: String,
   /// URL of the manta HTTP server this CLI talks to. Required — the CLI
   /// no longer calls CSM/OCHAMI backends directly; every operation
   /// (including auth) is forwarded through `manta-server`.
@@ -52,7 +49,6 @@ mod tests {
     let cfg = CliConfiguration {
       log: "info".to_string(),
       site: "alps".to_string(),
-      parent_hsm_group: "nodes_free".to_string(),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
       request_timeout_secs: None,
@@ -60,7 +56,6 @@ mod tests {
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
     assert_eq!(parsed.site, "alps");
-    assert_eq!(parsed.parent_hsm_group, "nodes_free");
     assert_eq!(parsed.manta_server_url, "https://manta-server.cscs.ch:8443");
     assert_eq!(
       parsed.socks5_proxy.as_deref(),
@@ -73,7 +68,6 @@ mod tests {
     let toml_str = r#"
       log = "info"
       site = "alps"
-      parent_hsm_group = ""
       manta_server_url = "https://manta-server.cscs.ch:8443"
     "#;
     let parsed: CliConfiguration = toml::from_str(toml_str).unwrap();
@@ -85,7 +79,6 @@ mod tests {
     let bad_toml = r#"
       log = "info"
       site = "alps"
-      parent_hsm_group = ""
       # missing manta_server_url
     "#;
     let result = toml::from_str::<CliConfiguration>(bad_toml);

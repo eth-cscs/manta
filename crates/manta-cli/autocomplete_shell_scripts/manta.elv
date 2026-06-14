@@ -61,17 +61,11 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand hsm 'Set the active node group'
-            cand parent-hsm 'Set the parent node group'
             cand site 'Set the active site'
             cand log 'Set the log verbosity level'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;set;hsm'= {
-            cand --site 'Override the active site for this invocation'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;config;set;parent-hsm'= {
             cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
@@ -88,14 +82,11 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;set;help'= {
             cand hsm 'Set the active node group'
-            cand parent-hsm 'Set the parent node group'
             cand site 'Set the active site'
             cand log 'Set the log verbosity level'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;set;help;hsm'= {
-        }
-        &'manta;config;set;help;parent-hsm'= {
         }
         &'manta;config;set;help;site'= {
         }
@@ -108,16 +99,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
             cand hsm 'Clear the active node group'
-            cand parent-hsm 'Clear the parent node group'
             cand auth 'Clear the cached authentication token'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;unset;hsm'= {
-            cand --site 'Override the active site for this invocation'
-            cand -h 'Print help'
-            cand --help 'Print help'
-        }
-        &'manta;config;unset;parent-hsm'= {
             cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
             cand --help 'Print help'
@@ -129,13 +114,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;unset;help'= {
             cand hsm 'Clear the active node group'
-            cand parent-hsm 'Clear the parent node group'
             cand auth 'Clear the cached authentication token'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;unset;help;hsm'= {
-        }
-        &'manta;config;unset;help;parent-hsm'= {
         }
         &'manta;config;unset;help;auth'= {
         }
@@ -151,13 +133,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;help;set'= {
             cand hsm 'Set the active node group'
-            cand parent-hsm 'Set the parent node group'
             cand site 'Set the active site'
             cand log 'Set the log verbosity level'
         }
         &'manta;config;help;set;hsm'= {
-        }
-        &'manta;config;help;set;parent-hsm'= {
         }
         &'manta;config;help;set;site'= {
         }
@@ -165,12 +144,9 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;config;help;unset'= {
             cand hsm 'Clear the active node group'
-            cand parent-hsm 'Clear the parent node group'
             cand auth 'Clear the cached authentication token'
         }
         &'manta;config;help;unset;hsm'= {
-        }
-        &'manta;config;help;unset;parent-hsm'= {
         }
         &'manta;config;help;unset;auth'= {
         }
@@ -1527,13 +1503,10 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;config;set'= {
             cand hsm 'Set the active node group'
-            cand parent-hsm 'Set the parent node group'
             cand site 'Set the active site'
             cand log 'Set the log verbosity level'
         }
         &'manta;help;config;set;hsm'= {
-        }
-        &'manta;help;config;set;parent-hsm'= {
         }
         &'manta;help;config;set;site'= {
         }
@@ -1541,12 +1514,9 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help;config;unset'= {
             cand hsm 'Clear the active node group'
-            cand parent-hsm 'Clear the parent node group'
             cand auth 'Clear the cached authentication token'
         }
         &'manta;help;config;unset;hsm'= {
-        }
-        &'manta;help;config;unset;parent-hsm'= {
         }
         &'manta;help;config;unset;auth'= {
         }
