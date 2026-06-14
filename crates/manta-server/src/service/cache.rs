@@ -106,14 +106,14 @@ pub fn build_cache(
     })
     .collect();
 
-  // Primary: image_created descending (newest first). Secondary: image_id
+  // Primary: image_created ascending (oldest first). Secondary: image_id
   // ascending for a deterministic tie-break (and as the only ordering when
   // created is missing on both sides). Images without a created timestamp
   // sink to the bottom.
   rows.sort_by(|a, b| {
     use std::cmp::Ordering;
     match (a.image_created.as_ref(), b.image_created.as_ref()) {
-      (Some(ac), Some(bc)) => bc.cmp(ac).then_with(|| a.image_id.cmp(&b.image_id)),
+      (Some(ac), Some(bc)) => ac.cmp(bc).then_with(|| a.image_id.cmp(&b.image_id)),
       (Some(_), None) => Ordering::Less,
       (None, Some(_)) => Ordering::Greater,
       (None, None) => a.image_id.cmp(&b.image_id),
@@ -462,11 +462,11 @@ mod tests {
     assert_eq!(ids, vec!["img-a", "img-m", "img-z"]);
   }
 
-  // Primary sort: image_created descending (newest first). Images without
+  // Primary sort: image_created ascending (oldest first). Images without
   // a created timestamp sink to the bottom; ties on created (or both None)
   // break by image_id ascending.
   #[test]
-  fn rows_are_sorted_by_image_created_descending() {
+  fn rows_are_sorted_by_image_created_ascending() {
     let rows = build_cache(
       vec![],
       vec![],
@@ -484,9 +484,9 @@ mod tests {
     assert_eq!(
       ids,
       vec![
-        "img-newest",     // 2026-06-02
-        "img-middle",     // 2026-06-01
         "img-old",        // 2024-01-01
+        "img-middle",     // 2026-06-01
+        "img-newest",     // 2026-06-02
         "img-undated-a",  // None, id asc tie-break
         "img-undated-z",  // None, id asc tie-break
       ]
