@@ -42,4 +42,9 @@ pub struct BackendSummary {
   /// Echo of `image_id` whenever `bos_sessiontemplate` is `Some(_)`.
   /// Carried explicitly so the row is self-describing.
   pub bos_sessiontemplate_boot_image: Option<String>,
+  /// `true` if no BSS boot-parameter record references this image as
+  /// its boot image. An image referenced by BSS is currently booting
+  /// (or scheduled to boot) at least one node, so deleting it would
+  /// break that node's next boot.
+  pub safe_to_delete: bool,
 }

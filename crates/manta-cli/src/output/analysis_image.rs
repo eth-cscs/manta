@@ -30,6 +30,7 @@ fn print_table(rows: &[BackendSummary]) {
     "Producing session",
     "Session configuration",
     "BOS template",
+    "Safe to delete",
   ]);
   for row in rows {
     table.add_row(vec![
@@ -40,6 +41,7 @@ fn print_table(rows: &[BackendSummary]) {
       row.session_name.as_deref().unwrap_or("-"),
       row.session_configuration_name.as_deref().unwrap_or("-"),
       row.bos_sessiontemplate.as_deref().unwrap_or("-"),
+      if row.safe_to_delete { "yes" } else { "no" },
     ]);
   }
   println!("{table}");

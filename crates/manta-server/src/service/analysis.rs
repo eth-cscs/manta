@@ -28,6 +28,7 @@ pub use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 pub fn build_cache(
   mut sessions: Vec<CfsSessionGetResponse>,
   mut templates: Vec<BosSessionTemplate>,
+  boot_params: Vec<BootParameters>,
   images: Vec<Image>,
 ) -> Vec<BackendSummary> {
   // Stable ordering up front so the "first matching session/template
@@ -39,6 +40,15 @@ pub fn build_cache(
       .unwrap_or("")
       .cmp(b.name.as_deref().unwrap_or(""))
   });
+
+  // Set of image ids that BSS boot-parameter records currently point
+  // at. Used to compute the per-row `safe_to_delete` verdict: an image
+  // referenced by BSS is the boot image for at least one node, so
+  // deleting it would break that node's next boot.
+  let bss_boot_image_ids: HashSet<String> = boot_params
+    .iter()
+    .filter_map(BootParameters::try_get_boot_image_id)
+    .collect();
 
   // Reverse index: image_id -> (first session that produced it, that
   // session's configuration name).
@@ -80,6 +90,7 @@ pub fn build_cache(
       let bos_sessiontemplate = template_by_image.get(&id).cloned();
       let bos_sessiontemplate_boot_image =
         bos_sessiontemplate.as_ref().map(|_| id.clone());
+      let safe_to_delete = !bss_boot_image_ids.contains(&id);
       Some(BackendSummary {
         image_id: id,
         name: img.name,
@@ -90,6 +101,7 @@ pub fn build_cache(
         session_configuration_name,
         bos_sessiontemplate,
         bos_sessiontemplate_boot_image,
+        safe_to_delete,
       })
     })
     .collect();
@@ -131,15 +143,17 @@ fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// Fan the three service-layer fetchers out concurrently, then run
-/// the pure linker. Each fetcher applies its own group-access scope,
-/// so the cache cannot return rows the caller couldn't list via
-/// the per-resource endpoints.
+/// Sequence the four upstream fetches, then run the pure linker. We
+/// sequence (rather than `try_join!`) because adding the fourth
+/// upstream call — `get_all_bootparameters`, which is the heaviest
+/// of the four — to a concurrent fan-out is the same shape that
+/// tripped `get_configuration_analysis` with upstream connection
+/// resets. Wall-clock is worse than concurrent, but the call returns.
 pub async fn get_image_analysis(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<BackendSummary>, Error> {
-  tracing::info!("Building backend cache");
+  tracing::info!("Building image analysis");
 
   let sessions_params = crate::service::session::GetSessionParams {
     group: None,
@@ -163,13 +177,17 @@ pub async fn get_image_analysis(
     limit: None,
   };
 
-  let (sessions, templates, images) = tokio::try_join!(
-    crate::service::session::get_sessions(infra, token, &sessions_params),
-    crate::service::template::get_templates(infra, token, &templates_params),
-    crate::service::image::get_images(infra, token, &images_params),
-  )?;
+  let sessions =
+    crate::service::session::get_sessions(infra, token, &sessions_params)
+      .await?;
+  let templates =
+    crate::service::template::get_templates(infra, token, &templates_params)
+      .await?;
+  let boot_params = infra.backend.get_all_bootparameters(token).await?;
+  let images =
+    crate::service::image::get_images(infra, token, &images_params).await?;
 
-  Ok(build_cache(sessions, templates, images))
+  Ok(build_cache(sessions, templates, boot_params, images))
 }
 
 /// Pure linker for the configuration-deletion-safety analysis.
@@ -436,6 +454,7 @@ mod tests {
     let rows = build_cache(
       vec![],
       vec![],
+      vec![],
       vec![
         image("img-1", "ncn-1.6-base", Some("ncn-1.6"), None),
         image("img-2", "compute-1.5", Some("compute-1.5"), None),
@@ -455,6 +474,7 @@ mod tests {
     let rows = build_cache(
       vec![session_producing("session-a", Some("ncn-1.6"), &["img-1"])],
       vec![],
+      vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
     );
     let row = &rows[0];
@@ -473,6 +493,7 @@ mod tests {
         session_producing("session-a", Some("ncn-1.6"), &["img-1"]),
       ],
       vec![],
+      vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
     );
     assert_eq!(rows[0].session_name.as_deref(), Some("session-a"));
@@ -484,6 +505,7 @@ mod tests {
     let rows = build_cache(
       vec![],
       vec![template_booting("tmpl-x", &["img-1"])],
+      vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
     );
     let row = &rows[0];
@@ -500,6 +522,7 @@ mod tests {
         template_booting("tmpl-z", &["img-1"]),
         template_booting("tmpl-a", &["img-1"]),
       ],
+      vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
     );
     assert_eq!(rows[0].bos_sessiontemplate.as_deref(), Some("tmpl-a"));
@@ -508,8 +531,12 @@ mod tests {
   // Orphan images still get a row.
   #[test]
   fn orphan_images_get_a_row_with_optional_columns_none() {
-    let rows =
-      build_cache(vec![], vec![], vec![image("img-1", "orphan", None, None)]);
+    let rows = build_cache(
+      vec![],
+      vec![],
+      vec![],
+      vec![image("img-1", "orphan", None, None)],
+    );
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.image_id, "img-1");
@@ -520,6 +547,8 @@ mod tests {
     assert!(row.session_configuration_name.is_none());
     assert!(row.bos_sessiontemplate.is_none());
     assert!(row.bos_sessiontemplate_boot_image.is_none());
+    // Orphan = nothing references it, including BSS → safe to delete.
+    assert!(row.safe_to_delete);
   }
 
   // Sessions / templates that name nonexistent images: dropped.
@@ -528,6 +557,7 @@ mod tests {
     let rows = build_cache(
       vec![session_producing("session-x", None, &["nonexistent"])],
       vec![template_booting("tmpl-x", &["nonexistent"])],
+      vec![],
       vec![],
     );
     assert!(rows.is_empty());
@@ -538,6 +568,7 @@ mod tests {
   #[test]
   fn rows_with_no_created_timestamp_fall_back_to_image_id_asc() {
     let rows = build_cache(
+      vec![],
       vec![],
       vec![],
       vec![
@@ -556,6 +587,7 @@ mod tests {
   #[test]
   fn rows_are_sorted_by_image_created_ascending() {
     let rows = build_cache(
+      vec![],
       vec![],
       vec![],
       vec![
@@ -581,8 +613,27 @@ mod tests {
 
   #[test]
   fn empty_input_yields_empty_cache() {
-    let rows = build_cache(vec![], vec![], vec![]);
+    let rows = build_cache(vec![], vec![], vec![], vec![]);
     assert!(rows.is_empty());
+  }
+
+  // Image referenced as the boot image of a BSS record is unsafe to
+  // delete; the unreferenced sibling stays safe.
+  #[test]
+  fn bss_referenced_image_is_unsafe_to_delete() {
+    let rows = build_cache(
+      vec![],
+      vec![],
+      vec![boot_param_for_image("img-booted")],
+      vec![
+        image("img-booted", "in-use", None, None),
+        image("img-orphan", "spare", None, None),
+      ],
+    );
+    let booted = rows.iter().find(|r| r.image_id == "img-booted").unwrap();
+    let orphan = rows.iter().find(|r| r.image_id == "img-orphan").unwrap();
+    assert!(!booted.safe_to_delete);
+    assert!(orphan.safe_to_delete);
   }
 
   // ------------------------------------------------------------------

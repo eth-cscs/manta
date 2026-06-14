@@ -4755,7 +4755,8 @@
         "description": "One row of the backend-data summary, anchored on an IMS image.\n\nEvery IMS image visible to the caller produces exactly one row.\nThe row's `image_id` and `name` are always populated; the rest are\n`Option<String>` and are filled in only when the corresponding\nrelation resolves.",
         "required": [
           "image_id",
-          "name"
+          "name",
+          "safe_to_delete"
         ],
         "properties": {
           "bos_sessiontemplate": {
@@ -4793,6 +4794,10 @@
           "name": {
             "type": "string",
             "description": "IMS image name (`Image.name`)."
+          },
+          "safe_to_delete": {
+            "type": "boolean",
+            "description": "`true` if no BSS boot-parameter record references this image as\nits boot image. An image referenced by BSS is currently booting\n(or scheduled to boot) at least one node, so deleting it would\nbreak that node's next boot."
           },
           "session_configuration_name": {
             "type": [
