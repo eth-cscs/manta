@@ -25,3 +25,6 @@ lcov.info
 cli.toml.example
 server.toml.example
 /.cargo/config.toml
+librust_out.rlib
+doc/
+.superpowers/
