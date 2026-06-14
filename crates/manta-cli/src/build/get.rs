@@ -89,6 +89,16 @@ pub fn subcommand_get_analysis_configuration() -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
+    .arg(
+      arg!(--"only-safe-to-delete" "Show only configurations that are safe to delete"),
+    )
+    .arg(
+      arg!(--"only-unsafe-to-delete" "Show only configurations that are NOT safe to delete (in use)"),
+    )
+    .group(ArgGroup::new("safety_filter").args([
+      "only-safe-to-delete",
+      "only-unsafe-to-delete",
+    ]))
 }
 
 pub fn subcommand_get_cfs_configuration() -> Command {

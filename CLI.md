@@ -298,10 +298,13 @@ List every CFS configuration sorted by `last_updated` (oldest first), with a `sa
 | Flag | Type | Description |
 |------|------|-------------|
 | `-o/--output` | string | `table` (default) or `json`. |
+| `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. |
+| `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (configurations currently in use). |
 
 ```
 manta get analysis configuration
-manta get analysis configuration -o json | jq '.[] | select(.safe_to_delete) | .name'
+manta get analysis configuration --only-safe-to-delete
+manta get analysis configuration --only-unsafe-to-delete -o json | jq '.[].name'
 ```
 
 Calls `GET /api/v1/analysis/configurations`.

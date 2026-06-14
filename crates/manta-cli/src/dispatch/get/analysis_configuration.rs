@@ -15,6 +15,8 @@ pub async fn exec(
   let output_opt = cli_args
     .get_one::<String>("output")
     .map_or("table", String::as_str);
+  let only_safe = cli_args.get_flag("only-safe-to-delete");
+  let only_unsafe = cli_args.get_flag("only-unsafe-to-delete");
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let rows = client
@@ -22,6 +24,13 @@ pub async fn exec(
     .get_configuration_analysis(client.site_name())
     .await
     .into_anyhow()?;
+
+  let rows: Vec<_> = rows
+    .into_iter()
+    .filter(|r| {
+      (!only_safe || r.safe_to_delete) && (!only_unsafe || !r.safe_to_delete)
+    })
+    .collect();
 
   output::analysis_configuration::print(&rows, output_opt)?;
   Ok(())
