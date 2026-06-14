@@ -260,6 +260,14 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     BackendError::AuthenticationTokenNotFound(_)
     | BackendError::JwtMalformed(_) => StatusCode::UNAUTHORIZED,
     BackendError::InsufficientResources(_) => StatusCode::UNPROCESSABLE_ENTITY,
+    // Backend HTTP errors carry the originating status code (CSM or
+    // ochami). Propagate it verbatim when it's a valid HTTP status, so
+    // a 404 from the backend surfaces as a 404 from manta-server (not a
+    // generic 500). Fall back to 502 Bad Gateway if the embedded code
+    // is outside the HTTP status range — that's the canonical "upstream
+    // returned something nonsensical" signal.
+    BackendError::CsmError { status, .. } => StatusCode::from_u16(*status)
+      .unwrap_or(StatusCode::BAD_GATEWAY),
     _ => StatusCode::INTERNAL_SERVER_ERROR,
   };
   let chain = format_with_causes(&e);
