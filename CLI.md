@@ -276,7 +276,7 @@ List IMS images, sorted by creation time.
 
 > Images built by `manta apply sat-file` carry CFS provenance under their `metadata` map: `manta.image_session.base` (source image id), `manta.image_session.groups` (JSON-encoded HSM group names), `manta.image_session.configuration` (CFS configuration name). See GUIDE.md §3.
 
-### get summary
+### get cache
 
 Aggregate view of every CFS configuration, CFS session, BOS session template, and IMS image visible to the active site, projected as one row per IMS image. Each row carries the linked identifiers — the configuration the image was built with, the CFS session that produced it (if any), that session's own configuration, and the BOS session template that boots from it (if any). Orphan images (no producing session, no booting template) still appear with `-` in the empty columns.
 
@@ -285,8 +285,8 @@ Aggregate view of every CFS configuration, CFS session, BOS session template, an
 | `-o/--output` | string | `table` (default) or `json`. JSON returns the full schema including the `null` columns and the `session_result_id` / `bos_sessiontemplate_boot_image` echo fields. |
 
 ```
-manta get summary
-manta get summary -o json | jq '.[] | select(.bos_sessiontemplate != null)'
+manta get cache
+manta get cache -o json | jq '.[] | select(.bos_sessiontemplate != null)'
 ```
 
 If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/summary`.

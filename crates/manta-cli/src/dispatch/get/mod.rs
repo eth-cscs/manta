@@ -11,7 +11,7 @@ pub mod kernel_parameters;
 pub mod nodes;
 pub mod redfish_endpoints;
 pub mod sessions;
-pub mod summary;
+pub mod cache;
 pub mod templates;
 
 use crate::common::app_context::AppContext;
@@ -21,7 +21,7 @@ use clap::ArgMatches;
 
 /// Dispatch `manta get` subcommands (groups, hardware [nodes, group],
 /// sessions, configurations, templates, group-nodes, nodes, images,
-/// summary, boot-parameters, kernel-parameters, redfish-endpoints).
+/// cache, boot-parameters, kernel-parameters, redfish-endpoints).
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -41,7 +41,7 @@ pub async fn handle_get(
       configurations::exec(ctx, &token, m).await?;
     }
     Some(("sessions", m)) => sessions::exec(ctx, &token, m).await?,
-    Some(("summary", m)) => summary::exec(ctx, &token, m).await?,
+    Some(("cache", m)) => cache::exec(ctx, &token, m).await?,
     Some(("templates", m)) => templates::exec(ctx, &token, m).await?,
     Some(("nodes", m)) => nodes::exec(ctx, &token, m).await?,
     Some(("images", m)) => images::exec(ctx, &token, m).await?,

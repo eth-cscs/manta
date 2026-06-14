@@ -1,4 +1,4 @@
-//! Implements the `manta get summary` command.
+//! Implements the `manta get cache` command.
 
 use anyhow::Error;
 
@@ -6,7 +6,7 @@ use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 
-/// CLI adapter for `manta get summary`.
+/// CLI adapter for `manta get cache`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -23,6 +23,6 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  output::summary::print(&rows, output_opt)?;
+  output::cache::print(&rows, output_opt)?;
   Ok(())
 }
