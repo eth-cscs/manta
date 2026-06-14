@@ -22,20 +22,48 @@
 //! owned by upstream crates) live in [`super::dto`], which is kept
 //! separate because it serves a different concern: types we don't own.
 
+/// Boot-parameter request/response bodies (`/api/v1/boot-config`,
+/// `/api/v1/boot-parameters`).
 pub mod boot_parameters;
+/// CLI-built params for `GET /clusters`.
 pub mod cluster;
+/// CLI-built params for `GET /configurations`.
 pub mod configuration;
+/// HSM group request/response bodies (`/api/v1/groups`,
+/// `/api/v1/groups/{name}/members`).
 pub mod group;
+/// CLI-built params for `GET /groups/hardware` and the
+/// `/hardware-nodes-list` family.
 pub mod hardware;
+/// Wire types for the `POST/DELETE /api/v1/hardware-clusters/{target}/*`
+/// endpoints.
 pub mod hw_cluster;
+/// CLI-built params for `GET /images`.
 pub mod image;
+/// Kernel-parameter request/response bodies
+/// (`/api/v1/kernel-parameters/*`). The internal `KernelParamOperation`
+/// enum is server-only and lives in `service::kernel_parameters`.
 pub mod kernel_parameters;
+/// Wire types for the `POST /api/v1/migrate/*` endpoints.
 pub mod migrate;
+/// Node request/response bodies (`/api/v1/nodes`).
 pub mod node;
+/// Power request/response bodies (`/api/v1/power`).
 pub mod power;
+/// Shared `IntoParams` query-string structs for every non-trivial GET
+/// and DELETE endpoint.
 pub mod queries;
+/// CLI-built params for `GET/POST/PUT /redfish-endpoints`.
 pub mod redfish_endpoints;
+/// Tiny response shapes (`{ "created": true }`, `{ "id": "..." }`) so
+/// the OpenAPI spec carries real types instead of `serde_json::Value`.
 pub mod responses;
+/// SAT-file element-apply request/response bodies (`POST
+/// /api/v1/sat-file/*`) and CLI-built params for the whole-file
+/// pass-through.
 pub mod sat_file;
+/// CFS session request/response bodies (`/api/v1/sessions`).
 pub mod session;
+/// BOS session-template request/response bodies (`/api/v1/templates`,
+/// `/api/v1/templates/{name}/sessions`).
 pub mod template;

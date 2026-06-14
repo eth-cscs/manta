@@ -120,7 +120,8 @@ pub fn get_xname_from_xname_hostlist(
 /// of xnames.
 ///
 /// Combines the two-step pattern of
-/// [`InfraContext::get_node_metadata_available`] followed by
+/// [`ComponentTrait::get_node_metadata_available`] (called on the
+/// backend held in [`InfraContext`]) followed by
 /// [`from_hosts_expression_to_xname_vec`] that recurs in many
 /// command files.
 pub async fn from_user_hosts_expression_to_xname_vec(

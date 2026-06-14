@@ -224,9 +224,10 @@ impl PowerAction {
 
   /// Lowercase string form used by the server's `POST /power`
   /// `action` field. Distinct from [`Self::to_wire`] which produces
-  /// the typed [`crate::http_client::PowerAction`] enum for typed
-  /// request bodies; this `&str` variant is used by the polling
-  /// status renderer where a typed enum would be needlessly heavy.
+  /// the typed [`crate::openapi_client::types::PowerAction`] enum
+  /// for typed request bodies; this `&str` variant is used by the
+  /// polling status renderer where a typed enum would be needlessly
+  /// heavy.
   fn wire(self) -> &'static str {
     match self {
       PowerAction::On => "on",
