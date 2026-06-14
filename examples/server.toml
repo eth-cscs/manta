@@ -1,0 +1,96 @@
+# Example `server.toml` for `manta-server`.
+#
+# Copy this file to the platform-native config location:
+#   macOS:   ~/Library/Application Support/local.cscs.manta/server.toml
+#   Linux:   ~/.config/manta/server.toml
+#   Windows: %APPDATA%\cscs\manta\config\server.toml
+#
+# Override the path with the `MANTA_SERVER_CONFIG` env var.
+
+log = "info"
+
+[server]
+listen_address = "0.0.0.0"
+port           = 8443
+cert           = "/etc/manta/tls/server.crt"
+key            = "/etc/manta/tls/server.key"
+
+# Timeout knobs (seconds). Values shown are the built-in defaults —
+# delete a line to fall back to the default, or change the value to
+# override.
+console_inactivity_timeout_secs = 1800     # idle WebSocket console drop
+auth_rate_limit_per_minute      = 60       # per source IP on /auth/*; omit to disable
+request_timeout_secs            = 300      # global per-route timeout; returns 408 on expiry
+shutdown_grace_period_secs      = 30       # drain window after SIGTERM / Ctrl+C
+
+# allow_http = false                       # opt in to plain-HTTP listen when no cert/key is set
+                                           #   (e.g. TLS terminated upstream). Default fail-closed.
+
+# Filesystem root for POST /migrate/{backup,restore}. Required for
+# those endpoints to work — the server will reject migrate requests
+# with 400 while this is unset. Must be an absolute path to an
+# existing directory.
+# migrate_backup_root = "/var/lib/manta/migrate"
+
+
+# ---------------------------------------------------------------
+# Sites
+# ---------------------------------------------------------------
+# One `[sites.<name>]` block per cluster. The CLI's `site = "..."`
+# (or `--site` flag) picks which one a request targets via the
+# `X-Manta-Site` request header.
+
+[sites.alps]
+backend           = "csm"
+shasta_base_url   = "https://api.example.com/apis"
+root_ca_cert_file = "alps_root_cert.pem"
+# socks5_proxy    = "socks5h://127.0.0.1:1080"   # optional per-site SOCKS5
+
+[sites.alps.k8s]
+api_url = "https://10.0.0.10:6443"
+
+# k8s + Gitea credentials come from one of two auth blocks:
+#
+# Vault (recommended — credentials fetched at request time):
+[sites.alps.k8s.authentication.vault]
+base_url = "https://vault.example.com"
+#
+# Native (credentials in this file; alternative to Vault):
+# [sites.alps.k8s.authentication.Native]
+# certificate_authority_data = "<base64>"
+# client_certificate_data    = "<base64>"
+# client_key_data            = "<base64>"
+
+
+# A second CSM-backed site looks identical with its own URLs and certs.
+# [sites.prealps]
+# backend           = "csm"
+# shasta_base_url   = "https://api.prealps.example.com/apis"
+# root_ca_cert_file = "prealps_root_cert.pem"
+#
+# [sites.prealps.k8s]
+# api_url = "https://10.0.0.20:6443"
+# [sites.prealps.k8s.authentication.vault]
+# base_url = "https://vault.example.com"
+
+
+# OpenCHAMI-backed sites are simpler — no k8s/Vault block, no
+# manta-server-side credential fetching.
+# [sites.ochami-dev]
+# backend           = "ochami"
+# shasta_base_url   = "https://ochami.example.com:8443"
+# root_ca_cert_file = "ochami_root_cert.pem"
+
+
+# ---------------------------------------------------------------
+# Audit emission (optional)
+# ---------------------------------------------------------------
+# When the `[auditor.kafka]` block is present, the server publishes
+# one event to the named topic per `/api/v1/auth/*` call. Absent =
+# audit emission disabled.
+
+# [auditor.kafka]
+# brokers            = ["kafka.example.com:9092"]
+# topic              = "manta-audit"
+# message_timeout_ms = 5000    # librdkafka per-message delivery deadline; default 5000
+# delivery_wait_secs = 0       # how long produce_message blocks; 0 = fire-and-forget (default)

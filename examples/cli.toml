@@ -1,0 +1,36 @@
+# Example `cli.toml` for `manta-cli`.
+#
+# Copy this file to the platform-native config location:
+#   macOS:   ~/Library/Application Support/local.cscs.manta/cli.toml
+#   Linux:   ~/.config/manta/cli.toml
+#   Windows: %APPDATA%\cscs\manta\config\cli.toml
+#
+# Override the path with the `MANTA_CLI_CONFIG` env var.
+
+log = "info"
+site = "alps"
+manta_server_url = "https://manta-server.example.com:8443"
+
+# Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
+# proxying for the *backend* traffic (CSM / OCHAMI) is the server's
+# concern and lives in server.toml.
+# socks5_proxy = "socks5h://127.0.0.1:1080"
+
+# Timeout knobs. Values shown are the built-in defaults — delete a
+# line to fall back to the default, or change the value to override.
+#
+# Per-request HTTP timeout reaching `manta_server_url` (seconds).
+# Default 300 caps REST calls. Streams (SSE log tail, WS console)
+# are unlimited when this is absent; setting it caps streams too.
+request_timeout_secs             = 300
+#
+# `manta power on/off/reset`: poll interval (seconds) and max
+# attempts before giving up. 300 × 3 s = 15 min total wait.
+power_poll_interval_secs         = 3
+power_max_poll_attempts          = 300
+#
+# `manta apply sat-file`: poll interval, overall hard cap, and
+# cap on consecutive "session not yet visible" responses (seconds).
+sat_file_poll_interval_secs      = 10
+sat_file_poll_budget_secs        = 14400   # 4 hours
+sat_file_not_visible_budget_secs = 300     # 5 minutes
