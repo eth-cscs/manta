@@ -163,10 +163,28 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
 const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
 site = "<site_name>"
 manta_server_url = "https://manta-server.example.com:8443"
+
+# Timeout knobs (all optional). Defaults match the historical
+# hardcoded values; override only if a specific deployment needs
+# something different.
+#
 # Per-request HTTP timeout (seconds) reaching `manta_server_url`.
 # Default: 300 for REST calls; streams (SSE log tail, WS console)
-# are unlimited. Set this only if you need to override.
+# are unlimited. Setting this also caps streams — pick a value larger
+# than your worst-case session if you set it.
 # request_timeout_secs = 300
+#
+# `manta power on/off/reset`: how often to poll the PCS transition
+# (seconds), and how many polls before giving up.
+# power_poll_interval_secs = 3
+# power_max_poll_attempts  = 300
+#
+# `manta apply sat-file`: CFS-session monitor poll interval, the
+# overall hard cap on the monitor loop, and the cap on consecutive
+# "session not yet visible" responses (all seconds).
+# sat_file_poll_interval_secs       = 10
+# sat_file_poll_budget_secs         = 14400   # 4 hours
+# sat_file_not_visible_budget_secs  = 300     # 5 minutes
 
 [sites.<site_name>]
 backend = "csm"                 # or "ochami"

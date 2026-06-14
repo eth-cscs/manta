@@ -103,6 +103,12 @@ async fn run_cli(
     manta_server_url,
     settings_group_name_opt: settings_hsm_group_name_opt.as_deref(),
     request_timeout_secs: configuration.request_timeout_secs,
+    power_poll_interval_secs: configuration.power_poll_interval_secs,
+    power_max_poll_attempts: configuration.power_max_poll_attempts,
+    sat_file_poll_interval_secs: configuration.sat_file_poll_interval_secs,
+    sat_file_poll_budget_secs: configuration.sat_file_poll_budget_secs,
+    sat_file_not_visible_budget_secs: configuration
+      .sat_file_not_visible_budget_secs,
     settings: &settings,
   };
 

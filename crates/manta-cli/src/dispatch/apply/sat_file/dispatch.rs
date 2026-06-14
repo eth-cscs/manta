@@ -40,6 +40,7 @@ use crate::openapi_client::types::{
 /// a `hardware:` section, so output looks identical to users mixing
 /// the two paths.
 pub async fn dispatch_plan(
+  ctx: &crate::common::app_context::AppContext<'_>,
   client: &MantaClient,
   plan: Vec<SatElement>,
   opts: &SatApplyOptions<'_>,
@@ -75,7 +76,7 @@ pub async fn dispatch_plan(
           .unwrap_or("<unnamed>")
           .to_string();
 
-        let img = run_image_pipeline(client, &body, &ref_lookup, opts)
+        let img = run_image_pipeline(ctx, client, &body, &ref_lookup, opts)
           .await
           .with_context(|| format!("building SAT image '{display_name}'"))?;
 

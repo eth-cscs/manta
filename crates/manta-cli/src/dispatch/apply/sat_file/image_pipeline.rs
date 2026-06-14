@@ -46,30 +46,59 @@ use crate::openapi_client::types::{
   CreateImageCfsSessionRequest, StampImageFromSessionRequest,
 };
 
-/// Poll interval for the no-`--watch-logs` monitor branch. Long enough
-/// that we don't hammer the server (CFS sessions take minutes to
-/// hours), short enough that a fast-failing session surfaces promptly.
-const POLL_INTERVAL: Duration = Duration::from_secs(10);
+/// Default poll interval for the no-`--watch-logs` monitor branch
+/// when `cli.toml` does not set `sat_file_poll_interval_secs`.
+pub const DEFAULT_SAT_FILE_POLL_INTERVAL_SECS: u64 = 10;
 
-/// Hard cap on the monitor loop. Image builds top out around 1-2 hours;
-/// a 4-hour budget covers worst-case CFS jobs while still preventing an
-/// unattended CLI from spinning forever on a stuck pod. On expiry the
-/// CLI bails with a clear pointer to manual investigation — the
-/// underlying session is not cancelled.
-const POLL_BUDGET: Duration = Duration::from_secs(4 * 60 * 60);
+/// Default hard cap on the monitor loop when `cli.toml` does not set
+/// `sat_file_poll_budget_secs`. 4 hours covers worst-case CFS jobs
+/// while still preventing an unattended CLI from spinning forever on
+/// a stuck pod.
+pub const DEFAULT_SAT_FILE_POLL_BUDGET_SECS: u64 = 4 * 60 * 60;
 
-/// Cap on consecutive "session not yet visible" responses. CFS normally
-/// surfaces a newly-created session within a few seconds; sitting at
-/// `None` for minutes means the create call landed somewhere we can't
-/// see (server-side error, backend filter mismatch, …). Bail rather
-/// than mask the gap.
-const NOT_VISIBLE_BUDGET: Duration = Duration::from_secs(5 * 60);
+/// Default cap on consecutive "session not yet visible" responses
+/// when `cli.toml` does not set `sat_file_not_visible_budget_secs`.
+/// CFS normally surfaces a newly-created session within a few
+/// seconds; sitting at `None` for minutes means the create call
+/// landed somewhere we can't see.
+pub const DEFAULT_SAT_FILE_NOT_VISIBLE_BUDGET_SECS: u64 = 5 * 60;
+
+/// Resolved poll/budget triple used by both monitor branches.
+#[derive(Debug, Clone, Copy)]
+struct SatMonitorBudgets {
+  poll_interval: Duration,
+  poll_budget: Duration,
+  not_visible_budget: Duration,
+}
+
+impl SatMonitorBudgets {
+  fn from_ctx(ctx: &crate::common::app_context::AppContext<'_>) -> Self {
+    Self {
+      poll_interval: Duration::from_secs(
+        ctx
+          .sat_file_poll_interval_secs
+          .unwrap_or(DEFAULT_SAT_FILE_POLL_INTERVAL_SECS),
+      ),
+      poll_budget: Duration::from_secs(
+        ctx
+          .sat_file_poll_budget_secs
+          .unwrap_or(DEFAULT_SAT_FILE_POLL_BUDGET_SECS),
+      ),
+      not_visible_budget: Duration::from_secs(
+        ctx
+          .sat_file_not_visible_budget_secs
+          .unwrap_or(DEFAULT_SAT_FILE_NOT_VISIBLE_BUDGET_SECS),
+      ),
+    }
+  }
+}
 
 /// Run the create-session → monitor → stamp pipeline for one SAT
 /// `images[]` entry. Returns the resulting `Image` as `serde_json::Value`
 /// so the caller (`dispatch_plan`) can drop it into the `images: [...]`
 /// summary list unchanged.
 pub async fn run_image_pipeline(
+  ctx: &crate::common::app_context::AppContext<'_>,
   client: &MantaClient,
   image: &Value,
   ref_lookup: &HashMap<String, String>,
@@ -125,11 +154,17 @@ pub async fn run_image_pipeline(
   }
 
   // 2. Monitor the session until it reports terminal status.
+  let budgets = SatMonitorBudgets::from_ctx(ctx);
   if opts.watch_logs {
-    stream_session_until_terminal(client, &session_name, opts.timestamps)
-      .await?;
+    stream_session_until_terminal(
+      client,
+      &session_name,
+      opts.timestamps,
+      budgets,
+    )
+    .await?;
   } else {
-    poll_session_until_terminal(client, &session_name).await?;
+    poll_session_until_terminal(client, &session_name, budgets).await?;
   }
 
   // 3. Stamp + PATCH the produced IMS image (server does the fetch +
@@ -161,6 +196,7 @@ async fn stream_session_until_terminal(
   client: &MantaClient,
   session_name: &str,
   timestamps: bool,
+  budgets: SatMonitorBudgets,
 ) -> anyhow::Result<()> {
   tracing::info!("Streaming logs for CFS session '{session_name}' ...");
   let reader = client
@@ -180,48 +216,50 @@ async fn stream_session_until_terminal(
     }
   }
 
-  poll_session_until_terminal(client, session_name).await
+  poll_session_until_terminal(client, session_name, budgets).await
 }
 
 /// Default branch: poll session status until terminal.
 async fn poll_session_until_terminal(
   client: &MantaClient,
   session_name: &str,
+  budgets: SatMonitorBudgets,
 ) -> anyhow::Result<()> {
   tracing::info!(
     "Polling CFS session '{session_name}' until it reaches terminal status \
      (poll interval: {}s, hard cap: {} h)",
-    POLL_INTERVAL.as_secs(),
-    POLL_BUDGET.as_secs() / 3600,
+    budgets.poll_interval.as_secs(),
+    budgets.poll_budget.as_secs() / 3600,
   );
   let start = Instant::now();
   let mut first_not_visible_at: Option<Instant> = None;
   loop {
-    if start.elapsed() > POLL_BUDGET {
+    if start.elapsed() > budgets.poll_budget {
       bail!(
         "CFS session '{session_name}' did not reach terminal status \
          within {} h; aborting monitor. The session may still be running — \
          inspect it directly with `manta get sessions --name {session_name}`.",
-        POLL_BUDGET.as_secs() / 3600,
+        budgets.poll_budget.as_secs() / 3600,
       );
     }
     match fetch_session_opt(client, session_name).await? {
       None => {
         // Session may still be creating in CFS; retry until we cross
-        // NOT_VISIBLE_BUDGET, then bail — a session that never appears
-        // is almost certainly a server-side or backend-filter issue.
+        // the not-visible budget, then bail — a session that never
+        // appears is almost certainly a server-side or backend-filter
+        // issue.
         let stuck_for = first_not_visible_at
           .get_or_insert_with(Instant::now)
           .elapsed();
-        if stuck_for > NOT_VISIBLE_BUDGET {
+        if stuck_for > budgets.not_visible_budget {
           bail!(
             "CFS session '{session_name}' was never visible after {} min of \
              polling. The create call returned a session name we can't \
              fetch back — check the manta-server log for backend errors.",
-            NOT_VISIBLE_BUDGET.as_secs() / 60,
+            budgets.not_visible_budget.as_secs() / 60,
           );
         }
-        tokio::time::sleep(POLL_INTERVAL).await;
+        tokio::time::sleep(budgets.poll_interval).await;
       }
       Some(session) => {
         first_not_visible_at = None;
@@ -237,11 +275,11 @@ async fn poll_session_until_terminal(
             tracing::debug!(
               "CFS session '{session_name}' still running (status: '{s}')",
             );
-            tokio::time::sleep(POLL_INTERVAL).await;
+            tokio::time::sleep(budgets.poll_interval).await;
           }
           None => {
             tracing::debug!("CFS session '{session_name}' has no status yet",);
-            tokio::time::sleep(POLL_INTERVAL).await;
+            tokio::time::sleep(budgets.poll_interval).await;
           }
         }
       }

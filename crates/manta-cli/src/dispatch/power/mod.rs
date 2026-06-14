@@ -23,14 +23,16 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::{PowerRequest, PowerTargetType};
 use crate::output::action_result;
 
-/// How long the CLI sleeps between snapshot polls. Matches the
-/// historical csm-rs `pcs_transitions_wait_to_complete` interval.
-const POLL_INTERVAL: Duration = Duration::from_secs(3);
-/// Hard cap on poll attempts — 300 × 3s = 15 minutes. Matches the
-/// historical csm-rs cap; operators with longer transitions should
-/// re-run `manta power transition show <id>` (or live with the
-/// `--no-wait` flow) rather than tune this here.
-const MAX_POLL_ATTEMPTS: usize = 300;
+/// Default seconds between snapshot polls when `cli.toml` does not
+/// set `power_poll_interval_secs`. Matches the historical csm-rs
+/// `pcs_transitions_wait_to_complete` interval.
+pub const DEFAULT_POWER_POLL_INTERVAL_SECS: u64 = 3;
+/// Default cap on poll attempts when `cli.toml` does not set
+/// `power_max_poll_attempts`. 300 × 3 s = 15 minutes total.
+/// Operators with longer transitions should bump
+/// `power_max_poll_attempts` rather than re-run `manta power
+/// transition show <id>` by hand.
+pub const DEFAULT_POWER_MAX_POLL_ATTEMPTS: u32 = 300;
 
 /// Dispatch a `power on group` invocation.
 async fn dispatch_power_on_group(
@@ -334,7 +336,21 @@ async fn dispatch_and_wait(
     return Ok(());
   }
 
-  let final_snapshot = poll_until_done(&client, &transition_id).await?;
+  let poll_interval = Duration::from_secs(
+    ctx
+      .power_poll_interval_secs
+      .unwrap_or(DEFAULT_POWER_POLL_INTERVAL_SECS),
+  );
+  let max_attempts = ctx
+    .power_max_poll_attempts
+    .unwrap_or(DEFAULT_POWER_MAX_POLL_ATTEMPTS);
+  let final_snapshot = poll_until_done(
+    &client,
+    &transition_id,
+    poll_interval,
+    max_attempts,
+  )
+  .await?;
 
   let failed = failed_count(&final_snapshot);
   let message = if failed > 0 {
@@ -349,31 +365,34 @@ async fn dispatch_and_wait(
   Ok(())
 }
 
-/// Snapshot the transition every [`POLL_INTERVAL`] until it reaches
-/// `transitionStatus == "completed"` or [`MAX_POLL_ATTEMPTS`] runs
-/// out. Each poll logs a single progress line; the final snapshot is
+/// Snapshot the transition every `poll_interval` until it reaches
+/// `transitionStatus == "completed"` or `max_attempts` runs out.
+/// Each poll logs a single progress line; the final snapshot is
 /// returned to the caller for the summary print.
 async fn poll_until_done(
   client: &MantaClient,
   transition_id: &str,
+  poll_interval: Duration,
+  max_attempts: u32,
 ) -> Result<Value, Error> {
+  let max_attempts_usize = max_attempts as usize;
   let mut snapshot = client
     .openapi
     .get_power_transition(transition_id, client.site_name())
     .await
     .into_anyhow()?;
 
-  for attempt in 1..=MAX_POLL_ATTEMPTS {
+  for attempt in 1..=max_attempts_usize {
     tracing::info!(
       "{}",
-      progress_summary(&snapshot, attempt, MAX_POLL_ATTEMPTS)
+      progress_summary(&snapshot, attempt, max_attempts_usize)
     );
 
     if is_complete(&snapshot) {
       return Ok(snapshot);
     }
 
-    tokio::time::sleep(POLL_INTERVAL).await;
+    tokio::time::sleep(poll_interval).await;
     snapshot = client
       .openapi
       .get_power_transition(transition_id, client.site_name())
@@ -382,9 +401,8 @@ async fn poll_until_done(
   }
 
   bail!(
-    "power transition {transition_id} did not complete after {MAX_POLL_ATTEMPTS} poll attempts \
-     (interval {:?}); re-run `manta power transition show {transition_id}` to check later",
-    POLL_INTERVAL
+    "power transition {transition_id} did not complete after {max_attempts} poll attempts \
+     (interval {poll_interval:?}); re-run `manta power transition show {transition_id}` to check later",
   )
 }
 

@@ -151,7 +151,7 @@ pub async fn exec(
   //     `ref_name → image_id` across calls and builds the same
   //     four-list response the legacy endpoint used to return.
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
-  let result = dispatch::dispatch_plan(&client, plan, opts).await?;
+  let result = dispatch::dispatch_plan(ctx, &client, plan, opts).await?;
 
   crate::common::hooks::run_hook_if_present(opts.posthook_opt, "post")?;
 

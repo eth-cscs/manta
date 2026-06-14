@@ -46,6 +46,30 @@ pub struct CliConfiguration {
   /// longer than the 5-minute default to respond.
   #[serde(default)]
   pub request_timeout_secs: Option<u64>,
+  /// Seconds between `GET /power/transitions/{id}` polls in
+  /// `manta power on/off/reset`. `None` keeps the historical 3 s
+  /// (see `crate::dispatch::power::DEFAULT_POWER_POLL_INTERVAL_SECS`).
+  #[serde(default)]
+  pub power_poll_interval_secs: Option<u64>,
+  /// Maximum number of poll attempts before `manta power` gives up
+  /// waiting for a transition to complete. `None` keeps the
+  /// historical 300 (15 minutes at the default 3 s interval).
+  #[serde(default)]
+  pub power_max_poll_attempts: Option<u32>,
+  /// Seconds between CFS-session status polls in
+  /// `manta apply sat-file`'s monitor loop. `None` keeps the
+  /// historical 10 s.
+  #[serde(default)]
+  pub sat_file_poll_interval_secs: Option<u64>,
+  /// Hard cap (seconds) on the SAT-file monitor loop before it
+  /// bails. `None` keeps the historical 4 h (14400 s).
+  #[serde(default)]
+  pub sat_file_poll_budget_secs: Option<u64>,
+  /// Cap (seconds) on consecutive "session not yet visible"
+  /// responses before SAT-file apply bails. `None` keeps the
+  /// historical 5 min (300 s).
+  #[serde(default)]
+  pub sat_file_not_visible_budget_secs: Option<u64>,
 }
 
 #[cfg(test)]
@@ -60,6 +84,11 @@ mod tests {
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
       request_timeout_secs: None,
+      power_poll_interval_secs: None,
+      power_max_poll_attempts: None,
+      sat_file_poll_interval_secs: None,
+      sat_file_poll_budget_secs: None,
+      sat_file_not_visible_budget_secs: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
