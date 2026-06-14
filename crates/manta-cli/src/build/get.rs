@@ -56,6 +56,19 @@ pub fn subcommand_get_hardware_group() -> Command {
     )
 }
 
+pub fn subcommand_get_summary() -> Command {
+  Command::new("summary")
+    .about(
+      "Aggregate view of CFS configurations, sessions, BOS templates, and IMS \
+       images, linked by image id (one row per image)",
+    )
+    .arg(
+      arg!(-o --output <FORMAT> "Output format")
+        .value_parser(["table", "json"])
+        .default_value("table"),
+    )
+}
+
 pub fn subcommand_get_cfs_configuration() -> Command {
   Command::new("configurations")
     .about("List CFS configurations (filter by name, glob, group, or recency)")
@@ -250,7 +263,7 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
 pub fn subcommand_get() -> Command {
   Command::new("get")
     .arg_required_else_help(true)
-    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters")
+    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters")
     .subcommand(subcommand_get_group())
     .subcommand(subcommand_get_hardware())
     .subcommand(subcommand_get_cfs_session())
@@ -259,6 +272,7 @@ pub fn subcommand_get() -> Command {
     .subcommand(subcommand_get_group_nodes())
     .subcommand(subcommand_get_node_details())
     .subcommand(subcommand_get_images())
+    .subcommand(subcommand_get_summary())
     .subcommand(subcommand_get_boot_parameters())
     .subcommand(subcommand_get_kernel_parameters())
     .subcommand(subcommand_get_redfish_endpoints())

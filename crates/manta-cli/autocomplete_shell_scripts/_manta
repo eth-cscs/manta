@@ -482,6 +482,15 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
+(summary)
+_arguments "${_arguments_options[@]}" : \
+'-o+[Output format]:FORMAT:(table json)' \
+'--output=[Output format]:FORMAT:(table json)' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
 (boot-parameters)
 _arguments "${_arguments_options[@]}" : \
 '-H+[Show boot parameters for every node in this group]:GROUP_NAME:_default' \
@@ -590,6 +599,10 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (images)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(summary)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2425,6 +2438,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(summary)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
 (boot-parameters)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2850,7 +2867,7 @@ esac
 _manta_commands() {
     local commands; commands=(
 'config:Show or change CLI-side settings (active site, default node group, log level)' \
-'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters' \
+'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters' \
 'add:Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints' \
 'apply:Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling' \
 'delete:Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints' \
@@ -3582,6 +3599,7 @@ _manta__subcmd__get_commands() {
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'summary:Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -3663,6 +3681,7 @@ _manta__subcmd__get__subcmd__help_commands() {
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'summary:Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -3738,6 +3757,11 @@ _manta__subcmd__get__subcmd__help__subcmd__sessions_commands() {
     local commands; commands=()
     _describe -t commands 'manta get help sessions commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__get__subcmd__help__subcmd__summary_commands] )) ||
+_manta__subcmd__get__subcmd__help__subcmd__summary_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get help summary commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__get__subcmd__help__subcmd__templates_commands] )) ||
 _manta__subcmd__get__subcmd__help__subcmd__templates_commands() {
     local commands; commands=()
@@ -3768,6 +3792,11 @@ _manta__subcmd__get__subcmd__sessions_commands() {
     local commands; commands=()
     _describe -t commands 'manta get sessions commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__get__subcmd__summary_commands] )) ||
+_manta__subcmd__get__subcmd__summary_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta get summary commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__get__subcmd__templates_commands] )) ||
 _manta__subcmd__get__subcmd__templates_commands() {
     local commands; commands=()
@@ -3777,7 +3806,7 @@ _manta__subcmd__get__subcmd__templates_commands() {
 _manta__subcmd__help_commands() {
     local commands; commands=(
 'config:Show or change CLI-side settings (active site, default node group, log level)' \
-'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters' \
+'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters' \
 'add:Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints' \
 'apply:Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling' \
 'delete:Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints' \
@@ -4090,6 +4119,7 @@ _manta__subcmd__help__subcmd__get_commands() {
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
 'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'summary:Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -4158,6 +4188,11 @@ _manta__subcmd__help__subcmd__get__subcmd__redfish-endpoints_commands() {
 _manta__subcmd__help__subcmd__get__subcmd__sessions_commands() {
     local commands; commands=()
     _describe -t commands 'manta help get sessions commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__get__subcmd__summary_commands] )) ||
+_manta__subcmd__help__subcmd__get__subcmd__summary_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help get summary commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__get__subcmd__templates_commands] )) ||
 _manta__subcmd__help__subcmd__get__subcmd__templates_commands() {

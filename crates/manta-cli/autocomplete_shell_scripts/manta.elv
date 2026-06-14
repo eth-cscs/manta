@@ -24,7 +24,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -V 'Print version'
             cand --version 'Print version'
             cand config 'Show or change CLI-side settings (active site, default node group, log level)'
-            cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
+            cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
             cand delete 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
@@ -164,6 +164,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand summary 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -312,6 +313,13 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'manta;get;summary'= {
+            cand -o 'Output format'
+            cand --output 'Output format'
+            cand --site 'Override the active site for this invocation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'manta;get;boot-parameters'= {
             cand -H 'Show boot parameters for every node in this group'
             cand --group 'Show boot parameters for every node in this group'
@@ -362,6 +370,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand summary 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -388,6 +397,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;help;nodes'= {
         }
         &'manta;get;help;images'= {
+        }
+        &'manta;get;help;summary'= {
         }
         &'manta;get;help;boot-parameters'= {
         }
@@ -1478,7 +1489,7 @@ set edit:completion:arg-completer[manta] = {|@words|
         }
         &'manta;help'= {
             cand config 'Show or change CLI-side settings (active site, default node group, log level)'
-            cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
+            cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
             cand delete 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
@@ -1529,6 +1540,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
             cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand summary 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -1554,6 +1566,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;get;nodes'= {
         }
         &'manta;help;get;images'= {
+        }
+        &'manta;help;get;summary'= {
         }
         &'manta;help;get;boot-parameters'= {
         }

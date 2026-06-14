@@ -112,7 +112,7 @@ Override the active site for this invocation
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get"
-Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
+Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -338,6 +338,17 @@ Return only the most recent (equivalent to \-\-limit 1)
 .TP
 [\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
 Return only the <VALUE> most recent images
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta get summary"
+Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
