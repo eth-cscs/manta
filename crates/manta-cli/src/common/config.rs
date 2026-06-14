@@ -28,14 +28,22 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
-  /// Optional per-request HTTP timeout, in seconds. When set, the
-  /// reqwest client used to reach `manta_server_url` is built with
-  /// `.timeout(Duration::from_secs(n))`; when `None` (the default),
-  /// reqwest applies no per-request timeout — long-running calls
-  /// (e.g. `POST /power`) hang until the server responds or the
-  /// underlying connection drops. Set this to match the server's
-  /// longest legitimate response time when running through a SOCKS5
-  /// tunnel or proxy that silently drops idle connections.
+  /// Optional per-request HTTP timeout, in seconds, for calls reaching
+  /// `manta_server_url`. Two clients live behind this knob:
+  ///
+  /// - The one-shot REST client (every `manta get`, `manta apply`,
+  ///   `manta delete`, …): when this field is `None`, defaults to 300 s
+  ///   (5 min) so a stuck call eventually fails rather than hanging
+  ///   forever. When set, the supplied value wins.
+  /// - The streaming client (SSE log tail, WebSocket console): when
+  ///   this field is `None`, applies no timeout — a CFS log stream or
+  ///   interactive console can stay open indefinitely. When set, the
+  ///   supplied value applies and will truncate long streams; pick a
+  ///   value larger than your worst-case session if you set it.
+  ///
+  /// Override this when running through a SOCKS5 tunnel or proxy that
+  /// silently drops idle connections, or when a specific cluster takes
+  /// longer than the 5-minute default to respond.
   #[serde(default)]
   pub request_timeout_secs: Option<u64>,
 }

@@ -20,6 +20,15 @@ use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
 
+/// Default per-request timeout applied to one-shot REST calls through
+/// the progenitor-generated `openapi` client when `cli.toml` does not
+/// set `request_timeout_secs`. Five minutes matches the manta-server
+/// default global request timeout, so the CLI gives up at roughly the
+/// same point the server would have anyway. Streams (SSE log tail,
+/// WebSocket consoles) keep the original `None == unlimited` semantics
+/// — see [`MantaClient::new_with_timeout`].
+pub const DEFAULT_API_TIMEOUT_SECS: u64 = 300;
+
 /// Marker error attached as anyhow context whenever an `/auth/*`
 /// HTTP call fails at the TCP/timeout layer (i.e., the manta server
 /// — and therefore the auth path through it — is unreachable, not
@@ -118,8 +127,9 @@ pub struct MantaClient {
 
 impl MantaClient {
   /// Build a client pointing at `server_url` for the given `site_name`.
-  /// No per-request HTTP timeout is set; reqwest's default applies
-  /// (which is "no timeout"). For a configurable timeout, use
+  /// One-shot REST calls get a 5-minute timeout
+  /// ([`DEFAULT_API_TIMEOUT_SECS`]); streams (SSE / WebSockets) get no
+  /// timeout. To override either, use
   /// [`MantaClient::new_with_timeout`].
   ///
   /// If `server_url` has no scheme, `http://` is prepended. This lets users
@@ -151,14 +161,26 @@ impl MantaClient {
   /// Build a client with an explicit optional per-request timeout
   /// and optional bearer token.
   ///
-  /// When `token` is `Some(t)`, the underlying `reqwest::Client`s get
+  /// When `token` is `Some(t)`, both underlying `reqwest::Client`s get
   /// a default `Authorization: Bearer <t>` header so every call —
   /// generated or raw — sends the auth header automatically.
   ///
-  /// `None` for `timeout_secs` keeps reqwest's default (no timeout);
-  /// `Some(secs)` configures the inner `reqwest::Client` with
-  /// `.timeout(Duration::from_secs(secs))`. URL scheme normalisation
-  /// matches [`MantaClient::new`].
+  /// Two separate `reqwest::Client`s are built so streams and one-shot
+  /// API calls can have different timeout policies:
+  ///
+  /// - `openapi` (one-shot REST calls via the progenitor-generated
+  ///   client): `timeout_secs.unwrap_or(DEFAULT_API_TIMEOUT_SECS)`. The
+  ///   default of 300 s caps stuck calls without making operators
+  ///   configure a value; setting `request_timeout_secs` in `cli.toml`
+  ///   overrides it.
+  /// - `raw` (SSE log streaming + WebSocket consoles): respects the
+  ///   `timeout_secs` value verbatim — `None` means no timeout, so a
+  ///   long-running CFS image build's log stream stays open until the
+  ///   session ends or the underlying connection drops. Setting
+  ///   `request_timeout_secs` applies here too, which will truncate
+  ///   long streams; pick a value larger than your worst-case session.
+  ///
+  /// URL scheme normalisation matches [`MantaClient::new`].
   pub fn new_with_timeout(
     server_url: &str,
     site_name: &str,
@@ -182,14 +204,28 @@ impl MantaClient {
       default_headers.insert(reqwest::header::AUTHORIZATION, bearer);
     }
 
-    let mut builder = reqwest::Client::builder().default_headers(default_headers);
+    // Streams + WebSockets keep the original Option<u64> semantics
+    // (None = no timeout).
+    let mut raw_builder =
+      reqwest::Client::builder().default_headers(default_headers.clone());
     if let Some(secs) = timeout_secs {
-      builder = builder.timeout(std::time::Duration::from_secs(secs));
+      raw_builder = raw_builder.timeout(std::time::Duration::from_secs(secs));
     }
-    let raw = builder.build().context("Failed to build HTTP client")?;
+    let raw = raw_builder.build().context("Failed to build HTTP client")?;
 
-    let openapi =
-      crate::openapi_client::Client::new_with_client(&base_url, raw.clone());
+    // One-shot API calls default to 5 minutes when nothing is
+    // configured. An explicit cli.toml override wins.
+    let api_timeout_secs =
+      timeout_secs.unwrap_or(DEFAULT_API_TIMEOUT_SECS);
+    let openapi_inner = reqwest::Client::builder()
+      .default_headers(default_headers)
+      .timeout(std::time::Duration::from_secs(api_timeout_secs))
+      .build()
+      .context("Failed to build OpenAPI HTTP client")?;
+    let openapi = crate::openapi_client::Client::new_with_client(
+      &base_url,
+      openapi_inner,
+    );
 
     Ok(Self {
       openapi,
