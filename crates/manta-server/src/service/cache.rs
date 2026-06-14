@@ -106,7 +106,19 @@ pub fn build_cache(
     })
     .collect();
 
-  rows.sort_by(|a, b| a.image_id.cmp(&b.image_id));
+  // Primary: image_created descending (newest first). Secondary: image_id
+  // ascending for a deterministic tie-break (and as the only ordering when
+  // created is missing on both sides). Images without a created timestamp
+  // sink to the bottom.
+  rows.sort_by(|a, b| {
+    use std::cmp::Ordering;
+    match (a.image_created.as_ref(), b.image_created.as_ref()) {
+      (Some(ac), Some(bc)) => bc.cmp(ac).then_with(|| a.image_id.cmp(&b.image_id)),
+      (Some(_), None) => Ordering::Less,
+      (None, Some(_)) => Ordering::Greater,
+      (None, None) => a.image_id.cmp(&b.image_id),
+    }
+  });
   rows
 }
 
@@ -431,9 +443,10 @@ mod tests {
     assert!(rows.is_empty());
   }
 
-  // Output sorted by image_id ascending.
+  // When no image has a created timestamp, sort falls back to image_id
+  // ascending so output stays deterministic across runs.
   #[test]
-  fn rows_are_sorted_by_image_id() {
+  fn rows_with_no_created_timestamp_fall_back_to_image_id_asc() {
     let rows = build_cache(
       vec![],
       vec![],
@@ -447,6 +460,37 @@ mod tests {
     let ids: Vec<&str> =
       rows.iter().map(|r| r.image_id.as_str()).collect();
     assert_eq!(ids, vec!["img-a", "img-m", "img-z"]);
+  }
+
+  // Primary sort: image_created descending (newest first). Images without
+  // a created timestamp sink to the bottom; ties on created (or both None)
+  // break by image_id ascending.
+  #[test]
+  fn rows_are_sorted_by_image_created_descending() {
+    let rows = build_cache(
+      vec![],
+      vec![],
+      vec![],
+      vec![
+        image("img-old", "old", None, Some("2024-01-01T00:00:00Z")),
+        image("img-newest", "newest", None, Some("2026-06-02T00:00:00Z")),
+        image("img-undated-z", "undated-z", None, None),
+        image("img-middle", "middle", None, Some("2026-06-01T00:00:00Z")),
+        image("img-undated-a", "undated-a", None, None),
+      ],
+    );
+    let ids: Vec<&str> =
+      rows.iter().map(|r| r.image_id.as_str()).collect();
+    assert_eq!(
+      ids,
+      vec![
+        "img-newest",     // 2026-06-02
+        "img-middle",     // 2026-06-01
+        "img-old",        // 2024-01-01
+        "img-undated-a",  // None, id asc tie-break
+        "img-undated-z",  // None, id asc tie-break
+      ]
+    );
   }
 
   #[test]
