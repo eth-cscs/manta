@@ -47,4 +47,5 @@ fn print_table(rows: &[BackendSummary]) {
     ]);
   }
   println!("{table}");
+  println!("{} rows", rows.len());
 }
