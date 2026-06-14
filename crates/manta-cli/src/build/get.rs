@@ -75,6 +75,16 @@ pub fn subcommand_get_analysis_image() -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
+    .arg(
+      arg!(--"only-safe-to-delete" "Show only images that are safe to delete"),
+    )
+    .arg(
+      arg!(--"only-unsafe-to-delete" "Show only images that are NOT safe to delete (currently used as a node's boot image)"),
+    )
+    .group(ArgGroup::new("image_safety_filter").args([
+      "only-safe-to-delete",
+      "only-unsafe-to-delete",
+    ]))
 }
 
 pub fn subcommand_get_analysis_configuration() -> Command {

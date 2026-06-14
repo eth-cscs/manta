@@ -283,10 +283,13 @@ One row per IMS image visible to the active site. Columns: image id, image name,
 | Flag | Type | Description |
 |------|------|-------------|
 | `-o/--output` | string | `table` (default) or `json`. JSON returns the same five fields. |
+| `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. |
+| `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (image is the boot image for at least one node). |
 
 ```
 manta get analysis image
-manta get analysis image -o json | jq '.[] | select(.safe_to_delete) | .image_id'
+manta get analysis image --only-safe-to-delete
+manta get analysis image --only-unsafe-to-delete -o json | jq '.[].image_id'
 ```
 
 Sorted by `image_created` ascending (oldest first); images without a created timestamp sink to the bottom; ties on the timestamp (or both `None`) break by `image_id` ascending. Calls `GET /api/v1/analysis/images`.
