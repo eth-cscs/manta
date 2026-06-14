@@ -13,7 +13,6 @@ use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
-use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
@@ -22,7 +21,6 @@ pub use manta_shared::types::api::summary::BackendSummary;
 
 /// Pure linker.
 pub fn build_cache(
-  configs: Vec<CfsConfigurationResponse>,
   mut sessions: Vec<CfsSessionGetResponse>,
   mut templates: Vec<BosSessionTemplate>,
   images: Vec<Image>,
@@ -37,25 +35,16 @@ pub fn build_cache(
       .cmp(b.name.as_deref().unwrap_or(""))
   });
 
-  // Lookup: configuration name -> last_updated timestamp.
-  let configuration_last_updated: HashMap<String, String> = configs
-    .into_iter()
-    .map(|c| (c.name, c.last_updated))
-    .collect();
-
   // Reverse index: image_id -> (first session that produced it, that
-  // session's configuration name, that session's start_time).
-  let mut session_by_image: HashMap<
-    String,
-    (String, Option<String>, Option<String>),
-  > = HashMap::new();
+  // session's configuration name).
+  let mut session_by_image: HashMap<String, (String, Option<String>)> =
+    HashMap::new();
   for s in &sessions {
     let cfg = s.configuration.as_ref().and_then(|c| c.name.clone());
-    let start_time = s.get_start_time();
     for result_id in s.get_result_id_vec() {
       session_by_image
         .entry(result_id)
-        .or_insert_with(|| (s.name.clone(), cfg.clone(), start_time.clone()));
+        .or_insert_with(|| (s.name.clone(), cfg.clone()));
     }
   }
 
@@ -77,29 +66,23 @@ pub fn build_cache(
     .into_iter()
     .filter_map(|img| {
       let id = img.id?;
-      let (session_name, session_configuration_name, session_start_time) =
+      let (session_name, session_configuration_name) =
         match session_by_image.get(&id).cloned() {
-          Some((sn, scn, sst)) => (Some(sn), scn, sst),
-          None => (None, None, None),
+          Some((sn, scn)) => (Some(sn), scn),
+          None => (None, None),
         };
       let session_result_id = session_name.as_ref().map(|_| id.clone());
       let bos_sessiontemplate = template_by_image.get(&id).cloned();
       let bos_sessiontemplate_boot_image =
         bos_sessiontemplate.as_ref().map(|_| id.clone());
-      let configuration_last_updated = img
-        .configuration
-        .as_ref()
-        .and_then(|name| configuration_last_updated.get(name).cloned());
       Some(BackendSummary {
         image_id: id,
         name: img.name,
         image_created: img.created,
         configuration_name: img.configuration,
-        configuration_last_updated,
         session_name,
         session_result_id,
         session_configuration_name,
-        session_start_time,
         bos_sessiontemplate,
         bos_sessiontemplate_boot_image,
       })
@@ -141,7 +124,7 @@ fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// Fan the four service-layer fetchers out concurrently, then run
+/// Fan the three service-layer fetchers out concurrently, then run
 /// the pure linker. Each fetcher applies its own group-access scope,
 /// so the cache cannot return rows the caller couldn't list via
 /// the per-resource endpoints.
@@ -151,15 +134,6 @@ pub async fn get_cache(
 ) -> Result<Vec<BackendSummary>, Error> {
   tracing::info!("Building backend cache");
 
-  let configs_params = crate::service::configuration::GetConfigurationParams {
-    name: None,
-    pattern: None,
-    group_name: None,
-    settings_hsm_group_name: None,
-    since: None,
-    until: None,
-    limit: None,
-  };
   let sessions_params = crate::service::session::GetSessionParams {
     group: None,
     xnames: Vec::new(),
@@ -182,18 +156,13 @@ pub async fn get_cache(
     limit: None,
   };
 
-  let (configs, sessions, templates, images) = tokio::try_join!(
-    crate::service::configuration::get_configurations(
-      infra,
-      token,
-      &configs_params
-    ),
+  let (sessions, templates, images) = tokio::try_join!(
     crate::service::session::get_sessions(infra, token, &sessions_params),
     crate::service::template::get_templates(infra, token, &templates_params),
     crate::service::image::get_images(infra, token, &images_params),
   )?;
 
-  Ok(build_cache(configs, sessions, templates, images))
+  Ok(build_cache(sessions, templates, images))
 }
 
 #[cfg(test)]
@@ -226,22 +195,11 @@ mod tests {
     }
   }
 
-  fn config(name: &str, last_updated: &str) -> CfsConfigurationResponse {
-    CfsConfigurationResponse {
-      name: name.to_string(),
-      last_updated: last_updated.to_string(),
-      layers: vec![],
-      additional_inventory: None,
-    }
-  }
-
   fn session_producing(
     name: &str,
     cfg_name: Option<&str>,
     result_ids: &[&str],
-    start_time: Option<&str>,
   ) -> CfsSessionGetResponse {
-    use manta_backend_dispatcher::types::cfs::session::Session as CfsSession;
     CfsSessionGetResponse {
       name: name.to_string(),
       configuration: cfg_name.map(|c| SessionConfiguration {
@@ -251,14 +209,7 @@ mod tests {
       ansible: None,
       target: None,
       status: Some(CfsStatus {
-        session: start_time.map(|t| CfsSession {
-          job: None,
-          ims_job: None,
-          completion_time: None,
-          start_time: Some(t.to_string()),
-          status: None,
-          succeeded: None,
-        }),
+        session: None,
         artifacts: Some(
           result_ids
             .iter()
@@ -323,7 +274,6 @@ mod tests {
     let rows = build_cache(
       vec![],
       vec![],
-      vec![],
       vec![
         image("img-1", "ncn-1.6-base", Some("ncn-1.6"), None),
         image("img-2", "compute-1.5", Some("compute-1.5"), None),
@@ -341,13 +291,7 @@ mod tests {
   #[test]
   fn fills_session_columns_when_a_session_produced_the_image() {
     let rows = build_cache(
-      vec![],
-      vec![session_producing(
-        "session-a",
-        Some("ncn-1.6"),
-        &["img-1"],
-        None,
-      )],
+      vec![session_producing("session-a", Some("ncn-1.6"), &["img-1"])],
       vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
     );
@@ -365,10 +309,9 @@ mod tests {
   #[test]
   fn picks_first_producing_session_in_name_order() {
     let rows = build_cache(
-      vec![],
       vec![
-        session_producing("session-z", Some("ncn-1.6"), &["img-1"], None),
-        session_producing("session-a", Some("ncn-1.6"), &["img-1"], None),
+        session_producing("session-z", Some("ncn-1.6"), &["img-1"]),
+        session_producing("session-a", Some("ncn-1.6"), &["img-1"]),
       ],
       vec![],
       vec![image("img-1", "ncn-1.6-base", None, None)],
@@ -380,7 +323,6 @@ mod tests {
   #[test]
   fn fills_bos_columns_when_a_template_boots_from_the_image() {
     let rows = build_cache(
-      vec![],
       vec![],
       vec![template_booting("tmpl-x", &["img-1"])],
       vec![image("img-1", "ncn-1.6-base", None, None)],
@@ -398,7 +340,6 @@ mod tests {
   fn picks_first_booting_template_in_name_order() {
     let rows = build_cache(
       vec![],
-      vec![],
       vec![
         template_booting("tmpl-z", &["img-1"]),
         template_booting("tmpl-a", &["img-1"]),
@@ -414,7 +355,6 @@ mod tests {
     let rows = build_cache(
       vec![],
       vec![],
-      vec![],
       vec![image("img-1", "orphan", None, None)],
     );
     assert_eq!(rows.len(), 1);
@@ -422,11 +362,9 @@ mod tests {
     assert_eq!(row.image_id, "img-1");
     assert!(row.image_created.is_none());
     assert!(row.configuration_name.is_none());
-    assert!(row.configuration_last_updated.is_none());
     assert!(row.session_name.is_none());
     assert!(row.session_result_id.is_none());
     assert!(row.session_configuration_name.is_none());
-    assert!(row.session_start_time.is_none());
     assert!(row.bos_sessiontemplate.is_none());
     assert!(row.bos_sessiontemplate_boot_image.is_none());
   }
@@ -435,8 +373,7 @@ mod tests {
   #[test]
   fn sessions_and_templates_without_an_image_are_dropped() {
     let rows = build_cache(
-      vec![],
-      vec![session_producing("session-x", None, &["nonexistent"], None)],
+      vec![session_producing("session-x", None, &["nonexistent"])],
       vec![template_booting("tmpl-x", &["nonexistent"])],
       vec![],
     );
@@ -448,7 +385,6 @@ mod tests {
   #[test]
   fn rows_with_no_created_timestamp_fall_back_to_image_id_asc() {
     let rows = build_cache(
-      vec![],
       vec![],
       vec![],
       vec![
@@ -468,7 +404,6 @@ mod tests {
   #[test]
   fn rows_are_sorted_by_image_created_ascending() {
     let rows = build_cache(
-      vec![],
       vec![],
       vec![],
       vec![
@@ -495,32 +430,7 @@ mod tests {
 
   #[test]
   fn empty_input_yields_empty_cache() {
-    let rows = build_cache(vec![], vec![], vec![], vec![]);
+    let rows = build_cache(vec![], vec![], vec![]);
     assert!(rows.is_empty());
-  }
-
-  // configuration_last_updated is looked up from the configs list by
-  // the image's built-with configuration name.
-  #[test]
-  fn fills_configuration_last_updated_from_configs_lookup() {
-    let rows = build_cache(
-      vec![
-        config("ncn-1.6", "2026-06-01T00:00:00Z"),
-        config("other", "1999-01-01T00:00:00Z"),
-      ],
-      vec![],
-      vec![],
-      vec![
-        image("img-1", "ncn-1.6-base", Some("ncn-1.6"), None),
-        image("img-2", "no-config", None, None),
-        image("img-3", "missing-config", Some("not-listed"), None),
-      ],
-    );
-    assert_eq!(
-      rows[0].configuration_last_updated.as_deref(),
-      Some("2026-06-01T00:00:00Z")
-    );
-    assert!(rows[1].configuration_last_updated.is_none());
-    assert!(rows[2].configuration_last_updated.is_none());
   }
 }

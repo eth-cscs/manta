@@ -24,10 +24,6 @@ pub struct BackendSummary {
   /// CFS configuration the image was built with
   /// (`Image.configuration`).
   pub configuration_name: Option<String>,
-  /// `last_updated` of the CFS configuration referenced by
-  /// `configuration_name`. `None` if the configuration was not
-  /// returned by the configurations list.
-  pub configuration_last_updated: Option<String>,
   /// CFS session whose `status.artifacts[*].result_id` contains
   /// this `image_id`. If multiple sessions match, the first one in
   /// name order wins.
@@ -39,8 +35,6 @@ pub struct BackendSummary {
   /// `configuration_name` but they can drift if the image was
   /// re-tagged after the session completed.
   pub session_configuration_name: Option<String>,
-  /// `status.session.start_time` of the producing CFS session.
-  pub session_start_time: Option<String>,
   /// BOS session template whose `boot_sets[*].path` references this
   /// `image_id`. If multiple templates match, the first one in name
   /// order wins.
