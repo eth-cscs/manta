@@ -22,4 +22,5 @@ pub mod power;
 pub mod redfish;
 pub mod sat_groups;
 pub mod session;
+pub mod summary;
 pub mod template;
