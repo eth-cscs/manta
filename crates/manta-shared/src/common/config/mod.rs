@@ -212,12 +212,23 @@ cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute = 60       # per source IP for /auth/*; omit to disable
+# Global per-route HTTP timeout (returns 408). Defaults to 300 s (5 min).
+# request_timeout_secs = 300
+# Drain window after SIGTERM / Ctrl+C. Defaults to 30 s, matching the
+# k8s `terminationGracePeriodSeconds` default.
+# shutdown_grace_period_secs = 30
 # allow_http = false                  # opt in to plain-HTTP listen when no cert/key is set
                                       #   (e.g. TLS terminated upstream). Default fail-closed.
 # Filesystem root for POST /migrate/{backup,restore}. Required for those
 # endpoints to work — the server will reject migrate requests with 400
 # while this is unset. Must be an absolute path to an existing directory.
 # migrate_backup_root = "/var/lib/manta/migrate"
+
+# [auditor.kafka]                     # optional: enable Kafka audit emission
+# brokers = ["kafka.example.com:9092"]
+# topic   = "manta-audit"
+# message_timeout_ms = 5000           # librdkafka per-message delivery deadline
+# delivery_wait_secs = 0              # how long produce_message blocks; 0 = fire-and-forget
 
 [sites.<site_name>]
 backend = "csm"

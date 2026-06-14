@@ -337,12 +337,16 @@ async fn run_server(
   }
 
   let auditor = configuration.auditor.as_ref().map(|a| a.kafka.clone());
+  let shutdown_grace_period = std::time::Duration::from_secs(
+    configuration.server.shutdown_grace_period_secs,
+  );
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
     console_inactivity_timeout,
     auditor,
     auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
+    shutdown_grace_period,
     migrate_backup_root,
   });
 

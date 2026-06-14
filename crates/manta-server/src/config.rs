@@ -87,6 +87,13 @@ pub struct ServerSettings {
   /// so no endpoint needs more than the default.
   #[serde(default = "default_request_timeout_secs")]
   pub request_timeout_secs: u64,
+  /// Grace period (seconds) `axum_server` waits for in-flight
+  /// requests to finish after SIGTERM / Ctrl+C before force-aborting.
+  /// Matches the standard k8s `terminationGracePeriodSeconds` default
+  /// (30 s); pods that hit this without finishing get SIGKILL'd by
+  /// the kubelet.
+  #[serde(default = "default_shutdown_grace_period_secs")]
+  pub shutdown_grace_period_secs: u64,
   /// Filesystem root that confines `POST /migrate/{backup,restore}`
   /// file access. When set, every `destination` / `bos_file` /
   /// `cfs_file` / `hsm_file` / `ims_file` / `image_dir` path in the
@@ -130,6 +137,10 @@ impl ServerSettings {
 /// truly hung requests while letting the heavy-but-healthy ones
 /// through. Override via `request_timeout_secs` in `server.toml`
 /// if your deployment needs a different ceiling.
+fn default_shutdown_grace_period_secs() -> u64 {
+  30
+}
+
 fn default_request_timeout_secs() -> u64 {
   300
 }
@@ -213,6 +224,7 @@ mod tests {
         console_inactivity_timeout_secs: 1800,
         auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 300,
+        shutdown_grace_period_secs: 30,
         migrate_backup_root: None,
         allow_http: false,
       },

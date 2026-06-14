@@ -17,12 +17,21 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::common::audit::Audit;
 
-/// Kafka message delivery timeout in milliseconds.
-const KAFKA_MESSAGE_TIMEOUT_MS: &str = "5000";
+/// Default Kafka message delivery timeout (milliseconds), used when
+/// `server.toml`'s `[auditor.kafka].message_timeout_ms` is absent.
+const DEFAULT_KAFKA_MESSAGE_TIMEOUT_MS: u32 = 5000;
 
-/// How long to wait for Kafka delivery confirmation.
+/// Default Kafka delivery-confirmation wait (seconds), used when
+/// `server.toml`'s `[auditor.kafka].delivery_wait_secs` is absent.
 /// Zero means fire-and-forget.
-const KAFKA_DELIVERY_WAIT: Duration = Duration::from_secs(0);
+const DEFAULT_KAFKA_DELIVERY_WAIT_SECS: u64 = 0;
+
+fn default_kafka_message_timeout_ms() -> u32 {
+  DEFAULT_KAFKA_MESSAGE_TIMEOUT_MS
+}
+fn default_kafka_delivery_wait_secs() -> u64 {
+  DEFAULT_KAFKA_DELIVERY_WAIT_SECS
+}
 
 /// Kafka client configuration for audit message production.
 ///
@@ -35,6 +44,14 @@ pub struct Kafka {
   pub brokers: Vec<String>,
   /// Kafka topic that audit messages are published to.
   pub topic: String,
+  /// librdkafka `message.timeout.ms`: how long a queued audit
+  /// message tries to deliver before being dropped.
+  #[serde(default = "default_kafka_message_timeout_ms")]
+  pub message_timeout_ms: u32,
+  /// How long `produce_message` blocks waiting for delivery
+  /// confirmation. Zero (default) is fire-and-forget.
+  #[serde(default = "default_kafka_delivery_wait_secs")]
+  pub delivery_wait_secs: u64,
   #[serde(skip)]
   producer: OnceLock<FutureProducer>,
 }
@@ -63,6 +80,8 @@ impl Clone for Kafka {
     Self {
       brokers: self.brokers.clone(),
       topic: self.topic.clone(),
+      message_timeout_ms: self.message_timeout_ms,
+      delivery_wait_secs: self.delivery_wait_secs,
       producer: OnceLock::new(),
     }
   }
@@ -79,6 +98,8 @@ impl Kafka {
     Self {
       brokers,
       topic,
+      message_timeout_ms: DEFAULT_KAFKA_MESSAGE_TIMEOUT_MS,
+      delivery_wait_secs: DEFAULT_KAFKA_DELIVERY_WAIT_SECS,
       producer: OnceLock::new(),
     }
   }
@@ -92,7 +113,7 @@ impl Kafka {
     let brokers = self.brokers.join(",");
     let p: FutureProducer = ClientConfig::new()
       .set("bootstrap.servers", &brokers)
-      .set("message.timeout.ms", KAFKA_MESSAGE_TIMEOUT_MS)
+      .set("message.timeout.ms", self.message_timeout_ms.to_string())
       .create()
       .map_err(|e| {
         MantaError::KafkaError(format!("Failed to create Kafka producer: {e}"))
@@ -110,7 +131,7 @@ impl Audit for Kafka {
     let delivery_status = producer
       .send::<Vec<u8>, _, _>(
         FutureRecord::to(&self.topic).payload(data),
-        KAFKA_DELIVERY_WAIT,
+        Duration::from_secs(self.delivery_wait_secs),
       )
       .await;
 
