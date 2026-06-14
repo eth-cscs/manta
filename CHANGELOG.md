@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.55] - 2026-06-14
+
+### Bug Fixes
+
+- Sort cache rows by image_created ascending (oldest first)
+- Bump default request_timeout_secs from 300 to 600
+- Sequence get_configuration_analysis upstream calls
+
+### Documentation
+
+- Document GET /api/v1/summary endpoint
+- Surface request_timeout_secs in cli.toml samples
+- Show timeout defaults as live values, not commented hints
+- Add `examples/cli.toml` and `examples/server.toml`
+
+### Features
+
+- Add BackendSummary wire type for `/api/v1/summary`
+- Pure `build_summary` linker for /summary endpoint
+- Get_summary fans four service fetchers out via try_join
+- Expose `GET /api/v1/summary` (Vec<BackendSummary>)
+- Add `manta get summary` command
+- Default one-shot REST timeout to 5 minutes
+- Make every hardcoded timeout in manta-cli configurable
+- Make every hardcoded timeout in manta-server configurable
+- Add image_created, configuration_last_updated, session_start_time
+- Rename `manta get summary` to `manta get cache`
+- Print row count after `manta get cache` table
+- Rename `manta get cache` to `manta get analysis image`
+- Sort cache rows by image_created descending
+- Add `manta get analysis configuration`
+- Add --only-safe-to-delete / --only-unsafe-to-delete to analysis configuration
+- Add safe_to_delete to image analysis rows
+- Add --only-safe-to-delete / --only-unsafe-to-delete to analysis image
+
+### Refactor
+
+- [**breaking**] Drop dead `parent_hsm_group` config field and its CLI surface
+- Rename summary module to cache
+- Drop configuration_last_updated and session_start_time
+- Complete the cache -> analysis rename
+- Drop session + bos-template columns from image rows
+
 ## [2.0.0-beta.54] - 2026-06-14
 
 ### Bug Fixes
