@@ -164,27 +164,24 @@ const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
 site = "<site_name>"
 manta_server_url = "https://manta-server.example.com:8443"
 
-# Timeout knobs (all optional). Defaults match the historical
-# hardcoded values; override only if a specific deployment needs
-# something different.
+# Timeout knobs. Values shown are the built-in defaults — delete a
+# line to fall back to the default, or change the value to override.
 #
-# Per-request HTTP timeout (seconds) reaching `manta_server_url`.
-# Default: 300 for REST calls; streams (SSE log tail, WS console)
-# are unlimited. Setting this also caps streams — pick a value larger
-# than your worst-case session if you set it.
-# request_timeout_secs = 300
+# Per-request HTTP timeout reaching `manta_server_url` (seconds).
+# Default 300 caps REST calls. Streams (SSE log tail, WS console)
+# are unlimited when this is absent; setting it caps streams too.
+request_timeout_secs             = 300
 #
-# `manta power on/off/reset`: how often to poll the PCS transition
-# (seconds), and how many polls before giving up.
-# power_poll_interval_secs = 3
-# power_max_poll_attempts  = 300
+# `manta power on/off/reset`: poll interval (seconds) and max
+# attempts before giving up. 300 × 3 s = 15 min total wait.
+power_poll_interval_secs         = 3
+power_max_poll_attempts          = 300
 #
-# `manta apply sat-file`: CFS-session monitor poll interval, the
-# overall hard cap on the monitor loop, and the cap on consecutive
-# "session not yet visible" responses (all seconds).
-# sat_file_poll_interval_secs       = 10
-# sat_file_poll_budget_secs         = 14400   # 4 hours
-# sat_file_not_visible_budget_secs  = 300     # 5 minutes
+# `manta apply sat-file`: poll interval, overall hard cap, and
+# cap on consecutive "session not yet visible" responses (seconds).
+sat_file_poll_interval_secs      = 10
+sat_file_poll_budget_secs        = 14400   # 4 hours
+sat_file_not_visible_budget_secs = 300     # 5 minutes
 
 [sites.<site_name>]
 backend = "csm"                 # or "ochami"
@@ -211,24 +208,23 @@ port = 8443
 cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute = 60       # per source IP for /auth/*; omit to disable
-# Global per-route HTTP timeout (returns 408). Defaults to 300 s (5 min).
-# request_timeout_secs = 300
-# Drain window after SIGTERM / Ctrl+C. Defaults to 30 s, matching the
-# k8s `terminationGracePeriodSeconds` default.
-# shutdown_grace_period_secs = 30
-# allow_http = false                  # opt in to plain-HTTP listen when no cert/key is set
-                                      #   (e.g. TLS terminated upstream). Default fail-closed.
+auth_rate_limit_per_minute      = 60     # per source IP for /auth/*; omit to disable
+# Values shown for the two timeout knobs are the built-in defaults —
+# delete a line to fall back to the default, or change to override.
+request_timeout_secs            = 300    # global per-route timeout; returns 408 on expiry
+shutdown_grace_period_secs      = 30     # drain window after SIGTERM / Ctrl+C; matches k8s terminationGracePeriodSeconds
+# allow_http = false                     # opt in to plain-HTTP listen when no cert/key is set
+                                         #   (e.g. TLS terminated upstream). Default fail-closed.
 # Filesystem root for POST /migrate/{backup,restore}. Required for those
 # endpoints to work — the server will reject migrate requests with 400
 # while this is unset. Must be an absolute path to an existing directory.
 # migrate_backup_root = "/var/lib/manta/migrate"
 
-# [auditor.kafka]                     # optional: enable Kafka audit emission
-# brokers = ["kafka.example.com:9092"]
-# topic   = "manta-audit"
-# message_timeout_ms = 5000           # librdkafka per-message delivery deadline
-# delivery_wait_secs = 0              # how long produce_message blocks; 0 = fire-and-forget
+# [auditor.kafka]                        # optional: enable Kafka audit emission
+# brokers            = ["kafka.example.com:9092"]
+# topic              = "manta-audit"
+# message_timeout_ms = 5000              # librdkafka per-message delivery deadline; default 5000
+# delivery_wait_secs = 0                 # how long produce_message blocks; 0 = fire-and-forget (default)
 
 [sites.<site_name>]
 backend = "csm"
