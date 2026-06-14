@@ -20,7 +20,7 @@ key            = "/etc/manta/tls/server.key"
 # override.
 console_inactivity_timeout_secs = 1800     # idle WebSocket console drop
 auth_rate_limit_per_minute      = 60       # per source IP on /auth/*; omit to disable
-request_timeout_secs            = 300      # global per-route timeout; returns 408 on expiry
+request_timeout_secs            = 600      # global per-route timeout; returns 408 on expiry
 shutdown_grace_period_secs      = 30       # drain window after SIGTERM / Ctrl+C
 
 # allow_http = false                       # opt in to plain-HTTP listen when no cert/key is set

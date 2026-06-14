@@ -127,22 +127,20 @@ impl ServerSettings {
   }
 }
 
-/// Default global request timeout — 300s (5 min). Bumped from the
-/// previous 60s because some upstream-CSM operations (large bulk
-/// component fetches, SAT-file applies that touch many resources,
-/// migrate-restore re-hydrations) routinely take longer than a
-/// minute end-to-end even when csm-rs is doing the right thing
-/// under the hood. A 60s ceiling was returning 408 to operators
-/// before the upstream had a chance to finish. 5 min still bounds
-/// truly hung requests while letting the heavy-but-healthy ones
-/// through. Override via `request_timeout_secs` in `server.toml`
-/// if your deployment needs a different ceiling.
+/// Default global request timeout — 600s (10 min). Bumped from 300s
+/// after `GET /cache/configuration` (and other cross-resource fan-out
+/// endpoints that hit CFS + BSS + IMS concurrently) started 408'ing
+/// against busy sites where any single upstream fetch can stall on
+/// the CSM Envoy reset window. 10 min still bounds truly hung
+/// requests while letting heavy-but-healthy ones through. Override
+/// via `request_timeout_secs` in `server.toml` if your deployment
+/// needs a different ceiling.
 fn default_shutdown_grace_period_secs() -> u64 {
   30
 }
 
 fn default_request_timeout_secs() -> u64 {
-  300
+  600
 }
 
 /// Top-level configuration for the `manta-server` binary. Persisted as
@@ -256,14 +254,14 @@ mod tests {
   /// timeout-related fields still default correctly when the only
   /// remaining knob is absent.
   #[test]
-  fn server_settings_request_timeout_secs_defaults_to_300() {
+  fn server_settings_request_timeout_secs_defaults_to_600() {
     let toml_str = r#"
       listen_address = "0.0.0.0"
       port = 8443
       console_inactivity_timeout_secs = 1800
     "#;
     let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
-    assert_eq!(parsed.request_timeout_secs, 300);
+    assert_eq!(parsed.request_timeout_secs, 600);
   }
 
   /// `[server]` block with neither `listen_address` nor `port`
@@ -290,7 +288,7 @@ mod tests {
       console_inactivity_timeout_secs = 1800
     "#;
     let parsed: ServerSettings = toml::from_str(toml_str).unwrap();
-    assert_eq!(parsed.request_timeout_secs, 300);
+    assert_eq!(parsed.request_timeout_secs, 600);
   }
 
   #[test]
