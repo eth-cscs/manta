@@ -56,8 +56,15 @@ pub fn subcommand_get_hardware_group() -> Command {
     )
 }
 
-pub fn subcommand_get_cache() -> Command {
-  Command::new("cache")
+pub fn subcommand_get_analysis() -> Command {
+  Command::new("analysis")
+    .arg_required_else_help(true)
+    .about("Cross-resource analyses")
+    .subcommand(subcommand_get_analysis_image())
+}
+
+pub fn subcommand_get_analysis_image() -> Command {
+  Command::new("image")
     .about(
       "Aggregate view of CFS configurations, sessions, BOS templates, and IMS \
        images, linked by image id (one row per image)",
@@ -263,7 +270,7 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
 pub fn subcommand_get() -> Command {
   Command::new("get")
     .arg_required_else_help(true)
-    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, cache, and boot/kernel parameters")
+    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, analysis, and boot/kernel parameters")
     .subcommand(subcommand_get_group())
     .subcommand(subcommand_get_hardware())
     .subcommand(subcommand_get_cfs_session())
@@ -272,7 +279,7 @@ pub fn subcommand_get() -> Command {
     .subcommand(subcommand_get_group_nodes())
     .subcommand(subcommand_get_node_details())
     .subcommand(subcommand_get_images())
-    .subcommand(subcommand_get_cache())
+    .subcommand(subcommand_get_analysis())
     .subcommand(subcommand_get_boot_parameters())
     .subcommand(subcommand_get_kernel_parameters())
     .subcommand(subcommand_get_redfish_endpoints())

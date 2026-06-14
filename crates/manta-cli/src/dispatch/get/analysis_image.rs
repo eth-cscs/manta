@@ -1,4 +1,4 @@
-//! Implements the `manta get cache` command.
+//! Implements the `manta get analysis image` command.
 
 use anyhow::Error;
 
@@ -6,7 +6,7 @@ use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 
-/// CLI adapter for `manta get cache`.
+/// CLI adapter for `manta get analysis image`.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
@@ -23,6 +23,6 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  output::cache::print(&rows, output_opt)?;
+  output::analysis_image::print(&rows, output_opt)?;
   Ok(())
 }

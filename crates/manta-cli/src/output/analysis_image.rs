@@ -1,4 +1,4 @@
-//! Table and JSON renderers for `manta get cache`.
+//! Table and JSON renderers for `manta get analysis image`.
 
 use anyhow::{Context, Error};
 use comfy_table::{ContentArrangement, Table};

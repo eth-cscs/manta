@@ -11,7 +11,7 @@ pub mod kernel_parameters;
 pub mod nodes;
 pub mod redfish_endpoints;
 pub mod sessions;
-pub mod cache;
+pub mod analysis_image;
 pub mod templates;
 
 use crate::common::app_context::AppContext;
@@ -21,7 +21,8 @@ use clap::ArgMatches;
 
 /// Dispatch `manta get` subcommands (groups, hardware [nodes, group],
 /// sessions, configurations, templates, group-nodes, nodes, images,
-/// cache, boot-parameters, kernel-parameters, redfish-endpoints).
+/// analysis [image], boot-parameters, kernel-parameters,
+/// redfish-endpoints).
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -41,7 +42,11 @@ pub async fn handle_get(
       configurations::exec(ctx, &token, m).await?;
     }
     Some(("sessions", m)) => sessions::exec(ctx, &token, m).await?,
-    Some(("cache", m)) => cache::exec(ctx, &token, m).await?,
+    Some(("analysis", m)) => match m.subcommand() {
+      Some(("image", m)) => analysis_image::exec(ctx, &token, m).await?,
+      Some((other, _)) => bail!("Unknown 'get analysis' subcommand: {other}"),
+      None => bail!("No 'get analysis' subcommand provided"),
+    },
     Some(("templates", m)) => templates::exec(ctx, &token, m).await?,
     Some(("nodes", m)) => nodes::exec(ctx, &token, m).await?,
     Some(("images", m)) => images::exec(ctx, &token, m).await?,
