@@ -13,7 +13,7 @@ use super::handlers;
   paths(
     handlers::health,
     handlers::get_sessions,
-    handlers::get_summary,
+    handlers::get_cache,
     handlers::get_configurations,
     handlers::get_nodes,
     handlers::get_groups,

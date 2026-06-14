@@ -516,6 +516,66 @@
         ]
       }
     },
+    "/cache": {
+      "get": {
+        "tags": [
+          "cache"
+        ],
+        "summary": "GET /cache — image-centric flat projection of every CFS\nconfiguration, CFS session, BOS session template, and IMS image\nvisible to the caller. One row per IMS image; see\n[`BackendSummary`] for column semantics.",
+        "operationId": "get_cache",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backend cache rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BackendSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/clusters": {
       "get": {
         "tags": [
@@ -4121,66 +4181,6 @@
           },
           "501": {
             "description": "Vault or k8s not configured",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/summary": {
-      "get": {
-        "tags": [
-          "summary"
-        ],
-        "summary": "GET /summary — image-centric flat projection of every CFS\nconfiguration, CFS session, BOS session template, and IMS image\nvisible to the caller. One row per IMS image; see\n[`BackendSummary`] for column semantics.",
-        "operationId": "get_summary",
-        "parameters": [
-          {
-            "name": "X-Manta-Site",
-            "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Backend summary rows",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/BackendSummary"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error",
             "content": {
               "application/json": {
                 "schema": {

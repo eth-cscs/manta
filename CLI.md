@@ -289,7 +289,7 @@ manta get cache
 manta get cache -o json | jq '.[] | select(.bos_sessiontemplate != null)'
 ```
 
-If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/summary`.
+If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/cache`.
 
 ### get boot-parameters
 

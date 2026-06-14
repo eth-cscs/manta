@@ -19,7 +19,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let rows = client
     .openapi
-    .get_summary(client.site_name())
+    .get_cache(client.site_name())
     .await
     .into_anyhow()?;
 

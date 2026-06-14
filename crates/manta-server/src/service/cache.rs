@@ -2,12 +2,12 @@
 //! BOS templates + IMS images. One row per IMS image, eight columns
 //! per row (see [`BackendSummary`] for field semantics).
 //!
-//! - [`get_summary`] orchestrates four service-layer fetches
-//!   concurrently and feeds them to [`build_summary`]. It is the
+//! - [`get_cache`] orchestrates four service-layer fetches
+//!   concurrently and feeds them to [`build_cache`]. It is the
 //!   only IO surface in this module; the linker itself is pure.
-//! - [`build_summary`] takes the four resource vecs and produces a
+//! - [`build_cache`] takes the four resource vecs and produces a
 //!   sorted `Vec<BackendSummary>`. Pure function — exercised by
-//!   unit tests, called by [`get_summary`].
+//!   unit tests, called by [`get_cache`].
 
 use std::collections::HashMap;
 
@@ -21,7 +21,7 @@ use crate::server::common::app_context::InfraContext;
 pub use manta_shared::types::api::summary::BackendSummary;
 
 /// Pure linker.
-pub fn build_summary(
+pub fn build_cache(
   configs: Vec<CfsConfigurationResponse>,
   mut sessions: Vec<CfsSessionGetResponse>,
   mut templates: Vec<BosSessionTemplate>,
@@ -131,13 +131,13 @@ fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
 
 /// Fan the four service-layer fetchers out concurrently, then run
 /// the pure linker. Each fetcher applies its own group-access scope,
-/// so the summary cannot return rows the caller couldn't list via
+/// so the cache cannot return rows the caller couldn't list via
 /// the per-resource endpoints.
-pub async fn get_summary(
+pub async fn get_cache(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<BackendSummary>, Error> {
-  tracing::info!("Building backend summary");
+  tracing::info!("Building backend cache");
 
   let configs_params = crate::service::configuration::GetConfigurationParams {
     name: None,
@@ -181,7 +181,7 @@ pub async fn get_summary(
     crate::service::image::get_images(infra, token, &images_params),
   )?;
 
-  Ok(build_summary(configs, sessions, templates, images))
+  Ok(build_cache(configs, sessions, templates, images))
 }
 
 #[cfg(test)]
@@ -308,7 +308,7 @@ mod tests {
   // image_id + name + configuration_name come from Image directly.
   #[test]
   fn anchors_one_row_per_image_with_built_with_configuration() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![],
       vec![],
@@ -328,7 +328,7 @@ mod tests {
   // are set together from the first producing session.
   #[test]
   fn fills_session_columns_when_a_session_produced_the_image() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![session_producing(
         "session-a",
@@ -352,7 +352,7 @@ mod tests {
   // order wins.
   #[test]
   fn picks_first_producing_session_in_name_order() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![
         session_producing("session-z", Some("ncn-1.6"), &["img-1"], None),
@@ -367,7 +367,7 @@ mod tests {
   // bos_sessiontemplate + bos_sessiontemplate_boot_image set together.
   #[test]
   fn fills_bos_columns_when_a_template_boots_from_the_image() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![],
       vec![template_booting("tmpl-x", &["img-1"])],
@@ -384,7 +384,7 @@ mod tests {
   // First template in name order wins.
   #[test]
   fn picks_first_booting_template_in_name_order() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![],
       vec![
@@ -399,7 +399,7 @@ mod tests {
   // Orphan images still get a row.
   #[test]
   fn orphan_images_get_a_row_with_optional_columns_none() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![],
       vec![],
@@ -422,7 +422,7 @@ mod tests {
   // Sessions / templates that name nonexistent images: dropped.
   #[test]
   fn sessions_and_templates_without_an_image_are_dropped() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![session_producing("session-x", None, &["nonexistent"], None)],
       vec![template_booting("tmpl-x", &["nonexistent"])],
@@ -434,7 +434,7 @@ mod tests {
   // Output sorted by image_id ascending.
   #[test]
   fn rows_are_sorted_by_image_id() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![],
       vec![],
       vec![],
@@ -450,8 +450,8 @@ mod tests {
   }
 
   #[test]
-  fn empty_input_yields_empty_summary() {
-    let rows = build_summary(vec![], vec![], vec![], vec![]);
+  fn empty_input_yields_empty_cache() {
+    let rows = build_cache(vec![], vec![], vec![], vec![]);
     assert!(rows.is_empty());
   }
 
@@ -459,7 +459,7 @@ mod tests {
   // the image's built-with configuration name.
   #[test]
   fn fills_configuration_last_updated_from_configs_lookup() {
-    let rows = build_summary(
+    let rows = build_cache(
       vec![
         config("ncn-1.6", "2026-06-01T00:00:00Z"),
         config("other", "1999-01-01T00:00:00Z"),
