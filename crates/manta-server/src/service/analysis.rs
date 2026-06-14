@@ -255,16 +255,28 @@ pub async fn get_configuration_analysis(
     limit: None,
   };
 
-  let (configs, components, boot_params, images) = tokio::try_join!(
-    crate::service::configuration::get_configurations(
-      infra,
-      token,
-      &configs_params
-    ),
-    infra.backend.get_cfs_components(token, None, None, None),
-    infra.backend.get_all_bootparameters(token),
-    crate::service::image::get_images(infra, token, &images_params),
-  )?;
+  // Sequential rather than concurrent: the four upstream fetches
+  // include `get_cfs_components` and `get_all_bootparameters`, both
+  // of which can be very large at scale. Fanning them out with
+  // `try_join!` flooded the upstream Envoy and tripped its
+  // connection-termination behaviour ("upstream connect error or
+  // disconnect/reset before headers"). Sequencing trades wall-clock
+  // for resilience; if even the sequential calls trip the upstream,
+  // the next step is retry-with-backoff at this layer or paging the
+  // bulk calls in csm-rs.
+  let configs = crate::service::configuration::get_configurations(
+    infra,
+    token,
+    &configs_params,
+  )
+  .await?;
+  let components = infra
+    .backend
+    .get_cfs_components(token, None, None, None)
+    .await?;
+  let boot_params = infra.backend.get_all_bootparameters(token).await?;
+  let images =
+    crate::service::image::get_images(infra, token, &images_params).await?;
 
   Ok(build_configuration_analysis(
     configs,
