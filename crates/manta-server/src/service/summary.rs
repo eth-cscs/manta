@@ -119,12 +119,59 @@ fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
     .unwrap_or_default()
 }
 
-/// Orchestrator. Implementation in Task 3.
+/// Fan the four service-layer fetchers out concurrently, then run
+/// the pure linker. Each fetcher applies its own group-access scope,
+/// so the summary cannot return rows the caller couldn't list via
+/// the per-resource endpoints.
 pub async fn get_summary(
-  _infra: &InfraContext<'_>,
-  _token: &str,
+  infra: &InfraContext<'_>,
+  token: &str,
 ) -> Result<Vec<BackendSummary>, Error> {
-  todo!("Task 3")
+  tracing::info!("Building backend summary");
+
+  let configs_params = crate::service::configuration::GetConfigurationParams {
+    name: None,
+    pattern: None,
+    group_name: None,
+    settings_hsm_group_name: None,
+    since: None,
+    until: None,
+    limit: None,
+  };
+  let sessions_params = crate::service::session::GetSessionParams {
+    group: None,
+    xnames: Vec::new(),
+    min_age: None,
+    max_age: None,
+    session_type: None,
+    status: None,
+    name: None,
+    limit: None,
+  };
+  let templates_params = crate::service::template::GetTemplateParams {
+    name: None,
+    group_name: None,
+    settings_group_name: None,
+    limit: None,
+  };
+  let images_params = crate::service::image::GetImagesParams {
+    id: None,
+    pattern: None,
+    limit: None,
+  };
+
+  let (configs, sessions, templates, images) = tokio::try_join!(
+    crate::service::configuration::get_configurations(
+      infra,
+      token,
+      &configs_params
+    ),
+    crate::service::session::get_sessions(infra, token, &sessions_params),
+    crate::service::template::get_templates(infra, token, &templates_params),
+    crate::service::image::get_images(infra, token, &images_params),
+  )?;
+
+  Ok(build_summary(configs, sessions, templates, images))
 }
 
 #[cfg(test)]
