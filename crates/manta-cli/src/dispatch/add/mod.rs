@@ -63,7 +63,7 @@ pub async fn handle_add(
           description: m.opt_str("description"),
           hosts_expression: m.opt_str("nodes"),
           assume_yes: true,
-          dry_run: false,
+          dry_run: m.get_flag("dry-run"),
           output: m.opt_str("output"),
         },
       )

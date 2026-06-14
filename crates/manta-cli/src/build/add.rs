@@ -12,6 +12,10 @@ pub fn subcommand_add_group() -> Command {
     .arg(arg!(-l --label <NAME> "Group name").required(true))
     .arg(arg!(-d --description <VALUE> "Group description"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
+    .arg(
+      arg!(--"dry-run" "Validate input and print the payload(s) that would be sent to the backend without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }
 

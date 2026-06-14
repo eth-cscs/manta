@@ -54,6 +54,10 @@ pub fn subcommand_delete_group() -> Command {
       Move its members to another group with 'migrate nodes' first.",
     )
     .arg(arg!(-f --force "Force deletion").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Validate input and print the request that would be sent to the backend without making changes")
+        .action(ArgAction::SetTrue),
+    )
     // ID preserved as "VALUE" for handler compatibility
     .arg(
       arg!(<VALUE> "Name of the group to delete")

@@ -42,12 +42,27 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
+  // Build the second payload up-front so dry-run can surface it too.
+  let add_nodes_req = p.hosts_expression.map(|expr| AddNodesToGroupRequest {
+    hosts_expression: expr.to_string(),
+  });
+
   if p.dry_run {
     println!(
-      "Dryrun mode: The group below would be created:\n{}",
+      "Dry-run: would POST create_group with the payload below; no backend call will be made.\n\
+       create_group payload:\n{}",
       serde_json::to_string_pretty(&grp)
         .context("Failed to serialize group")?
     );
+    if let Some(req) = &add_nodes_req {
+      println!(
+        "\nDry-run: would then POST add_nodes_to_group to group '{}' with the payload below.\n\
+         add_nodes_to_group payload:\n{}",
+        p.label,
+        serde_json::to_string_pretty(req)
+          .context("Failed to serialize add_nodes_to_group request")?
+      );
+    }
     return Ok(());
   }
 
@@ -58,16 +73,10 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  if let Some(expr) = p.hosts_expression {
+  if let Some(req) = add_nodes_req {
     client
       .openapi
-      .add_nodes_to_group(
-        p.label,
-        client.site_name(),
-        &AddNodesToGroupRequest {
-          hosts_expression: expr.to_string(),
-        },
-      )
+      .add_nodes_to_group(p.label, client.site_name(), &req)
       .await
       .into_anyhow()?;
   }

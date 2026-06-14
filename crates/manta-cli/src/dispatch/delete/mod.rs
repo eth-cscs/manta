@@ -32,8 +32,9 @@ pub async fn handle_delete(
       let force: bool = *m
         .get_one("force")
         .context("'force' argument must have a value")?;
+      let dry_run: bool = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      group::exec(ctx, &token, label, force, output_opt).await?;
+      group::exec(ctx, &token, label, force, dry_run, output_opt).await?;
     }
     Some(("node", m)) => {
       let id = m.req_str("VALUE")?;
