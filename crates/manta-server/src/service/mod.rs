@@ -1,6 +1,7 @@
 //! Business logic layer — orchestrates backend calls and enforces domain rules
 //! for every resource type exposed by the CLI and HTTP server.
 
+pub mod analysis;
 pub mod auth;
 pub mod authorization;
 pub mod boot_parameters;
@@ -22,5 +23,4 @@ pub mod power;
 pub mod redfish;
 pub mod sat_groups;
 pub mod session;
-pub mod cache;
 pub mod template;

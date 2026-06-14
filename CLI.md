@@ -289,7 +289,7 @@ manta get analysis image
 manta get analysis image -o json | jq '.[] | select(.bos_sessiontemplate != null)'
 ```
 
-If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/cache`.
+If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/analysis/images`.
 
 ### get analysis configuration
 
@@ -304,7 +304,7 @@ manta get analysis configuration
 manta get analysis configuration -o json | jq '.[] | select(.safe_to_delete) | .name'
 ```
 
-Calls `GET /api/v1/cache/configuration`.
+Calls `GET /api/v1/analysis/configurations`.
 
 ### get boot-parameters
 

@@ -1,4 +1,4 @@
-//! Wire shape for `GET /api/v1/cache/configuration`.
+//! Wire shape for `GET /api/v1/analysis/configurations`.
 //!
 //! One row per CFS configuration, carrying its last-updated timestamp
 //! and a `safe_to_delete` verdict derived from cross-resource

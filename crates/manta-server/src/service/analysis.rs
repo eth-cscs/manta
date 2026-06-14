@@ -21,8 +21,8 @@ use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
+pub use manta_shared::types::api::analysis::BackendSummary;
 pub use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
-pub use manta_shared::types::api::summary::BackendSummary;
 
 /// Pure linker.
 pub fn build_cache(
@@ -101,7 +101,9 @@ pub fn build_cache(
   rows.sort_by(|a, b| {
     use std::cmp::Ordering;
     match (a.image_created.as_ref(), b.image_created.as_ref()) {
-      (Some(ac), Some(bc)) => ac.cmp(bc).then_with(|| a.image_id.cmp(&b.image_id)),
+      (Some(ac), Some(bc)) => {
+        ac.cmp(bc).then_with(|| a.image_id.cmp(&b.image_id))
+      }
       (Some(_), None) => Ordering::Less,
       (None, Some(_)) => Ordering::Greater,
       (None, None) => a.image_id.cmp(&b.image_id),
@@ -133,7 +135,7 @@ fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
 /// the pure linker. Each fetcher applies its own group-access scope,
 /// so the cache cannot return rows the caller couldn't list via
 /// the per-resource endpoints.
-pub async fn get_cache(
+pub async fn get_image_analysis(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<BackendSummary>, Error> {
@@ -389,7 +391,10 @@ mod tests {
     }
   }
 
-  fn template_booting(name: &str, boot_image_ids: &[&str]) -> BosSessionTemplate {
+  fn template_booting(
+    name: &str,
+    boot_image_ids: &[&str],
+  ) -> BosSessionTemplate {
     let mut boot_sets = HashMap::new();
     for (i, id) in boot_image_ids.iter().enumerate() {
       boot_sets.insert(
@@ -443,10 +448,7 @@ mod tests {
     let row = &rows[0];
     assert_eq!(row.session_name.as_deref(), Some("session-a"));
     assert_eq!(row.session_result_id.as_deref(), Some("img-1"));
-    assert_eq!(
-      row.session_configuration_name.as_deref(),
-      Some("ncn-1.6")
-    );
+    assert_eq!(row.session_configuration_name.as_deref(), Some("ncn-1.6"));
   }
 
   // When multiple sessions produced the same image, first in name
@@ -474,10 +476,7 @@ mod tests {
     );
     let row = &rows[0];
     assert_eq!(row.bos_sessiontemplate.as_deref(), Some("tmpl-x"));
-    assert_eq!(
-      row.bos_sessiontemplate_boot_image.as_deref(),
-      Some("img-1")
-    );
+    assert_eq!(row.bos_sessiontemplate_boot_image.as_deref(), Some("img-1"));
   }
 
   // First template in name order wins.
@@ -497,11 +496,8 @@ mod tests {
   // Orphan images still get a row.
   #[test]
   fn orphan_images_get_a_row_with_optional_columns_none() {
-    let rows = build_cache(
-      vec![],
-      vec![],
-      vec![image("img-1", "orphan", None, None)],
-    );
+    let rows =
+      build_cache(vec![], vec![], vec![image("img-1", "orphan", None, None)]);
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.image_id, "img-1");
@@ -538,8 +534,7 @@ mod tests {
         image("img-m", "m", None, None),
       ],
     );
-    let ids: Vec<&str> =
-      rows.iter().map(|r| r.image_id.as_str()).collect();
+    let ids: Vec<&str> = rows.iter().map(|r| r.image_id.as_str()).collect();
     assert_eq!(ids, vec!["img-a", "img-m", "img-z"]);
   }
 
@@ -559,16 +554,15 @@ mod tests {
         image("img-undated-a", "undated-a", None, None),
       ],
     );
-    let ids: Vec<&str> =
-      rows.iter().map(|r| r.image_id.as_str()).collect();
+    let ids: Vec<&str> = rows.iter().map(|r| r.image_id.as_str()).collect();
     assert_eq!(
       ids,
       vec![
-        "img-old",        // 2024-01-01
-        "img-middle",     // 2026-06-01
-        "img-newest",     // 2026-06-02
-        "img-undated-a",  // None, id asc tie-break
-        "img-undated-z",  // None, id asc tie-break
+        "img-old",       // 2024-01-01
+        "img-middle",    // 2026-06-01
+        "img-newest",    // 2026-06-02
+        "img-undated-a", // None, id asc tie-break
+        "img-undated-z", // None, id asc tie-break
       ]
     );
   }

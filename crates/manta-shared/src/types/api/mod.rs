@@ -22,6 +22,10 @@
 //! owned by upstream crates) live in [`super::dto`], which is kept
 //! separate because it serves a different concern: types we don't own.
 
+/// Aggregate summary of CFS configurations + sessions + BOS templates +
+/// IMS images flattened into image-centric rows
+/// (`/api/v1/analysis/images`).
+pub mod analysis;
 /// Boot-parameter request/response bodies (`/api/v1/boot-config`,
 /// `/api/v1/boot-parameters`).
 pub mod boot_parameters;
@@ -30,7 +34,7 @@ pub mod cluster;
 /// CLI-built params for `GET /configurations`.
 pub mod configuration;
 /// Wire shape for the configuration-deletion-safety analysis
-/// (`/api/v1/cache/configuration`).
+/// (`/api/v1/analysis/configurations`).
 pub mod configuration_analysis;
 /// HSM group request/response bodies (`/api/v1/groups`,
 /// `/api/v1/groups/{name}/members`).
@@ -67,9 +71,6 @@ pub mod responses;
 pub mod sat_file;
 /// CFS session request/response bodies (`/api/v1/sessions`).
 pub mod session;
-/// Aggregate summary of CFS configurations + sessions + BOS templates +
-/// IMS images flattened into image-centric rows (`/api/v1/summary`).
-pub mod summary;
 /// BOS session-template request/response bodies (`/api/v1/templates`,
 /// `/api/v1/templates/{name}/sessions`).
 pub mod template;

@@ -13,7 +13,7 @@ use super::handlers;
   paths(
     handlers::health,
     handlers::get_sessions,
-    handlers::get_cache,
+    handlers::get_image_analysis,
     handlers::get_configuration_analysis,
     handlers::get_configurations,
     handlers::get_nodes,
@@ -108,7 +108,7 @@ use super::handlers;
     manta_shared::types::api::responses::CompletedResponse,
     manta_shared::types::api::responses::MigrateNodesPairResult,
     manta_shared::types::api::responses::MigrateNodesResponse,
-    manta_shared::types::api::summary::BackendSummary,
+    manta_shared::types::api::analysis::BackendSummary,
     manta_shared::types::api::configuration_analysis::ConfigurationAnalysis,
     manta_backend_dispatcher::types::Group,
     manta_backend_dispatcher::types::Member,

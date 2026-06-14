@@ -32,9 +32,9 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
   let api = Router::new()
     // --- GET endpoints ---
     .route("/sessions", get(handlers::get_sessions))
-    .route("/cache", get(handlers::get_cache))
+    .route("/analysis/images", get(handlers::get_image_analysis))
     .route(
-      "/cache/configuration",
+      "/analysis/configurations",
       get(handlers::get_configuration_analysis),
     )
     .route("/configurations", get(handlers::get_configurations))
