@@ -61,6 +61,7 @@ pub fn subcommand_get_analysis() -> Command {
     .arg_required_else_help(true)
     .about("Cross-resource analyses")
     .subcommand(subcommand_get_analysis_image())
+    .subcommand(subcommand_get_analysis_configuration())
 }
 
 pub fn subcommand_get_analysis_image() -> Command {
@@ -68,6 +69,20 @@ pub fn subcommand_get_analysis_image() -> Command {
     .about(
       "Aggregate view of CFS configurations, sessions, BOS templates, and IMS \
        images, linked by image id (one row per image)",
+    )
+    .arg(
+      arg!(-o --output <FORMAT> "Output format")
+        .value_parser(["table", "json"])
+        .default_value("table"),
+    )
+}
+
+pub fn subcommand_get_analysis_configuration() -> Command {
+  Command::new("configuration")
+    .about(
+      "List CFS configurations sorted by last-updated (oldest first), with a \
+       safe-to-delete verdict per row. Safe means no CFS component lists it \
+       as desired_config AND no BSS-referenced image was built from it.",
     )
     .arg(
       arg!(-o --output <FORMAT> "Output format")

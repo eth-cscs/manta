@@ -29,6 +29,9 @@ pub mod boot_parameters;
 pub mod cluster;
 /// CLI-built params for `GET /configurations`.
 pub mod configuration;
+/// Wire shape for the configuration-deletion-safety analysis
+/// (`/api/v1/cache/configuration`).
+pub mod configuration_analysis;
 /// HSM group request/response bodies (`/api/v1/groups`,
 /// `/api/v1/groups/{name}/members`).
 pub mod group;

@@ -11,6 +11,7 @@ pub mod kernel_parameters;
 pub mod nodes;
 pub mod redfish_endpoints;
 pub mod sessions;
+pub mod analysis_configuration;
 pub mod analysis_image;
 pub mod templates;
 
@@ -44,6 +45,9 @@ pub async fn handle_get(
     Some(("sessions", m)) => sessions::exec(ctx, &token, m).await?,
     Some(("analysis", m)) => match m.subcommand() {
       Some(("image", m)) => analysis_image::exec(ctx, &token, m).await?,
+      Some(("configuration", m)) => {
+        analysis_configuration::exec(ctx, &token, m).await?
+      }
       Some((other, _)) => bail!("Unknown 'get analysis' subcommand: {other}"),
       None => bail!("No 'get analysis' subcommand provided"),
     },

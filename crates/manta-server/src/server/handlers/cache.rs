@@ -1,9 +1,12 @@
-//! GET /api/v1/cache — aggregate backend snapshot with link graph.
+//! Cross-resource cache analyses:
+//! - GET /api/v1/cache — image-centric link graph.
+//! - GET /api/v1/cache/configuration — configuration-deletion safety.
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
+use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 use manta_shared::types::api::summary::BackendSummary;
 
 /// GET /cache — image-centric flat projection of every CFS
@@ -25,6 +28,31 @@ pub async fn get_cache(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
   let rows = service::cache::get_cache(&infra, &ctx.token)
+    .await
+    .map_err(to_handler_error)?;
+  Ok((StatusCode::OK, Json(rows)))
+}
+
+/// GET /cache/configuration — one row per CFS configuration, sorted by
+/// `last_updated` ascending, with a `safe_to_delete` verdict derived
+/// from cross-resource dependencies (CFS components' `desired_config`
+/// and BSS-referenced images' built-with configuration). See
+/// [`ConfigurationAnalysis`] for column semantics.
+#[utoipa::path(get, path = "/cache/configuration", tag = "cache",
+  params(SiteHeader),
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 200, description = "Configuration analysis rows", body = Vec<ConfigurationAnalysis>),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 500, description = "Internal error",              body = ErrorResponse),
+  )
+)]
+#[tracing::instrument(skip_all)]
+pub async fn get_configuration_analysis(
+  ctx: RequestCtx,
+) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let infra = ctx.infra();
+  let rows = service::cache::get_configuration_analysis(&infra, &ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok((StatusCode::OK, Json(rows)))

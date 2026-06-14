@@ -576,6 +576,66 @@
         ]
       }
     },
+    "/cache/configuration": {
+      "get": {
+        "tags": [
+          "cache"
+        ],
+        "summary": "GET /cache/configuration — one row per CFS configuration, sorted by\n`last_updated` ascending, with a `safe_to_delete` verdict derived\nfrom cross-resource dependencies (CFS components' `desired_config`\nand BSS-referenced images' built-with configuration). See\n[`ConfigurationAnalysis`] for column semantics.",
+        "operationId": "get_configuration_analysis",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration analysis rows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigurationAnalysis"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/clusters": {
       "get": {
         "tags": [
@@ -4817,6 +4877,29 @@
           "completed": {
             "type": "boolean",
             "description": "Always `true` on success."
+          }
+        }
+      },
+      "ConfigurationAnalysis": {
+        "type": "object",
+        "description": "One row of the configuration-deletion-safety analysis.",
+        "required": [
+          "name",
+          "last_updated",
+          "safe_to_delete"
+        ],
+        "properties": {
+          "last_updated": {
+            "type": "string",
+            "description": "`last_updated` timestamp from CFS."
+          },
+          "name": {
+            "type": "string",
+            "description": "CFS configuration name (`CfsConfigurationResponse.name`)."
+          },
+          "safe_to_delete": {
+            "type": "boolean",
+            "description": "`true` if no CFS component lists this configuration as its\n`desired_config` **and** no image built from this configuration\nis referenced by any BSS boot-parameter record. A row that is\nnot safe is referenced by at least one of those two surfaces."
           }
         }
       },

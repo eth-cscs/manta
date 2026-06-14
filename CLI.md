@@ -291,6 +291,21 @@ manta get analysis image -o json | jq '.[] | select(.bos_sessiontemplate != null
 
 If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/cache`.
 
+### get analysis configuration
+
+List every CFS configuration sorted by `last_updated` (oldest first), with a `safe_to_delete` verdict per row. A configuration is `safe_to_delete: true` iff **no** CFS component lists it as `desired_config` and **no** BSS-referenced image was built from it. Any single dependency on either surface flips it to `false`.
+
+| Flag | Type | Description |
+|------|------|-------------|
+| `-o/--output` | string | `table` (default) or `json`. |
+
+```
+manta get analysis configuration
+manta get analysis configuration -o json | jq '.[] | select(.safe_to_delete) | .name'
+```
+
+Calls `GET /api/v1/cache/configuration`.
+
 ### get boot-parameters
 
 Get BSS boot parameters.

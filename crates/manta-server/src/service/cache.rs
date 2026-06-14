@@ -1,22 +1,27 @@
-//! Image-centric flat projection of CFS configurations + sessions +
-//! BOS templates + IMS images. One row per IMS image, eight columns
-//! per row (see [`BackendSummary`] for field semantics).
+//! Cross-resource analyses that fan IMS / CFS / BOS / BSS fetches
+//! out concurrently and link the results in a pure helper.
 //!
-//! - [`get_cache`] orchestrates four service-layer fetches
-//!   concurrently and feeds them to [`build_cache`]. It is the
-//!   only IO surface in this module; the linker itself is pure.
-//! - [`build_cache`] takes the four resource vecs and produces a
-//!   sorted `Vec<BackendSummary>`. Pure function — exercised by
-//!   unit tests, called by [`get_cache`].
+//! - [`get_cache`] + [`build_cache`] — image-centric flat projection;
+//!   one row per IMS image, see [`BackendSummary`] for fields.
+//! - [`get_configuration_analysis`] + [`build_configuration_analysis`]
+//!   — configuration-deletion safety; one row per CFS configuration,
+//!   see [`ConfigurationAnalysis`] for fields.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use manta_backend_dispatcher::error::Error;
+use manta_backend_dispatcher::interfaces::{
+  bss::BootParametersTrait, cfs::CfsTrait,
+};
 use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
+use manta_backend_dispatcher::types::bss::BootParameters;
+use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
+use manta_backend_dispatcher::types::cfs::component::Component as CfsComponent;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
+pub use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 pub use manta_shared::types::api::summary::BackendSummary;
 
 /// Pure linker.
@@ -165,6 +170,108 @@ pub async fn get_cache(
   Ok(build_cache(sessions, templates, images))
 }
 
+/// Pure linker for the configuration-deletion-safety analysis.
+///
+/// A configuration is flagged unsafe to delete if either:
+/// 1. some CFS component lists it as `desired_config`, or
+/// 2. some IMS image built from it is the boot image of any BSS
+///    boot-parameter record.
+///
+/// The output is one row per configuration in `configs`, sorted by
+/// `last_updated` ascending (oldest first); ties on the timestamp
+/// break by `name` ascending.
+pub fn build_configuration_analysis(
+  mut configs: Vec<CfsConfigurationResponse>,
+  components: Vec<CfsComponent>,
+  boot_params: Vec<BootParameters>,
+  images: Vec<Image>,
+) -> Vec<ConfigurationAnalysis> {
+  // Configs that are some component's desired_config.
+  let mut unsafe_configs: HashSet<String> = components
+    .iter()
+    .filter_map(|c| c.desired_config.clone())
+    .collect();
+
+  // Image_id -> configuration name used to build it.
+  let image_id_to_config: HashMap<String, String> = images
+    .into_iter()
+    .filter_map(|img| match (img.id, img.configuration) {
+      (Some(id), Some(cfg)) => Some((id, cfg)),
+      _ => None,
+    })
+    .collect();
+
+  // Add configs that produced any BSS-referenced image.
+  for bp in &boot_params {
+    if let Some(image_id) = bp.try_get_boot_image_id() {
+      if let Some(cfg) = image_id_to_config.get(&image_id) {
+        unsafe_configs.insert(cfg.clone());
+      }
+    }
+  }
+
+  configs.sort_by(|a, b| {
+    a.last_updated
+      .cmp(&b.last_updated)
+      .then_with(|| a.name.cmp(&b.name))
+  });
+
+  configs
+    .into_iter()
+    .map(|c| {
+      let safe_to_delete = !unsafe_configs.contains(&c.name);
+      ConfigurationAnalysis {
+        name: c.name,
+        last_updated: c.last_updated,
+        safe_to_delete,
+      }
+    })
+    .collect()
+}
+
+/// Fan the four required fetchers (configurations, CFS components,
+/// BSS boot-parameters, IMS images) out concurrently and feed the
+/// pure linker.
+pub async fn get_configuration_analysis(
+  infra: &InfraContext<'_>,
+  token: &str,
+) -> Result<Vec<ConfigurationAnalysis>, Error> {
+  tracing::info!("Building configuration-deletion safety analysis");
+
+  let configs_params = crate::service::configuration::GetConfigurationParams {
+    name: None,
+    pattern: None,
+    group_name: None,
+    settings_hsm_group_name: None,
+    since: None,
+    until: None,
+    limit: None,
+  };
+  let images_params = crate::service::image::GetImagesParams {
+    id: None,
+    pattern: None,
+    limit: None,
+  };
+
+  let (configs, components, boot_params, images) = tokio::try_join!(
+    crate::service::configuration::get_configurations(
+      infra,
+      token,
+      &configs_params
+    ),
+    infra.backend.get_cfs_components(token, None, None, None),
+    infra.backend.get_all_bootparameters(token),
+    crate::service::image::get_images(infra, token, &images_params),
+  )?;
+
+  Ok(build_configuration_analysis(
+    configs,
+    components,
+    boot_params,
+    images,
+  ))
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -192,6 +299,44 @@ mod tests {
       groups: None,
       base: None,
       configuration: config.map(String::from),
+    }
+  }
+
+  fn config(name: &str, last_updated: &str) -> CfsConfigurationResponse {
+    CfsConfigurationResponse {
+      name: name.to_string(),
+      last_updated: last_updated.to_string(),
+      layers: vec![],
+      additional_inventory: None,
+    }
+  }
+
+  fn component(id: &str, desired_config: Option<&str>) -> CfsComponent {
+    CfsComponent {
+      id: Some(id.to_string()),
+      state: None,
+      desired_config: desired_config.map(String::from),
+      error_count: None,
+      retry_policy: None,
+      enabled: None,
+      configuration_status: None,
+      tags: None,
+      logs: None,
+    }
+  }
+
+  /// BSS boot-parameter record with a kernel S3 path that points at
+  /// `image_id`. `try_get_boot_image_id` parses `root` (CN) or
+  /// `metal.server` (NCN) from `params`; we set `root` here.
+  fn boot_param_for_image(image_id: &str) -> BootParameters {
+    BootParameters {
+      hosts: vec![],
+      macs: None,
+      nids: None,
+      params: format!("root=s3://boot-images/{image_id}/rootfs"),
+      kernel: format!("s3://boot-images/{image_id}/kernel"),
+      initrd: format!("s3://boot-images/{image_id}/initrd"),
+      cloud_init: None,
     }
   }
 
@@ -432,5 +577,98 @@ mod tests {
   fn empty_input_yields_empty_cache() {
     let rows = build_cache(vec![], vec![], vec![]);
     assert!(rows.is_empty());
+  }
+
+  // ------------------------------------------------------------------
+  // build_configuration_analysis
+  // ------------------------------------------------------------------
+
+  #[test]
+  fn configuration_analysis_orphan_config_is_safe_to_delete() {
+    let rows = build_configuration_analysis(
+      vec![config("orphan", "2025-01-01T00:00:00Z")],
+      vec![],
+      vec![],
+      vec![],
+    );
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].name, "orphan");
+    assert_eq!(rows[0].last_updated, "2025-01-01T00:00:00Z");
+    assert!(rows[0].safe_to_delete);
+  }
+
+  #[test]
+  fn configuration_analysis_desired_by_component_is_unsafe() {
+    let rows = build_configuration_analysis(
+      vec![
+        config("desired", "2025-01-01T00:00:00Z"),
+        config("nobody-cares", "2025-01-02T00:00:00Z"),
+      ],
+      vec![component("x1000c0s0b0n0", Some("desired"))],
+      vec![],
+      vec![],
+    );
+    let desired = rows.iter().find(|r| r.name == "desired").unwrap();
+    let other = rows.iter().find(|r| r.name == "nobody-cares").unwrap();
+    assert!(!desired.safe_to_delete);
+    assert!(other.safe_to_delete);
+  }
+
+  #[test]
+  fn configuration_analysis_bss_referenced_image_makes_config_unsafe() {
+    let rows = build_configuration_analysis(
+      vec![
+        config("boot-config", "2025-01-01T00:00:00Z"),
+        config("nobody-cares", "2025-01-02T00:00:00Z"),
+      ],
+      vec![],
+      vec![boot_param_for_image("img-bsst")],
+      vec![image("img-bsst", "boot-img", Some("boot-config"), None)],
+    );
+    let boot = rows.iter().find(|r| r.name == "boot-config").unwrap();
+    let other = rows.iter().find(|r| r.name == "nobody-cares").unwrap();
+    assert!(!boot.safe_to_delete);
+    assert!(other.safe_to_delete);
+  }
+
+  #[test]
+  fn configuration_analysis_bss_pointing_at_unknown_image_does_not_flag() {
+    // BSS references an image the IMS listing does not return.
+    // Without that image we can't resolve to a configuration, so
+    // every config stays safe.
+    let rows = build_configuration_analysis(
+      vec![config("c1", "2025-01-01T00:00:00Z")],
+      vec![],
+      vec![boot_param_for_image("missing-image")],
+      vec![],
+    );
+    assert!(rows[0].safe_to_delete);
+  }
+
+  #[test]
+  fn configuration_analysis_rows_sorted_by_last_updated_asc_then_name() {
+    let rows = build_configuration_analysis(
+      vec![
+        config("z", "2025-06-01T00:00:00Z"),
+        config("a", "2024-01-01T00:00:00Z"),
+        config("b", "2025-06-01T00:00:00Z"),
+      ],
+      vec![],
+      vec![],
+      vec![],
+    );
+    let names: Vec<&str> = rows.iter().map(|r| r.name.as_str()).collect();
+    assert_eq!(names, vec!["a", "b", "z"]); // oldest first; ties by name asc
+  }
+
+  #[test]
+  fn configuration_analysis_components_without_desired_config_are_ignored() {
+    let rows = build_configuration_analysis(
+      vec![config("c1", "2025-01-01T00:00:00Z")],
+      vec![component("x1000c0s0b0n0", None)],
+      vec![],
+      vec![],
+    );
+    assert!(rows[0].safe_to_delete);
   }
 }
