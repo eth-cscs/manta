@@ -163,6 +163,10 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
 const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
 site = "<site_name>"
 manta_server_url = "https://manta-server.example.com:8443"
+# Per-request HTTP timeout (seconds) reaching `manta_server_url`.
+# Default: 300 for REST calls; streams (SSE log tail, WS console)
+# are unlimited. Set this only if you need to override.
+# request_timeout_secs = 300
 
 [sites.<site_name>]
 backend = "csm"                 # or "ochami"

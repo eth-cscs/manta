@@ -93,6 +93,10 @@ Minimal v2 `cli.toml`:
 log = "info"
 site = "alps"
 manta_server_url = "https://manta-server.example.com:8443"
+# Optional: per-request HTTP timeout (seconds) reaching the server.
+# Default is 300 for REST calls; streams (SSE log tail, WS console)
+# are unlimited.
+# request_timeout_secs = 300
 ```
 
 > The CLI struct has no `[sites]` table. Any `[sites.*]` block left
