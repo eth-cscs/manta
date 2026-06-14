@@ -27,9 +27,6 @@ fn print_table(rows: &[BackendSummary]) {
     "Image name",
     "Image created",
     "Built-with configuration",
-    "Producing session",
-    "Session configuration",
-    "BOS template",
     "Safe to delete",
   ]);
   for row in rows {
@@ -38,9 +35,6 @@ fn print_table(rows: &[BackendSummary]) {
       row.name.as_str(),
       row.image_created.as_deref().unwrap_or("-"),
       row.configuration_name.as_deref().unwrap_or("-"),
-      row.session_name.as_deref().unwrap_or("-"),
-      row.session_configuration_name.as_deref().unwrap_or("-"),
-      row.bos_sessiontemplate.as_deref().unwrap_or("-"),
       if row.safe_to_delete { "yes" } else { "no" },
     ]);
   }

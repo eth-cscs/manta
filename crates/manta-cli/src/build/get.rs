@@ -67,8 +67,8 @@ pub fn subcommand_get_analysis() -> Command {
 pub fn subcommand_get_analysis_image() -> Command {
   Command::new("image")
     .about(
-      "Aggregate view of CFS configurations, sessions, BOS templates, and IMS \
-       images, linked by image id (one row per image)",
+      "List IMS images with a safe-to-delete verdict per row. Safe means no BSS \
+       boot-parameter record references the image as its boot image.",
     )
     .arg(
       arg!(-o --output <FORMAT> "Output format")

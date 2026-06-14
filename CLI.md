@@ -278,18 +278,18 @@ List IMS images, sorted by creation time.
 
 ### get analysis image
 
-Aggregate view of every CFS configuration, CFS session, BOS session template, and IMS image visible to the active site, projected as one row per IMS image. Each row carries the linked identifiers — the configuration the image was built with, the CFS session that produced it (if any), that session's own configuration, and the BOS session template that boots from it (if any). The last column, `Safe to delete`, is `yes` when no BSS boot-parameter record references the image as its boot image and `no` otherwise. Orphan images (no producing session, no booting template) still appear with `-` in the empty columns.
+One row per IMS image visible to the active site. Columns: image id, image name, image `created` timestamp, the CFS configuration the image was built with, and a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise — that image is currently a node's boot image and deleting it would break the next boot).
 
 | Flag | Type | Description |
 |------|------|-------------|
-| `-o/--output` | string | `table` (default) or `json`. JSON returns the full schema including the `null` columns, the `session_result_id` / `bos_sessiontemplate_boot_image` echo fields, and the `safe_to_delete` bool. |
+| `-o/--output` | string | `table` (default) or `json`. JSON returns the same five fields. |
 
 ```
 manta get analysis image
 manta get analysis image -o json | jq '.[] | select(.safe_to_delete) | .image_id'
 ```
 
-If multiple sessions produced the same image, only the first in name order is shown. Same rule for templates. Calls `GET /api/v1/analysis/images`.
+Sorted by `image_created` ascending (oldest first); images without a created timestamp sink to the bottom; ties on the timestamp (or both `None`) break by `image_id` ascending. Calls `GET /api/v1/analysis/images`.
 
 ### get analysis configuration
 

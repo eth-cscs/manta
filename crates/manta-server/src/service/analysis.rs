@@ -1,8 +1,9 @@
-//! Cross-resource analyses that fan IMS / CFS / BOS / BSS fetches
-//! out concurrently and link the results in a pure helper.
+//! Cross-resource analyses that fan IMS / CFS / BSS fetches and link
+//! the results in a pure helper.
 //!
-//! - [`get_cache`] + [`build_cache`] — image-centric flat projection;
-//!   one row per IMS image, see [`BackendSummary`] for fields.
+//! - [`get_image_analysis`] + [`build_cache`] — image-centric flat
+//!   projection; one row per IMS image with a `safe_to_delete` verdict
+//!   derived from BSS boot-parameter references. See [`BackendSummary`].
 //! - [`get_configuration_analysis`] + [`build_configuration_analysis`]
 //!   — configuration-deletion safety; one row per CFS configuration,
 //!   see [`ConfigurationAnalysis`] for fields.
@@ -13,11 +14,9 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::{
   bss::BootParametersTrait, cfs::CfsTrait,
 };
-use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::component::Component as CfsComponent;
-use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
 use crate::server::common::app_context::InfraContext;
@@ -26,81 +25,27 @@ pub use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 
 /// Pure linker.
 pub fn build_cache(
-  mut sessions: Vec<CfsSessionGetResponse>,
-  mut templates: Vec<BosSessionTemplate>,
   boot_params: Vec<BootParameters>,
   images: Vec<Image>,
 ) -> Vec<BackendSummary> {
-  // Stable ordering up front so the "first matching session/template
-  // wins" rule is deterministic across runs.
-  sessions.sort_by(|a, b| a.name.cmp(&b.name));
-  templates.sort_by(|a, b| {
-    a.name
-      .as_deref()
-      .unwrap_or("")
-      .cmp(b.name.as_deref().unwrap_or(""))
-  });
-
   // Set of image ids that BSS boot-parameter records currently point
-  // at. Used to compute the per-row `safe_to_delete` verdict: an image
-  // referenced by BSS is the boot image for at least one node, so
-  // deleting it would break that node's next boot.
+  // at. An image referenced by BSS is the boot image for at least one
+  // node, so deleting it would break that node's next boot.
   let bss_boot_image_ids: HashSet<String> = boot_params
     .iter()
     .filter_map(BootParameters::try_get_boot_image_id)
     .collect();
 
-  // Reverse index: image_id -> (first session that produced it, that
-  // session's configuration name).
-  let mut session_by_image: HashMap<String, (String, Option<String>)> =
-    HashMap::new();
-  for s in &sessions {
-    let cfg = s.configuration.as_ref().and_then(|c| c.name.clone());
-    for result_id in s.get_result_id_vec() {
-      session_by_image
-        .entry(result_id)
-        .or_insert_with(|| (s.name.clone(), cfg.clone()));
-    }
-  }
-
-  // Reverse index: image_id -> first template that boots from it.
-  let mut template_by_image: HashMap<String, String> = HashMap::new();
-  for t in &templates {
-    let Some(name) = t.name.clone() else {
-      continue;
-    };
-    for boot_image_id in template_boot_image_ids(t) {
-      template_by_image
-        .entry(boot_image_id)
-        .or_insert_with(|| name.clone());
-    }
-  }
-
-  // One row per image with a usable id.
   let mut rows: Vec<BackendSummary> = images
     .into_iter()
     .filter_map(|img| {
       let id = img.id?;
-      let (session_name, session_configuration_name) =
-        match session_by_image.get(&id).cloned() {
-          Some((sn, scn)) => (Some(sn), scn),
-          None => (None, None),
-        };
-      let session_result_id = session_name.as_ref().map(|_| id.clone());
-      let bos_sessiontemplate = template_by_image.get(&id).cloned();
-      let bos_sessiontemplate_boot_image =
-        bos_sessiontemplate.as_ref().map(|_| id.clone());
       let safe_to_delete = !bss_boot_image_ids.contains(&id);
       Some(BackendSummary {
         image_id: id,
         name: img.name,
         image_created: img.created,
         configuration_name: img.configuration,
-        session_name,
-        session_result_id,
-        session_configuration_name,
-        bos_sessiontemplate,
-        bos_sessiontemplate_boot_image,
         safe_to_delete,
       })
     })
@@ -124,70 +69,28 @@ pub fn build_cache(
   rows
 }
 
-/// Panic-safe replacement for `BosSessionTemplate::get_image_vec`,
-/// which unwraps `boot_sets`. Templates with `boot_sets: None` yield
-/// an empty vec instead of panicking.
-fn template_boot_image_ids(t: &BosSessionTemplate) -> Vec<String> {
-  t.boot_sets
-    .as_ref()
-    .map(|bs| {
-      bs.values()
-        .filter_map(|b| b.path.as_ref())
-        .map(|p| {
-          p.trim_start_matches("s3://boot-images/")
-            .trim_end_matches("/manifest.json")
-            .to_string()
-        })
-        .collect()
-    })
-    .unwrap_or_default()
-}
-
-/// Sequence the four upstream fetches, then run the pure linker. We
-/// sequence (rather than `try_join!`) because adding the fourth
-/// upstream call — `get_all_bootparameters`, which is the heaviest
-/// of the four — to a concurrent fan-out is the same shape that
-/// tripped `get_configuration_analysis` with upstream connection
-/// resets. Wall-clock is worse than concurrent, but the call returns.
+/// Sequence the two upstream fetches and run the pure linker.
+/// Sequenced rather than concurrent: `get_all_bootparameters` returns
+/// a cluster-scale list, and fanning two heavy fetches at the same
+/// upstream is the shape that produced upstream connection-resets on
+/// the configuration variant.
 pub async fn get_image_analysis(
   infra: &InfraContext<'_>,
   token: &str,
 ) -> Result<Vec<BackendSummary>, Error> {
   tracing::info!("Building image analysis");
 
-  let sessions_params = crate::service::session::GetSessionParams {
-    group: None,
-    xnames: Vec::new(),
-    min_age: None,
-    max_age: None,
-    session_type: None,
-    status: None,
-    name: None,
-    limit: None,
-  };
-  let templates_params = crate::service::template::GetTemplateParams {
-    name: None,
-    group_name: None,
-    settings_group_name: None,
-    limit: None,
-  };
   let images_params = crate::service::image::GetImagesParams {
     id: None,
     pattern: None,
     limit: None,
   };
 
-  let sessions =
-    crate::service::session::get_sessions(infra, token, &sessions_params)
-      .await?;
-  let templates =
-    crate::service::template::get_templates(infra, token, &templates_params)
-      .await?;
   let boot_params = infra.backend.get_all_bootparameters(token).await?;
   let images =
     crate::service::image::get_images(infra, token, &images_params).await?;
 
-  Ok(build_cache(sessions, templates, boot_params, images))
+  Ok(build_cache(boot_params, images))
 }
 
 /// Pure linker for the configuration-deletion-safety analysis.
@@ -307,13 +210,6 @@ pub async fn get_configuration_analysis(
 #[cfg(test)]
 mod tests {
   use super::*;
-  use manta_backend_dispatcher::types::bos::session_template::{
-    BootSet, Cfs as BosCfs,
-  };
-  use manta_backend_dispatcher::types::cfs::session::{
-    Artifact, Configuration as SessionConfiguration, Status as CfsStatus,
-  };
-  use std::collections::HashMap;
 
   fn image(
     id: &str,
@@ -372,88 +268,10 @@ mod tests {
     }
   }
 
-  fn session_producing(
-    name: &str,
-    cfg_name: Option<&str>,
-    result_ids: &[&str],
-  ) -> CfsSessionGetResponse {
-    CfsSessionGetResponse {
-      name: name.to_string(),
-      configuration: cfg_name.map(|c| SessionConfiguration {
-        name: Some(c.to_string()),
-        limit: None,
-      }),
-      ansible: None,
-      target: None,
-      status: Some(CfsStatus {
-        session: None,
-        artifacts: Some(
-          result_ids
-            .iter()
-            .map(|id| Artifact {
-              image_id: None,
-              result_id: Some(id.to_string()),
-              r#type: None,
-            })
-            .collect(),
-        ),
-      }),
-      tags: None,
-      debug_on_failure: false,
-      logs: None,
-    }
-  }
-
-  fn empty_bootset() -> BootSet {
-    BootSet {
-      name: None,
-      path: None,
-      cfs: None,
-      r#type: None,
-      etag: None,
-      kernel_parameters: None,
-      node_list: None,
-      node_roles_groups: None,
-      node_groups: None,
-      arch: None,
-      rootfs_provider: None,
-      rootfs_provider_passthrough: None,
-    }
-  }
-
-  fn template_booting(
-    name: &str,
-    boot_image_ids: &[&str],
-  ) -> BosSessionTemplate {
-    let mut boot_sets = HashMap::new();
-    for (i, id) in boot_image_ids.iter().enumerate() {
-      boot_sets.insert(
-        format!("set-{i}"),
-        BootSet {
-          path: Some(format!("s3://boot-images/{id}/manifest.json")),
-          ..empty_bootset()
-        },
-      );
-    }
-    BosSessionTemplate {
-      name: Some(name.to_string()),
-      tenant: None,
-      description: None,
-      enable_cfs: None,
-      cfs: Some(BosCfs {
-        configuration: Some("dontcare".to_string()),
-      }),
-      boot_sets: Some(boot_sets),
-      links: None,
-    }
-  }
-
   // image_id + name + configuration_name come from Image directly.
   #[test]
   fn anchors_one_row_per_image_with_built_with_configuration() {
     let rows = build_cache(
-      vec![],
-      vec![],
       vec![],
       vec![
         image("img-1", "ncn-1.6-base", Some("ncn-1.6"), None),
@@ -467,100 +285,17 @@ mod tests {
     assert_eq!(rows[1].image_id, "img-2");
   }
 
-  // session_name + session_result_id + session_configuration_name
-  // are set together from the first producing session.
+  // Orphan image: nothing references it. Row exists, `safe_to_delete`
+  // is true, every Option column is None.
   #[test]
-  fn fills_session_columns_when_a_session_produced_the_image() {
-    let rows = build_cache(
-      vec![session_producing("session-a", Some("ncn-1.6"), &["img-1"])],
-      vec![],
-      vec![],
-      vec![image("img-1", "ncn-1.6-base", None, None)],
-    );
-    let row = &rows[0];
-    assert_eq!(row.session_name.as_deref(), Some("session-a"));
-    assert_eq!(row.session_result_id.as_deref(), Some("img-1"));
-    assert_eq!(row.session_configuration_name.as_deref(), Some("ncn-1.6"));
-  }
-
-  // When multiple sessions produced the same image, first in name
-  // order wins.
-  #[test]
-  fn picks_first_producing_session_in_name_order() {
-    let rows = build_cache(
-      vec![
-        session_producing("session-z", Some("ncn-1.6"), &["img-1"]),
-        session_producing("session-a", Some("ncn-1.6"), &["img-1"]),
-      ],
-      vec![],
-      vec![],
-      vec![image("img-1", "ncn-1.6-base", None, None)],
-    );
-    assert_eq!(rows[0].session_name.as_deref(), Some("session-a"));
-  }
-
-  // bos_sessiontemplate + bos_sessiontemplate_boot_image set together.
-  #[test]
-  fn fills_bos_columns_when_a_template_boots_from_the_image() {
-    let rows = build_cache(
-      vec![],
-      vec![template_booting("tmpl-x", &["img-1"])],
-      vec![],
-      vec![image("img-1", "ncn-1.6-base", None, None)],
-    );
-    let row = &rows[0];
-    assert_eq!(row.bos_sessiontemplate.as_deref(), Some("tmpl-x"));
-    assert_eq!(row.bos_sessiontemplate_boot_image.as_deref(), Some("img-1"));
-  }
-
-  // First template in name order wins.
-  #[test]
-  fn picks_first_booting_template_in_name_order() {
-    let rows = build_cache(
-      vec![],
-      vec![
-        template_booting("tmpl-z", &["img-1"]),
-        template_booting("tmpl-a", &["img-1"]),
-      ],
-      vec![],
-      vec![image("img-1", "ncn-1.6-base", None, None)],
-    );
-    assert_eq!(rows[0].bos_sessiontemplate.as_deref(), Some("tmpl-a"));
-  }
-
-  // Orphan images still get a row.
-  #[test]
-  fn orphan_images_get_a_row_with_optional_columns_none() {
-    let rows = build_cache(
-      vec![],
-      vec![],
-      vec![],
-      vec![image("img-1", "orphan", None, None)],
-    );
+  fn orphan_image_is_safe_to_delete() {
+    let rows = build_cache(vec![], vec![image("img-1", "orphan", None, None)]);
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.image_id, "img-1");
     assert!(row.image_created.is_none());
     assert!(row.configuration_name.is_none());
-    assert!(row.session_name.is_none());
-    assert!(row.session_result_id.is_none());
-    assert!(row.session_configuration_name.is_none());
-    assert!(row.bos_sessiontemplate.is_none());
-    assert!(row.bos_sessiontemplate_boot_image.is_none());
-    // Orphan = nothing references it, including BSS → safe to delete.
     assert!(row.safe_to_delete);
-  }
-
-  // Sessions / templates that name nonexistent images: dropped.
-  #[test]
-  fn sessions_and_templates_without_an_image_are_dropped() {
-    let rows = build_cache(
-      vec![session_producing("session-x", None, &["nonexistent"])],
-      vec![template_booting("tmpl-x", &["nonexistent"])],
-      vec![],
-      vec![],
-    );
-    assert!(rows.is_empty());
   }
 
   // When no image has a created timestamp, sort falls back to image_id
@@ -568,8 +303,6 @@ mod tests {
   #[test]
   fn rows_with_no_created_timestamp_fall_back_to_image_id_asc() {
     let rows = build_cache(
-      vec![],
-      vec![],
       vec![],
       vec![
         image("img-z", "z", None, None),
@@ -587,8 +320,6 @@ mod tests {
   #[test]
   fn rows_are_sorted_by_image_created_ascending() {
     let rows = build_cache(
-      vec![],
-      vec![],
       vec![],
       vec![
         image("img-old", "old", None, Some("2024-01-01T00:00:00Z")),
@@ -613,7 +344,7 @@ mod tests {
 
   #[test]
   fn empty_input_yields_empty_cache() {
-    let rows = build_cache(vec![], vec![], vec![], vec![]);
+    let rows = build_cache(vec![], vec![]);
     assert!(rows.is_empty());
   }
 
@@ -622,8 +353,6 @@ mod tests {
   #[test]
   fn bss_referenced_image_is_unsafe_to_delete() {
     let rows = build_cache(
-      vec![],
-      vec![],
       vec![boot_param_for_image("img-booted")],
       vec![
         image("img-booted", "in-use", None, None),

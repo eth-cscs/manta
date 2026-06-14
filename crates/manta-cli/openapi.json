@@ -4759,20 +4759,6 @@
           "safe_to_delete"
         ],
         "properties": {
-          "bos_sessiontemplate": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "BOS session template whose `boot_sets[*].path` references this\n`image_id`. If multiple templates match, the first one in name\norder wins."
-          },
-          "bos_sessiontemplate_boot_image": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Echo of `image_id` whenever `bos_sessiontemplate` is `Some(_)`.\nCarried explicitly so the row is self-describing."
-          },
           "configuration_name": {
             "type": [
               "string",
@@ -4798,27 +4784,6 @@
           "safe_to_delete": {
             "type": "boolean",
             "description": "`true` if no BSS boot-parameter record references this image as\nits boot image. An image referenced by BSS is currently booting\n(or scheduled to boot) at least one node, so deleting it would\nbreak that node's next boot."
-          },
-          "session_configuration_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "That session's own `configuration.name`. Usually equals\n`configuration_name` but they can drift if the image was\nre-tagged after the session completed."
-          },
-          "session_name": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "CFS session whose `status.artifacts[*].result_id` contains\nthis `image_id`. If multiple sessions match, the first one in\nname order wins."
-          },
-          "session_result_id": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Echo of `image_id` whenever `session_name` is `Some(_)`. Carried\nexplicitly so the row is self-describing."
           }
         }
       },

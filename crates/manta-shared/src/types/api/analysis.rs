@@ -24,24 +24,6 @@ pub struct BackendSummary {
   /// CFS configuration the image was built with
   /// (`Image.configuration`).
   pub configuration_name: Option<String>,
-  /// CFS session whose `status.artifacts[*].result_id` contains
-  /// this `image_id`. If multiple sessions match, the first one in
-  /// name order wins.
-  pub session_name: Option<String>,
-  /// Echo of `image_id` whenever `session_name` is `Some(_)`. Carried
-  /// explicitly so the row is self-describing.
-  pub session_result_id: Option<String>,
-  /// That session's own `configuration.name`. Usually equals
-  /// `configuration_name` but they can drift if the image was
-  /// re-tagged after the session completed.
-  pub session_configuration_name: Option<String>,
-  /// BOS session template whose `boot_sets[*].path` references this
-  /// `image_id`. If multiple templates match, the first one in name
-  /// order wins.
-  pub bos_sessiontemplate: Option<String>,
-  /// Echo of `image_id` whenever `bos_sessiontemplate` is `Some(_)`.
-  /// Carried explicitly so the row is self-describing.
-  pub bos_sessiontemplate_boot_image: Option<String>,
   /// `true` if no BSS boot-parameter record references this image as
   /// its boot image. An image referenced by BSS is currently booting
   /// (or scheduled to boot) at least one node, so deleting it would
