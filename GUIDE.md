@@ -1,5 +1,7 @@
 # Manta User Guide
 
+> **Documentation version:** this guide describes **manta 2.0.0**. For an older release, browse the repository at the matching git tag (e.g. `v1.64.3` for the last v1 release).
+
 Practical walkthroughs for common cluster management tasks. This guide assumes manta is already installed and configured. See [README.md](README.md) for deployment instructions.
 
 ## TL;DR

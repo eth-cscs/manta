@@ -1,5 +1,7 @@
 # Manta CLI Reference
 
+> **Documentation version:** this reference describes the CLI shipped with **manta 2.0.0**. For an older release, browse the repository at the matching git tag (e.g. `v1.64.3` for the last v1 release).
+
 Complete reference for all `manta` commands, subcommands, and flags.
 
 **Binary name:** the CLI binary is `manta` (the Cargo package is `manta-cli`; the `[[bin]]` block in its manifest renames the produced executable). The HTTP API server is a separate binary (`manta-server`); see [API.md](API.md) for its endpoints and [README.md](README.md) for how to run it.
@@ -30,7 +32,7 @@ Every command takes one of the top-level verbs:
 
 | Flag | Description |
 |------|-------------|
-| `--site <SITE_NAME>` | Override the active site from config for this invocation |
+| `--site <SITE_NAME>` | Override the active site from config for this invocation. Accepted at any position on the command line — `manta --site alps get sessions` and `manta get sessions --site alps` both work. |
 
 ## Migrating from earlier shapes
 
@@ -280,7 +282,7 @@ List IMS images, sorted by creation time.
 | Flag | Type | Description |
 |------|------|-------------|
 | `-i/--id` | string | Specific image ID |
-| `-p/--pattern` | string | Regex matched against image name |
+| `-p/--pattern` | string | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). Uses [globset](https://docs.rs/globset/) syntax — `*` matches any run of non-`/` characters, `?` a single character, `[abc]` a character class. Anchored to the full name. |
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return last N images |
 
@@ -999,9 +1001,9 @@ manta upgrade
 Default output looks like:
 
 ```
-Already up to date (v2.0.0-beta.30).
-  current: v2.0.0-beta.30
-  latest:  v2.0.0-beta.30
+Already up to date (v2.0.0).
+  current: v2.0.0
+  latest:  v2.0.0
   target:  aarch64-apple-darwin
 ```
 

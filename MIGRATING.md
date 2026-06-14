@@ -1,7 +1,9 @@
 # Migrating from manta v1 to v2
 
+> **Documentation version:** this guide describes the migration path to **manta 2.0.0**. If you are already on v2 and looking for between-release deltas, see [CHANGELOG.md](CHANGELOG.md).
+
 This guide covers everything that changed between the v1.x series
-(last release: `v1.64.3`) and the v2 series (current: `v2.0.0-beta.12`).
+(last release: `v1.64.3`) and the v2 series (current: `v2.0.0`).
 The architectural shape, the on-disk config layout, the CLI surface,
 and the HTTP API all changed; the deployment topology gained a second
 binary.
@@ -56,7 +58,7 @@ binary from `$PATH`.
 ```bash
 # Verify
 $ manta --version
-manta 2.0.0-beta.12
+manta 2.0.0
 ```
 
 ### 1.2 Convert your config file
@@ -232,7 +234,7 @@ run **one `manta-server` per site**, behind a reverse proxy.
 
 ```bash
 $ manta-server --version
-manta-server 2.0.0-beta.12
+manta-server 2.0.0
 
 $ manta-server --help
 Usage: manta-server [OPTIONS]

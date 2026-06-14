@@ -1,5 +1,7 @@
 # Manta HTTP API Reference
 
+> **Documentation version:** this reference describes the HTTP API shipped with **manta 2.0.0**. The v1 series did not have a server binary, so there is no v1 equivalent of this document; for older v2 betas, browse the repository at the matching git tag.
+
 The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. The default port and TLS material come from `~/.config/manta/server.toml` (see [README.md](README.md#configuration-files)); the canonical port is **8443** and TLS is required by default. The server fails closed without `cert` + `key` — pass `--allow-http` (or set `[server] allow_http = true`) to opt into plain-HTTP listen mode for local testing.
 
 ## TL;DR
@@ -559,7 +561,7 @@ List IMS images.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `id` | string | no | Exact image ID |
-| `pattern` | string | no | Regex matched against image name |
+| `pattern` | string | no | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). [globset](https://docs.rs/globset/) syntax, anchored to the full name. |
 | `limit` | u8 | no | Maximum number of results |
 
 **Response `200`** — array of IMS `Image` objects, sorted by creation time:
@@ -1924,7 +1926,7 @@ If a request fails before reaching the service layer, you'll get one of the code
 | **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), token expired, or `/auth/token` credentials rejected by the backend. |
 | **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
 | **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
-| **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default 60). Every endpoint is fast under normal load — `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so this should only fire when the backend is unhealthy. |
+| **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default 300, i.e. 5 min). Most endpoints return well under a second; the 5-min ceiling exists for the few operations that legitimately fan out across the upstream backend (large bulk CFS component fetches, SAT-file applies, migrate-restore re-hydrations). `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so 408 there indicates an unhealthy backend. |
 | **429 Too Many Requests** | Per-source-IP rate limit on `/api/v1/auth/*`. Tune `[server].auth_rate_limit_per_minute` or wait one minute. |
 | **500 Internal Server Error** | Server-side failure (backend unreachable, bad config). Check `journalctl -u manta-server` (or wherever the server's stderr is logged) for the actual cause. |
 | **501 Not Implemented** | The endpoint needs Vault or Kubernetes settings that the active site does not provide — see [Server configuration requirements](#server-configuration-requirements). |

@@ -1,6 +1,8 @@
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/eth-cscs/manta)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com)
 
 # MANTA
+
+> **Documentation version:** this README and the sibling docs ([GUIDE.md](GUIDE.md), [CLI.md](CLI.md), [API.md](API.md), [MIGRATING.md](MIGRATING.md)) describe **manta 2.0.0**. For an older release, browse the repository at the matching git tag (e.g. `v1.64.3` for the last v1 release).
 
 Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/2021/cscs-hewlett-packard-enterprise-and-nvidia-announce-worlds-most-powerful-ai-capable-supercomputer).
 
@@ -275,7 +277,7 @@ cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute      = 60      # per source IP for /api/v1/auth/*; omit to disable
-request_timeout_secs            = 60      # global per-route timeout (returns 408); default 60
+request_timeout_secs            = 300     # global per-route timeout (returns 408); default 300 (5 min)
 
 [auditor.kafka]
 brokers = ["kafka.cscs.ch:9095"]
