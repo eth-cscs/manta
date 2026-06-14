@@ -51,10 +51,16 @@ impl std::error::Error for AuthServerUnreachable {}
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
 ///
-/// Implementation: on `Err`, format the progenitor error via
-/// `Display` and wrap with `anyhow::anyhow!(...)`. Progenitor's
-/// `Display` impl on `Error<T>` includes the body for `ErrorResponse`
-/// cases, so the inner server-supplied detail is preserved.
+/// Implementation: on `Err`, format the progenitor error in a
+/// user-friendly way:
+///
+/// - `ErrorResponse(rv)`: the server returned a typed error body. We
+///   serialise it to JSON, pull the `error` string out, and surface
+///   `HTTP <status>: <message>`. This avoids dumping the full
+///   `Error Response: status=…; headers={…}; value: ErrorResponse {…}`
+///   envelope that progenitor's `Display` impl produces.
+/// - All other variants: format via `Display` (transport errors,
+///   payload-decode errors, etc.) — the inner detail is still useful.
 pub trait OpenApiResultExt<T> {
   fn into_anyhow(self) -> anyhow::Result<T>;
 }
@@ -62,11 +68,22 @@ pub trait OpenApiResultExt<T> {
 impl<T, E> OpenApiResultExt<T>
   for Result<progenitor_client::ResponseValue<T>, progenitor_client::Error<E>>
 where
-  E: std::fmt::Debug,
+  E: std::fmt::Debug + serde::Serialize,
 {
   fn into_anyhow(self) -> anyhow::Result<T> {
     match self {
       Ok(rv) => Ok(rv.into_inner()),
+      Err(progenitor_client::Error::ErrorResponse(rv)) => {
+        let status = rv.status();
+        let inner = rv.into_inner();
+        let msg = serde_json::to_value(&inner)
+          .ok()
+          .and_then(|v| {
+            v.get("error").and_then(|e| e.as_str()).map(String::from)
+          })
+          .unwrap_or_else(|| format!("{inner:?}"));
+        Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
+      }
       Err(e) => Err(anyhow::anyhow!("{}", e)),
     }
   }
