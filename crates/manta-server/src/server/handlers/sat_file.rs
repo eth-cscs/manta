@@ -385,6 +385,7 @@ mod tests {
   use super::{
     CreateImageCfsSessionRequest, PostSatConfigurationRequest,
     PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+    PostSatValidateRequest,
     StampImageFromSessionRequest,
   };
 
@@ -506,5 +507,21 @@ mod tests {
     assert!(obj.contains_key("session"));
     assert_eq!(obj["template"]["name"].as_str(), Some("st-1"));
     assert!(obj["session"].is_null());
+  }
+
+  /// Lock the shape of the CLI's POST /sat-file/validate body.
+  /// Catches renames on either side of the wire.
+  #[test]
+  fn cli_validate_body_deserialises() {
+    let cli_body = serde_json::json!({
+      "sat_file": {
+        "configurations": [{ "name": "cfg-v1" }],
+        "images": [],
+        "session_templates": [],
+      }
+    });
+    let req: PostSatValidateRequest =
+      serde_json::from_value(cli_body).unwrap();
+    assert!(req.sat_file.get("configurations").is_some());
   }
 }
