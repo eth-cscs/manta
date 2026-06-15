@@ -37,7 +37,8 @@ use super::render::render_jinja2_sat_file_yaml;
 use crate::common;
 use crate::common::app_context::AppContext;
 use crate::dispatch::apply::sat_file::{dispatch, plan};
-use crate::http_client::MantaClient;
+use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::openapi_client::types::PostSatValidateRequest;
 use crate::output::action_result;
 
 /// Options for applying a SAT file.
@@ -144,13 +145,27 @@ pub async fn exec(
     n_st,
   );
 
+  // 6a. Pre-flight: server-side validation against live CSM state.
+  //     Built first so the same client is reused for dispatch below.
+  //     Failing here aborts before the pre-hook fires.
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  client
+    .openapi
+    .post_sat_validate(
+      client.site_name(),
+      &PostSatValidateRequest { sat_file: sat_file.clone() },
+    )
+    .await
+    .into_anyhow()
+    .context("Server-side SAT validation failed")?;
+  tracing::info!("SAT file validated server-side");
+
   // 7. Pre-hook -> server call -> post-hook.
   crate::common::hooks::run_hook_if_present(opts.prehook_opt, "pre")?;
 
   // 7a. Dispatch the plan element-by-element. The CLI accumulates
   //     `ref_name → image_id` across calls and builds the same
   //     four-list response the legacy endpoint used to return.
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let result = dispatch::dispatch_plan(ctx, &client, plan, opts).await?;
 
   crate::common::hooks::run_hook_if_present(opts.posthook_opt, "post")?;
