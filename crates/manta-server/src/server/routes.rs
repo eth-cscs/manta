@@ -147,6 +147,10 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       "/sat-file/session-templates",
       post(handlers::post_sat_session_template),
     )
+    .route(
+      "/sat-file/validate",
+      post(handlers::post_sat_validate),
+    )
     // Health check
     .route("/health", get(handlers::health))
     // Hardware cluster member management

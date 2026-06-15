@@ -59,6 +59,7 @@ use super::handlers;
     handlers::post_sat_image_cfs_session,
     handlers::post_sat_image_stamp,
     handlers::post_sat_session_template,
+    handlers::post_sat_validate,
     handlers::add_hw_component,
     handlers::delete_hw_component,
     handlers::apply_hw_configuration,
