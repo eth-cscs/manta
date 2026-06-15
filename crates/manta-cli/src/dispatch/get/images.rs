@@ -1,5 +1,7 @@
 //! Implements the `manta get images` command.
 
+use std::collections::HashMap;
+
 use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
@@ -33,16 +35,32 @@ pub async fn exec(
   let params = parse_images_params(cli_args);
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
-  let raw = client
-    .openapi
-    .get_images(
-      params.id.as_deref(),
-      params.limit.map(i32::from),
-      params.pattern.as_deref(),
-      client.site_name(),
-    )
-    .await
-    .into_anyhow()?;
+  let site = client.site_name();
+
+  // Fan out: listing and deletion-safety analysis are independent.
+  // The analysis endpoint already sequences its own upstream calls so
+  // we don't compound load. Same pattern as `manta get configurations`.
+  let (raw, safety_rows) = tokio::try_join!(
+    async {
+      client
+        .openapi
+        .get_images(
+          params.id.as_deref(),
+          params.limit.map(i32::from),
+          params.pattern.as_deref(),
+          site,
+        )
+        .await
+        .into_anyhow()
+    },
+    async {
+      client
+        .openapi
+        .get_image_analysis(site)
+        .await
+        .into_anyhow()
+    },
+  )?;
 
   // The server returns IMS images as a JSON array. Deserialize into
   // manta-shared's `Image` type so the renderer keeps working.
@@ -52,7 +70,14 @@ pub async fn exec(
     .collect::<Result<Vec<_>, _>>()
     .context("Failed to deserialize IMS images list")?;
 
-  output::image::print(&images);
+  // image_id -> safe_to_delete lookup. Images use their IMS id as the
+  // unique key (names aren't unique — repeated builds keep the name).
+  let safety: HashMap<String, bool> = safety_rows
+    .into_iter()
+    .map(|r| (r.image_id, r.safe_to_delete))
+    .collect();
+
+  output::image::print(&images, &safety);
 
   Ok(())
 }

@@ -1,12 +1,18 @@
 //! Table and JSON renderers for IMS image output.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
 use manta_shared::common::DATETIME_FORMAT;
 use manta_shared::types::dto::Image;
 
 /// Print image details as a formatted table.
-pub fn print(image_detail_vec: &[Image]) {
+///
+/// `safety` is an `image_id -> safe_to_delete` lookup sourced from
+/// `/analysis/images`. Images that aren't in the lookup (or that
+/// don't have an `id`) render `?` in the safety column.
+pub fn print(image_detail_vec: &[Image], safety: &HashMap<String, bool>) {
   let mut table = Table::new();
   table.set_content_arrangement(ContentArrangement::Dynamic);
 
@@ -18,6 +24,7 @@ pub fn print(image_detail_vec: &[Image]) {
     "Base",
     "Groups",
     "Tags",
+    "Safe to delete",
   ]);
 
   for image_details in image_detail_vec {
@@ -42,12 +49,19 @@ pub fn print(image_detail_vec: &[Image]) {
       .map(|group_vec| group_vec.join(", "))
       .unwrap_or(unknown.clone());
 
+    let safety_cell = image_details
+      .id
+      .as_deref()
+      .and_then(|id| safety.get(id))
+      .map(|safe| if *safe { "yes" } else { "no" })
+      .unwrap_or("?");
+
     table.add_row(vec![
       image_details.id.as_deref().unwrap_or(&unknown),
       &image_details.name,
       &creation_date,
-      &configuration_name,
-      &base,
+      configuration_name,
+      base,
       &groups,
       &image_details
         .metadata
@@ -57,6 +71,7 @@ pub fn print(image_detail_vec: &[Image]) {
         .map(|(key, value)| format!("{key}:{value}"))
         .collect::<Vec<_>>()
         .join("\n"),
+      safety_cell,
     ]);
   }
 
@@ -78,7 +93,7 @@ mod tests {
 
   #[test]
   fn print_empty_list_does_not_panic() {
-    print(&[]);
+    print(&[], &HashMap::new());
   }
 
   #[test]
@@ -89,7 +104,7 @@ mod tests {
       "name": "compute-image-v1",
       "created": "2026-06-04T12:30:00",
     }));
-    print(&[img]);
+    print(&[img], &HashMap::new());
   }
 
   #[test]
@@ -101,7 +116,9 @@ mod tests {
       "name": "compute-image-v1",
       "created": "2026-06-04T12:30:00+00:00",
     }));
-    print(&[img]);
+    let mut safety = HashMap::new();
+    safety.insert("abcd-1234".to_string(), true);
+    print(&[img], &safety);
   }
 
   #[test]
@@ -112,7 +129,7 @@ mod tests {
       "name": "image-bad-date",
       "created": "not-a-real-date",
     }));
-    print(&[img]);
+    print(&[img], &HashMap::new());
   }
 
   #[test]
@@ -122,7 +139,9 @@ mod tests {
       "id": "abcd-1234",
       "name": "image-no-date",
     }));
-    print(&[img]);
+    let mut safety = HashMap::new();
+    safety.insert("abcd-1234".to_string(), false);
+    print(&[img], &safety);
   }
 
   #[test]
@@ -135,6 +154,6 @@ mod tests {
       "created": "2026-06-04T12:30:00",
       "metadata": { "version": "1.0.0", "owner": "ops" },
     }));
-    print(&[img]);
+    print(&[img], &HashMap::new());
   }
 }

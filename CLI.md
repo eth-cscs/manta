@@ -270,7 +270,7 @@ manta get nodes nid001313,nid001314 -o json
 
 ### get images
 
-List IMS images, sorted by creation time.
+List IMS images, sorted by creation time. Each row carries a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise; `?` only on the rare race where an image appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/images` and computed identically to `manta get analysis image`.
 
 | Flag | Type | Description |
 |------|------|-------------|
