@@ -665,7 +665,7 @@
         "tags": [
           "configurations"
         ],
-        "summary": "GET /configurations — list CFS configurations with optional\nname/pattern/group filters. Every row carries the full\n`CfsConfigurationResponse` plus a `safe_to_delete` verdict\nderived from CFS components only (a configuration is unsafe iff\nsome component lists it as `desired_config`). The fuller verdict\nthat also considers BSS-referenced images is at\n`GET /analysis/configurations`.",
+        "summary": "GET /configurations — list CFS configurations with optional\nname/pattern/group filters. Every row carries the full\n`CfsConfigurationResponse` plus a `safe_to_delete` verdict\nderived from CFS components only (a configuration is unsafe iff\nsome component lists it as `desired_config`).",
         "operationId": "get_configurations",
         "parameters": [
           {
@@ -3702,6 +3702,86 @@
         ]
       }
     },
+    "/sat-file/validate": {
+      "post": {
+        "tags": [
+          "sat-file"
+        ],
+        "summary": "`POST /api/v1/sat-file/validate` — validate a SAT file against\nlive CSM state without mutating anything. Used by\n`manta apply sat-file` as a pre-flight check.",
+        "operationId": "post_sat_validate",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostSatValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "SAT file is valid"
+          },
+          "400": {
+            "description": "SAT validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Caller cannot target referenced HSM groups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Vault or k8s not configured",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/sessions": {
       "get": {
         "tags": [
@@ -4808,7 +4888,7 @@
           },
           "safe_to_delete": {
             "type": "boolean",
-            "description": "`true` if no CFS component lists this configuration as its\n`desired_config` **and** no image built from this configuration\nis referenced by any BSS boot-parameter record. A row that is\nnot safe is referenced by at least one of those two surfaces."
+            "description": "`true` if no CFS component lists this configuration as its\n`desired_config`. The verdict is components-only; deletion may\nstill be unsafe if a BSS-referenced image was built from this\nconfiguration — that fuller check isn't surfaced on this wire\nshape."
           }
         }
       },
@@ -5438,6 +5518,18 @@
           },
           "template": {
             "description": "The created (or mock, in dry-run) BOS session template."
+          }
+        }
+      },
+      "PostSatValidateRequest": {
+        "type": "object",
+        "description": "Body for `POST /api/v1/sat-file/validate`.\n\nThe CLI parses the SAT YAML once into a `serde_json::Value` and\nforwards it verbatim; the server hands it through to csm-rs's\nvalidator without re-parsing.",
+        "required": [
+          "sat_file"
+        ],
+        "properties": {
+          "sat_file": {
+            "description": "Parsed SAT file content. Same shape as\n`PostSatConfigurationRequest::configuration` aggregated into\nthe full SAT document (`{ configurations, images,\nsession_templates, hardware }`)."
           }
         }
       },
