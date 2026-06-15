@@ -270,6 +270,12 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     // returned something nonsensical" signal.
     BackendError::CsmError { status, .. } => StatusCode::from_u16(*status)
       .unwrap_or(StatusCode::BAD_GATEWAY),
+    // The CSM-side reqwest client times out via `NetError(reqwest::Error)`;
+    // surface that as 504 Gateway Timeout so the CLI sees a distinct
+    // status (not a generic 500) and the body explicitly names the hop.
+    BackendError::NetError(rqe) if rqe.is_timeout() => {
+      StatusCode::GATEWAY_TIMEOUT
+    }
     _ => StatusCode::INTERNAL_SERVER_ERROR,
   };
   let chain = format_with_causes(&e);
@@ -278,12 +284,32 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
   } else {
     tracing::debug!("Service error {}: {}", status, chain);
   }
-  (
-    status,
-    Json(ErrorResponse {
-      error: e.to_string(),
-    }),
-  )
+  let error_body = categorise_backend_error_body(&e);
+  (status, Json(ErrorResponse { error: error_body }))
+}
+
+/// Rewrite the error body when the underlying `BackendError` is a
+/// timeout or connect failure on the manta-server -> CSM hop. The
+/// rewritten body leads with which hop timed out so the operator
+/// (and the CLI's own `categorise_server_error`) can name it.
+fn categorise_backend_error_body(e: &BackendError) -> String {
+  match e {
+    BackendError::NetError(rqe) if rqe.is_timeout() => {
+      format!(
+        "manta-server -> CSM call timed out (csm-rs reqwest \
+         HTTP_REQUEST_TIMEOUT, default 15 min). CSM did not send \
+         response headers in time. Original: {rqe}"
+      )
+    }
+    BackendError::NetError(rqe) if rqe.is_connect() => {
+      format!(
+        "manta-server -> CSM connect failed. Could not establish a \
+         TCP/TLS connection to the configured CSM endpoint. Check \
+         the site's backend URL and network reachability. Original: {rqe}"
+      )
+    }
+    _ => e.to_string(),
+  }
 }
 
 pub(super) fn serialize_or_500<T: Serialize>(

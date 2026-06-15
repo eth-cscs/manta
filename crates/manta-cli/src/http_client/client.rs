@@ -85,16 +85,124 @@ where
       Err(progenitor_client::Error::ErrorResponse(rv)) => {
         let status = rv.status();
         let inner = rv.into_inner();
-        let msg = serde_json::to_value(&inner)
+        let raw_msg = serde_json::to_value(&inner)
           .ok()
           .and_then(|v| {
             v.get("error").and_then(|e| e.as_str()).map(String::from)
           })
           .unwrap_or_else(|| format!("{inner:?}"));
+        let msg = categorise_server_error(status.as_u16(), &raw_msg);
         Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
+      }
+      Err(progenitor_client::Error::CommunicationError(rqe)) => {
+        Err(anyhow::anyhow!("{}", categorise_transport_error(&rqe)))
       }
       Err(e) => Err(anyhow::anyhow!("{}", e)),
     }
+  }
+}
+
+/// Re-shape a `reqwest::Error` from the CLI-to-manta-server transport
+/// hop into a message that names *which* timeout fired, when it fired.
+/// The CLI itself owns two timeouts on this hop (`connect_timeout` and
+/// `request_timeout_secs` in `cli.toml`), and reqwest exposes
+/// `is_connect()` / `is_timeout()` to distinguish.
+fn categorise_transport_error(rqe: &reqwest::Error) -> String {
+  if rqe.is_timeout() {
+    if rqe.is_connect() {
+      format!(
+        "CLI -> manta-server connect timed out. \
+         The CLI gave up before the TCP/TLS handshake completed. \
+         Likely causes: manta-server unreachable, wrong `manta_server_url` \
+         in `cli.toml`, or a firewall dropping the SYN. \
+         Underlying: {rqe}"
+      )
+    } else {
+      format!(
+        "CLI -> manta-server request timed out. \
+         The CLI gave up before manta-server sent response headers. \
+         This is the CLI-side `request_timeout_secs` in `cli.toml` \
+         (default 300 s). manta-server may still be working on the \
+         request — bump that value if you're hitting it on a heavy \
+         call (e.g. `manta get analysis configuration` against a busy \
+         site). Underlying: {rqe}"
+      )
+    }
+  } else if rqe.is_connect() {
+    format!(
+      "CLI could not connect to manta-server. \
+       Check `manta_server_url` in `cli.toml` and confirm the server \
+       is reachable from this host. Underlying: {rqe}"
+    )
+  } else {
+    format!("CLI transport error talking to manta-server: {rqe}")
+  }
+}
+
+/// Re-shape an `HTTP <status>: <body>` error from manta-server into a
+/// message that names *which* timeout fired when the body matches a
+/// known timeout shape. Only the timeout-related cases are rewritten;
+/// everything else passes through as-is.
+fn categorise_server_error(status: u16, body: &str) -> String {
+  if status == 408 {
+    return format!(
+      "manta-server per-route request timeout fired. \
+       The handler took longer than `request_timeout_secs` in \
+       `server.toml` (default 600 s). The upstream call may still \
+       be running on the server. Original body: {body}"
+    );
+  }
+  // The CSM HTTP client surfaces timeouts via `Error::NetError(reqwest::Error)`,
+  // which Display-formats with the literal "operation timed out" string.
+  // When the server's body carries that shape (after to_handler_error's
+  // own rewrite), flag it as a CSM-side timeout so the user knows the
+  // hop that timed out wasn't CLI->manta-server, it was manta-server->CSM.
+  if body.contains("operation timed out")
+    || body.contains("Connect timed out")
+    || body.contains("manta-server -> CSM")
+  {
+    return format!(
+      "manta-server's outbound call to CSM timed out (csm-rs \
+       reqwest timeout). This is not the CLI or manta-server's own \
+       timeout — CSM itself did not respond. Original body: {body}"
+    );
+  }
+  body.to_string()
+}
+
+#[cfg(test)]
+mod into_anyhow_tests {
+  use super::*;
+
+  #[test]
+  fn categorise_server_408_explains_route_timeout() {
+    let msg = categorise_server_error(408, "Request Timeout");
+    assert!(msg.contains("per-route request timeout"));
+    assert!(msg.contains("server.toml"));
+    // Original body is still surfaced for debug.
+    assert!(msg.contains("Request Timeout"));
+  }
+
+  #[test]
+  fn categorise_server_500_with_operation_timed_out_explains_csm_hop() {
+    let msg = categorise_server_error(
+      500,
+      "ERROR - http client: error sending request for url (...): operation timed out",
+    );
+    assert!(msg.contains("manta-server's outbound call to CSM"));
+    assert!(msg.contains("csm-rs"));
+  }
+
+  #[test]
+  fn categorise_server_500_passes_unknown_bodies_through() {
+    let body = "Internal error: something else";
+    assert_eq!(categorise_server_error(500, body), body);
+  }
+
+  #[test]
+  fn categorise_server_404_passes_through() {
+    let body = "Not found: image abcd-1234";
+    assert_eq!(categorise_server_error(404, body), body);
   }
 }
 
