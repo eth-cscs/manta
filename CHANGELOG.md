@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.71.1] - 2026-06-15
+
+### Miscellaneous Tasks
+
+- Bump csm-rs version
+- Update .gitignore
+
 ## [1.71.0] - 2026-06-02
+
+### Miscellaneous Tasks
+
+- Release manta-cli version 1.71.0
 
 ### Refactor
 
