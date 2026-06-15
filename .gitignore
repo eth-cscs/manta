@@ -11,3 +11,8 @@
 .idea/
 .DS_Store
 Cargo.lock
+.cargo/
+.superpowers/
+crates/
+doc/
+librust_out.rlib
