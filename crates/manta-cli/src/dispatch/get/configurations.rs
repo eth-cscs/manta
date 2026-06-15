@@ -99,6 +99,29 @@ pub async fn exec(
     .map(|r| (r.name, r.safe_to_delete))
     .collect();
 
+  // Optional safety filter — mirrors the same flag pair on
+  // `manta get analysis configuration`. Configurations whose safety
+  // verdict is unknown (not present in the analysis response, which
+  // shouldn't happen but is defended elsewhere with a `?` cell) are
+  // excluded from both filtered views; a filter only keeps rows whose
+  // verdict matches the requested kind.
+  let only_safe = cli_args.get_flag("only-safe-to-delete");
+  let only_unsafe = cli_args.get_flag("only-unsafe-to-delete");
+  let cfs_configuration_vec: Vec<CfsConfigurationResponse> = if only_safe
+    || only_unsafe
+  {
+    cfs_configuration_vec
+      .into_iter()
+      .filter(|cfg| {
+        let safe = safety.get(&cfg.name).copied();
+        (!only_safe || safe == Some(true))
+          && (!only_unsafe || safe == Some(false))
+      })
+      .collect()
+  } else {
+    cfs_configuration_vec
+  };
+
   let output_opt = cli_args.opt_str("output");
 
   if output_opt == Some("json") {

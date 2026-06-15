@@ -126,8 +126,18 @@ pub fn subcommand_get_cfs_configuration() -> Command {
       arg!(-H --group <GROUP_NAME> "Show only configurations whose layers target this group")
         .visible_alias("hsm-group"),
     )
+    .arg(
+      arg!(--"only-safe-to-delete" "Show only configurations that are safe to delete"),
+    )
+    .arg(
+      arg!(--"only-unsafe-to-delete" "Show only configurations that are NOT safe to delete (in use)"),
+    )
     .group(ArgGroup::new("hsm-group_or_configuration").args(["group", "name"]))
     .group(ArgGroup::new("configuration_limit").args(["most-recent", "limit"]))
+    .group(ArgGroup::new("configuration_safety_filter").args([
+      "only-safe-to-delete",
+      "only-unsafe-to-delete",
+    ]))
 }
 
 pub fn subcommand_get_cfs_session() -> Command {

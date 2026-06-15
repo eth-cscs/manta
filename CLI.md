@@ -207,13 +207,17 @@ List CFS configurations. Each row carries a `Safe to delete` verdict (`yes` when
 | `-l/--limit` | u8 | Return the last N configurations |
 | `-H/--group` | string | HSM group to filter by |
 | `-o/--output` | string | Output format: `json` (table is the default). The JSON output gains a `safe_to_delete` bool per row. |
+| `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Configurations whose safety verdict is unknown are excluded. |
+| `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (currently in use). |
 
 > `--group` and `--name` are mutually exclusive.  
-> `--most-recent` and `--limit` are mutually exclusive.
+> `--most-recent` and `--limit` are mutually exclusive.  
+> `--only-safe-to-delete` and `--only-unsafe-to-delete` are mutually exclusive.
 
 ```
 manta get configurations --pattern "csm-config-*" --limit 5
-manta get configurations -o json | jq '.[] | select(.safe_to_delete) | .name'
+manta get configurations --only-safe-to-delete
+manta get configurations --only-unsafe-to-delete -o json | jq '.[].name'
 ```
 
 ### get templates
