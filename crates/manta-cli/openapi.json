@@ -3708,6 +3708,7 @@
           "sat-file"
         ],
         "summary": "`POST /api/v1/sat-file/validate` — validate a SAT file against\nlive CSM state without mutating anything. Used by\n`manta apply sat-file` as a pre-flight check.",
+        "description": "**Scope:** validates the `configurations`, `images`, and\n`session_templates` sections (cross-references resolved against\nCFS / IMS / `cray-product-catalog`). The `hardware` section is\n**not** validated here — invalid `hardware[]` entries will pass\nthis endpoint with 204 and only surface as failures during apply.\nThis matches the underlying csm-rs validator's scope; broadening\nit is tracked as a follow-up.",
         "operationId": "post_sat_validate",
         "parameters": [
           {
@@ -3732,7 +3733,7 @@
         },
         "responses": {
           "204": {
-            "description": "SAT file is valid"
+            "description": "SAT file is valid (configurations, images, session_templates sections — `hardware` is not validated)"
           },
           "400": {
             "description": "SAT validation failed",

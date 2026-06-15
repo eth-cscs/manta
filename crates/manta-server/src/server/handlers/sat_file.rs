@@ -323,7 +323,7 @@ pub async fn post_sat_session_template(
   request_body = PostSatValidateRequest,
   security(("bearerAuth" = [])),
   responses(
-    (status = 204, description = "SAT file is valid"),
+    (status = 204, description = "SAT file is valid (configurations, images, session_templates sections — `hardware` is not validated)"),
     (status = 400, description = "SAT validation failed",       body = ErrorResponse),
     (status = 401, description = "Unauthorized",                body = ErrorResponse),
     (status = 403, description = "Caller cannot target referenced HSM groups", body = ErrorResponse),
@@ -333,6 +333,14 @@ pub async fn post_sat_session_template(
 /// `POST /api/v1/sat-file/validate` — validate a SAT file against
 /// live CSM state without mutating anything. Used by
 /// `manta apply sat-file` as a pre-flight check.
+///
+/// **Scope:** validates the `configurations`, `images`, and
+/// `session_templates` sections (cross-references resolved against
+/// CFS / IMS / `cray-product-catalog`). The `hardware` section is
+/// **not** validated here — invalid `hardware[]` entries will pass
+/// this endpoint with 204 and only surface as failures during apply.
+/// This matches the underlying csm-rs validator's scope; broadening
+/// it is tracked as a follow-up.
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_validate(
   ctx: RequestCtx,
