@@ -47,6 +47,7 @@ use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ApplyImageCreateSessionParams as BackendApplyImageCreateSessionParams,
   ApplyImageStampParams as BackendApplyImageStampParams,
   ApplySessionTemplateParams as BackendApplySessionTemplateParams, SatTrait,
+  ValidateSatFileParams as BackendValidateSatFileParams,
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
@@ -66,6 +67,7 @@ use super::{
 pub use manta_shared::types::api::sat_file::{
   CreateImageCfsSessionRequest, PostSatConfigurationRequest,
   PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
+  PostSatValidateRequest,
   StampImageFromSessionRequest,
 };
 
@@ -308,6 +310,69 @@ pub async fn post_sat_session_template(
     .map_err(to_handler_error)?;
 
   Ok(Json(PostSatSessionTemplateResponse { template, session }))
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/v1/sat-file/validate — Pre-flight validation of a whole SAT file
+//   against live CSM state. Returns 204 on success, 400 on validation
+//   failure. Read-only; safe to call before any state-changing apply work.
+// ---------------------------------------------------------------------------
+
+#[utoipa::path(post, path = "/sat-file/validate", tag = "sat-file",
+  params(SiteHeader),
+  request_body = PostSatValidateRequest,
+  security(("bearerAuth" = [])),
+  responses(
+    (status = 204, description = "SAT file is valid"),
+    (status = 400, description = "SAT validation failed",       body = ErrorResponse),
+    (status = 401, description = "Unauthorized",                body = ErrorResponse),
+    (status = 403, description = "Caller cannot target referenced HSM groups", body = ErrorResponse),
+    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
+  )
+)]
+/// `POST /api/v1/sat-file/validate` — validate a SAT file against
+/// live CSM state without mutating anything. Used by
+/// `manta apply sat-file` as a pre-flight check.
+#[tracing::instrument(skip_all)]
+pub async fn post_sat_validate(
+  ctx: RequestCtx,
+  Json(body): Json<PostSatValidateRequest>,
+) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+  tracing::info!("post_sat_validate");
+  let infra = ctx.infra();
+
+  let vault_base_url = require_vault(infra.vault_base_url)?;
+  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
+
+  let target_groups =
+    crate::service::sat_groups::extract_all_target_groups(&body.sat_file);
+
+  validate_user_group_vec_access(&infra, &ctx.token, &target_groups)
+    .await
+    .map_err(to_handler_error)?;
+
+  // Caller's HSM-group scope — same source used by
+  // post_sat_session_template.
+  let hsm_group_available_vec = infra
+    .backend
+    .get_group_name_available(&ctx.token)
+    .await
+    .map_err(to_handler_error)?;
+
+  infra
+    .backend
+    .validate_sat_file(BackendValidateSatFileParams {
+      shasta_token: &ctx.token,
+      vault_base_url,
+      site_name: infra.site_name,
+      k8s_api_url,
+      sat_file: body.sat_file,
+      hsm_group_available_vec: &hsm_group_available_vec,
+    })
+    .await
+    .map_err(to_handler_error)?;
+
+  Ok(StatusCode::NO_CONTENT)
 }
 
 #[cfg(test)]
