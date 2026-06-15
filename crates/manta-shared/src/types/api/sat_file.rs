@@ -99,6 +99,21 @@ pub struct PostSatSessionTemplateResponse {
   pub session: Option<BosSession>,
 }
 
+/// Body for `POST /api/v1/sat-file/validate`.
+///
+/// The CLI parses the SAT YAML once into a `serde_json::Value` and
+/// forwards it verbatim; the server hands it through to csm-rs's
+/// validator without re-parsing.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct PostSatValidateRequest {
+  /// Parsed SAT file content. Same shape as
+  /// `PostSatConfigurationRequest::configuration` aggregated into
+  /// the full SAT document (`{ configurations, images,
+  /// session_templates, hardware }`).
+  #[schema(value_type = serde_json::Value)]
+  pub sat_file: serde_json::Value,
+}
+
 /// Parameters for applying a SAT file via the whole-file backend
 /// pathway.
 ///
