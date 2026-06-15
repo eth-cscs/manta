@@ -197,7 +197,7 @@ manta get sessions --most-recent -o json
 
 ### get configurations
 
-List CFS configurations.
+List CFS configurations. Each row carries a `Safe to delete` verdict (`yes` when no CFS component lists the configuration as `desired_config` and no BSS-referenced image was built from it; `no` otherwise; `?` only on the rare race where a configuration appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/configurations` and computed identically to `manta get analysis configuration`.
 
 | Flag | Type | Description |
 |------|------|-------------|
@@ -206,13 +206,14 @@ List CFS configurations.
 | `-m/--most-recent` | flag | Show only the most recent |
 | `-l/--limit` | u8 | Return the last N configurations |
 | `-H/--group` | string | HSM group to filter by |
-| `-o/--output` | string | Output format: `json` |
+| `-o/--output` | string | Output format: `json` (table is the default). The JSON output gains a `safe_to_delete` bool per row. |
 
 > `--group` and `--name` are mutually exclusive.  
 > `--most-recent` and `--limit` are mutually exclusive.
 
 ```
 manta get configurations --pattern "csm-config-*" --limit 5
+manta get configurations -o json | jq '.[] | select(.safe_to_delete) | .name'
 ```
 
 ### get templates

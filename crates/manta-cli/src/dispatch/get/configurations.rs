@@ -1,5 +1,7 @@
 //! Implements the `manta get configurations` command.
 
+use std::collections::HashMap;
+
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
@@ -46,23 +48,40 @@ pub async fn exec(
     .or(params.settings_hsm_group_name.as_deref());
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
-  let raw = client
-    .openapi
-    .get_configurations(
-      group_name,
-      params.limit.map(i32::from),
-      params.name.as_deref(),
-      params.pattern.as_deref(),
-      client.site_name(),
-    )
-    .await
-    .into_anyhow()?;
+  let site = client.site_name();
 
-  // The server's response is `Vec<CfsConfigurationResponse>` wire-side;
-  // the generated client surfaces it as `serde_json::Value` because
-  // the schema is sourced from csm-rs (not declared on the manta
-  // server's typed annotations). Round-trip into the typed shape so
-  // the table renderer keeps its existing signature.
+  // Fan out: the listing endpoint and the deletion-safety analysis are
+  // independent, so let manta-server handle both concurrently. The
+  // analysis endpoint already sequences its own upstream calls, so we
+  // don't compound the upstream-reset risk that motivated that sequencing.
+  let (raw, safety_rows) = tokio::try_join!(
+    async {
+      client
+        .openapi
+        .get_configurations(
+          group_name,
+          params.limit.map(i32::from),
+          params.name.as_deref(),
+          params.pattern.as_deref(),
+          site,
+        )
+        .await
+        .into_anyhow()
+    },
+    async {
+      client
+        .openapi
+        .get_configuration_analysis(site)
+        .await
+        .into_anyhow()
+    },
+  )?;
+
+  // The /configurations response is `Vec<CfsConfigurationResponse>`
+  // wire-side; the generated client surfaces it as `serde_json::Value`
+  // because the schema is sourced from csm-rs (not declared on the
+  // manta server's typed annotations). Round-trip into the typed shape
+  // so the table renderer keeps its existing signature.
   let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
     serde_json::from_value(raw)
       .context("Failed to deserialise CFS configurations response")?;
@@ -71,16 +90,45 @@ pub async fn exec(
     bail!("No CFS configuration found!");
   }
 
+  // name -> safe_to_delete lookup from the analysis endpoint. The
+  // analysis returns the full system-wide list; we only consult it
+  // by name, so any /configurations filter (group, name, pattern,
+  // limit) still applies as the user expects.
+  let safety: HashMap<String, bool> = safety_rows
+    .into_iter()
+    .map(|r| (r.name, r.safe_to_delete))
+    .collect();
+
   let output_opt = cli_args.opt_str("output");
 
   if output_opt == Some("json") {
+    // Inject safe_to_delete into each serialised row so JSON consumers
+    // see the same field the table column reflects.
+    let enriched: Vec<serde_json::Value> = cfs_configuration_vec
+      .iter()
+      .map(|cfg| {
+        let mut v = serde_json::to_value(cfg)
+          .context("Failed to serialize CFS configuration to JSON")?;
+        if let serde_json::Value::Object(map) = &mut v {
+          let safe = safety.get(&cfg.name).copied();
+          map.insert(
+            "safe_to_delete".to_string(),
+            match safe {
+              Some(b) => serde_json::Value::Bool(b),
+              None => serde_json::Value::Null,
+            },
+          );
+        }
+        Ok::<_, anyhow::Error>(v)
+      })
+      .collect::<Result<_, _>>()?;
     println!(
       "{}",
-      serde_json::to_string_pretty(&cfs_configuration_vec)
+      serde_json::to_string_pretty(&enriched)
         .context("Failed to serialize CFS configurations to JSON")?
     );
   } else {
-    print_table_struct(&cfs_configuration_vec);
+    print_table_struct(&cfs_configuration_vec, &safety);
   }
 
   Ok(())

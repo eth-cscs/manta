@@ -1,5 +1,7 @@
 //! Table and JSON renderers for CFS configuration output.
 
+use std::collections::HashMap;
+
 use chrono::{DateTime, Local};
 use comfy_table::Table;
 use manta_shared::types::dto::CfsConfigurationResponse;
@@ -7,10 +9,25 @@ use manta_shared::types::dto::CfsConfigurationResponse;
 use manta_shared::common::DATETIME_FORMAT;
 
 /// Print CFS configurations as a formatted table.
-pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
+///
+/// `safety` is a `name -> safe_to_delete` lookup sourced from the
+/// `/analysis/configurations` endpoint. Configurations that aren't in
+/// the lookup render `?` in the safety column — that shouldn't happen
+/// in practice since analysis returns the full system-wide list, but
+/// the renderer is defensive so a transient skew between the two
+/// fetches doesn't panic.
+pub fn print_table_struct(
+  cfs_configurations: &[CfsConfigurationResponse],
+  safety: &HashMap<String, bool>,
+) {
   let mut table = Table::new();
 
-  table.set_header(vec!["Config Name", "Last updated", "Layers"]);
+  table.set_header(vec![
+    "Config Name",
+    "Last updated",
+    "Layers",
+    "Safe to delete",
+  ]);
 
   for cfs_configuration in cfs_configurations {
     let mut layers: String = String::new();
@@ -36,6 +53,12 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
       }
     }
 
+    let safety_cell = match safety.get(&cfs_configuration.name) {
+      Some(true) => "yes",
+      Some(false) => "no",
+      None => "?",
+    };
+
     table.add_row(vec![
       cfs_configuration.name.clone(),
       cfs_configuration
@@ -47,6 +70,7 @@ pub fn print_table_struct(cfs_configurations: &[CfsConfigurationResponse]) {
           |dt| dt.format(DATETIME_FORMAT).to_string(),
         ),
       layers,
+      safety_cell.to_string(),
     ]);
   }
 
@@ -73,7 +97,7 @@ mod tests {
 
   #[test]
   fn print_empty_list_does_not_panic() {
-    print_table_struct(&[]);
+    print_table_struct(&[], &HashMap::new());
   }
 
   #[test]
@@ -85,7 +109,7 @@ mod tests {
       "last_updated": "2026-06-04T12:00:00Z",
       "layers": [],
     }));
-    print_table_struct(&[cfg]);
+    print_table_struct(&[cfg], &HashMap::new());
   }
 
   #[test]
@@ -100,7 +124,9 @@ mod tests {
         "commit": "abc123",
       }],
     }));
-    print_table_struct(&[cfg]);
+    let mut safety = HashMap::new();
+    safety.insert("cfg-one".to_string(), true);
+    print_table_struct(&[cfg], &safety);
   }
 
   #[test]
@@ -116,7 +142,9 @@ mod tests {
         {"name": "cscs", "clone_url": "https://z", "playbook": "c.yml", "commit": "def"},
       ],
     }));
-    print_table_struct(&[cfg]);
+    let mut safety = HashMap::new();
+    safety.insert("cfg-multi".to_string(), false);
+    print_table_struct(&[cfg], &safety);
   }
 
   #[test]
@@ -128,6 +156,6 @@ mod tests {
       "last_updated": "not-a-real-date",
       "layers": [],
     }));
-    print_table_struct(&[cfg]);
+    print_table_struct(&[cfg], &HashMap::new());
   }
 }
