@@ -67,6 +67,37 @@ pub fn extract_session_template_groups(
   groups
 }
 
+/// Read every HSM group name referenced anywhere in a SAT file —
+/// across all `images[]` and `session_templates[]` entries —
+/// deduplicated.
+///
+/// Returns an empty `Vec` for a SAT file with no groups (or no
+/// images / session_templates sections at all).
+///
+/// Used by [`crate::server::handlers::sat_file::post_sat_validate`]
+/// to enforce HSM-group access before delegating to the backend.
+pub fn extract_all_target_groups(sat_file: &Value) -> Vec<String> {
+  let mut groups: Vec<String> = Vec::new();
+
+  if let Some(images) = sat_file.get("images").and_then(Value::as_array) {
+    for image in images {
+      groups.extend(extract_image_groups(image));
+    }
+  }
+
+  if let Some(templates) =
+    sat_file.get("session_templates").and_then(Value::as_array)
+  {
+    for tpl in templates {
+      groups.extend(extract_session_template_groups(tpl));
+    }
+  }
+
+  groups.sort();
+  groups.dedup();
+  groups
+}
+
 #[cfg(test)]
 mod tests {
   use super::{extract_image_groups, extract_session_template_groups};
@@ -136,5 +167,42 @@ mod tests {
       }
     });
     assert_eq!(extract_session_template_groups(&template), vec!["compute"]);
+  }
+
+  #[test]
+  fn extract_all_target_groups_empty_sat_file_returns_empty() {
+    let sat = json!({});
+    assert!(super::extract_all_target_groups(&sat).is_empty());
+  }
+
+  #[test]
+  fn extract_all_target_groups_collects_from_images_and_templates() {
+    let sat = json!({
+      "images": [
+        { "name": "img-1", "configuration_group_names": ["compute", "uan"] },
+        { "name": "img-2", "configuration_group_names": ["compute"] },
+      ],
+      "session_templates": [
+        {
+          "name": "st-1",
+          "bos_parameters": {
+            "boot_sets": {
+              "compute": { "node_groups": ["compute"] },
+              "uan":     { "node_groups": ["uan", "admin"] },
+            }
+          }
+        }
+      ]
+    });
+    let mut got = super::extract_all_target_groups(&sat);
+    got.sort();
+    assert_eq!(got, vec!["admin", "compute", "uan"]);
+  }
+
+  #[test]
+  fn extract_all_target_groups_handles_missing_sections() {
+    let sat = json!({ "images": [ { "name": "img", "configuration_group_names": ["g1"] } ] });
+    let got = super::extract_all_target_groups(&sat);
+    assert_eq!(got, vec!["g1"]);
   }
 }
