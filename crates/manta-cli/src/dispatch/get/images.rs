@@ -77,6 +77,26 @@ pub async fn exec(
     .map(|r| (r.image_id, r.safe_to_delete))
     .collect();
 
+  // Optional safety filter — mirrors the same flag pair on
+  // `manta get analysis image`. Images whose safety verdict is unknown
+  // (no row in the analysis response, or no IMS id on the image) are
+  // excluded from both filtered views; a filter only keeps rows whose
+  // verdict matches the requested kind.
+  let only_safe = cli_args.get_flag("only-safe-to-delete");
+  let only_unsafe = cli_args.get_flag("only-unsafe-to-delete");
+  let images: Vec<Image> = if only_safe || only_unsafe {
+    images
+      .into_iter()
+      .filter(|img| {
+        let safe = img.id.as_deref().and_then(|id| safety.get(id)).copied();
+        (!only_safe || safe == Some(true))
+          && (!only_unsafe || safe == Some(false))
+      })
+      .collect()
+  } else {
+    images
+  };
+
   output::image::print(&images, &safety);
 
   Ok(())

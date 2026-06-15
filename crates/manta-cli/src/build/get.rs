@@ -262,6 +262,16 @@ pub fn subcommand_get_images() -> Command {
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")
         .value_parser(value_parser!(u8).range(1..)),
     )
+    .arg(
+      arg!(--"only-safe-to-delete" "Show only images that are safe to delete"),
+    )
+    .arg(
+      arg!(--"only-unsafe-to-delete" "Show only images that are NOT safe to delete (currently used as a node's boot image)"),
+    )
+    .group(ArgGroup::new("image_safety_filter").args([
+      "only-safe-to-delete",
+      "only-unsafe-to-delete",
+    ]))
 }
 
 pub fn subcommand_get_boot_parameters() -> Command {

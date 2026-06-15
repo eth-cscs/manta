@@ -278,6 +278,10 @@ List IMS images, sorted by creation time. Each row carries a `Safe to delete` ve
 | `-p/--pattern` | string | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). Uses [globset](https://docs.rs/globset/) syntax — `*` matches any run of non-`/` characters, `?` a single character, `[abc]` a character class. Anchored to the full name. |
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return last N images |
+| `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Images whose safety verdict is unknown are excluded. |
+| `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (image is the boot image for at least one node). |
+
+> `--only-safe-to-delete` and `--only-unsafe-to-delete` are mutually exclusive.
 
 > Images built by `manta apply sat-file` carry CFS provenance under their `metadata` map: `manta.image_session.base` (source image id), `manta.image_session.groups` (JSON-encoded HSM group names), `manta.image_session.configuration` (CFS configuration name). See GUIDE.md §3.
 
