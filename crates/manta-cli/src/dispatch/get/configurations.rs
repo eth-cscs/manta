@@ -1,7 +1,5 @@
 //! Implements the `manta get configurations` command.
 
-use std::collections::HashMap;
-
 use anyhow::{Context, Error, bail};
 
 use crate::common::app_context::AppContext;
@@ -60,77 +58,47 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  // The server now returns each row as a CfsConfigurationResponse-shaped
-  // JSON object with an extra `safe_to_delete: bool|null` sibling field
-  // (best-effort: null when the server-side analysis fan-out failed).
-  // Read the safety field off each row, then deserialise the same row
-  // into the typed CfsConfigurationResponse (unknown `safe_to_delete`
-  // field is ignored by serde during deserialisation).
-  let raw: Vec<serde_json::Value> = serde_json::from_value(raw)
-    .context("Failed to deserialise CFS configurations response")?;
+  // The server returns one `ConfigurationAnalysis` per configuration:
+  // `{ configuration: CfsConfigurationResponse, safe_to_delete: bool }`.
+  // `configuration` rides the wire as `serde_json::Value` because the
+  // CFS response type has no `ToSchema` upstream.
   if raw.is_empty() {
     bail!("No CFS configuration found!");
   }
-  let safety: HashMap<String, bool> = raw
-    .iter()
-    .filter_map(|v| {
-      let name = v.get("name")?.as_str()?.to_string();
-      let safe = v.get("safe_to_delete")?.as_bool()?;
-      Some((name, safe))
-    })
-    .collect();
-  let cfs_configuration_vec: Vec<CfsConfigurationResponse> = raw
-    .iter()
-    .map(|v| serde_json::from_value(v.clone()))
-    .collect::<Result<_, _>>()
-    .context("Failed to deserialise CFS configurations response")?;
 
-  // Optional safety filter — mirrors the same flag pair on
-  // `manta get analysis configuration`. Configurations whose safety
-  // verdict is unknown (server returned `safe_to_delete: null` because
-  // the analysis fan-out failed) are excluded from both filtered
-  // views — "only-X" doesn't match unknown.
+  // Optional safety filter.
   let only_safe = cli_args.get_flag("only-safe-to-delete");
   let only_unsafe = cli_args.get_flag("only-unsafe-to-delete");
-  let cfs_configuration_vec: Vec<CfsConfigurationResponse> = if only_safe
-    || only_unsafe
-  {
-    cfs_configuration_vec
+  let rows: Vec<_> = if only_safe || only_unsafe {
+    raw
       .into_iter()
-      .filter(|cfg| {
-        let safe = safety.get(&cfg.name).copied();
-        (!only_safe || safe == Some(true))
-          && (!only_unsafe || safe == Some(false))
+      .filter(|row| {
+        (!only_safe || row.safe_to_delete)
+          && (!only_unsafe || !row.safe_to_delete)
       })
       .collect()
   } else {
-    cfs_configuration_vec
+    raw
   };
 
-  let output_opt = cli_args.opt_str("output");
-
-  if output_opt == Some("json") {
-    // The server already includes safe_to_delete on every row; dump
-    // the raw response verbatim (filtered the same way as the table).
-    let raw_filtered: Vec<&serde_json::Value> = if only_safe || only_unsafe {
-      raw
-        .iter()
-        .filter(|v| {
-          let safe = v.get("safe_to_delete").and_then(|s| s.as_bool());
-          (!only_safe || safe == Some(true))
-            && (!only_unsafe || safe == Some(false))
-        })
-        .collect()
-    } else {
-      raw.iter().collect()
-    };
+  if cli_args.opt_str("output") == Some("json") {
     println!(
       "{}",
-      serde_json::to_string_pretty(&raw_filtered)
+      serde_json::to_string_pretty(&rows)
         .context("Failed to serialize CFS configurations to JSON")?
     );
   } else {
-    print_table_struct(&cfs_configuration_vec, &safety);
+    // Deserialise `configuration` into the typed CFS struct only on
+    // the table path; JSON output already has the right shape.
+    let pairs: Vec<(CfsConfigurationResponse, bool)> = rows
+      .into_iter()
+      .map(|row| {
+        let cfg = serde_json::from_value(row.configuration)?;
+        Ok::<_, serde_json::Error>((cfg, row.safe_to_delete))
+      })
+      .collect::<Result<_, _>>()
+      .context("Failed to deserialise CFS configurations response")?;
+    print_table_struct(&pairs);
   }
 
   Ok(())

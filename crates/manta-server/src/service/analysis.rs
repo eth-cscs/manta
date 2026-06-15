@@ -4,16 +4,16 @@
 //! - [`get_image_analysis`] + [`build_cache`] — image-centric flat
 //!   projection; one row per IMS image with a `safe_to_delete` verdict
 //!   derived from BSS boot-parameter references. See [`BackendSummary`].
-//! - [`get_configuration_analysis`] + [`build_configuration_analysis`]
-//!   — configuration-deletion safety; one row per CFS configuration,
-//!   see [`ConfigurationAnalysis`] for fields.
+//! - [`build_configuration_analysis`] — pure linker that derives a
+//!   `safe_to_delete` verdict per CFS configuration from CFS components
+//!   and (optionally) BSS-referenced images. Called from
+//!   `service::configuration::get_configurations_with_analysis` (the
+//!   components-only variant served at `/configurations`).
 
 use std::collections::{HashMap, HashSet};
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::{
-  bss::BootParametersTrait, cfs::CfsTrait,
-};
+use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigurationResponse;
 use manta_backend_dispatcher::types::cfs::component::Component as CfsComponent;
@@ -144,67 +144,11 @@ pub fn build_configuration_analysis(
     .map(|c| {
       let safe_to_delete = !unsafe_configs.contains(&c.name);
       ConfigurationAnalysis {
-        name: c.name,
-        last_updated: c.last_updated,
+        configuration: c,
         safe_to_delete,
       }
     })
     .collect()
-}
-
-/// Fan the four required fetchers (configurations, CFS components,
-/// BSS boot-parameters, IMS images) out concurrently and feed the
-/// pure linker.
-pub async fn get_configuration_analysis(
-  infra: &InfraContext<'_>,
-  token: &str,
-) -> Result<Vec<ConfigurationAnalysis>, Error> {
-  tracing::info!("Building configuration-deletion safety analysis");
-
-  let configs_params = crate::service::configuration::GetConfigurationParams {
-    name: None,
-    pattern: None,
-    group_name: None,
-    settings_hsm_group_name: None,
-    since: None,
-    until: None,
-    limit: None,
-  };
-  let images_params = crate::service::image::GetImagesParams {
-    id: None,
-    pattern: None,
-    limit: None,
-  };
-
-  // Sequential rather than concurrent: the four upstream fetches
-  // include `get_cfs_components` and `get_all_bootparameters`, both
-  // of which can be very large at scale. Fanning them out with
-  // `try_join!` flooded the upstream Envoy and tripped its
-  // connection-termination behaviour ("upstream connect error or
-  // disconnect/reset before headers"). Sequencing trades wall-clock
-  // for resilience; if even the sequential calls trip the upstream,
-  // the next step is retry-with-backoff at this layer or paging the
-  // bulk calls in csm-rs.
-  let configs = crate::service::configuration::get_configurations(
-    infra,
-    token,
-    &configs_params,
-  )
-  .await?;
-  let components = infra
-    .backend
-    .get_cfs_components(token, None, None, None)
-    .await?;
-  let boot_params = infra.backend.get_all_bootparameters(token).await?;
-  let images =
-    crate::service::image::get_images(infra, token, &images_params).await?;
-
-  Ok(build_configuration_analysis(
-    configs,
-    components,
-    boot_params,
-    images,
-  ))
 }
 
 #[cfg(test)]
@@ -378,8 +322,8 @@ mod tests {
       vec![],
     );
     assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].name, "orphan");
-    assert_eq!(rows[0].last_updated, "2025-01-01T00:00:00Z");
+    assert_eq!(rows[0].configuration.name, "orphan");
+    assert_eq!(rows[0].configuration.last_updated, "2025-01-01T00:00:00Z");
     assert!(rows[0].safe_to_delete);
   }
 
@@ -394,8 +338,12 @@ mod tests {
       vec![],
       vec![],
     );
-    let desired = rows.iter().find(|r| r.name == "desired").unwrap();
-    let other = rows.iter().find(|r| r.name == "nobody-cares").unwrap();
+    let desired =
+      rows.iter().find(|r| r.configuration.name == "desired").unwrap();
+    let other = rows
+      .iter()
+      .find(|r| r.configuration.name == "nobody-cares")
+      .unwrap();
     assert!(!desired.safe_to_delete);
     assert!(other.safe_to_delete);
   }
@@ -411,8 +359,14 @@ mod tests {
       vec![boot_param_for_image("img-bsst")],
       vec![image("img-bsst", "boot-img", Some("boot-config"), None)],
     );
-    let boot = rows.iter().find(|r| r.name == "boot-config").unwrap();
-    let other = rows.iter().find(|r| r.name == "nobody-cares").unwrap();
+    let boot = rows
+      .iter()
+      .find(|r| r.configuration.name == "boot-config")
+      .unwrap();
+    let other = rows
+      .iter()
+      .find(|r| r.configuration.name == "nobody-cares")
+      .unwrap();
     assert!(!boot.safe_to_delete);
     assert!(other.safe_to_delete);
   }
@@ -443,7 +397,8 @@ mod tests {
       vec![],
       vec![],
     );
-    let names: Vec<&str> = rows.iter().map(|r| r.name.as_str()).collect();
+    let names: Vec<&str> =
+      rows.iter().map(|r| r.configuration.name.as_str()).collect();
     assert_eq!(names, vec!["a", "b", "z"]); // oldest first; ties by name asc
   }
 

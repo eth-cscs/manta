@@ -7,6 +7,7 @@ use super::{
   to_handler_error,
 };
 use crate::service;
+use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/configurations
@@ -17,21 +18,16 @@ pub use manta_shared::types::api::queries::{
 };
 
 /// GET /configurations — list CFS configurations with optional
-/// name/pattern/group filters. Every row carries a `safe_to_delete:
-/// bool|null` field derived from the same deletion-safety analysis as
-/// `GET /analysis/configurations`. The safety lookup is best-effort:
-/// if the analysis fan-out fails, rows still come back with
-/// `safe_to_delete: null` (the listing isn't held hostage by analysis
-/// upstream flakiness).
+/// name/pattern/group filters. Every row carries the full
+/// `CfsConfigurationResponse` plus a `safe_to_delete` verdict
+/// derived from CFS components only (a configuration is unsafe iff
+/// some component lists it as `desired_config`).
 #[utoipa::path(get, path = "/configurations", tag = "configurations",
   params(ConfigurationQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
-    // CfsConfigurationResponse lives in manta-backend-dispatcher
-    // (third-party, no ToSchema) and we inject an extra
-    // `safe_to_delete` field — kept as Value until both pieces are
-    // formally schema'd.
-    (status = 200, description = "List of configurations (with safe_to_delete)", body = serde_json::Value),
+    (status = 200, description = "Configurations with components-only safe_to_delete verdict",
+     body = Vec<ConfigurationAnalysis>),
     (status = 401, description = "Unauthorized",           body = ErrorResponse),
     (status = 500, description = "Internal error",         body = ErrorResponse),
   )
@@ -53,13 +49,13 @@ pub async fn get_configurations(
     limit: q.limit,
   };
 
-  let configs = service::configuration::get_configurations_with_safety(
+  let rows = service::configuration::get_configurations_with_analysis(
     &infra, &ctx.token, &params,
   )
   .await
   .map_err(to_handler_error)?;
 
-  Ok(Json(configs))
+  Ok(Json(rows))
 }
 
 // ---------------------------------------------------------------------------

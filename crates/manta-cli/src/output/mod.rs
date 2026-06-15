@@ -11,6 +11,4 @@ pub mod kernel_parameters;
 pub mod node;
 pub mod redfish_endpoints;
 pub mod session;
-pub mod analysis_configuration;
-pub mod analysis_image;
 pub mod template;

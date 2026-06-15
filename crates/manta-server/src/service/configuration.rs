@@ -77,76 +77,30 @@ pub async fn get_configurations(
   Ok(cfs_configuration_vec)
 }
 
-/// Like [`get_configurations`] but enriches every row with a
-/// `safe_to_delete: Option<bool>` field sourced from
-/// [`crate::service::analysis::get_configuration_analysis`]. Used by
-/// the `/configurations` handler so the CLI gets a single response
-/// instead of fanning the listing and the analysis out from the
-/// client side.
+/// Like [`get_configurations`] but pairs every row with a
+/// `safe_to_delete` verdict by fetching CFS components and running
+/// the pure [`build_configuration_analysis`] linker.
 ///
-/// The safety lookup is **best-effort**: if the analysis fan-out
-/// fails (the common cause being an upstream proxy reset on one of
-/// the four bulk fetches it does), the listing is still returned —
-/// every row gets `safe_to_delete: null` and a `tracing::warn` line
-/// records the underlying error. This keeps the listing endpoint
-/// from being held hostage by analysis-side upstream flakiness; if
-/// the operator wants the verdict and doesn't see it, the warning
-/// log line tells them what failed.
-pub async fn get_configurations_with_safety(
+/// The verdict is **CFS-components-only**: a configuration is unsafe
+/// if any CFS component lists it as its `desired_config`. The endpoint
+/// does not check whether any BSS-referenced image was built from the
+/// configuration; skipping the BSS and IMS fetches keeps this listing
+/// fast and avoids the upstream-proxy resets that fanning out four
+/// heavy fetches has been prone to.
+pub async fn get_configurations_with_analysis(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetConfigurationParams,
-) -> Result<Vec<serde_json::Value>, Error> {
-  let cfs_configuration_vec =
-    get_configurations(infra, token, params).await?;
-
-  // Best-effort safety lookup. A failure here doesn't fail the
-  // listing — it logs and we render null verdicts.
-  let safety_map: std::collections::HashMap<String, bool> =
-    match crate::service::analysis::get_configuration_analysis(infra, token)
-      .await
-    {
-      Ok(rows) => rows
-        .into_iter()
-        .map(|r| (r.name, r.safe_to_delete))
-        .collect(),
-      Err(e) => {
-        tracing::warn!(
-          "configuration-safety analysis failed; \
-           returning configurations with safe_to_delete=null. \
-           Underlying error: {e}"
-        );
-        std::collections::HashMap::new()
-      }
-    };
-
-  // Serialise each row and inject `safe_to_delete`. We use Value as
-  // the wire shape because `CfsConfigurationResponse` lives in
-  // `manta-backend-dispatcher` and we can't add fields to it; the
-  // handler already declares its response as Value in the OpenAPI
-  // spec, so this stays schema-compatible.
-  cfs_configuration_vec
-    .into_iter()
-    .map(|cfg| {
-      let safe = safety_map.get(&cfg.name).copied();
-      let mut v = serde_json::to_value(&cfg).map_err(|e| {
-        Error::Message(format!(
-          "failed to serialise configuration '{}': {e}",
-          cfg.name
-        ))
-      })?;
-      if let serde_json::Value::Object(map) = &mut v {
-        map.insert(
-          "safe_to_delete".to_string(),
-          match safe {
-            Some(b) => serde_json::Value::Bool(b),
-            None => serde_json::Value::Null,
-          },
-        );
-      }
-      Ok(v)
-    })
-    .collect()
+) -> Result<Vec<crate::service::analysis::ConfigurationAnalysis>, Error> {
+  let configs = get_configurations(infra, token, params).await?;
+  let components =
+    infra.backend.get_cfs_components(token, None, None, None).await?;
+  Ok(crate::service::analysis::build_configuration_analysis(
+    configs,
+    components,
+    vec![],
+    vec![],
+  ))
 }
 
 /// Collect every resource that would be removed by a cascading

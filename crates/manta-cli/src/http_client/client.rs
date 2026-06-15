@@ -124,8 +124,7 @@ fn categorise_transport_error(rqe: &reqwest::Error) -> String {
          This is the CLI-side `request_timeout_secs` in `cli.toml` \
          (default 300 s). manta-server may still be working on the \
          request — bump that value if you're hitting it on a heavy \
-         call (e.g. `manta get analysis configuration` against a busy \
-         site). Underlying: {rqe}"
+         call against a busy site. Underlying: {rqe}"
       )
     }
   } else if rqe.is_connect() {

@@ -56,61 +56,6 @@ pub fn subcommand_get_hardware_group() -> Command {
     )
 }
 
-pub fn subcommand_get_analysis() -> Command {
-  Command::new("analysis")
-    .arg_required_else_help(true)
-    .about("Cross-resource analyses")
-    .subcommand(subcommand_get_analysis_image())
-    .subcommand(subcommand_get_analysis_configuration())
-}
-
-pub fn subcommand_get_analysis_image() -> Command {
-  Command::new("image")
-    .about(
-      "List IMS images with a safe-to-delete verdict per row. Safe means no BSS \
-       boot-parameter record references the image as its boot image.",
-    )
-    .arg(
-      arg!(-o --output <FORMAT> "Output format")
-        .value_parser(["table", "json"])
-        .default_value("table"),
-    )
-    .arg(
-      arg!(--"only-safe-to-delete" "Show only images that are safe to delete"),
-    )
-    .arg(
-      arg!(--"only-unsafe-to-delete" "Show only images that are NOT safe to delete (currently used as a node's boot image)"),
-    )
-    .group(ArgGroup::new("image_safety_filter").args([
-      "only-safe-to-delete",
-      "only-unsafe-to-delete",
-    ]))
-}
-
-pub fn subcommand_get_analysis_configuration() -> Command {
-  Command::new("configuration")
-    .about(
-      "List CFS configurations sorted by last-updated (oldest first), with a \
-       safe-to-delete verdict per row. Safe means no CFS component lists it \
-       as desired_config AND no BSS-referenced image was built from it.",
-    )
-    .arg(
-      arg!(-o --output <FORMAT> "Output format")
-        .value_parser(["table", "json"])
-        .default_value("table"),
-    )
-    .arg(
-      arg!(--"only-safe-to-delete" "Show only configurations that are safe to delete"),
-    )
-    .arg(
-      arg!(--"only-unsafe-to-delete" "Show only configurations that are NOT safe to delete (in use)"),
-    )
-    .group(ArgGroup::new("safety_filter").args([
-      "only-safe-to-delete",
-      "only-unsafe-to-delete",
-    ]))
-}
-
 pub fn subcommand_get_cfs_configuration() -> Command {
   Command::new("configurations")
     .about("List CFS configurations (filter by name, glob, group, or recency)")
@@ -325,7 +270,7 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
 pub fn subcommand_get() -> Command {
   Command::new("get")
     .arg_required_else_help(true)
-    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, analysis, and boot/kernel parameters")
+    .about("Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters")
     .subcommand(subcommand_get_group())
     .subcommand(subcommand_get_hardware())
     .subcommand(subcommand_get_cfs_session())
@@ -334,7 +279,6 @@ pub fn subcommand_get() -> Command {
     .subcommand(subcommand_get_group_nodes())
     .subcommand(subcommand_get_node_details())
     .subcommand(subcommand_get_images())
-    .subcommand(subcommand_get_analysis())
     .subcommand(subcommand_get_boot_parameters())
     .subcommand(subcommand_get_kernel_parameters())
     .subcommand(subcommand_get_redfish_endpoints())

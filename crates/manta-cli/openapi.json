@@ -19,66 +19,6 @@
     }
   ],
   "paths": {
-    "/analysis/configurations": {
-      "get": {
-        "tags": [
-          "analysis"
-        ],
-        "summary": "GET /analysis/configurations — one row per CFS configuration, sorted by\n`last_updated` ascending, with a `safe_to_delete` verdict derived\nfrom cross-resource dependencies (CFS components' `desired_config`\nand BSS-referenced images' built-with configuration). See\n[`ConfigurationAnalysis`] for column semantics.",
-        "operationId": "get_configuration_analysis",
-        "parameters": [
-          {
-            "name": "X-Manta-Site",
-            "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Configuration analysis rows",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ConfigurationAnalysis"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/analysis/images": {
       "get": {
         "tags": [
@@ -725,7 +665,7 @@
         "tags": [
           "configurations"
         ],
-        "summary": "GET /configurations — list CFS configurations with optional\nname/pattern/group filters. Every row carries a `safe_to_delete:\nbool|null` field derived from the same deletion-safety analysis as\n`GET /analysis/configurations`. The safety lookup is best-effort:\nif the analysis fan-out fails, rows still come back with\n`safe_to_delete: null` (the listing isn't held hostage by analysis\nupstream flakiness).",
+        "summary": "GET /configurations — list CFS configurations with optional\nname/pattern/group filters. Every row carries the full\n`CfsConfigurationResponse` plus a `safe_to_delete` verdict\nderived from CFS components only (a configuration is unsafe iff\nsome component lists it as `desired_config`). The fuller verdict\nthat also considers BSS-referenced images is at\n`GET /analysis/configurations`.",
         "operationId": "get_configurations",
         "parameters": [
           {
@@ -790,10 +730,15 @@
         ],
         "responses": {
           "200": {
-            "description": "List of configurations (with safe_to_delete)",
+            "description": "Configurations with components-only safe_to_delete verdict",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConfigurationAnalysis"
+                  }
+                }
               }
             }
           },
@@ -4854,18 +4799,12 @@
         "type": "object",
         "description": "One row of the configuration-deletion-safety analysis.",
         "required": [
-          "name",
-          "last_updated",
+          "configuration",
           "safe_to_delete"
         ],
         "properties": {
-          "last_updated": {
-            "type": "string",
-            "description": "`last_updated` timestamp from CFS."
-          },
-          "name": {
-            "type": "string",
-            "description": "CFS configuration name (`CfsConfigurationResponse.name`)."
+          "configuration": {
+            "description": "Full CFS configuration record as returned by CFS. `CfsConfigurationResponse`\nlives in `manta-backend-dispatcher` (third-party, no ToSchema), so the\nOpenAPI schema falls back to `serde_json::Value`."
           },
           "safe_to_delete": {
             "type": "boolean",

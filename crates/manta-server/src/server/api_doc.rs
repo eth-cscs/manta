@@ -14,7 +14,6 @@ use super::handlers;
     handlers::health,
     handlers::get_sessions,
     handlers::get_image_analysis,
-    handlers::get_configuration_analysis,
     handlers::get_configurations,
     handlers::get_nodes,
     handlers::get_groups,

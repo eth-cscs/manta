@@ -33,10 +33,6 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     // --- GET endpoints ---
     .route("/sessions", get(handlers::get_sessions))
     .route("/analysis/images", get(handlers::get_image_analysis))
-    .route(
-      "/analysis/configurations",
-      get(handlers::get_configuration_analysis),
-    )
     .route("/configurations", get(handlers::get_configurations))
     .route("/nodes", get(handlers::get_nodes))
     .route("/groups", get(handlers::get_groups))
