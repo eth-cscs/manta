@@ -18,6 +18,13 @@ impl SatTrait for StaticBackendDispatcher {
     dispatch!(self, apply_sat_file, params)
   }
 
+  async fn validate_sat_file(
+    &self,
+    params: ValidateSatFileParams<'_>,
+  ) -> Result<(), Error> {
+    dispatch!(self, validate_sat_file, params)
+  }
+
   async fn apply_configuration(
     &self,
     params: ApplyConfigurationParams<'_>,
