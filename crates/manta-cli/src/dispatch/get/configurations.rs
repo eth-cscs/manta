@@ -48,63 +48,48 @@ pub async fn exec(
     .or(params.settings_hsm_group_name.as_deref());
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
-  let site = client.site_name();
+  let raw = client
+    .openapi
+    .get_configurations(
+      group_name,
+      params.limit.map(i32::from),
+      params.name.as_deref(),
+      params.pattern.as_deref(),
+      client.site_name(),
+    )
+    .await
+    .into_anyhow()?;
 
-  // Fan out: the listing endpoint and the deletion-safety analysis are
-  // independent, so let manta-server handle both concurrently. The
-  // analysis endpoint already sequences its own upstream calls, so we
-  // don't compound the upstream-reset risk that motivated that sequencing.
-  let (raw, safety_rows) = tokio::try_join!(
-    async {
-      client
-        .openapi
-        .get_configurations(
-          group_name,
-          params.limit.map(i32::from),
-          params.name.as_deref(),
-          params.pattern.as_deref(),
-          site,
-        )
-        .await
-        .into_anyhow()
-    },
-    async {
-      client
-        .openapi
-        .get_configuration_analysis(site)
-        .await
-        .into_anyhow()
-    },
-  )?;
-
-  // The /configurations response is `Vec<CfsConfigurationResponse>`
-  // wire-side; the generated client surfaces it as `serde_json::Value`
-  // because the schema is sourced from csm-rs (not declared on the
-  // manta server's typed annotations). Round-trip into the typed shape
-  // so the table renderer keeps its existing signature.
-  let cfs_configuration_vec: Vec<CfsConfigurationResponse> =
-    serde_json::from_value(raw)
-      .context("Failed to deserialise CFS configurations response")?;
-
-  if cfs_configuration_vec.is_empty() {
+  // The server now returns each row as a CfsConfigurationResponse-shaped
+  // JSON object with an extra `safe_to_delete: bool|null` sibling field
+  // (best-effort: null when the server-side analysis fan-out failed).
+  // Read the safety field off each row, then deserialise the same row
+  // into the typed CfsConfigurationResponse (unknown `safe_to_delete`
+  // field is ignored by serde during deserialisation).
+  let raw: Vec<serde_json::Value> = serde_json::from_value(raw)
+    .context("Failed to deserialise CFS configurations response")?;
+  if raw.is_empty() {
     bail!("No CFS configuration found!");
   }
-
-  // name -> safe_to_delete lookup from the analysis endpoint. The
-  // analysis returns the full system-wide list; we only consult it
-  // by name, so any /configurations filter (group, name, pattern,
-  // limit) still applies as the user expects.
-  let safety: HashMap<String, bool> = safety_rows
-    .into_iter()
-    .map(|r| (r.name, r.safe_to_delete))
+  let safety: HashMap<String, bool> = raw
+    .iter()
+    .filter_map(|v| {
+      let name = v.get("name")?.as_str()?.to_string();
+      let safe = v.get("safe_to_delete")?.as_bool()?;
+      Some((name, safe))
+    })
     .collect();
+  let cfs_configuration_vec: Vec<CfsConfigurationResponse> = raw
+    .iter()
+    .map(|v| serde_json::from_value(v.clone()))
+    .collect::<Result<_, _>>()
+    .context("Failed to deserialise CFS configurations response")?;
 
   // Optional safety filter — mirrors the same flag pair on
   // `manta get analysis configuration`. Configurations whose safety
-  // verdict is unknown (not present in the analysis response, which
-  // shouldn't happen but is defended elsewhere with a `?` cell) are
-  // excluded from both filtered views; a filter only keeps rows whose
-  // verdict matches the requested kind.
+  // verdict is unknown (server returned `safe_to_delete: null` because
+  // the analysis fan-out failed) are excluded from both filtered
+  // views — "only-X" doesn't match unknown.
   let only_safe = cli_args.get_flag("only-safe-to-delete");
   let only_unsafe = cli_args.get_flag("only-unsafe-to-delete");
   let cfs_configuration_vec: Vec<CfsConfigurationResponse> = if only_safe
@@ -125,29 +110,23 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
 
   if output_opt == Some("json") {
-    // Inject safe_to_delete into each serialised row so JSON consumers
-    // see the same field the table column reflects.
-    let enriched: Vec<serde_json::Value> = cfs_configuration_vec
-      .iter()
-      .map(|cfg| {
-        let mut v = serde_json::to_value(cfg)
-          .context("Failed to serialize CFS configuration to JSON")?;
-        if let serde_json::Value::Object(map) = &mut v {
-          let safe = safety.get(&cfg.name).copied();
-          map.insert(
-            "safe_to_delete".to_string(),
-            match safe {
-              Some(b) => serde_json::Value::Bool(b),
-              None => serde_json::Value::Null,
-            },
-          );
-        }
-        Ok::<_, anyhow::Error>(v)
-      })
-      .collect::<Result<_, _>>()?;
+    // The server already includes safe_to_delete on every row; dump
+    // the raw response verbatim (filtered the same way as the table).
+    let raw_filtered: Vec<&serde_json::Value> = if only_safe || only_unsafe {
+      raw
+        .iter()
+        .filter(|v| {
+          let safe = v.get("safe_to_delete").and_then(|s| s.as_bool());
+          (!only_safe || safe == Some(true))
+            && (!only_unsafe || safe == Some(false))
+        })
+        .collect()
+    } else {
+      raw.iter().collect()
+    };
     println!(
       "{}",
-      serde_json::to_string_pretty(&enriched)
+      serde_json::to_string_pretty(&raw_filtered)
         .context("Failed to serialize CFS configurations to JSON")?
     );
   } else {

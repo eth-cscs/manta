@@ -197,7 +197,7 @@ manta get sessions --most-recent -o json
 
 ### get configurations
 
-List CFS configurations. Each row carries a `Safe to delete` verdict (`yes` when no CFS component lists the configuration as `desired_config` and no BSS-referenced image was built from it; `no` otherwise; `?` only on the rare race where a configuration appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/configurations` and computed identically to `manta get analysis configuration`.
+List CFS configurations. Each row carries a `Safe to delete` verdict (`yes` when no CFS component lists the configuration as `desired_config` and no BSS-referenced image was built from it; `no` otherwise; `?` when the server-side analysis fan-out failed and the verdict couldn't be computed for that row). The verdict is computed server-side using the same logic as `manta get analysis configuration` and arrives on a single `/configurations` response — no client-side fan-out. Safety enrichment is best-effort: if the analysis fan-out fails, the listing still returns with `?` in the safety column instead of erroring.
 
 | Flag | Type | Description |
 |------|------|-------------|

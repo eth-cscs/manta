@@ -10,7 +10,7 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.54"
+    "version": "2.0.0-beta.55"
   },
   "servers": [
     {
@@ -725,7 +725,7 @@
         "tags": [
           "configurations"
         ],
-        "summary": "GET /configurations — list CFS configurations with optional name/pattern/group filters.",
+        "summary": "GET /configurations — list CFS configurations with optional\nname/pattern/group filters. Every row carries a `safe_to_delete:\nbool|null` field derived from the same deletion-safety analysis as\n`GET /analysis/configurations`. The safety lookup is best-effort:\nif the analysis fan-out fails, rows still come back with\n`safe_to_delete: null` (the listing isn't held hostage by analysis\nupstream flakiness).",
         "operationId": "get_configurations",
         "parameters": [
           {
@@ -790,7 +790,7 @@
         ],
         "responses": {
           "200": {
-            "description": "List of configurations",
+            "description": "List of configurations (with safe_to_delete)",
             "content": {
               "application/json": {
                 "schema": {}
