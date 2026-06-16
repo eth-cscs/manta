@@ -5490,7 +5490,7 @@
           },
           "dry_run": {
             "type": "boolean",
-            "description": "Validate without creating; the response contains a mock template\nand, if `create_bos_session` was set, no session is returned."
+            "description": "Validate without creating; the response contains a mock template,\nand if `create_bos_session` was set the response also contains a\nmock BOS session (no status, name prefixed with `dry-run-`) so the\nclient can preview the session that would have been created."
           },
           "ref_lookup": {
             "type": "object",
@@ -5509,7 +5509,7 @@
       },
       "PostSatSessionTemplateResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v1/sat-file/session-templates`.\n\n`session` is populated when `create_bos_session` was true and a BOS\nsession was created from the template.",
+        "description": "Response body for `POST /api/v1/sat-file/session-templates`.\n\n`session` is populated when `create_bos_session` was true. In a real\napply it carries the freshly-created BOS session; in a dry-run it\ncarries a mock with no status and a `dry-run-` name prefix.",
         "required": [
           "template"
         ],

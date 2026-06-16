@@ -50,6 +50,9 @@ use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ValidateSatFileParams as BackendValidateSatFileParams,
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::types::bos::session::{
+  BosSession, Operation as BosOperation,
+};
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
@@ -310,7 +313,43 @@ pub async fn post_sat_session_template(
     .await
     .map_err(to_handler_error)?;
 
+  // Dry-run + create_bos_session: the backend has returned a mock
+  // template but no session (it never actually created one). Synthesise
+  // a mock session so the client can review the BOS session that *would*
+  // have been kicked off. The mock has no status — it never ran — and
+  // its name is prefixed with "dry-run-" to make accidental confusion
+  // with a real persisted session impossible.
+  let session = match session {
+    Some(s) => Some(s),
+    None if body.dry_run && body.create_bos_session => {
+      Some(mock_bos_session_for_template(&template))
+    }
+    None => None,
+  };
+
   Ok(Json(PostSatSessionTemplateResponse { template, session }))
+}
+
+/// Build a `BosSession` that mirrors what a real session created from
+/// `template` would look like, for dry-run preview only. The session
+/// carries no `Status` (it never ran), and its `name` is prefixed with
+/// `"dry-run-"` so a consumer can't mistake it for a persisted CSM
+/// session.
+fn mock_bos_session_for_template(
+  template: &manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate,
+) -> BosSession {
+  let template_name = template.name.clone().unwrap_or_else(|| "<unnamed>".to_string());
+  BosSession {
+    name: Some(format!("dry-run-{template_name}")),
+    tenant: None,
+    operation: Some(BosOperation::Reboot),
+    template_name,
+    limit: None,
+    stage: None,
+    components: None,
+    include_disabled: None,
+    status: None,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -516,6 +555,54 @@ mod tests {
     assert!(obj.contains_key("session"));
     assert_eq!(obj["template"]["name"].as_str(), Some("st-1"));
     assert!(obj["session"].is_null());
+  }
+
+  /// Mock BOS session for dry-run + create_bos_session: name carries
+  /// the `dry-run-` prefix, the operation is Reboot, the template_name
+  /// follows the template, and no Status is attached (the session
+  /// never ran).
+  #[test]
+  fn dry_run_mock_bos_session_for_template_shape() {
+    use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
+
+    let template = BosSessionTemplate {
+      name: Some("st-42".to_string()),
+      tenant: None,
+      description: None,
+      enable_cfs: None,
+      cfs: None,
+      boot_sets: None,
+      links: None,
+    };
+    let session = super::mock_bos_session_for_template(&template);
+    assert_eq!(session.name.as_deref(), Some("dry-run-st-42"));
+    assert_eq!(session.template_name, "st-42");
+    assert!(session.status.is_none());
+    assert!(matches!(
+      session.operation,
+      Some(super::BosOperation::Reboot)
+    ));
+  }
+
+  /// Template with no name → mock falls back to `<unnamed>` so the
+  /// session shape is still valid (template_name is required on
+  /// BosSession).
+  #[test]
+  fn dry_run_mock_handles_unnamed_template() {
+    use manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate;
+
+    let template = BosSessionTemplate {
+      name: None,
+      tenant: None,
+      description: None,
+      enable_cfs: None,
+      cfs: None,
+      boot_sets: None,
+      links: None,
+    };
+    let session = super::mock_bos_session_for_template(&template);
+    assert_eq!(session.template_name, "<unnamed>");
+    assert_eq!(session.name.as_deref(), Some("dry-run-<unnamed>"));
   }
 
   /// Lock the shape of the CLI's POST /sat-file/validate body.

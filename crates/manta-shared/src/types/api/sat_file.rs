@@ -79,16 +79,19 @@ pub struct PostSatSessionTemplateRequest {
   /// target nodes boot via the new template (typically a reboot).
   #[serde(default)]
   pub create_bos_session: bool,
-  /// Validate without creating; the response contains a mock template
-  /// and, if `create_bos_session` was set, no session is returned.
+  /// Validate without creating; the response contains a mock template,
+  /// and if `create_bos_session` was set the response also contains a
+  /// mock BOS session (no status, name prefixed with `dry-run-`) so the
+  /// client can preview the session that would have been created.
   #[serde(default)]
   pub dry_run: bool,
 }
 
 /// Response body for `POST /api/v1/sat-file/session-templates`.
 ///
-/// `session` is populated when `create_bos_session` was true and a BOS
-/// session was created from the template.
+/// `session` is populated when `create_bos_session` was true. In a real
+/// apply it carries the freshly-created BOS session; in a dry-run it
+/// carries a mock with no status and a `dry-run-` name prefix.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct PostSatSessionTemplateResponse {
   /// The created (or mock, in dry-run) BOS session template.
