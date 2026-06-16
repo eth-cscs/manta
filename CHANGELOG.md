@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.56] - 2026-06-16
+
+### Build
+
+- Regenerate openapi.json for /sat-file/validate
+
+### Documentation
+
+- Note hardware section gap in /sat-file/validate
+- Finish --reboot -> --create-bos-session rename in GUIDE.md
+
+### Features
+
+- Show safe_to_delete on `manta get configurations`
+- Add --only-safe-to-delete / --only-unsafe-to-delete to get configurations
+- Show safe_to_delete on `manta get images`
+- Add --only-safe-to-delete / --only-unsafe-to-delete to get images
+- Name the timeout hop in user-facing error messages
+- Add PostSatValidateRequest wire type
+- Extract_all_target_groups across whole sat file
+- Dispatcher impl of SatTrait::validate_sat_file
+- Add post_sat_validate handler
+- Wire POST /sat-file/validate route + utoipa entry
+- Pre-flight SAT validation in apply sat-file
+- Rename `--reboot` to `--create-bos-session` on `manta apply sat-file`
+- Return a mock BOS session on dry-run + --create-bos-session
+
+### Miscellaneous Tasks
+
+- Trace which branch of the BOS-session match arm fired
+- Bump manta-backend-dispatcher, csm-rs and ochami-rs
+
+### Refactor
+
+- Consolidate `manta get configurations` to a single HTTP call
+- Remove `manta get analysis` and inline components-only verdict on /configurations
+
+### Testing
+
+- Wire-format lock for PostSatValidateRequest
+
 ## [2.0.0-beta.55] - 2026-06-14
 
 ### Bug Fixes
