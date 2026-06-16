@@ -3640,7 +3640,7 @@
         "tags": [
           "sat-file"
         ],
-        "summary": "`POST /api/v1/sat-file/session-templates` — apply a single SAT\nsession_template entry. Returns the created BOS session template\nand (if `reboot` was set and we're not in dry-run) the BOS session\nthat was kicked off to reboot the targeted nodes.",
+        "summary": "`POST /api/v1/sat-file/session-templates` — apply a single SAT\nsession_template entry. Returns the created BOS session template\nand (if `create_bos_session` was set and we're not in dry-run) the\nBOS session that was created from the new template to boot the\ntargeted nodes through it.",
         "operationId": "post_sat_session_template",
         "parameters": [
           {
@@ -5484,13 +5484,13 @@
           "session_template"
         ],
         "properties": {
+          "create_bos_session": {
+            "type": "boolean",
+            "description": "After creating the template, create a BOS session from it so its\ntarget nodes boot via the new template (typically a reboot)."
+          },
           "dry_run": {
             "type": "boolean",
-            "description": "Validate without creating; the response contains a mock template\nand, if `reboot` was set, no session is returned."
-          },
-          "reboot": {
-            "type": "boolean",
-            "description": "After creating the template, trigger a BOS session to reboot the\ntargeted nodes through it."
+            "description": "Validate without creating; the response contains a mock template\nand, if `create_bos_session` was set, no session is returned."
           },
           "ref_lookup": {
             "type": "object",
@@ -5509,13 +5509,13 @@
       },
       "PostSatSessionTemplateResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v1/sat-file/session-templates`.\n\n`session` is populated when `reboot` was true and a BOS session\nwas created.",
+        "description": "Response body for `POST /api/v1/sat-file/session-templates`.\n\n`session` is populated when `create_bos_session` was true and a BOS\nsession was created from the template.",
         "required": [
           "template"
         ],
         "properties": {
           "session": {
-            "description": "The BOS session created by the reboot, if any."
+            "description": "The BOS session created from the new template, if any."
           },
           "template": {
             "description": "The created (or mock, in dry-run) BOS session template."

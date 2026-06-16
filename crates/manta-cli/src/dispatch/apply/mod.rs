@@ -89,7 +89,7 @@ pub async fn handle_apply(
         .transpose()?;
 
       let overwrite: bool = m.get_flag("overwrite-configuration");
-      let reboot: bool = m.get_flag("reboot");
+      let create_bos_session: bool = m.get_flag("create-bos-session");
       let watch_logs: bool = m.get_flag("watch-logs");
       let timestamps: bool = m.get_flag("timestamps");
       let assume_yes: bool = m.get_flag("assume-yes");
@@ -105,7 +105,7 @@ pub async fn handle_apply(
           values_cli_opt: cli_value_vec_opt.as_deref(),
           ansible_verbosity_opt: ansible_verbosity,
           ansible_passthrough_opt: ansible_passthrough.as_deref(),
-          reboot,
+          create_bos_session,
           watch_logs,
           timestamps,
           prehook_opt: m.opt_str("pre-hook"),

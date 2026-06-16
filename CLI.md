@@ -499,7 +499,7 @@ Process a SAT (System Admin Toolkit) file. This is the primary workflow for depl
 | `-t/--sat-template-file` | path | **yes** | — | SAT file path (may be a Jinja2 template) |
 | `-f/--values-file` | path | no | — | Jinja2 values file |
 | `-V/--values` | string… | no | — | Inline Jinja2 values; overrides `--values-file` |
-| `--reboot` | flag | no | — | Reboot nodes after session templates are applied |
+| `--create-bos-session` | flag | no | — | After each BOS session template is created, create a BOS session from it so its target nodes boot via the new template (typically a reboot) |
 | `-v/--ansible-verbosity` | 1–4 | no | `2` | Ansible verbosity level |
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters (`--extra-vars`, `--forks`, etc.) |
 | `-o/--overwrite-configuration` | flag | no | — | Overwrite existing CFS configurations |

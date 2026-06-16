@@ -75,26 +75,26 @@ pub struct PostSatSessionTemplateRequest {
   /// images; the backend uses it to resolve `image.image_ref`.
   #[serde(default)]
   pub ref_lookup: HashMap<String, String>,
-  /// After creating the template, trigger a BOS session to reboot the
-  /// targeted nodes through it.
+  /// After creating the template, create a BOS session from it so its
+  /// target nodes boot via the new template (typically a reboot).
   #[serde(default)]
-  pub reboot: bool,
+  pub create_bos_session: bool,
   /// Validate without creating; the response contains a mock template
-  /// and, if `reboot` was set, no session is returned.
+  /// and, if `create_bos_session` was set, no session is returned.
   #[serde(default)]
   pub dry_run: bool,
 }
 
 /// Response body for `POST /api/v1/sat-file/session-templates`.
 ///
-/// `session` is populated when `reboot` was true and a BOS session
-/// was created.
+/// `session` is populated when `create_bos_session` was true and a BOS
+/// session was created from the template.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct PostSatSessionTemplateResponse {
   /// The created (or mock, in dry-run) BOS session template.
   #[schema(value_type = serde_json::Value)]
   pub template: BosSessionTemplate,
-  /// The BOS session created by the reboot, if any.
+  /// The BOS session created from the new template, if any.
   #[schema(value_type = Option<serde_json::Value>)]
   pub session: Option<BosSession>,
 }
@@ -132,9 +132,10 @@ pub struct ApplySatFileParams<'a> {
   pub ansible_verbosity: Option<u8>,
   /// Extra arguments forwarded verbatim to `ansible-playbook`.
   pub ansible_passthrough: Option<&'a str>,
-  /// When true, reboot affected nodes after the session templates
-  /// are applied.
-  pub reboot: bool,
+  /// When true, after each new BOS session template is created,
+  /// create a BOS session from it so the targeted nodes boot via the
+  /// new template (typically a reboot).
+  pub create_bos_session: bool,
   /// When true, stream CFS session logs to the caller as part of
   /// the response.
   pub watch_logs: bool,

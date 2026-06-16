@@ -116,7 +116,7 @@ pub fn subcommand_apply_sat_file() -> Command {
         .value_hint(ValueHint::FilePath),
     )
     .arg(arg!(-V --"values" <VALUE> ... "Inline values to expand jinja2 variables (overrides --values-file)"))
-    .arg(arg!(--"reboot" "Reboot nodes after applying session templates").action(ArgAction::SetTrue))
+    .arg(arg!(--"create-bos-session" "After each BOS session template is created, create a BOS session from it so its target nodes boot via the new template (this typically causes a reboot)").action(ArgAction::SetTrue))
     .arg(
       arg!(-v --"ansible-verbosity" <VALUE> "Ansible verbosity level (1 = -v, 2 = -vv, …, max 4)")
         .value_parser(["1", "2", "3", "4"])

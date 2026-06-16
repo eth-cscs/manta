@@ -267,17 +267,18 @@ pub async fn post_sat_image_stamp(
 )]
 /// `POST /api/v1/sat-file/session-templates` — apply a single SAT
 /// session_template entry. Returns the created BOS session template
-/// and (if `reboot` was set and we're not in dry-run) the BOS session
-/// that was kicked off to reboot the targeted nodes.
+/// and (if `create_bos_session` was set and we're not in dry-run) the
+/// BOS session that was created from the new template to boot the
+/// targeted nodes through it.
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_session_template(
   ctx: RequestCtx,
   Json(body): Json<PostSatSessionTemplateRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::info!(
-    "post_sat_session_template dry_run={} reboot={}",
+    "post_sat_session_template dry_run={} create_bos_session={}",
     body.dry_run,
-    body.reboot
+    body.create_bos_session
   );
   let infra = ctx.infra();
 
@@ -303,7 +304,7 @@ pub async fn post_sat_session_template(
       session_template: body.session_template,
       ref_lookup: body.ref_lookup,
       hsm_group_available_vec: &hsm_group_available_vec,
-      reboot: body.reboot,
+      reboot: body.create_bos_session,
       dry_run: body.dry_run,
     })
     .await
@@ -476,7 +477,7 @@ mod tests {
     let cli_body = serde_json::json!({
       "session_template": { "name": "st-1", "image": { "image_ref": "base" }, "configuration": "cfg-v1" },
       "ref_lookup": { "base": "image-xyz" },
-      "reboot": true,
+      "create_bos_session": true,
       "dry_run": false,
     });
     let req: PostSatSessionTemplateRequest =
@@ -486,7 +487,7 @@ mod tests {
       req.ref_lookup.get("base").map(String::as_str),
       Some("image-xyz")
     );
-    assert!(req.reboot);
+    assert!(req.create_bos_session);
     assert!(!req.dry_run);
   }
 

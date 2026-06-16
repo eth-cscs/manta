@@ -9,7 +9,7 @@
 //! session_templates, with up-front validation of cross-references).
 //! See the sibling [`plan`] module for the plan builder.
 //!
-//! After the preview confirm and the optional reboot confirm, the
+//! After the preview confirm and the optional create-BOS-session confirm, the
 //! command hands the plan to [`dispatch::dispatch_plan`], which POSTs
 //! one element per request to the per-element server endpoints
 //! (`POST /sat-file/{configurations,images,session-templates}`) and
@@ -49,7 +49,10 @@ pub struct SatApplyOptions<'a> {
   pub values_cli_opt: Option<&'a [String]>,
   pub ansible_verbosity_opt: Option<u8>,
   pub ansible_passthrough_opt: Option<&'a str>,
-  pub reboot: bool,
+  /// After each BOS session template is created, immediately create a
+  /// BOS session from it so its target nodes boot via the new template.
+  /// This typically causes a reboot.
+  pub create_bos_session: bool,
   pub watch_logs: bool,
   pub timestamps: bool,
   pub prehook_opt: Option<&'a str>,
@@ -118,12 +121,14 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  // 5. Extra reboot confirmation if session_templates are still present
-  //    after filtering.
+  // 5. Extra create-BOS-session confirmation if session_templates are
+  //    still present after filtering.
   if sat_file.get("session_templates").is_some()
-    && opts.reboot
+    && opts.create_bos_session
     && !common::confirm::confirm(
-      "This operation will reboot nodes. Please confirm to proceed.",
+      "This operation will create a BOS session for each new template, \
+       which will boot affected nodes through it (typically a reboot). \
+       Please confirm to proceed.",
       opts.assume_yes,
     )
   {

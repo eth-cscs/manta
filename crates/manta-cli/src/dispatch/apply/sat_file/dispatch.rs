@@ -95,7 +95,7 @@ pub async fn dispatch_plan(
             &PostSatSessionTemplateRequest {
               session_template: body,
               ref_lookup: ref_lookup.clone(),
-              reboot: Some(opts.reboot),
+              create_bos_session: Some(opts.create_bos_session),
               dry_run: Some(opts.dry_run),
             },
           )
