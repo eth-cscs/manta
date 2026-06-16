@@ -518,6 +518,10 @@ manta apply sat-file -t deploy.yaml -i   # configurations + images only
 manta apply sat-file -t deploy.yaml -s   # configurations + session templates only
 ```
 
+> **Pre-flight server-side validation.** After the operator confirms the rendered SAT preview (and the optional `--create-bos-session` prompt), manta posts the whole file to `POST /sat-file/validate` before any per-element apply runs. The server resolves `configurations` / `images` / `session_templates` against live CFS, IMS, and `cray-product-catalog` state; failure aborts the apply before the pre-hook fires, so no partial work happens. The `hardware:` section is **not** validated by this call — invalid `hardware[]` entries pass the pre-flight and only surface as failures later. See [API.md → POST /sat-file/validate](API.md#post-sat-filevalidate).
+
+> When `--dry-run` is combined with `--create-bos-session`, the per-template apply now returns a **mock** BOS session (no status, name prefixed `dry-run-`) for each session_template so the operator can preview the BOS sessions that would have been kicked off — no real session is persisted.
+
 > After each image is built, manta auto-stamps the CFS provenance onto the IMS image's `metadata` map as `manta.image_session.{base,groups,configuration}`. See GUIDE.md §3 for details. Skipped on `--dry-run`.
 
 ### apply template

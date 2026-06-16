@@ -1587,12 +1587,13 @@ curl -k -X POST "$MANTA_HOST/api/v1/ephemeral-env" \
 
 The SAT (Shasta Artifact Template) workflow is split across per-element endpoints. `manta apply sat-file` walks the parsed SAT file into an ordered execution plan on the **client** side and dispatches one HTTP call per artifact:
 
+- `POST /sat-file/validate` — pre-flight check of the whole file against live CSM state; the CLI calls this once after the operator confirms the preview and before the per-element apply loop
 - `POST /sat-file/configurations` — one per `configurations[]` entry
 - `POST /sat-file/images/cfs-session` — start the CFS session for one `images[]` entry (CLI then monitors via `GET /sessions?name=…` or `GET /sessions/{name}/logs`)
 - `POST /sat-file/images/stamp` — once the session is terminal-complete, stamp the produced IMS image with provenance metadata
 - `POST /sat-file/session-templates` — one per `session_templates[]` entry
 
-There is no whole-file `POST /sat-file` endpoint; SAT files with a `hardware:` section are not supported by the current apply flow.
+There is no whole-file `POST /sat-file` apply endpoint; SAT files with a `hardware:` section are not supported by the current apply flow (and are also not checked by `POST /sat-file/validate` — see that section).
 
 > All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
@@ -1608,6 +1609,10 @@ sequenceDiagram
 
   CLI->>CLI: render Jinja2 → parse to Value → filter → build plan (topo-sorted)
   CLI-->>CLI: preview + confirm
+
+  CLI->>Srv: POST /sat-file/validate { sat_file }
+  Srv->>BE: SatTrait::validate_sat_file
+  Srv-->>CLI: 204 No Content (or 400 on validation failure → CLI aborts)
 
   loop per Configuration element
     CLI->>Srv: POST /sat-file/configurations { configuration, flags }
@@ -1644,6 +1649,50 @@ sequenceDiagram
   end
 
   CLI-->>CLI: assemble { configurations, images, session_templates, bos_sessions }
+```
+
+### POST /sat-file/validate
+
+Pre-flight validation of a whole SAT file against live CSM state. Read-only — no resources are created or modified. The CLI calls this once after the operator confirms the preview, before any per-element apply call runs; failures here abort the apply (and the pre-hook never fires).
+
+**Scope.** Validates the `configurations`, `images`, and `session_templates` sections — cross-references are resolved against CFS, IMS, and the `cray-product-catalog` ConfigMap. The `hardware` section is **not** validated; invalid `hardware[]` entries pass this endpoint with `204` and only surface later. This matches the underlying csm-rs validator and is tracked as a follow-up.
+
+**Request body**
+
+```json
+{
+  "sat_file": {
+    "configurations": [/* … */],
+    "images":         [/* … */],
+    "session_templates": [/* … */]
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sat_file` | object | **yes** | The full parsed SAT document. Same shape the CLI carries internally (`serde_json::Value`); the server forwards it verbatim to csm-rs without re-parsing. |
+
+**Response `204`** — SAT file is valid. No body.
+
+**Response `400`** — `{ "error": "<csm-rs validator message>" }`. Validation failed; the body explains which configuration / image / session-template entry was rejected and why.
+
+**Response `403`** — caller is not authorized to target one or more HSM groups referenced by `images[]` / `session_templates[]`.
+
+**Response `501`** — per-site Vault or Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)).
+
+```bash
+curl -k -X POST "$MANTA_HOST/api/v1/sat-file/validate" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "sat_file": {
+      "configurations": [{ "name": "cfg-v1", "layers": [] }],
+      "images": [],
+      "session_templates": []
+    }
+  }'
 ```
 
 ### POST /sat-file/configurations
@@ -1747,7 +1796,7 @@ curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/stamp" \
 
 ### POST /sat-file/session-templates
 
-Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_lookup` is used to resolve `image.image_ref`. If `reboot=true` (and not `dry_run`), a BOS session is also created to reboot the targeted nodes through the template.
+Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_lookup` is used to resolve `image.image_ref`. If `create_bos_session=true` (and not `dry_run`), a BOS session is also created to boot the targeted nodes through the template (typically a reboot).
 
 **Request body**
 
@@ -1755,7 +1804,7 @@ Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_
 {
   "session_template": { "name": "st-1", "image": { "image_ref": "base" }, "configuration": "cfg-v1", "bos_parameters": {/* ... */} },
   "ref_lookup": { "base": "<image-id>" },
-  "reboot": false,
+  "create_bos_session": false,
   "dry_run": false
 }
 ```
@@ -1764,17 +1813,19 @@ Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_
 |-------|------|----------|-------------|
 | `session_template` | object | **yes** | One SAT `session_templates[]` entry. |
 | `ref_lookup` | object | no | `ref_name → image_id` for images created earlier in the apply (default: empty). |
-| `reboot` | bool | no | After the template is created, trigger a BOS session to reboot the targeted nodes (default: `false`). |
-| `dry_run` | bool | no | Validate without creating; the response carries a mock template and `session: null` (default: `false`). |
+| `create_bos_session` | bool | no | After the template is created, create a BOS session from it so its target nodes boot via the new template — typically a reboot (default: `false`). |
+| `dry_run` | bool | no | Validate without creating; the response carries a mock template. When `create_bos_session` is also `true`, the response additionally carries a mock BOS session with `status: null` and `name` prefixed `dry-run-`, so the client can preview what session *would* have been created. Otherwise `session` is `null`. |
 
 **Response `200`**
 
 ```json
 {
   "template": { /* BosSessionTemplate, ... */ },
-  "session":  { /* BosSession, ... */ } /* or null when reboot=false or dry_run=true */
+  "session":  { /* BosSession, ... */ }
 }
 ```
+
+`session` is `null` when `create_bos_session=false`, and also when `dry_run=true` *without* `create_bos_session`. The dry-run + `create_bos_session` combination yields a mock session (no status, `dry-run-<template-name>`) — useful for previewing the boot that would follow without persisting anything.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/session-templates" \
@@ -1784,7 +1835,7 @@ curl -k -X POST "$MANTA_HOST/api/v1/sat-file/session-templates" \
   -d '{
     "session_template": { "name": "st-1", "configuration": "cfg-v1" },
     "ref_lookup": {},
-    "reboot": false,
+    "create_bos_session": false,
     "dry_run": true
   }'
 ```
@@ -1972,8 +2023,8 @@ When either is missing for the active site, the affected endpoints return `501 N
 
 | Required site config | Used by |
 |---|---|
-| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
-| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file/validate`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file/validate`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
 
 ## Troubleshooting
 

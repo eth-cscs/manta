@@ -15,7 +15,7 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 ## Table of contents
 
 1. [Checking cluster status](#1-checking-cluster-status)
-2. [Managing groups](#2-managing-groups)
+2. [Groups](#2-groups)
 3. [Deploying with a SAT file](#3-deploying-with-a-sat-file)
 4. [Running a CFS session from a local repo](#4-running-a-cfs-session-from-a-local-repo)
 5. [Managing boot parameters](#5-managing-boot-parameters)
@@ -75,7 +75,39 @@ manta log
 
 ---
 
-## 2. Managing groups
+## 2. Groups
+
+In CSM (and OpenCHAMI), every node belongs to one or more **HSM groups** — named sets of node xnames maintained by the Hardware State Manager. Groups are the primary unit of targeting for almost everything manta does: power, boot params, kernel params, CFS sessions, SAT-file applies, and authorization.
+
+**What an HSM group actually is.** A group is a named bucket of xnames (e.g. `compute`, `gpu-cluster`, `nodes_free`) carrying a `label` (the name used in commands), a `description`, and the explicit member list. Membership is explicit — a node is in the group iff its xname appears on the member list; there is no implicit membership by hardware shape or hostname pattern. A single node can belong to several groups at once. Groups don't own state beyond their membership and metadata: CFS configurations, BOS session templates, kernel/boot parameters, and IMS images live in their own systems and *reference* groups when relevant.
+
+**How groups appear in manta commands.** Most read commands accept `-H/--group <name>` to scope a query — `manta get group-nodes compute`, `manta get sessions --group compute`, `manta get kernel-parameters --group compute`, `manta get boot-parameters --group compute`. Most write commands accept `--group <name>` to target every node in the group at once — `manta apply boot group compute`, `manta apply kernel-parameters "console=ttyS0" --group compute`, `manta power off group compute --graceful`. Each is shorthand for *"apply this change to every member of `compute`."* SAT files reference groups too: `session_templates[].bos_parameters.boot_sets[].node_groups` and `images[]` group selectors resolve against HSM groups by label, and the server's pre-flight (`POST /sat-file/validate`) checks that the caller is allowed to target every group the file mentions.
+
+**Authorization scope.** The manta server only lets a caller act on the groups its bearer token is authorized for. The authoritative list comes from `GET /api/v1/groups/available`, which the server consults internally for SAT-file and session-template paths. Applying against a group your token can't reach fails with `403 Forbidden` *before* anything is changed. To see what your token can do:
+
+```bash
+manta get groups        # all groups visible to the server
+
+# vs. the subset the server will let *this* token act on:
+curl -sk -H "Authorization: Bearer $MANTA_TOKEN" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  "$MANTA_HOST/api/v1/groups/available"
+```
+
+**Default group from `cli.toml`.** A `hsm_group = "<name>"` line in `cli.toml` is used as the default whenever a command's `--group` flag is omitted, so e.g. `manta get sessions` becomes equivalent to `manta get sessions --group compute`. Set/unset it at any time:
+
+```bash
+manta config set hsm gpu-cluster
+manta config unset hsm
+```
+
+The server-side `server.toml` has no equivalent — group names live in CSM/OCHAMI, not in manta's config.
+
+**Conventional names.** There is no group *type* beyond "named bucket of xnames" — every group is structurally identical. A few names are conventional: `nodes_free` (or similar) is often used as a **pool** of unassigned nodes, and the hardware-pattern verbs treat it as the `--parent-group` (source) when moving nodes into a target group. Site-specific names (`compute`, `gpu-cluster`, `nid-001-064`, …) are just whatever the site decided to call them.
+
+**Legacy term — "vCluster".** The old vCluster term was an alias for HSM group. Several flag spellings still accept the cluster wording as visible aliases (`--target-cluster`, `--parent-cluster`); see [CLI.md → Migrating from earlier shapes](CLI.md#migrating-from-earlier-shapes) for the full rename table. "Group" is the canonical term going forward.
+
+### Group management commands
 
 **Create a group:**
 
@@ -116,6 +148,8 @@ The SAT file is the primary deployment mechanism. A SAT file is a YAML document 
 
 The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--create-bos-session` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
 
+Once both confirms pass, the CLI calls `POST /sat-file/validate` to **pre-flight the whole file against live CSM state** — CFS configurations, IMS image references, and the `cray-product-catalog` ConfigMap are all checked. Validation failure aborts the run before the pre-hook fires, so no partial work happens. (The `hardware:` section is not checked here — see the note below.)
+
 The CLI then dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
 
 Image builds are driven as three discrete HTTP steps per image — the CLI creates the CFS session, monitors it (streaming logs with `--watch-logs` or polling status every 10s otherwise), and then asks the server to stamp the produced IMS image with `manta.image_session.*` provenance. This means progress is visible from the CLI in real time rather than blocking on one long server call.
@@ -127,7 +161,9 @@ flowchart LR
   C --> D[filter + build plan<br/>topo-sort images<br/>validate refs]
   D --> E{preview<br/>+ confirm}
   E -->|no| X((cancel))
-  E -->|yes| F[POST /sat-file/configurations<br/>× N, in SAT order]
+  E -->|yes| V[POST /sat-file/validate<br/>against live CSM state]
+  V -->|400| X
+  V -->|204| F[POST /sat-file/configurations<br/>× N, in SAT order]
   F --> G[per image:<br/>cfs-session → monitor → stamp]
   G --> H[POST /sat-file/session-templates<br/>× N, in SAT order]
   H --> I[4-list summary]
@@ -183,6 +219,14 @@ manta apply sat-file -t cluster.yaml -s --create-bos-session
 ```bash
 manta apply sat-file -t cluster.yaml --dry-run
 ```
+
+Combine with `--create-bos-session` to preview the BOS sessions that would be kicked off, without persisting them:
+
+```bash
+manta apply sat-file -t cluster.yaml --dry-run --create-bos-session
+```
+
+In that combination the server returns a **mock** BOS session per session_template — no status, name prefixed with `dry-run-` — so a casual reader of the output cannot mistake it for a real persisted CSM session.
 
 **Run pre/post hooks:**
 
