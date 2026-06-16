@@ -320,11 +320,31 @@ pub async fn post_sat_session_template(
   // its name is prefixed with "dry-run-" to make accidental confusion
   // with a real persisted session impossible.
   let session = match session {
-    Some(s) => Some(s),
-    None if body.dry_run && body.create_bos_session => {
-      Some(mock_bos_session_for_template(&template))
+    Some(s) => {
+      tracing::debug!(
+        "backend returned a session (dry_run={}, create_bos_session={})",
+        body.dry_run,
+        body.create_bos_session
+      );
+      Some(s)
     }
-    None => None,
+    None if body.dry_run && body.create_bos_session => {
+      let mock = mock_bos_session_for_template(&template);
+      tracing::info!(
+        "Synthesising mock BOS session for dry-run preview (name={:?}, template={})",
+        mock.name,
+        mock.template_name
+      );
+      Some(mock)
+    }
+    None => {
+      tracing::debug!(
+        "no session returned (backend=None, dry_run={}, create_bos_session={})",
+        body.dry_run,
+        body.create_bos_session
+      );
+      None
+    }
   };
 
   Ok(Json(PostSatSessionTemplateResponse { template, session }))
