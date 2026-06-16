@@ -114,7 +114,7 @@ manta delete group gpu-cluster
 
 The SAT file is the primary deployment mechanism. A SAT file is a YAML document with up to three top-level sections: `configurations`, `images`, and `session_templates`. (A `hardware` section is recognised by the SAT YAML spec but is not supported by the current apply flow.)
 
-The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--reboot` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
+The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--create-bos-session` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
 
 The CLI then dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
 
@@ -175,7 +175,7 @@ manta apply sat-file -t cluster.yaml -i --watch-logs
 **Apply session templates only** (skip image build, use existing image):
 
 ```bash
-manta apply sat-file -t cluster.yaml -s --reboot
+manta apply sat-file -t cluster.yaml -s --create-bos-session
 ```
 
 **Dry run to validate without making changes:**
