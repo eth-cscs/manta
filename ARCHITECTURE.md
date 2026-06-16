@@ -62,7 +62,7 @@ flowchart LR
   Service -.-> K8s[(Kubernetes API)]
 ```
 
-Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering) are used by the CLI; SAT-file processing (the `serde_json::Value`-walking `image_only`/`session_template_only` filter, the topological sort by `base.image_ref`, and the dispatch loop that POSTs one element at a time to per-section endpoints) lives in `manta-cli`'s `apply_sat_file::plan` / `apply_sat_file::dispatch` modules. The server is a pass-through for each SAT entry. Each `images[]` entry is further driven as a three-step sub-pipeline (`apply_sat_file::image_pipeline`): create CFS session → monitor (status poll or SSE log stream depending on `--watch-logs`) → stamp `manta.image_session.*` onto the produced IMS image. The canonical SAT-file schema lives in csm-rs — the CLI carries each SAT element as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
+Both binaries share `manta-shared`. The CLI does not link the service layer, axum, csm-rs, or ochami-rs; the server owns the entire backend bridge. Pure helpers in `manta-shared` (e.g. SAT-file Jinja2 rendering) are used by the CLI; SAT-file processing (the `serde_json::Value`-walking `image_only`/`session_template_only` filter, the topological sort by `base.image_ref`, and the dispatch loop that POSTs one element at a time to per-section endpoints) lives in `manta-cli`'s `apply_sat_file::plan` / `apply_sat_file::dispatch` modules. The server is a pass-through for each SAT entry. Before the dispatch loop runs, the CLI POSTs the whole filtered SAT file once to `POST /sat-file/validate` so out-of-band failures (unknown CFS layer products, missing image references) surface before any state-changing call and before the operator's `--pre-hook` fires. Each `images[]` entry is further driven as a three-step sub-pipeline (`apply_sat_file::image_pipeline`): create CFS session → monitor (status poll or SSE log stream depending on `--watch-logs`) → stamp `manta.image_session.*` onto the produced IMS image. The canonical SAT-file schema lives in csm-rs — the CLI carries each SAT element as a `serde_json::Value` end-to-end and never embeds the typed struct shape.
 
 ---
 
@@ -164,7 +164,7 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 | Type | Used by | Contents |
 |------|---------|---------|
 | `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, site name, shasta + gitea base URLs, root CA cert, optional SOCKS5 proxy, optional vault + k8s URLs (8 borrowed fields) |
-| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 5-field struct) | `site_name`, `manta_server_url`, `settings_group_name_opt`, `request_timeout_secs`, `settings` |
+| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 10-field struct) | `site_name`, `manta_server_url`, `settings_group_name_opt`, `request_timeout_secs`, `power_poll_interval_secs`, `power_max_poll_attempts`, `sat_file_poll_interval_secs`, `sat_file_poll_budget_secs`, `sat_file_not_visible_budget_secs`, `settings`. The poll/budget knobs are user-tunable from `cli.toml` and feed the dispatcher's compiled defaults when unset. |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
 `manta_server_url` is a CLI routing decision — proxy requests through the manta HTTP server instead of calling the backend directly. It is not needed by the service layer or the HTTP server.
@@ -187,7 +187,7 @@ The two schemas are disjoint:
 
 | Schema | Fields |
 |---|---|
-| `CliConfiguration` | `log`, `site` (active), `parent_hsm_group`, top-level `manta_server_url`, optional top-level `socks5_proxy`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. |
+| `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
 | `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, auth rate limit), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional SOCKS5 proxy, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
@@ -229,7 +229,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 |--------|-----|-------------|
 | Entry point | `cli::process::process_cli` | `server::start_server` |
 | Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /api/v1/auth/token`) | `Authorization: Bearer` header, per request |
-| Context type | `AppContext` (flat 5-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
+| Context type | `AppContext` (flat 10-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
 | Streaming | stdout | SSE (`/sessions/{name}/logs`) or WebSocket (`/nodes/{xname}/console`) |
@@ -268,7 +268,7 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 `manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v1/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`.
 
-After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 5-field struct; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
+After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 10-field struct of CLI-side knobs (site, server URL, default group, plus tuneable request and poll timeouts); the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
 Server-side authorization helpers live in `service::authorization`:
 
@@ -298,14 +298,14 @@ This means manta-server is a **single point of compromise** for everyone using i
 
 ## Request timeouts
 
-A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/server/routes.rs::build_router`, applied to every API route, configured from `[server].request_timeout_secs` (default 60s). When the timer fires, axum returns `408 REQUEST_TIMEOUT`.
+A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/server/routes.rs::build_router`, applied to every API route, configured from `[server].request_timeout_secs` (default 600s). When the timer fires, axum returns `408 REQUEST_TIMEOUT`.
 
 There's no per-route override on the server. Long-running work runs CLI-side:
 
 - **Power transitions:** `POST /power` returns immediately with the PCS transition id; the CLI polls `GET /power/transitions/{id}` every 3s (matching csm-rs's historical poll interval) until the transition reports `completed`. See `crates/manta-cli/src/dispatch/power/mod.rs::poll_until_done`.
 - **SAT-file apply:** the CLI dispatches the execution plan one element at a time to per-section endpoints (see [SAT files](API.md#sat-files)). Each per-element call fits well under the default timeout. Image builds are further split into discrete create-session / monitor / stamp HTTP calls, so the long-running CFS session work never blocks a single request — the monitor loop runs in the CLI.
 
-This also means the `MantaClient` constructor stays simple — no per-request timeout override is needed for any current command path. `MantaClient::from_app_ctx(&AppContext<'_>)` is available for future opt-in if any command needs to honour `cli.toml`'s optional `request_timeout_secs`.
+The CLI honours `cli.toml`'s optional `request_timeout_secs` via `MantaClient::from_app_ctx(&AppContext<'_>)` — every dispatch path threads it through. When unset, the one-shot REST client defaults to 300 s and the streaming client (SSE log tail, WebSocket console) applies no timeout; when set, both clients use the supplied value. The poll/budget knobs on `AppContext` (`power_*`, `sat_file_*`) cover the CLI-side wait loops that sit outside any single HTTP call.
 
 ---
 

@@ -56,6 +56,11 @@ forms have now been removed. The canonical names:
 | `manta update redfish-endpoints` | `manta apply redfish-endpoint` |
 | `manta add-nodes-to-groups` | `manta add nodes` |
 | `manta remove-nodes-from-groups` | `manta delete nodes` |
+| `manta get summary` | `manta get analysis image` (renamed via `manta get cache`) |
+| `manta get cache` | `manta get analysis image` |
+| `manta get group-hardware <GROUP>` | `manta get hardware group <GROUP>` |
+| `manta config set parent-hsm <NAME>` | *(removed; the `parent_hsm_group` key is gone — see [MIGRATING.md §5.7](MIGRATING.md#57-parent_hsm_group-removed-from-clitoml))* |
+| `manta config unset parent-hsm` | *(removed; see above)* |
 
 The following flag renames are still in effect; the old spellings
 are kept as visible clap aliases on the canonical commands:
@@ -70,6 +75,8 @@ are kept as visible clap aliases on the canonical commands:
 | `--delete-empty-parent-hsm-group` | `--delete-empty-parent-group` |
 | `--hsm-group` | `--group` |
 | `redfish-endpoint` (singular noun on `add` / `delete` / `apply`) | `redfish-endpoints` (plural) |
+
+> **Removed flag (no alias):** `manta apply sat-file --reboot` was renamed to `--create-bos-session` and the old spelling is no longer accepted. Scripts passing `--reboot` to `apply sat-file` now error with clap's standard "unexpected argument". The wire field on `POST /sat-file/session-templates` was renamed in the same change (`reboot` → `create_bos_session`). See [MIGRATING.md §5.8](MIGRATING.md#58-apply-sat-file---reboot-renamed-to---create-bos-session).
 
 ---
 

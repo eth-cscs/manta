@@ -536,6 +536,81 @@ v2 beta should:
 - `manta config show` no longer prints a `Parent HSM: …` line.
   Scripts scraping that line need to drop it.
 
+### 5.8. `apply sat-file --reboot` renamed to `--create-bos-session`
+
+The flag that triggers BOS-session creation after each new BOS
+session template was renamed from `--reboot` to
+`--create-bos-session`. The old spelling is **removed** — no
+visible clap alias — so scripts passing `--reboot` to
+`manta apply sat-file` now error with clap's standard
+"unexpected argument".
+
+The new flag does the same thing: after each BOS session
+template is created, manta creates a BOS session from it so the
+targeted nodes boot via the new template (typically a reboot).
+The name change makes the behaviour explicit: the flag controls
+*BOS session creation*, not "should the nodes reboot" — the
+reboot is a downstream consequence of the BOS session, not the
+direct effect of the flag.
+
+```bash
+# before
+manta apply sat-file -t cluster.yaml -s --reboot
+
+# after
+manta apply sat-file -t cluster.yaml -s --create-bos-session
+```
+
+The rename propagates to the HTTP wire layer:
+`POST /api/v1/sat-file/session-templates` now carries a
+`create_bos_session` boolean (was `reboot`). HTTP clients posting
+that body must rename the field. See
+[API.md → POST /sat-file/session-templates](API.md#post-sat-filesession-templates).
+
+### 5.9. Dry-run + `--create-bos-session` now previews a mock BOS session
+
+`manta apply sat-file --dry-run --create-bos-session` previously
+returned `session: null` in the four-list summary for every
+session_template, since no real session was ever created. It now
+returns a **mock** BOS session per session_template — the same
+shape as a real one but with no `status`, and the `name`
+prefixed `dry-run-` so it cannot be mistaken for a persisted CSM
+session.
+
+The change makes the dry-run output a useful preview of *what
+would happen* when the apply ran for real. Integrators parsing
+the response need to handle `session: <object>` in dry-run mode,
+not just `session: null`. Apply mode (without `--dry-run`) is
+unchanged. See
+[API.md → POST /sat-file/session-templates](API.md#post-sat-filesession-templates)
+for the response shape.
+
+### 5.10. `manta apply sat-file` runs server-side pre-flight validation
+
+`manta apply sat-file` now calls
+`POST /api/v1/sat-file/validate` between the operator
+preview-confirm step and the per-element apply loop. The server
+resolves the `configurations`, `images`, and `session_templates`
+sections against live CFS, IMS, and `cray-product-catalog` state
+before any state-changing call runs. Validation failure
+(`400 BadRequest`) aborts the run **before the pre-hook fires**,
+so no partial work happens.
+
+For most users this is invisible: a valid SAT file behaves
+exactly as before. SAT files that previously made it past the
+local refs/cycle check but failed mid-apply on a live-state
+issue (an unknown product layer, a missing image reference)
+now fail earlier with a clearer error and no partial side
+effects. No script change is required as long as the SAT
+files actually validate.
+
+The `hardware:` section is **not** validated by this call —
+invalid `hardware[]` entries pass the pre-flight with `204`
+and only surface as failures during apply. This matches the
+underlying csm-rs validator's scope. See
+[API.md → POST /sat-file/validate](API.md#post-sat-filevalidate)
+for the endpoint contract.
+
 ---
 
 ## Reference

@@ -23,7 +23,7 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 7. [Power management](#7-power-management)
 8. [Console access](#8-console-access)
 9. [Moving nodes between groups](#9-moving-nodes-between-groups)
-10. [Cleaning up old configurations](#10-cleaning-up-old-configurations)
+10. [Cleaning up old configurations and images](#10-cleaning-up-old-configurations-and-images)
 11. [Working with multiple sites](#11-working-with-multiple-sites)
 12. [Non-interactive and scripted use](#12-non-interactive-and-scripted-use)
 13. [Installation maintenance](#13-installation-maintenance)
@@ -503,9 +503,56 @@ manta restore vcluster \
 
 ---
 
-## 10. Cleaning up old configurations
+## 10. Cleaning up old configurations and images
 
-Deleting a CFS configuration also deletes all its derivatives: associated BOS session templates and IMS images.
+CFS configurations and IMS images accumulate over time — every SAT-file apply that builds a new image, every CFS session that creates a new configuration. manta computes a server-side **Safe to delete** verdict per row so you can tell at a glance what's still load-bearing and what can go.
+
+### "Safe to delete" verdicts
+
+`manta get configurations` and `manta get images` both carry a `Safe to delete` column with one of three values:
+
+| Verdict | Meaning |
+|---|---|
+| `yes` | Nothing currently references this entry — safe to remove. |
+| `no` | At least one live reference. Deleting it would break something running now. |
+| `?` | The server-side safety analysis failed for this row (rare). Treat as unknown; re-run the listing to clear it. |
+
+For **configurations**, "live reference" means either a CFS component lists the configuration as its `desired_config`, or a BSS-referenced image was built from it. For **images**, it means a BSS boot-parameter record names the image as the boot image for at least one node.
+
+Both verdicts arrive on a single response — no client-side fan-out.
+
+### Find what's safe to delete
+
+The `--only-safe-to-delete` filter restricts the listing to `yes` rows; `--only-unsafe-to-delete` does the opposite. `?` rows are excluded by both filters and only ever appear in the unfiltered listing.
+
+```bash
+manta get configurations --only-safe-to-delete
+manta get images         --only-safe-to-delete
+
+# What's currently in use:
+manta get configurations --only-unsafe-to-delete
+manta get images         --only-unsafe-to-delete
+```
+
+For a per-row, verdict-focused view sorted oldest-first — useful when you want the deletion-order obvious at a glance — use the dedicated analysis verbs. They source from the same underlying data:
+
+```bash
+manta get analysis configuration                       # one row per CFS configuration
+manta get analysis configuration --only-safe-to-delete
+
+manta get analysis image                               # one row per IMS image
+manta get analysis image --only-safe-to-delete -o json | jq '.[].image_id'
+```
+
+### Delete with confidence
+
+Deleting a CFS configuration also deletes its derivatives — every BOS session template that referenced it, plus the IMS images built from it. Always dry-run first.
+
+**Dry run to preview the cascade:**
+
+```bash
+manta delete configurations --configuration-name "old-config-*" --dry-run
+```
 
 **Delete by name pattern:**
 
@@ -513,23 +560,20 @@ Deleting a CFS configuration also deletes all its derivatives: associated BOS se
 manta delete configurations --configuration-name "old-config-*"
 ```
 
-**Delete configurations in a date range:**
+**Delete in a date range:**
 
 ```bash
 manta delete configurations --since 2024-01-01 --until 2024-06-01
 ```
 
-**Dry run to preview what would be deleted:**
+**Script the safe-to-delete pipeline:**
 
 ```bash
-manta delete configurations --configuration-name "old-config-*" --dry-run
+# Just the names, oldest-first, machine-readable:
+manta get analysis configuration --only-safe-to-delete -o json | jq -r '.[].name'
 ```
 
-**List configurations first to confirm:**
-
-```bash
-manta get configurations --pattern "old-config-*"
-```
+Image deletion has its own verb (`manta delete images <IMAGE_LIST>`), currently marked WIP — see [CLI.md → delete images](CLI.md#delete-images-image_list-wip). Until that's hardened, the safest path to drop an unused image is to delete its source CFS configuration; the cascade above handles the IMS cleanup.
 
 ---
 

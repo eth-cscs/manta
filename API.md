@@ -214,7 +214,9 @@ List CFS configurations, optionally filtered.
 | `hsm_group` | string | no | Filter by associated HSM group |
 | `limit` | u8 | no | Maximum number of results |
 
-**Response `200`** — array of CFS configuration objects.
+**Response `200`** — array of CFS configuration objects, each enriched with a `safe_to_delete: bool` field. The field is `true` when no CFS component currently lists this configuration as its `desired_config`. The check is *components-only* — it does not consider BSS-referenced images built from the configuration; for the broader analysis surface, use the `safe_to_delete` field on `GET /analysis/images` together with this listing.
+
+The verdict arrives on a single response; no client-side fan-out is required. The dedicated `GET /analysis/configurations` endpoint was removed in the same change that inlined this field — clients that previously called it should read `safe_to_delete` from this listing instead. The CLI's `--only-safe-to-delete` / `--only-unsafe-to-delete` flags on `manta get configurations` are client-side filters over this field.
 
 ```bash
 curl -k "$MANTA_HOST/api/v1/configurations?pattern=compute-*" \
@@ -582,6 +584,8 @@ List IMS images.
 ]
 ```
 
+> Unlike `/configurations`, this endpoint does **not** carry an inline `safe_to_delete` field. For the deletion-safety verdict per image, call [`GET /analysis/images`](#get-analysisimages) and join on `image_id`. The CLI's `manta get images` does exactly this fan-out internally.
+
 ```bash
 curl -k "$MANTA_HOST/api/v1/images?pattern=^csm-image-.*" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -671,6 +675,52 @@ Sample body:
 
 **Response 401** — missing or expired bearer token.
 **Response 500** — any of the four upstream fetches failed.
+
+---
+
+## Analysis
+
+Deletion-safety verdicts for cluster state that has its own retention/cleanup story. Currently scoped to IMS images; CFS configurations carry their verdict inline on `GET /configurations` and have no separate endpoint.
+
+### GET /analysis/images
+
+One row per IMS image visible to the active site, each with a `safe_to_delete` verdict. The check is *BSS-only*: a row is `safe_to_delete: true` when no BSS boot-parameter record references the image as a node's boot image, and `false` otherwise.
+
+The CLI's `manta get images` calls this endpoint internally to overlay the verdict onto its image listing; integrators can call it directly when they want the verdict without the rest of the IMS payload.
+
+**Query parameters:** none.
+
+**Response `200`** — `Vec<ImageAnalysisRow>`, one row per IMS image:
+
+```json
+[
+  {
+    "image_id": "93b4ea2a-1234-5678-abcd-ef0123456789",
+    "image_name": "csm-image-1.0",
+    "image_created": "2026-01-15T14:32:11Z",
+    "configuration_name": "csm-config-2026",
+    "safe_to_delete": true
+  }
+]
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `image_id` | string | IMS image id. Row anchor; always present. |
+| `image_name` | string | IMS image name. |
+| `image_created` | string \| null | ISO-8601 creation timestamp; `null` for images without one (sink to the bottom of the sort). |
+| `configuration_name` | string \| null | CFS configuration the image was built with (`Image.configuration`). |
+| `safe_to_delete` | bool | `true` iff no BSS boot-parameter record names this image as a node's boot image. |
+
+Rows are sorted by `image_created` ascending (oldest first); ties or `null` timestamps break by `image_id` ascending.
+
+```bash
+curl -k "$MANTA_HOST/api/v1/analysis/images" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+```
+
+> A sibling `GET /analysis/configurations` previously existed and was **removed** in beta.56. The `safe_to_delete` verdict for configurations is now inlined on every `GET /configurations` response — clients should read it from there.
 
 ---
 
@@ -2036,7 +2086,7 @@ If a request fails before reaching the service layer, you'll get one of the code
 | **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), token expired, or `/auth/token` credentials rejected by the backend. |
 | **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
 | **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
-| **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default 300, i.e. 5 min). Most endpoints return well under a second; the 5-min ceiling exists for the few operations that legitimately fan out across the upstream backend (large bulk CFS component fetches, SAT-file applies, migrate-restore re-hydrations). `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so 408 there indicates an unhealthy backend. |
+| **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default **600**, i.e. 10 min — bumped from 300 in beta.55 after large multi-site fetches consistently grazed the 5-min ceiling). Most endpoints return well under a second; the 10-min ceiling exists for the few operations that legitimately fan out across the upstream backend (large bulk CFS component fetches, SAT-file applies, migrate-restore re-hydrations). `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so 408 there indicates an unhealthy backend. |
 | **429 Too Many Requests** | Per-source-IP rate limit on `/api/v1/auth/*`. Tune `[server].auth_rate_limit_per_minute` or wait one minute. |
 | **500 Internal Server Error** | Server-side failure (backend unreachable, bad config). Check `journalctl -u manta-server` (or wherever the server's stderr is logged) for the actual cause. |
 | **501 Not Implemented** | The endpoint needs Vault or Kubernetes settings that the active site does not provide — see [Server configuration requirements](#server-configuration-requirements). |
