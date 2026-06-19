@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server"]
+members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server", "crates/manta-cache"]
 
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
