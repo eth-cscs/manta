@@ -1,6 +1,6 @@
 # manta-cache — roadmap
 
-> **Status:** planning. This crate **does not exist yet** — the source tree under `crates/manta-cache/` is a placeholder. The first cut of the cache lives as a module inside `manta-server` (or `manta-shared`); the crate is created when that module is extracted at Stage 2.
+> **Status:** Stages 1 + 2 delivered (collapsed). The crate **now exists** as a standalone workspace member. Rather than building a module inside `manta-server` and extracting it later, Stage 1 was implemented directly as the `manta-cache` crate — the cache has no compile-time dependency on `manta-server` (HTTP-only), so the intermediate module step bought nothing. Stages 3 (HTTP API) and 4 (management + `manta-server` integration) remain as planned below.
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
@@ -32,6 +32,8 @@ No public API stability promise — the module is internal-only. Other code in t
 
 **Acceptance.** Module compiles, unit tests pass, the integration test passes against a known-good `manta-server` URL + token.
 
+> **✅ Delivered** (built directly as the crate — see Stage 2). The library exposes `SiteDescriptor`, `Index` (`group_to_site` / `xname_to_site` / `groups` / `sites` / `group_members`), and `async refresh()`. `refresh` is **2 calls per site** (`GET /groups/available` + `GET /groups/nodes`, the latter unfiltered so one call returns every node and its `hsm` membership), fanned out concurrently with `futures::try_join_all`. Errors are a crate-local `CacheError` (thiserror). 10 unit tests cover the lookups + builder (incl. multi-group membership and last-write-wins on a cross-site collision); the integration test is env-gated (`MANTA_CACHE_IT_*`) and skips when unset.
+
 ## Stage 2 — Extract into the `manta-cache` crate
 
 Promote the Stage-1 module into an independent workspace member at `crates/manta-cache/`. **This is the first time the crate physically exists**; until this stage lands, the directory only carries this roadmap and the sibling README.
@@ -45,6 +47,8 @@ Steps:
 - Update `manta-server` to depend on `manta-cache = { workspace = true }` and switch its call sites from the in-place module to the crate's public API.
 
 **Acceptance.** `cargo build -p manta-cache` succeeds standalone, `manta-server` builds against it, and the existing `manta-server` behaviour is unchanged (the cache is still in-process; only its source-tree location moved).
+
+> **✅ Folded into Stage 1.** The crate was created up front, so there was no module to `git mv`. The crate is registered in the workspace `members` array and `cargo build -p manta-cache` succeeds standalone (it depends only on `reqwest`/`serde`/`thiserror`/`futures`/`tracing`, none of the sibling repos). It is `publish = false` and **not yet consumed** by `manta-server`; the `manta-cache = { workspace = true }` dependency + call-site wiring land with the Stage-4 integration.
 
 ## Stage 3 — HTTP APIs
 
@@ -172,16 +176,15 @@ These are the decisions the roadmap deliberately punts on until the stage that a
 
 | Question | Decide at | Why deferred |
 |---|---|---|
-| `manta-server` vs `manta-shared` as Stage-1 home | Stage 1 kickoff | Both are technically viable; depends on whether `manta-cli` is ever expected to consume the cache. |
+| ~~`manta-server` vs `manta-shared` as Stage-1 home~~ | ~~Stage 1 kickoff~~ | **Resolved:** standalone crate — no compile-time dep on either (HTTP-only). |
 | Deployment shape: in-proc / sidecar / standalone | Stage 3 | The choice does not affect the Stage-1 or Stage-2 code; only the wrapper around it. |
 | Auth model: service-account vs per-user | Stage 3 | Same — Stages 1 and 2 take a token, they don't care where it came from. |
 | Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. |
 | Persistence (in-memory vs on-disk snapshot) | Stage 4 | A cold start is a few HTTP calls per site; tolerable until the deployment shape pushes back. |
 | Refresh cadence (pull-on-demand vs periodic background) | Stage 4 | Depends on the deployment shape and traffic pattern. |
 
-## What I still need from you
+## Decisions taken at Stage 1
 
-Two short answers will firm up the next two stages:
-
-1. **Stage 1 home — `manta-server` or `manta-shared`?** Defaulting to `manta-server` unless you tell me otherwise.
-2. **Anything about Stage 3 that should be locked now rather than deferred?** (Deployment shape and auth model are the big two.) If you have a strong preference, I'll fold it into the Stage-3 section now; otherwise the open-questions table above is the record.
+1. **Home — neither `manta-server` nor `manta-shared`: a standalone crate.** Because the cache talks to `manta-server` purely over HTTP, it has no compile-time dependency on either crate, so the cleanest home is its own workspace member from the start (collapsing Stage 2).
+2. **Wire types — self-contained, no `manta-shared` dependency.** The cache reads only `xname` + `hsm` from `GET /groups/nodes`, so it defines a minimal local deserialisation struct instead of pulling `manta-shared` (and transitively `manta-backend-dispatcher` + config/utoipa/…) in for a 12-field type. serde ignores the unused fields; the drift risk on these core identifiers is covered by the integration test. Mirrors the existing `dto.rs` "small mirror over heavy dep" choice. Reversible if a future stage wants the shared type.
+3. **Stage 3 (deployment shape, auth model) — deferred** to that stage as the open-questions table records; nothing about it needed locking to ship Stage 1.
