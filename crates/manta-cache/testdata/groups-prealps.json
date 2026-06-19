@@ -1,0 +1,231 @@
+[
+  {
+    "label": "k3s_server",
+    "description": "K3S server nodes",
+    "exclusiveGroup": "k3s",
+    "members": {
+      "ids": [
+        "x3000c0s20b0n0"
+      ]
+    }
+  },
+  {
+    "label": "prealps",
+    "description": "",
+    "members": {
+      "ids": [
+        "x3000c0s20b0n0",
+        "x3000c0s22b0n0",
+        "x3000c0s24b0n0",
+        "x8000c0s0b0n0",
+        "x8000c0s0b0n1",
+        "x8000c0s0b1n0",
+        "x8000c0s0b1n1",
+        "x8000c0s1b0n0",
+        "x8000c0s1b0n1",
+        "x8000c0s1b1n0",
+        "x8000c0s1b1n1",
+        "x8000c0s2b0n0",
+        "x8000c0s2b0n1",
+        "x8000c0s2b1n0",
+        "x8000c0s2b1n1",
+        "x8000c0s3b0n0",
+        "x8000c0s3b0n1",
+        "x8000c0s3b1n0",
+        "x8000c0s3b1n1",
+        "x8000c1s0b1n0",
+        "x8000c1s1b0n0",
+        "x8000c1s1b1n0",
+        "x8000c1s2b0n0",
+        "x8000c1s2b1n0",
+        "x8000c1s3b0n0",
+        "x8000c1s3b1n0",
+        "x8000c1s4b0n0",
+        "x8000c1s4b1n0",
+        "x8000c1s5b0n0",
+        "x8000c1s5b1n0",
+        "x8000c2s0b0n0",
+        "x8000c2s0b1n0",
+        "x8000c2s1b0n0",
+        "x8000c2s1b1n0",
+        "x8000c2s2b0n0",
+        "x8000c2s2b1n0",
+        "x8000c2s3b0n0",
+        "x8000c2s3b1n0",
+        "x8000c1s0b0n0"
+      ]
+    }
+  },
+  {
+    "label": "rotondo",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c1s5b0n0",
+        "x8000c1s5b1n0"
+      ]
+    }
+  },
+  {
+    "label": "prevat",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c2s0b0n0",
+        "x8000c2s0b1n0",
+        "x8000c2s1b0n0",
+        "x8000c2s1b1n0",
+        "x8000c2s2b0n0",
+        "x8000c2s2b1n0",
+        "x8000c2s3b0n0"
+      ]
+    }
+  },
+  {
+    "label": "spare",
+    "description": "",
+    "members": {
+      "ids": [
+        "x3000c0s22b0n0",
+        "x3000c0s24b0n0"
+      ]
+    }
+  },
+  {
+    "label": "meda",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c0s0b0n0",
+        "x8000c0s0b0n1"
+      ]
+    }
+  },
+  {
+    "label": "cscs",
+    "description": "",
+    "exclusiveGroup": "tapms-exclusive-group-label",
+    "tags": [
+      "vcluster-cscs-tenant"
+    ],
+    "members": {
+      "ids": [
+        "x3000c0s22b0n0",
+        "x3000c0s24b0n0"
+      ]
+    }
+  },
+  {
+    "label": "cavel",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c0s3b1n1",
+        "x8000c2s3b1n0",
+        "x8000c1s5b1n0",
+        "x8000c0s3b1n0",
+        "x8000c1s0b1n0"
+      ]
+    }
+  },
+  {
+    "label": "dummy",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c1s0b1n0"
+      ]
+    }
+  },
+  {
+    "label": "gallina",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c0s0b1n0",
+        "x8000c0s0b1n1",
+        "x8000c0s1b0n0",
+        "x8000c0s1b0n1",
+        "x8000c0s1b1n0",
+        "x8000c0s1b1n1",
+        "x8000c0s2b0n0",
+        "x8000c0s2b0n1",
+        "x8000c0s2b1n0",
+        "x8000c0s2b1n1",
+        "x8000c0s3b0n0",
+        "x8000c0s3b0n1"
+      ]
+    }
+  },
+  {
+    "label": "cavel_arm",
+    "description": "",
+    "members": {
+      "ids": []
+    }
+  },
+  {
+    "label": "cavel_gh",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c1s5b1n0"
+      ]
+    }
+  },
+  {
+    "label": "cavel_mc",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c0s3b1n1",
+        "x8000c0s3b1n0"
+      ]
+    }
+  },
+  {
+    "label": "cavel_amd",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c2s3b1n0"
+      ]
+    }
+  },
+  {
+    "label": "notinstalled",
+    "description": "",
+    "members": {
+      "ids": [
+        "x8000c1s1b0n0",
+        "x8000c1s1b1n0",
+        "x8000c1s2b0n0",
+        "x8000c1s2b1n0",
+        "x8000c1s3b0n0",
+        "x8000c1s3b1n0",
+        "x8000c1s4b0n0",
+        "x8000c1s4b1n0",
+        "x8000c1s0b0n0"
+      ]
+    }
+  },
+  {
+    "label": "k3s_agent",
+    "description": "K3S agent nodes",
+    "exclusiveGroup": "k3s",
+    "members": {
+      "ids": []
+    }
+  },
+  {
+    "label": "iscsi_worker",
+    "description": "iscsi node personalization",
+    "members": {
+      "ids": [
+        "x3000c0s8b0n0",
+        "x3000c0s9b0n0",
+        "x3000c0s10b0n0"
+      ]
+    }
+  }
+]
