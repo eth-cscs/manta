@@ -21,6 +21,12 @@ pub struct CliConfiguration {
   /// The server validates that the name matches one of its configured
   /// sites; the CLI does no local validation.
   pub site: String,
+  /// When `true`, the CLI refuses backend-mutating verbs (`add`,
+  /// `apply`, `delete`, `migrate`, `power`, `run`, `restore`)
+  /// before any HTTP request leaves the process. Toggled by
+  /// `manta config set read-only` / `manta config unset read-only`.
+  #[serde(default)]
+  pub read_only: bool,
   /// URL of the manta HTTP server this CLI talks to. Required — the CLI
   /// no longer calls CSM/OCHAMI backends directly; every operation
   /// (including auth) is forwarded through `manta-server`.
@@ -81,6 +87,7 @@ mod tests {
     let cfg = CliConfiguration {
       log: "info".to_string(),
       site: "alps".to_string(),
+      read_only: false,
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
       request_timeout_secs: None,
@@ -120,5 +127,37 @@ mod tests {
     "#;
     let result = toml::from_str::<CliConfiguration>(bad_toml);
     assert!(result.is_err());
+  }
+
+  fn minimal_toml() -> String {
+    r#"
+log = "info"
+site = "alps"
+manta_server_url = "https://manta-server.example.com:8443"
+"#
+    .to_string()
+  }
+
+  #[test]
+  fn read_only_defaults_to_false_when_absent() {
+    let cfg: CliConfiguration =
+      toml::from_str(&minimal_toml()).expect("parse");
+    assert!(!cfg.read_only);
+  }
+
+  #[test]
+  fn read_only_parses_true_when_present() {
+    let mut s = minimal_toml();
+    s.push_str("read_only = true\n");
+    let cfg: CliConfiguration = toml::from_str(&s).expect("parse");
+    assert!(cfg.read_only);
+  }
+
+  #[test]
+  fn read_only_parses_false_when_explicitly_false() {
+    let mut s = minimal_toml();
+    s.push_str("read_only = false\n");
+    let cfg: CliConfiguration = toml::from_str(&s).expect("parse");
+    assert!(!cfg.read_only);
   }
 }

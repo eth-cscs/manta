@@ -110,6 +110,7 @@ async fn run_cli(
     sat_file_not_visible_budget_secs: configuration
       .sat_file_not_visible_budget_secs,
     settings: &settings,
+    read_only: configuration.read_only,
   };
 
   let cli_result =

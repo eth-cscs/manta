@@ -46,4 +46,8 @@ pub struct AppContext<'a> {
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
   pub settings: &'a Config,
+  /// Mirror of `CliConfiguration.read_only`. The chokepoint in
+  /// `crate::dispatch::process::process_cli` consults this before
+  /// allowing any mutating verb to dispatch.
+  pub read_only: bool,
 }
