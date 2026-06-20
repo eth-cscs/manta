@@ -63,6 +63,7 @@ async fn show(
     log_level,
     sites: site_table.keys().cloned().collect(),
     current_site: site_name,
+    read_only: settings.get_bool("read_only").unwrap_or(false),
     groups_available: hsm_group_available_opt,
     current_hsm: settings_hsm_group,
   };

@@ -23,6 +23,10 @@ pub struct ConfigSummary {
   pub sites: Vec<String>,
   /// The site currently selected via `site = "..."` in `cli.toml`.
   pub current_site: String,
+  /// Mirror of `CliConfiguration.read_only`. When `true`, the
+  /// chokepoint in `dispatch::process::process_cli` refuses
+  /// backend-mutating verbs. See `crate::common::read_only`.
+  pub read_only: bool,
   /// HSM groups the bearer token is permitted to access; `None` when
   /// the server lookup failed.
   pub groups_available: Option<Vec<String>>,
@@ -45,6 +49,10 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
     println!("Log level: {}", summary.log_level);
     println!("Sites: {}", summary.sites.join(", "));
     println!("Current site: {}", summary.current_site);
+    println!(
+      "Read-only: {}",
+      if summary.read_only { "yes" } else { "no" }
+    );
     let groups = summary.groups_available.as_ref().map_or_else(
       || "Could not get list of groups available".to_string(),
       |v| v.join(", "),
@@ -66,6 +74,7 @@ mod tests {
       log_level: "info".to_string(),
       sites: vec!["alps".to_string(), "tasna".to_string()],
       current_site: "alps".to_string(),
+      read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
       current_hsm: "compute".to_string(),
     }
@@ -90,6 +99,7 @@ mod tests {
     assert_eq!(v["log_level"], "info");
     assert_eq!(v["sites"][0], "alps");
     assert_eq!(v["current_site"], "alps");
+    assert_eq!(v["read_only"], false);
     assert_eq!(v["groups_available"][0], "compute");
     assert_eq!(v["current_hsm"], "compute");
   }
