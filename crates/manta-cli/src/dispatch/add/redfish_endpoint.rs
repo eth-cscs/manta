@@ -3,7 +3,6 @@
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
-use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::UpdateRedfishEndpointParams;
 use crate::output::action_result;
