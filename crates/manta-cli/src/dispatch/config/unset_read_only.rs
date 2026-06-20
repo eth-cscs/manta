@@ -1,6 +1,8 @@
 //! `manta config unset read-only` — removes the `read_only` key from `cli.toml`.
 
 use anyhow::{Context, Error};
+
+use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 use toml_edit::DocumentMut;
 
@@ -10,7 +12,9 @@ pub async fn exec() -> Result<(), Error> {
   unset_read_only_in_doc(&mut doc);
   write_config_toml(&path, &doc)
     .context("Could not write CLI configuration file")?;
-  println!("Read-only mode disabled.");
+
+  action_result::print("Read-only mode disabled.", None)?;
+
   Ok(())
 }
 

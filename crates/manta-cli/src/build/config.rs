@@ -10,10 +10,6 @@ pub fn subcommand_config() -> Command {
     // ID preserved as "HSM_GROUP_NAME" for handler compatibility
     .arg(arg!(<HSM_GROUP_NAME> "Node group name").value_name("GROUP_NAME"));
 
-  let subcommand_config_set_site = Command::new("site")
-    .about("Set the active site")
-    .arg(arg!(<SITE_NAME> "Site name"));
-
   let subcommand_config_set_log = Command::new("log")
     .about("Set the log verbosity level")
     .arg(
@@ -24,11 +20,15 @@ pub fn subcommand_config() -> Command {
   let subcommand_config_set_read_only = Command::new("read-only")
     .about("Refuse every backend-mutating command until unset");
 
-  let subcommand_config_unset_hsm =
-    Command::new("hsm").about("Clear the active node group");
+  let subcommand_config_set_site = Command::new("site")
+    .about("Set the active site")
+    .arg(arg!(<SITE_NAME> "Site name"));
 
   let subcommand_config_unset_auth =
     Command::new("auth").about("Clear the cached authentication token");
+
+  let subcommand_config_unset_hsm =
+    Command::new("hsm").about("Clear the active node group");
 
   let subcommand_config_unset_read_only = Command::new("read-only")
     .about("Allow backend-mutating commands again");
@@ -46,16 +46,16 @@ pub fn subcommand_config() -> Command {
         .arg_required_else_help(true)
         .about("Set a configuration value")
         .subcommand(subcommand_config_set_hsm)
-        .subcommand(subcommand_config_set_site)
         .subcommand(subcommand_config_set_log)
-        .subcommand(subcommand_config_set_read_only),
+        .subcommand(subcommand_config_set_read_only)
+        .subcommand(subcommand_config_set_site),
     )
     .subcommand(
       Command::new("unset")
         .arg_required_else_help(true)
         .about("Clear a configuration value")
-        .subcommand(subcommand_config_unset_hsm)
         .subcommand(subcommand_config_unset_auth)
+        .subcommand(subcommand_config_unset_hsm)
         .subcommand(subcommand_config_unset_read_only),
     )
 }

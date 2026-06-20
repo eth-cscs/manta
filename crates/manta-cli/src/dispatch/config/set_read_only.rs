@@ -1,6 +1,8 @@
 //! `manta config set read-only` — writes `read_only = true` to `cli.toml`.
 
 use anyhow::{Context, Error};
+
+use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 use toml_edit::DocumentMut;
 
@@ -10,10 +12,13 @@ pub async fn exec() -> Result<(), Error> {
   set_read_only_in_doc(&mut doc);
   write_config_toml(&path, &doc)
     .context("Could not write CLI configuration file")?;
-  println!(
+
+  action_result::print(
     "Read-only mode enabled. Backend-mutating commands will be refused. \
-     Disable with `manta config unset read-only`."
-  );
+     Disable with `manta config unset read-only`.",
+    None,
+  )?;
+
   Ok(())
 }
 
