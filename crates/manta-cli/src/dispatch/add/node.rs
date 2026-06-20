@@ -99,4 +99,25 @@ mod tests {
       "expected -d short alias to parse: {result:?}"
     );
   }
+
+  /// `-D` short alias for `--disabled` still parses after the
+  /// `-d` -> `-D` swap (the swap is the breaking-change surface;
+  /// this test pins it down).
+  #[test]
+  fn accepts_disabled_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "add",
+      "node",
+      "--id",
+      "x1000c0s0b0n0",
+      "--group",
+      "compute",
+      "-D",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -D short alias for --disabled to parse: {result:?}"
+    );
+  }
 }
