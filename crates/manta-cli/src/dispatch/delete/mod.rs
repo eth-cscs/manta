@@ -152,6 +152,7 @@ pub async fn handle_delete(
         None
       };
       let cfs_configuration_name_pattern = m.opt_str("configuration-name");
+      let dry_run = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
       if let Err(e) = configurations_and_derivatives::exec(
         ctx,
@@ -161,6 +162,7 @@ pub async fn handle_delete(
           since: since_opt,
           until: until_opt,
           output: output_opt,
+          dry_run,
         },
       )
       .await

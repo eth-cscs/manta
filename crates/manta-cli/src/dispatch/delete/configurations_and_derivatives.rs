@@ -12,6 +12,10 @@ pub struct ExecParams<'a> {
   pub since: Option<NaiveDateTime>,
   pub until: Option<NaiveDateTime>,
   pub output: Option<&'a str>,
+  /// When true, pass `?dry_run=true` to the server: the deletion is
+  /// previewed (server returns `DeletionCandidates`) and no records
+  /// are modified.
+  pub dry_run: bool,
 }
 
 /// Delete CFS configurations and their derived artifacts.
@@ -26,7 +30,7 @@ pub async fn exec(
   let result = client
     .openapi
     .delete_configurations(
-      Some(false),
+      Some(p.dry_run),
       p.configuration_name_pattern,
       since_str.as_deref(),
       until_str.as_deref(),

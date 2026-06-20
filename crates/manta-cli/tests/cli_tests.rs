@@ -71,3 +71,23 @@ fn cli_apply_boot_group_help_uses_group_name_placeholder() {
     .stdout(predicate::str::contains("<GROUP_NAME>"))
     .stdout(predicate::str::contains("CLUSTER_NAME").not());
 }
+
+#[test]
+fn cli_delete_configurations_accepts_dry_run() {
+  Command::cargo_bin("manta")
+    .unwrap()
+    .args(["delete", "configurations", "--help"])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("--dry-run"));
+}
+
+#[test]
+fn cli_delete_configurations_dry_run_short_alias() {
+  Command::cargo_bin("manta")
+    .unwrap()
+    .args(["delete", "configurations", "--help"])
+    .assert()
+    .success()
+    .stdout(predicate::str::contains("-d"));
+}
