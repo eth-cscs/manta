@@ -7,3 +7,4 @@ pub mod config;
 pub mod confirm;
 pub mod hooks;
 pub mod multi_line;
+pub mod read_only;
