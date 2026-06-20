@@ -41,7 +41,11 @@ pub fn subcommand_add_node() -> Command {
         .value_parser(["X86", "ARM", "Other"]),
     )
     .arg(
-      arg!(-d --disabled "Register the node as disabled")
+      arg!(-D --disabled "Register the node as disabled")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
         .action(ArgAction::SetTrue),
     )
     .arg(output_flag())

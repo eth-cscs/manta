@@ -50,6 +50,7 @@ pub async fn handle_add(
           arch: m.opt_string("arch"),
           hardware_file: m.get_one::<PathBuf>("hardware"),
           output: m.opt_str("output"),
+          dry_run: m.get_flag("dry-run"),
         },
       )
       .await?;
