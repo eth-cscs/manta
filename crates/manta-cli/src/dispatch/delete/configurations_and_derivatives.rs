@@ -41,3 +41,40 @@ pub async fn exec(
   action_result::print_with_data("Configurations deleted", &result, p.output)?;
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  /// `--dry-run` parses on `manta delete configurations` (long flag).
+  #[test]
+  fn accepts_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "delete",
+      "configurations",
+      "-n",
+      "test-*",
+      "--dry-run",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected --dry-run to parse on `delete configurations`: {result:?}"
+    );
+  }
+
+  /// `-d` short alias also parses.
+  #[test]
+  fn accepts_dry_run_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "delete",
+      "configurations",
+      "-n",
+      "test-*",
+      "-d",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -d short alias to parse: {result:?}"
+    );
+  }
+}
