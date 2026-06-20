@@ -2,10 +2,12 @@
 
 pub mod set_hsm;
 pub mod set_log;
+pub mod set_read_only;
 pub mod set_site;
 pub mod show;
 pub mod unset_auth;
 pub mod unset_hsm;
+pub mod unset_read_only;
 
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
@@ -34,12 +36,14 @@ pub async fn handle_config(
       }
       Some(("site", m)) => set_site::exec(m)?,
       Some(("log", m)) => set_log::exec(m)?,
+      Some(("read-only", _)) => set_read_only::exec().await?,
       Some((other, _)) => bail!("Unknown 'config set' subcommand: {other}"),
       None => bail!("No 'config set' subcommand provided"),
     },
     Some(("unset", m)) => match m.subcommand() {
       Some(("hsm", _)) => unset_hsm::exec()?,
       Some(("auth", _)) => unset_auth::exec()?,
+      Some(("read-only", _)) => unset_read_only::exec().await?,
       Some((other, _)) => bail!("Unknown 'config unset' subcommand: {other}"),
       None => bail!("No 'config unset' subcommand provided"),
     },

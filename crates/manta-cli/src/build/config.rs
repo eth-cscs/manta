@@ -21,11 +21,17 @@ pub fn subcommand_config() -> Command {
         .value_parser(["error", "warn", "info", "debug", "trace"]),
     );
 
+  let subcommand_config_set_read_only = Command::new("read-only")
+    .about("Refuse every backend-mutating command until unset");
+
   let subcommand_config_unset_hsm =
     Command::new("hsm").about("Clear the active node group");
 
   let subcommand_config_unset_auth =
     Command::new("auth").about("Clear the cached authentication token");
+
+  let subcommand_config_unset_read_only = Command::new("read-only")
+    .about("Allow backend-mutating commands again");
 
   Command::new("config")
     .arg_required_else_help(true)
@@ -41,13 +47,15 @@ pub fn subcommand_config() -> Command {
         .about("Set a configuration value")
         .subcommand(subcommand_config_set_hsm)
         .subcommand(subcommand_config_set_site)
-        .subcommand(subcommand_config_set_log),
+        .subcommand(subcommand_config_set_log)
+        .subcommand(subcommand_config_set_read_only),
     )
     .subcommand(
       Command::new("unset")
         .arg_required_else_help(true)
         .about("Clear a configuration value")
         .subcommand(subcommand_config_unset_hsm)
-        .subcommand(subcommand_config_unset_auth),
+        .subcommand(subcommand_config_unset_auth)
+        .subcommand(subcommand_config_unset_read_only),
     )
 }
