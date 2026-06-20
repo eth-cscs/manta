@@ -16,6 +16,12 @@ pub async fn process_cli(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
+  // Read-only gate: when `read_only = true` is set in cli.toml, refuse
+  // backend-mutating verbs before any HTTP request leaves the process.
+  // `--dry-run` invocations and read verbs bypass the gate; see the
+  // policy module for the full classification.
+  crate::common::read_only::read_only_gate(cli_root, ctx.read_only)?;
+
   match cli_root.subcommand() {
     Some(("config", m)) => config::handle_config(m, ctx).await?,
     Some(("power", m)) => power::handle_power(m, ctx).await?,
