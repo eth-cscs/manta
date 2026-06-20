@@ -120,7 +120,29 @@ pub async fn handle_add(
       .await?;
     }
     Some(("redfish-endpoints", m)) => {
-      redfish_endpoint::exec(ctx, &token, m).await?;
+      redfish_endpoint::exec(
+        ctx,
+        &token,
+        redfish_endpoint::ExecParams {
+          id: m.req_str("id")?,
+          name: m.opt_str("name"),
+          hostname: m.opt_str("hostname"),
+          domain: m.opt_str("domain"),
+          fqdn: m.opt_str("fqdn"),
+          enabled: m.get_flag("enabled"),
+          user: m.opt_str("user"),
+          password: m.opt_str("password"),
+          use_ssdp: m.get_flag("use-ssdp"),
+          mac_required: m.get_flag("mac-required"),
+          mac_addr: m.opt_str("macaddr"),
+          ip_address: m.opt_str("ipaddress"),
+          rediscover_on_update: m.get_flag("rediscover-on-update"),
+          template_id: m.opt_str("template-id"),
+          output: m.opt_str("output"),
+          dry_run: m.get_flag("dry-run"),
+        },
+      )
+      .await?;
     }
     Some((other, _)) => bail!("Unknown 'add' subcommand: {other}"),
     None => bail!("No 'add' subcommand provided"),

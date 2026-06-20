@@ -82,7 +82,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
     .arg(arg!(-i --id <XNAME> "Xname of the BMC or controller").required(true))
     .arg(arg!(-n --name <VALUE> "Arbitrary user-provided name for the endpoint"))
     .arg(arg!(-H --hostname <VALUE> "Hostname (FQDN host portion); normally identical to the xname"))
-    .arg(arg!(-d --domain <VALUE> "Domain (FQDN domain portion)"))
+    .arg(arg!(-D --domain <VALUE> "Domain (FQDN domain portion)"))
     .arg(
       arg!(-f --fqdn <VALUE> "Fully-qualified domain name on the management network (derived from hostname + domain)"),
     )
@@ -100,6 +100,10 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(arg!(-t --"template-id" <VALUE> "Discovery template ID"))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
     .arg_required_else_help(true)
 }
