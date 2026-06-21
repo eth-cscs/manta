@@ -9,22 +9,17 @@
 
 use clap::ArgMatches;
 
-/// Subset of [`MUTATING_VERBS`] whose leaf subcommands declare a
-/// `--dry-run` flag. Used by [`ensure_can_mutate`] to decide whether
-/// the "Re-run with `--dry-run` to preview" hint applies to the
-/// blocked verb. The other mutating verbs (`power`, `run`, `restore`)
-/// have no preview semantics — pointing users at `--dry-run` for
-/// those would surface a clap parse error.
-pub const VERBS_WITH_DRY_RUN: &[&str] = &["add", "apply", "delete", "migrate"];
-
 /// Top-level CLI verbs that change backend state.
 pub const MUTATING_VERBS: &[&str] =
   &["add", "apply", "delete", "migrate", "power", "run", "restore"];
 
 /// Top-level CLI verbs that do not change backend state. Held
 /// alongside [`MUTATING_VERBS`] so the consistency test can assert
-/// `build_cli()`'s subcommand set equals their union.
-pub const READ_ONLY_VERBS: &[&str] = &[
+/// `build_cli()`'s subcommand set equals their union. Test-only: the
+/// production gate looks at [`MUTATING_VERBS`] (an inclusion check)
+/// and ignores everything else.
+#[cfg(test)]
+const READ_ONLY_VERBS: &[&str] = &[
   "get",
   "console",
   "log",
@@ -56,9 +51,10 @@ pub fn dry_run_set(verb_matches: &ArgMatches) -> bool {
 /// Reject `verb` when `read_only` is `true`. Returns `Ok(())`
 /// otherwise.
 ///
-/// The error message names the verb and points the user at escape hatches.
-/// If the verb is in [`VERBS_WITH_DRY_RUN`], suggests `--dry-run` to preview.
-/// Always suggests `manta config unset read-only` to disable the policy.
+/// The error message names the verb and points the user at both
+/// escape hatches: `--dry-run` to preview, or `manta config unset
+/// read-only` to disable the policy. Every entry in
+/// [`MUTATING_VERBS`] has a `--dry-run` flag on its leaf subcommands.
 pub fn ensure_can_mutate(
   read_only: bool,
   verb: &str,
@@ -66,15 +62,10 @@ pub fn ensure_can_mutate(
   if !read_only {
     return Ok(());
   }
-  let dry_run_hint = if VERBS_WITH_DRY_RUN.contains(&verb) {
-    "Re-run with `--dry-run` to preview, or disable"
-  } else {
-    "Disable"
-  };
   Err(anyhow::anyhow!(
     "manta is in read-only mode (`read_only = true` in cli.toml).\n\
      This `manta {verb} \u{2026}` invocation would change backend state and has been refused.\n\
-     {dry_run_hint} the policy with `manta config unset read-only`."
+     Re-run with `--dry-run` to preview, or disable the policy with `manta config unset read-only`."
   ))
 }
 
@@ -254,33 +245,21 @@ mod tests {
   }
 
   #[test]
-  fn ensure_can_mutate_blocks_power_without_dry_run_hint() {
-    // power/run/restore don't have --dry-run, so the error should NOT
-    // point the user at the dead-end --dry-run suggestion.
-    let err = ensure_can_mutate(true, "power").unwrap_err();
-    let msg = format!("{err}");
-    assert!(msg.contains("power"), "msg should name the verb: {msg}");
-    assert!(
-      !msg.contains("--dry-run"),
-      "msg should NOT suggest --dry-run for verbs without it: {msg}"
-    );
-    assert!(
-      msg.contains("manta config unset read-only"),
-      "msg should still point at the unset command: {msg}"
-    );
-  }
-
-  #[test]
-  fn ensure_can_mutate_blocks_run_without_dry_run_hint() {
-    let err = ensure_can_mutate(true, "run").unwrap_err();
-    let msg = format!("{err}");
-    assert!(!msg.contains("--dry-run"));
-  }
-
-  #[test]
-  fn ensure_can_mutate_blocks_restore_without_dry_run_hint() {
-    let err = ensure_can_mutate(true, "restore").unwrap_err();
-    let msg = format!("{err}");
-    assert!(!msg.contains("--dry-run"));
+  fn ensure_can_mutate_suggests_dry_run_for_every_mutating_verb() {
+    // Every mutating verb now has --dry-run plumbed through, so the
+    // refusal message points users at it unconditionally.
+    for verb in MUTATING_VERBS {
+      let err = ensure_can_mutate(true, verb).unwrap_err();
+      let msg = format!("{err}");
+      assert!(msg.contains(verb), "msg should name {verb}: {msg}");
+      assert!(
+        msg.contains("--dry-run"),
+        "msg should suggest --dry-run for {verb}: {msg}"
+      );
+      assert!(
+        msg.contains("manta config unset read-only"),
+        "msg should suggest the unset command for {verb}: {msg}"
+      );
+    }
   }
 }
