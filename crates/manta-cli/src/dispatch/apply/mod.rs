@@ -146,19 +146,30 @@ pub async fn handle_apply(
     }
 
     Some(("ephemeral-environment", m)) => {
+      let image_id = m.req_str("image-id")?;
+      let dry_run = m.get_flag("dry-run");
+      let req = crate::openapi_client::types::CreateEphemeralEnvRequest {
+        image_id: image_id.to_string(),
+      };
+
+      if dry_run {
+        let output_opt = m.opt_str("output");
+        crate::output::action_result::print_with_data(
+          "Would POST /ephemeral-env:",
+          &req,
+          output_opt,
+        )?;
+        return Ok(());
+      }
+
       if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {
         bail!("This command needs to run in interactive mode");
       }
-      let image_id = m.req_str("image-id")?;
+
       let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
       let response = client
         .openapi
-        .create_ephemeral_env(
-          client.site_name(),
-          &crate::openapi_client::types::CreateEphemeralEnvRequest {
-            image_id: image_id.to_string(),
-          },
-        )
+        .create_ephemeral_env(client.site_name(), &req)
         .await
         .into_anyhow()?;
       println!("{}", response.hostname);
@@ -284,4 +295,41 @@ pub async fn handle_apply(
     None => bail!("No 'apply' subcommand provided"),
   }
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  /// `--dry-run` parses on `manta apply ephemeral-environment` (long flag).
+  #[test]
+  fn ephemeral_env_accepts_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "ephemeral-environment",
+      "--image-id",
+      "abc-123",
+      "--dry-run",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected --dry-run to parse on `apply ephemeral-environment`: {result:?}"
+    );
+  }
+
+  /// `-d` short alias also parses.
+  #[test]
+  fn ephemeral_env_accepts_dry_run_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "ephemeral-environment",
+      "--image-id",
+      "abc-123",
+      "-d",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -d short alias to parse: {result:?}"
+    );
+  }
 }

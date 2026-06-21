@@ -88,6 +88,10 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
       Returns an SSH hostname once the environment is ready (usually within a few seconds).",
     )
     .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use").required(true))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 pub fn subcommand_apply_sat_file() -> Command {
