@@ -193,6 +193,10 @@ pub fn subcommand_delete_boot_parameter() -> Command {
     .arg_required_else_help(true)
     .about("Delete boot parameters for nodes")
     .arg(arg!(-H --hosts <XNAMES> "Xnames of the nodes"))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }
 

@@ -80,7 +80,8 @@ pub async fn handle_delete(
         .map(String::from)
         .collect();
       let output_opt = m.opt_str("output");
-      boot_parameters::exec(ctx, &token, hosts, output_opt).await?;
+      let dry_run = m.get_flag("dry-run");
+      boot_parameters::exec(ctx, &token, hosts, output_opt, dry_run).await?;
     }
     Some(("redfish-endpoints", m)) => {
       let id = m.get_one::<String>("id").context(
