@@ -89,7 +89,8 @@ pub async fn handle_delete(
            Please provide the host to delete",
       )?;
       let output_opt = m.opt_str("output");
-      redfish_endpoint::exec(ctx, &token, id, output_opt).await?;
+      let dry_run = m.get_flag("dry-run");
+      redfish_endpoint::exec(ctx, &token, id, output_opt, dry_run).await?;
     }
     Some(("kernel-parameters", m)) => {
       let hsm_group_name_arg_opt = m.opt_str("group");

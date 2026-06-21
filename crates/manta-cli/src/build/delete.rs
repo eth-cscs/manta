@@ -209,5 +209,9 @@ pub fn subcommand_delete_redfish_endpoint() -> Command {
       arg!(-i --id <XNAME> "Xname of the Redfish endpoint to delete")
         .required(true),
     )
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }
