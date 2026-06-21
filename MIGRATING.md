@@ -611,6 +611,44 @@ underlying csm-rs validator's scope. See
 [API.md → POST /sat-file/validate](API.md#post-sat-filevalidate)
 for the endpoint contract.
 
+### 5.11. `--dry-run` on every mutating verb; `add group -d` reassigned
+
+Every backend-mutating `manta` verb now accepts `--dry-run`
+(with `-d` as the short alias) and prints the exact request
+payload that would have been sent without contacting the
+server. The previous coverage was partial — `--dry-run` only
+existed on `apply sat-file`, `apply boot {group,nodes}`,
+`apply kernel-parameters`, `apply template`, `delete
+configurations`, `migrate nodes`, and `upgrade`. Sixteen
+additional verbs gained the flag in this sweep: `add node`,
+`add nodes`, `add boot-parameters`, `add kernel-parameters`,
+`add redfish-endpoint`, `add group`, `apply
+redfish-endpoint`, `apply ephemeral-environment`, `delete
+node`, `delete nodes`, `delete boot-parameters`, `delete
+kernel-parameters`, `delete redfish-endpoint`, `delete
+session`, `power {on,off,reset} {group,nodes}`, `run
+session`, and `restore vcluster`.
+
+A small breaking change came with that: **`manta add group
+-d <text>` no longer sets the group description.** The `-d`
+short alias was reassigned to `--dry-run` to match every
+other verb, and `--description` now takes `-D` (capital) as
+its short alias. The long form `--description <text>` is
+unchanged. Affected scripts:
+
+```sh
+# Old (no longer works as a description)
+manta add group --label compute -d "GPU nodes"
+
+# New — either
+manta add group --label compute -D "GPU nodes"
+manta add group --label compute --description "GPU nodes"
+```
+
+This mirrors the earlier `add node -d/--disabled` → `-D`
+swap (2.0.0-beta.50-ish) which freed `-d` for `--dry-run` on
+that verb for the same reason.
+
 ---
 
 ## Reference

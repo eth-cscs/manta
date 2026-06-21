@@ -656,6 +656,24 @@ curl -sk -H "Authorization: Bearer $TOKEN" \
 
 `manta-server` is a separate binary; it reads `~/.config/manta/server.toml` (override path with `MANTA_SERVER_CONFIG`). See [API.md](API.md) for the full HTTP API reference and [README.md](README.md) for the per-binary config files.
 
+### Preview before mutating with `--dry-run`
+
+Every backend-mutating `manta` verb accepts `-d/--dry-run`. The CLI builds the exact request payload it would have sent, prints it via `action_result::print_with_data` (honors `-o table | json`), and exits 0 without contacting the server, executing any user-supplied hooks, or running any confirmation prompts.
+
+```bash
+# See exactly what would be sent without touching the server
+manta apply boot group compute --boot-image cos-2.5.0 --dry-run -o json
+manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful --dry-run
+manta delete configurations --configuration-name "old-config-*" --dry-run
+
+# Pipe-friendly: capture the payload that would be sent
+manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | jq .repo_last_commit_ids
+```
+
+`--dry-run` is read-only and **does not require `--assume-yes`** — confirmation prompts are skipped on dry-run. It is the safe way to verify a script before promoting it to a real run, to audit what `manta` would have done, or to capture the exact wire payload for a bug report.
+
+> **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
+
 ---
 
 ## 13. Installation maintenance

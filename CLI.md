@@ -386,8 +386,11 @@ Create a new HSM group.
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `-l/--label` | string | **yes** | Group name |
-| `-d/--description` | string | no | Group description |
+| `-D/--description` | string | no | Group description |
 | `-n/--nodes` | string | no | Initial members (xnames/nids/hostlist) |
+| `-d/--dry-run` | flag | no | Simulate without changes |
+
+> The `-d` short alias is reserved for `--dry-run`; use `-D` (capital) for `--description`.
 
 ```
 manta add group --label my-cluster --description "GPU nodes" --nodes 'x3000c0s1b0n[0-7]'
@@ -621,6 +624,8 @@ Launch a temporary container environment from an IMS image, useful for image ins
 | Flag | Type | Required | Description |
 |------|------|----------|-------------|
 | `-i/--image-id` | string | **yes** | IMS image ID to use as the container image |
+| `-d/--dry-run` | flag | no | Simulate without changes (prints the `CreateEphemeralEnvRequest` payload; works without a TTY) |
+| `-o/--output` | string | no | Output format: `table`, `json` (honored on dry-run) |
 
 ### apply hardware group *(WIP)*
 
@@ -662,6 +667,7 @@ Create and run a CFS session from one or more local git repositories.
 | `-t/--timestamps` | flag | no | — | Show timestamps in logs |
 | `-v/--ansible-verbosity` | 0–4 | no | `2` | Ansible verbosity |
 | `-P/--ansible-passthrough` | string | no | — | Extra Ansible parameters |
+| `-d/--dry-run` | flag | no | — | Simulate without changes (still runs `git2` on the local repos so the preview shows the resolved commit IDs; skips both confirmation prompts) |
 | `-o/--output` | string | no | `table` | Output format: `table`, `json` |
 
 > † At least one of `--group` / `--ansible-limit` must be set.
@@ -853,6 +859,7 @@ Restore a virtual cluster from backup files.
 | `-p/--pre-hook` | string | Shell command before restore |
 | `-a/--post-hook` | string | Shell command after restore |
 | `-o/--overwrite` | flag | Overwrite existing data |
+| `-d/--dry-run` | flag | Simulate without changes (still validates hook permissions; skips hook execution and the POST) |
 | `--output` | string | Output format: `table`, `json` (default `table`) |
 
 ---
@@ -873,6 +880,7 @@ Power on all nodes in an HSM group.
 | `-R/--reason` | string | — | Reason for the power action |
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
 | `--no-wait` | flag | — | Return the transition id immediately; don't poll for completion |
+| `-d/--dry-run` | flag | — | Simulate without changes (skips both the confirmation prompt and the BMC dispatch) |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
 ### power on nodes \<VALUE\>
@@ -884,6 +892,7 @@ Power on specific nodes.
 | `VALUE` | string | — | Xnames/nids or hostlist expression |
 | `-y/--assume-yes` | flag | — | Non-interactive mode |
 | `--no-wait` | flag | — | Return the transition id immediately; don't poll for completion |
+| `-d/--dry-run` | flag | — | Simulate without changes (skips both the confirmation prompt and the BMC dispatch) |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
 ### power off group \<GROUP_NAME\> / power off nodes \<VALUE\>
@@ -896,6 +905,7 @@ Power off nodes.
 | `-R/--reason` | string | Reason for power-off (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
 | `--no-wait` | flag | Return the transition id immediately; don't poll for completion |
+| `-d/--dry-run` | flag | Simulate without changes (skips both the confirmation prompt and the BMC dispatch) |
 | `-o/--output` | string | Output format: `table`, `json` |
 
 ### power reset group \<GROUP_NAME\> / power reset nodes \<VALUE\>
@@ -908,6 +918,7 @@ Power-cycle nodes.
 | `-r/--reason` | string | Reason (group only) |
 | `-y/--assume-yes` | flag | Non-interactive mode |
 | `--no-wait` | flag | Return the transition id immediately; don't poll for completion |
+| `-d/--dry-run` | flag | Simulate without changes (skips both the confirmation prompt and the BMC dispatch) |
 | `-o/--output` | string | Output format: `table`, `json` |
 
 ```
