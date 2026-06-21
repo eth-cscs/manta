@@ -10,10 +10,10 @@ pub fn subcommand_add_group() -> Command {
     .about("Create a node group")
     .arg_required_else_help(true)
     .arg(arg!(-l --label <NAME> "Group name").required(true))
-    .arg(arg!(-d --description <VALUE> "Group description"))
+    .arg(arg!(-D --description <VALUE> "Group description"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
     .arg(
-      arg!(--"dry-run" "Validate input and print the payload(s) that would be sent to the backend without making changes")
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
         .action(ArgAction::SetTrue),
     )
     .arg(output_flag())

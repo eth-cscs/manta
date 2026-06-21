@@ -85,3 +85,59 @@ pub async fn exec(
 
   Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+  /// `--dry-run` parses on `manta add group` (long flag).
+  #[test]
+  fn accepts_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "add",
+      "group",
+      "--label",
+      "compute",
+      "--dry-run",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected --dry-run to parse on `add group`: {result:?}"
+    );
+  }
+
+  /// `-d` short alias parses (newly available after the swap of `-d/--description` to `-D`).
+  #[test]
+  fn accepts_dry_run_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "add",
+      "group",
+      "--label",
+      "compute",
+      "-d",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -d short alias to parse on `add group`: {result:?}"
+    );
+  }
+
+  /// `-D` (capital) is the description short alias after the swap.
+  /// Regression guard: a future change must NOT collapse this back to `-d`.
+  #[test]
+  fn description_short_alias_is_capital_d() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "add",
+      "group",
+      "--label",
+      "compute",
+      "-D",
+      "ops cluster",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -D to parse as --description on `add group`: {result:?}"
+    );
+  }
+}
