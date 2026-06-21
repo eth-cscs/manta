@@ -92,6 +92,7 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
       arg!(-d --"dry-run" "Simulate the operation without making changes")
         .action(ArgAction::SetTrue),
     )
+    .arg(output_flag())
 }
 
 pub fn subcommand_apply_sat_file() -> Command {

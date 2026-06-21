@@ -332,4 +332,23 @@ mod tests {
       "expected -d short alias to parse: {result:?}"
     );
   }
+
+  /// `--dry-run -o json` parses — output flag is honored on the dry-run preview.
+  #[test]
+  fn ephemeral_env_accepts_dry_run_with_output_json() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "ephemeral-environment",
+      "--image-id",
+      "abc-123",
+      "--dry-run",
+      "-o",
+      "json",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `--dry-run -o json` to parse on `apply ephemeral-environment`: {result:?}"
+    );
+  }
 }
