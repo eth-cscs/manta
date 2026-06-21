@@ -245,7 +245,7 @@ fn add_redfish_endpoint_args(cmd: Command) -> Command {
     .arg(arg!(-i --id <XNAME> "Xname of the endpoint to update").required(true))
     .arg(arg!(-n --name <VALUE> "Arbitrary user-provided name for the endpoint"))
     .arg(arg!(-H --hostname <VALUE> "Hostname (FQDN host portion)"))
-    .arg(arg!(-d --domain <VALUE> "Domain (FQDN domain portion)"))
+    .arg(arg!(-D --domain <VALUE> "Domain (FQDN domain portion)"))
     .arg(
       arg!(-f --fqdn <VALUE> "Fully-qualified domain name on the management network"),
     )
@@ -269,6 +269,10 @@ fn add_redfish_endpoint_args(cmd: Command) -> Command {
 pub fn subcommand_apply_redfish_endpoint() -> Command {
   add_redfish_endpoint_args(Command::new("redfish-endpoints"))
     .about("Update an existing Redfish endpoint")
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {

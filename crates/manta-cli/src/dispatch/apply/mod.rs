@@ -187,26 +187,29 @@ pub async fn handle_apply(
     }
 
     Some(("redfish-endpoints", m)) => {
-      let id = m
-        .opt_string("id")
-        .context("The 'id' argument is mandatory")?;
-      let params = crate::openapi_client::types::UpdateRedfishEndpointParams {
-        id,
-        name: m.opt_string("name"),
-        hostname: m.opt_string("hostname"),
-        domain: m.opt_string("domain"),
-        fqdn: m.opt_string("fqdn"),
-        enabled: m.get_flag("enabled"),
-        user: m.opt_string("user"),
-        password: m.opt_string("password"),
-        use_ssdp: m.get_flag("use-ssdp"),
-        mac_required: m.get_flag("mac-required"),
-        mac_addr: m.opt_string("macaddr"),
-        ip_address: m.opt_string("ipaddress"),
-        rediscover_on_update: m.get_flag("rediscover-on-update"),
-        template_id: m.opt_string("template-id"),
-      };
-      redfish_endpoint::exec(ctx, &token, params, m.opt_str("output")).await?;
+      redfish_endpoint::exec(
+        ctx,
+        &token,
+        redfish_endpoint::ExecParams {
+          id: m.req_str("id")?,
+          name: m.opt_str("name"),
+          hostname: m.opt_str("hostname"),
+          domain: m.opt_str("domain"),
+          fqdn: m.opt_str("fqdn"),
+          enabled: m.get_flag("enabled"),
+          user: m.opt_str("user"),
+          password: m.opt_str("password"),
+          use_ssdp: m.get_flag("use-ssdp"),
+          mac_required: m.get_flag("mac-required"),
+          mac_addr: m.opt_str("macaddr"),
+          ip_address: m.opt_str("ipaddress"),
+          rediscover_on_update: m.get_flag("rediscover-on-update"),
+          template_id: m.opt_str("template-id"),
+          output: m.opt_str("output"),
+          dry_run: m.get_flag("dry-run"),
+        },
+      )
+      .await?;
     }
 
     Some(("kernel-parameters", m)) => {
