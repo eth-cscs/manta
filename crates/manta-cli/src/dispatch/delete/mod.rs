@@ -39,7 +39,8 @@ pub async fn handle_delete(
     Some(("node", m)) => {
       let id = m.req_str("VALUE")?;
       let output_opt = m.opt_str("output");
-      node::exec(ctx, &token, id, output_opt).await?;
+      let dry_run = m.get_flag("dry-run");
+      node::exec(ctx, &token, id, output_opt, dry_run).await?;
     }
     Some(("nodes", m)) => {
       let target_hsm_name = m.req_str("group")?;

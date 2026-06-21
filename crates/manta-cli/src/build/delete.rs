@@ -82,6 +82,10 @@ pub fn subcommand_delete_node() -> Command {
         .value_name("XNAME")
         .required(true),
     )
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }
 
