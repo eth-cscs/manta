@@ -46,6 +46,7 @@ pub async fn exec(
   let watch_logs: bool = cli_run_session.get_flag("watch-logs");
   let timestamps: bool = cli_run_session.get_flag("timestamps");
   let output_opt = cli_run_session.opt_str("output");
+  let dry_run: bool = cli_run_session.get_flag("dry-run");
 
   run_session(
     ctx,
@@ -61,6 +62,7 @@ pub async fn exec(
       watch_logs,
       timestamps,
       output: output_opt,
+      dry_run,
     },
   )
   .await
@@ -77,6 +79,7 @@ struct SessionParams<'a> {
   watch_logs: bool,
   timestamps: bool,
   output: Option<&'a str>,
+  dry_run: bool,
 }
 
 /// Create a dynamic-target CFS session: pushes the local repos'
@@ -106,7 +109,26 @@ async fn run_session(
 
   // Check local repos (user interaction: confirm dialogs)
   let (repo_name_vec, repo_last_commit_id_vec) =
-    check_local_repos(repos_paths)?;
+    check_local_repos(repos_paths, p.dry_run)?;
+
+  if p.dry_run {
+    crate::output::action_result::print_with_data(
+      "Would POST /sessions:",
+      &CreateSessionRequest {
+        cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
+        playbook_yaml_file_name: playbook_yaml_file_name_opt
+          .map(str::to_string),
+        hsm_group: group_name_opt.map(str::to_string),
+        repo_names: repo_name_vec.clone(),
+        repo_last_commit_ids: repo_last_commit_id_vec.clone(),
+        ansible_limit: ansible_limit_opt.map(str::to_string),
+        ansible_verbosity: ansible_verbosity.map(str::to_string),
+        ansible_passthrough: ansible_passthrough.map(str::to_string),
+      },
+      output_opt,
+    )?;
+    return Ok(());
+  }
 
   // Create CFS session via server
   let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
@@ -172,6 +194,7 @@ async fn run_session(
 
 fn check_local_repos(
   repos: &[PathBuf],
+  dry_run: bool,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
   let mut layers_summary = vec![];
   let mut repo_name_vec = Vec::new();
@@ -208,7 +231,14 @@ fn check_local_repos(
       })?;
 
     if !all_committed {
-      if confirm::confirm(
+      if dry_run {
+        tracing::warn!(
+          "[dry-run] Local repo at {} has uncommitted changes; \
+           preview reflects the last committed id {}.",
+          repo_path.display(),
+          local_last_commit.id()
+        );
+      } else if confirm::confirm(
         "Your local repo has uncommitted changes. Do you want to continue?",
         false,
       ) {
@@ -270,14 +300,60 @@ fn check_local_repos(
     );
   }
 
-  if confirm::confirm(
-    "Please review the layers and its order and confirm if proceed. Do you want to continue?",
-    false,
-  ) {
+  if !dry_run {
+    if !confirm::confirm(
+      "Please review the layers and its order and confirm if proceed. Do you want to continue?",
+      false,
+    ) {
+      bail!("Operation cancelled by user");
+    }
     println!("Continue. Creating new CFS configuration and layer(s)");
-  } else {
-    bail!("Operation cancelled by user");
   }
 
   Ok((repo_name_vec, repo_last_commit_id_vec))
+}
+
+#[cfg(test)]
+mod tests {
+  /// `--dry-run` parses on `manta run session` (long flag).
+  #[test]
+  fn accepts_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "run",
+      "session",
+      "--name",
+      "test-session",
+      "--repo-path",
+      "/tmp/repo",
+      "--ansible-limit",
+      "x1000c0s0b0n0",
+      "--dry-run",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected --dry-run to parse on `run session`: {result:?}"
+    );
+  }
+
+  /// `-d` short alias also parses.
+  #[test]
+  fn accepts_dry_run_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "run",
+      "session",
+      "--name",
+      "test-session",
+      "--repo-path",
+      "/tmp/repo",
+      "--ansible-limit",
+      "x1000c0s0b0n0",
+      "-d",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -d short alias to parse: {result:?}"
+    );
+  }
 }

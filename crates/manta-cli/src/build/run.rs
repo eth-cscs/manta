@@ -48,6 +48,10 @@ fn add_run_session_args(cmd: Command) -> Command {
         .args(["group", "ansible-limit"])
         .required(true),
     )
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }
 
