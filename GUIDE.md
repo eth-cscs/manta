@@ -296,6 +296,16 @@ manta log my-session
 manta log my-session --timestamps
 ```
 
+**Preview the session before running it** — `--dry-run` still opens the local repo via `git2` so the preview shows the *resolved* commit IDs that would be sent, but skips both confirmation prompts and the actual POST:
+
+```bash
+manta run session \
+  --name my-session \
+  --repo-path ~/repos/csm-config \
+  --group compute \
+  --dry-run -o json | jq .repo_last_commit_ids
+```
+
 ---
 
 ## 5. Managing boot parameters
@@ -438,6 +448,15 @@ manta power reset group compute --no-wait
 manta get group-nodes compute --status OFF
 manta get group-nodes compute -o summary
 ```
+
+**Preview the transition first** — every `manta power` verb accepts `--dry-run`, which prints the exact `PowerRequest` payload that would be POSTed without contacting the BMC and without showing the confirmation prompt. Useful when an operator wants a teammate to eyeball the target list before pulling the trigger:
+
+```bash
+manta power off group compute --graceful --dry-run -o json
+manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful --dry-run
+```
+
+`--dry-run` is read-only and does not require `--assume-yes`; the prompt is skipped on dry-run.
 
 ---
 

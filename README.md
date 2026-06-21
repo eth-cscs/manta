@@ -67,6 +67,13 @@ path. See [CLI.md#gen-autocomplete](CLI.md#gen-autocomplete),
 [#gen-man](CLI.md#gen-man), and [#upgrade](CLI.md#upgrade) for the
 full flag reference.
 
+**Previewing before mutating.** Every backend-mutating `manta` verb
+accepts `-d/--dry-run`, which builds and prints the exact request
+that would have been sent without contacting the server (skipping
+confirmation prompts and any user-supplied hooks). It's the safe
+way to verify a script before promoting it to a real run. See
+[GUIDE.md §12 — Preview before mutating with `--dry-run`](GUIDE.md#preview-before-mutating-with---dry-run).
+
 | Where to look next | For |
 |---|---|
 | [GUIDE.md](GUIDE.md) | common workflows ("how do I deploy a SAT file?") |
