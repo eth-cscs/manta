@@ -50,6 +50,7 @@ async fn dispatch_power_on_group(
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),
       output: m.req_str("output")?,
+      dry_run: m.get_flag("dry-run"),
     },
   )
   .await
@@ -74,6 +75,7 @@ async fn dispatch_power_off_group(
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),
       output: m.req_str("output")?,
+      dry_run: m.get_flag("dry-run"),
     },
   )
   .await
@@ -98,6 +100,7 @@ async fn dispatch_power_reset_group(
       no_wait: m.get_flag("no-wait"),
       assume_yes: m.get_flag("assume-yes"),
       output: m.req_str("output")?,
+      dry_run: m.get_flag("dry-run"),
     },
   )
   .await
@@ -125,6 +128,7 @@ pub async fn handle_power(
             no_wait: m.get_flag("no-wait"),
             assume_yes: m.get_flag("assume-yes"),
             output: m.req_str("output")?,
+            dry_run: m.get_flag("dry-run"),
           },
         )
         .await?;
@@ -148,6 +152,7 @@ pub async fn handle_power(
             no_wait: m.get_flag("no-wait"),
             assume_yes: m.get_flag("assume-yes"),
             output: m.req_str("output")?,
+            dry_run: m.get_flag("dry-run"),
           },
         )
         .await?;
@@ -171,6 +176,7 @@ pub async fn handle_power(
             no_wait: m.get_flag("no-wait"),
             assume_yes: m.get_flag("assume-yes"),
             output: m.req_str("output")?,
+            dry_run: m.get_flag("dry-run"),
           },
         )
         .await?;
@@ -257,6 +263,7 @@ pub struct PowerOpts<'a> {
   pub no_wait: bool,
   pub assume_yes: bool,
   pub output: &'a str,
+  pub dry_run: bool,
 }
 
 /// Execute a power action against a list of nodes resolved
@@ -269,7 +276,8 @@ pub async fn exec_nodes(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {}", opts.target);
-  if !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+  if !opts.dry_run
+    && !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
   {
     bail!("Operation cancelled by user");
   }
@@ -285,7 +293,8 @@ pub async fn exec_cluster(
   // Interactive context printed before the confirm prompt; intentionally
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Group: {}", opts.target);
-  if !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+  if !opts.dry_run
+    && !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
   {
     bail!("Operation cancelled by user");
   }
@@ -303,7 +312,6 @@ async fn dispatch_and_wait(
   target_type: PowerTargetType,
 ) -> Result<(), Error> {
   let action_str = opts.action.wire();
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
 
   let req = PowerRequest {
     action: opts.action.to_wire(),
@@ -311,6 +319,17 @@ async fn dispatch_and_wait(
     target_type,
     force: Some(opts.force),
   };
+
+  if opts.dry_run {
+    action_result::print_with_data(
+      "Would POST /power:",
+      &req,
+      Some(opts.output),
+    )?;
+    return Ok(());
+  }
+
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let started = client
     .openapi
     .post_power(client.site_name(), &req)
@@ -468,6 +487,82 @@ mod tests {
 
   use super::{failed_count, is_complete, progress_summary};
   use serde_json::json;
+
+  fn parse(argv: &[&str]) -> Result<clap::ArgMatches, clap::Error> {
+    crate::build::build_cli().try_get_matches_from(argv)
+  }
+
+  // power on nodes ────────────────────────────────────────────
+  #[test]
+  fn power_on_nodes_accepts_dry_run() {
+    let r = parse(&["manta", "power", "on", "nodes", "x1000", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power on nodes`: {r:?}");
+  }
+  #[test]
+  fn power_on_nodes_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "on", "nodes", "x1000", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power on nodes`: {r:?}");
+  }
+
+  // power off nodes ───────────────────────────────────────────
+  #[test]
+  fn power_off_nodes_accepts_dry_run() {
+    let r = parse(&["manta", "power", "off", "nodes", "x1000", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power off nodes`: {r:?}");
+  }
+  #[test]
+  fn power_off_nodes_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "off", "nodes", "x1000", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power off nodes`: {r:?}");
+  }
+
+  // power reset nodes ─────────────────────────────────────────
+  #[test]
+  fn power_reset_nodes_accepts_dry_run() {
+    let r = parse(&["manta", "power", "reset", "nodes", "x1000", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power reset nodes`: {r:?}");
+  }
+  #[test]
+  fn power_reset_nodes_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "reset", "nodes", "x1000", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power reset nodes`: {r:?}");
+  }
+
+  // power on group ────────────────────────────────────────────
+  #[test]
+  fn power_on_group_accepts_dry_run() {
+    let r = parse(&["manta", "power", "on", "group", "compute", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power on group`: {r:?}");
+  }
+  #[test]
+  fn power_on_group_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "on", "group", "compute", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power on group`: {r:?}");
+  }
+
+  // power off group ───────────────────────────────────────────
+  #[test]
+  fn power_off_group_accepts_dry_run() {
+    let r = parse(&["manta", "power", "off", "group", "compute", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power off group`: {r:?}");
+  }
+  #[test]
+  fn power_off_group_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "off", "group", "compute", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power off group`: {r:?}");
+  }
+
+  // power reset group ─────────────────────────────────────────
+  #[test]
+  fn power_reset_group_accepts_dry_run() {
+    let r = parse(&["manta", "power", "reset", "group", "compute", "--dry-run"]);
+    assert!(r.is_ok(), "expected --dry-run on `power reset group`: {r:?}");
+  }
+  #[test]
+  fn power_reset_group_accepts_dry_run_short_alias() {
+    let r = parse(&["manta", "power", "reset", "group", "compute", "-d"]);
+    assert!(r.is_ok(), "expected -d on `power reset group`: {r:?}");
+  }
 
   #[test]
   fn is_complete_true_only_for_completed_status() {
