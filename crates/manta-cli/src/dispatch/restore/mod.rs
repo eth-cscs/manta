@@ -30,6 +30,7 @@ pub async fn handle_restore(
           posthook: m.opt_str("post-hook"),
           overwrite: m.get_flag("overwrite"),
           output: m.opt_str("output"),
+          dry_run: m.get_flag("dry-run"),
         },
       )
       .await?;

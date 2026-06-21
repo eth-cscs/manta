@@ -33,6 +33,10 @@ fn add_vcluster_restore_args(cmd: Command) -> Command {
       arg!(-a --"post-hook" <SCRIPT> "Command to run after a successful restore.\neg: --post-hook \"echo hello\""),
     )
     .arg(arg!(-o --"overwrite" "Overwrite existing data").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-d --"dry-run" "Simulate the operation without making changes")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag_long_only())
 }
 

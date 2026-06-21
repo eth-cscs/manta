@@ -17,6 +17,7 @@ pub struct ExecParams<'a> {
   pub posthook: Option<&'a str>,
   pub overwrite: bool,
   pub output: Option<&'a str>,
+  pub dry_run: bool,
 }
 
 /// Restore cluster configuration from a backup bundle.
@@ -34,6 +35,7 @@ pub async fn exec(
   let posthook = p.posthook;
   let overwrite = p.overwrite;
   let output_opt = p.output;
+  let dry_run = p.dry_run;
   let bos_file_value = bos_file.context("BOS file is required")?;
   let cfs_file_value = cfs_file.context("CFS file is required")?;
   let ims_file_value = ims_file.context("IMS file is required")?;
@@ -74,22 +76,31 @@ pub async fn exec(
   }
 
   println!();
+
+  let req = MigrateRestoreRequest {
+    bos_file: bos_file.map(str::to_string),
+    cfs_file: cfs_file.map(str::to_string),
+    hsm_file: hsm_file.map(str::to_string),
+    ims_file: ims_file.map(str::to_string),
+    image_dir: image_dir.map(str::to_string),
+    overwrite: Some(overwrite),
+  };
+
+  if dry_run {
+    action_result::print_with_data(
+      "Would POST /migrate/restore:",
+      &req,
+      output_opt,
+    )?;
+    return Ok(());
+  }
+
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   client
     .openapi
-    .migrate_restore(
-      client.site_name(),
-      &MigrateRestoreRequest {
-        bos_file: bos_file.map(str::to_string),
-        cfs_file: cfs_file.map(str::to_string),
-        hsm_file: hsm_file.map(str::to_string),
-        ims_file: ims_file.map(str::to_string),
-        image_dir: image_dir.map(str::to_string),
-        overwrite: Some(overwrite),
-      },
-    )
+    .migrate_restore(client.site_name(), &req)
     .await
     .into_anyhow()?;
 
@@ -101,4 +112,53 @@ pub async fn exec(
   )?;
 
   Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+  /// `--dry-run` parses on `manta restore vcluster` (long flag).
+  #[test]
+  fn accepts_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "restore",
+      "vcluster",
+      "--bos-file",
+      "/tmp/bos.yaml",
+      "--cfs-file",
+      "/tmp/cfs.yaml",
+      "--hsm-file",
+      "/tmp/hsm.yaml",
+      "--ims-file",
+      "/tmp/ims.yaml",
+      "--dry-run",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected --dry-run to parse on `restore vcluster`: {result:?}"
+    );
+  }
+
+  /// `-d` short alias also parses.
+  #[test]
+  fn accepts_dry_run_short_alias() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "restore",
+      "vcluster",
+      "--bos-file",
+      "/tmp/bos.yaml",
+      "--cfs-file",
+      "/tmp/cfs.yaml",
+      "--hsm-file",
+      "/tmp/hsm.yaml",
+      "--ims-file",
+      "/tmp/ims.yaml",
+      "-d",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected -d short alias to parse: {result:?}"
+    );
+  }
 }
