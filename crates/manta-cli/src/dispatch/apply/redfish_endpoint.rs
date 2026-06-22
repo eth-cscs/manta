@@ -23,8 +23,8 @@ pub struct ExecParams<'a> {
   pub rediscover_on_update: bool,
   pub template_id: Option<&'a str>,
   pub output: Option<&'a str>,
-  /// When true, print the `UpdateRedfishEndpointParams` JSON
-  /// payload via `action_result::print_with_data` and return
+  /// When true, surface the `UpdateRedfishEndpointParams` JSON
+  /// payload via `action_result::preview_request` and return
   /// without calling the server. The server has no `dry_run`
   /// support on this endpoint; the preview is purely client-side.
   pub dry_run: bool,

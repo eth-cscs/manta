@@ -180,6 +180,18 @@ async fn run_session(
   Ok(())
 }
 
+/// Walk every `--repo` path: open the git repo, capture its name and
+/// HEAD commit, and check for uncommitted changes. Returns parallel
+/// `(repo_names, last_commit_ids)` vectors used to build the
+/// `CreateSessionRequest`.
+///
+/// `dry_run` controls only the interactive policy when a repo has
+/// uncommitted files: in dry-run we log a `tracing::warn!` and
+/// continue (so the preview reflects the would-be commit ids); in a
+/// live run we surface a confirmation prompt because pushing a dirty
+/// HEAD would publish work-in-progress as a CFS layer commit. The
+/// flag is **not** a "skip the validation" switch — every repo still
+/// gets opened, named, and inspected on both paths.
 fn check_local_repos(
   repos: &[PathBuf],
   dry_run: bool,

@@ -15,8 +15,8 @@ pub struct ExecParams<'a> {
   pub arch: Option<String>,
   pub hardware_file: Option<&'a PathBuf>,
   pub output: Option<&'a str>,
-  /// When true, print the `AddNodeRequest` JSON payload via
-  /// `action_result::print_with_data` and return without calling
+  /// When true, surface the `AddNodeRequest` JSON payload via
+  /// `action_result::preview_request` and return without calling
   /// the server. The server has no `dry_run` support on this
   /// endpoint; the preview is purely client-side.
   pub dry_run: bool,
