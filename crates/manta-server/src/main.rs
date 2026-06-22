@@ -7,7 +7,6 @@
 //! module logic lives in the library; this file is just bootstrap.
 
 use ::manta_backend_dispatcher::types::K8sAuth;
-use clap::{Arg, Command};
 use manta_shared::common::{config as manta_config, log_ops};
 
 use manta_server::config::{BackendTechnology, ServerConfiguration};
@@ -19,6 +18,99 @@ const API_URL_SUFFIX: &str = "/apis";
 
 /// URL path suffix for the Gitea VCS endpoint.
 const VCS_URL_SUFFIX: &str = "/vcs";
+
+/// Usage text printed for `--help`.
+const HELP: &str = "\
+Manta HTTPS server — proxies CLI requests to CSM/Ochami backends.
+
+Usage: manta-server [OPTIONS]
+
+Options:
+      --port <PORT>                    Override [server] port from server.toml.
+      --cert <CERT>                    Override [server] cert from server.toml.
+      --key <KEY>                      Override [server] key from server.toml.
+      --listen-address <ADDR>          Override [server] listen_address from server.toml.
+      --allow-http                     Allow listening over plain HTTP when no cert/key is
+                                       set. Use only when TLS terminates upstream (reverse
+                                       proxy, sidecar).
+      --emit-openapi                   Dump the OpenAPI spec to stdout as JSON and exit.
+                                       Used to regenerate crates/manta-cli/openapi.json
+                                       after handler or schema changes — no config file is
+                                       read.
+  -h, --help                           Print help.
+  -V, --version                        Print version.
+";
+
+/// Parsed command-line flags. Filled by [`parse_cli_args`]; consumed by
+/// [`run`] / [`run_server`].
+#[derive(Default)]
+struct CliArgs {
+  port: Option<u16>,
+  cert: Option<String>,
+  key: Option<String>,
+  listen_address: Option<String>,
+  allow_http: bool,
+  emit_openapi: bool,
+}
+
+/// Hand-rolled parser over `std::env::args`. Supports `--flag value` and
+/// `--flag=value`. `--help` / `--version` short-circuit with `exit(0)`.
+/// Unknown args and value-less value-flags return `Err` so `run` can
+/// surface them with a uniform "run with --help" hint.
+fn parse_cli_args() -> Result<CliArgs, String> {
+  let mut args = std::env::args().skip(1);
+  let mut out = CliArgs::default();
+
+  // Pulls the value for `--flag` from either `--flag=value` (already
+  // split into `inline`) or the next positional arg. Centralised so
+  // every value-taking flag emits the same "requires a value" message.
+  let take_value = |inline: Option<String>,
+                    rest: &mut std::iter::Skip<std::env::Args>,
+                    flag: &str|
+   -> Result<String, String> {
+    if let Some(v) = inline {
+      Ok(v)
+    } else {
+      rest
+        .next()
+        .ok_or_else(|| format!("{flag} requires a value"))
+    }
+  };
+
+  while let Some(raw) = args.next() {
+    let (name, inline) = match raw.split_once('=') {
+      Some((n, v)) => (n.to_string(), Some(v.to_string())),
+      None => (raw, None),
+    };
+    match name.as_str() {
+      "--help" | "-h" => {
+        print!("{HELP}");
+        std::process::exit(0);
+      }
+      "--version" | "-V" => {
+        println!("manta-server {}", env!("CARGO_PKG_VERSION"));
+        std::process::exit(0);
+      }
+      "--port" => {
+        let v = take_value(inline, &mut args, "--port")?;
+        out.port = Some(
+          v.parse::<u16>()
+            .map_err(|e| format!("--port: invalid u16 '{v}': {e}"))?,
+        );
+      }
+      "--cert" => out.cert = Some(take_value(inline, &mut args, "--cert")?),
+      "--key" => out.key = Some(take_value(inline, &mut args, "--key")?),
+      "--listen-address" => {
+        out.listen_address =
+          Some(take_value(inline, &mut args, "--listen-address")?);
+      }
+      "--allow-http" => out.allow_http = true,
+      "--emit-openapi" => out.emit_openapi = true,
+      other => return Err(format!("unknown argument: {other}")),
+    }
+  }
+  Ok(out)
+}
 
 /// Print the resolved server settings, audit configuration, and the
 /// config-file path to stdout. Visible regardless of the `[log]`
@@ -129,51 +221,10 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .install_default()
     .ok();
 
-  let cli = Command::new("manta-server")
-    .about("Manta HTTPS server — proxies CLI requests to CSM/Ochami backends.")
-    .arg(
-      Arg::new("port")
-        .long("port")
-        .value_parser(clap::value_parser!(u16))
-        .help("Override [server] port from server.toml."),
-    )
-    .arg(
-      Arg::new("cert")
-        .long("cert")
-        .help("Override [server] cert from server.toml."),
-    )
-    .arg(
-      Arg::new("key")
-        .long("key")
-        .help("Override [server] key from server.toml."),
-    )
-    .arg(
-      Arg::new("listen-address")
-        .long("listen-address")
-        .help("Override [server] listen_address from server.toml."),
-    )
-    .arg(
-      Arg::new("allow-http")
-        .long("allow-http")
-        .action(clap::ArgAction::SetTrue)
-        .help(
-          "Allow listening over plain HTTP when no cert/key is set. \
-           Use only when TLS terminates upstream (reverse proxy, sidecar).",
-        ),
-    )
-    .arg(
-      Arg::new("emit-openapi")
-        .long("emit-openapi")
-        .action(clap::ArgAction::SetTrue)
-        .help(
-          "Dump the OpenAPI spec to stdout as JSON and exit. Used to \
-           regenerate crates/manta-cli/openapi.json after handler or \
-           schema changes — no config file is read.",
-        ),
-    )
-    .get_matches();
+  let cli = parse_cli_args()
+    .map_err(|e| format!("{e}\nRun with --help for usage."))?;
 
-  if cli.get_flag("emit-openapi") {
+  if cli.emit_openapi {
     use utoipa::OpenApi;
     let spec = manta_server::server::api_doc::ApiDoc::openapi()
       .to_pretty_json()
@@ -196,24 +247,19 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
 async fn run_server(
   configuration: ServerConfiguration,
-  cli: clap::ArgMatches,
+  cli: CliArgs,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
   log_ops::configure(&configuration.log, true);
 
   // Resolution precedence for each setting: CLI flag > config file > fallback.
   // cert/key are resolved first so the port fallback can branch on whether
   // TLS is configured.
-  let cert_path: Option<String> = cli
-    .get_one::<String>("cert")
-    .cloned()
-    .or_else(|| configuration.server.cert.clone());
-  let key_path: Option<String> = cli
-    .get_one::<String>("key")
-    .cloned()
-    .or_else(|| configuration.server.key.clone());
+  let cert_path: Option<String> =
+    cli.cert.or_else(|| configuration.server.cert.clone());
+  let key_path: Option<String> =
+    cli.key.or_else(|| configuration.server.key.clone());
   let has_tls = cert_path.is_some() && key_path.is_some();
-  let allow_http =
-    cli.get_flag("allow-http") || configuration.server.allow_http;
+  let allow_http = cli.allow_http || configuration.server.allow_http;
   if !has_tls && !allow_http {
     return Err(
       "Refusing to start without TLS: configure `cert` + `key` in \
@@ -224,16 +270,11 @@ async fn run_server(
         .into(),
     );
   }
-  let port: u16 = cli
-    .get_one::<u16>("port")
-    .copied()
-    .or(configuration.server.port)
-    .unwrap_or_else(|| {
-      manta_server::config::ServerSettings::default_port(has_tls)
-    });
+  let port: u16 = cli.port.or(configuration.server.port).unwrap_or_else(|| {
+    manta_server::config::ServerSettings::default_port(has_tls)
+  });
   let listen_addr: String = cli
-    .get_one::<String>("listen-address")
-    .cloned()
+    .listen_address
     .or_else(|| configuration.server.listen_address.clone())
     .unwrap_or_else(|| {
       manta_server::config::ServerSettings::DEFAULT_LISTEN_ADDRESS.to_string()

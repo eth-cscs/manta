@@ -56,9 +56,6 @@ serde_json         = { workspace = true }
 serde_yaml         = { workspace = true }
 tracing            = { workspace = true }
 
-# Minimal arg parsing for --port / --cert / --key / --listen-address.
-clap = { version = "4.5.60", features = ["wrap_help"] }
-
 [dev-dependencies]
 tower           = { version = "0.5", features = ["util"] }
 http-body-util  = "0.1"
