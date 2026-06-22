@@ -79,7 +79,7 @@ pub async fn get_configurations(
 
 /// Like [`get_configurations`] but pairs every row with a
 /// `safe_to_delete` verdict by fetching CFS components and running
-/// the pure [`build_configuration_analysis`] linker.
+/// the pure [`crate::service::analysis::build_configuration_analysis`] linker.
 ///
 /// The verdict is **CFS-components-only**: a configuration is unsafe
 /// if any CFS component lists it as its `desired_config`. The endpoint

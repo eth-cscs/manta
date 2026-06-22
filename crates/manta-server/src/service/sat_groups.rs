@@ -74,7 +74,7 @@ pub fn extract_session_template_groups(
 /// Returns an empty `Vec` for a SAT file with no groups (or no
 /// images / session_templates sections at all).
 ///
-/// Used by [`crate::server::handlers::sat_file::post_sat_validate`]
+/// Used by [`crate::server::handlers::post_sat_validate`]
 /// to enforce HSM-group access before delegating to the backend.
 pub fn extract_all_target_groups(sat_file: &Value) -> Vec<String> {
   let mut groups: Vec<String> = Vec::new();
