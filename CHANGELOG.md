@@ -2,6 +2,63 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.57] - 2026-06-22
+
+### Bug Fixes
+
+- Omit --dry-run hint for read-only errors on verbs without the flag
+
+### Documentation
+
+- Cover /sat-file/validate, create_bos_session, and add Groups guide section
+- Scaffold planning README + ROADMAP for site-resolution cache
+- Sweep user docs to current beta state
+- Add integration test plan + prealps mock fixture
+- Document `--dry-run` across all mutating verbs + add-group `-D` swap
+- Add inline `--dry-run` examples to GUIDE §4/§7 + README pointer
+- Design spec for hw_cluster server-to-CLI migration
+- Refresh `add group --dry-run` row + `manta-server --help` snippet
+- Refresh doc comments after the dry-run helper extraction
+- Drop Rust helper name from GUIDE §12 dry-run paragraph
+
+### Features
+
+- Add common::read_only policy module
+- Add CliConfiguration.read_only + AppContext.read_only fields
+- Add `config set/unset read-only` toggle commands
+- Gate process_cli on the read_only config setting
+- Show `Read-only` line in `manta config show`
+- Wire \`manta delete configurations --dry-run\` through to server
+- [**breaking**] Add `--dry-run` to `manta add node`; `--disabled` short alias swaps `-d` -> `-D`
+- [**breaking**] Add `--dry-run` to `manta add redfish-endpoints`; `--domain` short alias swaps `-d` -> `-D`
+- [**breaking**] Add `--dry-run` to `manta apply redfish-endpoints`; `--domain` short alias swaps `-d` -> `-D`
+- Add `--dry-run` to `manta delete node`
+- Add `--dry-run` to `manta delete boot-parameters`
+- Add `--dry-run` to `manta delete redfish-endpoints`
+- Add `--dry-run` to `manta apply ephemeral-environment`
+- Honor `-o` on `apply ephemeral-environment` dry-run
+- Add `--dry-run` to all `manta power` mutating leaves
+- Add `--dry-run` to `manta run session`
+- Add `--dry-run` to `manta restore vcluster`
+- [**breaking**] Add `-d` short alias to `manta add group --dry-run`
+
+### Miscellaneous Tasks
+
+- Remove VERBS_WITH_DRY_RUN partial-coverage allowlist
+
+### Refactor
+
+- Route read-only toggle messages through action_result + alphabetise subcommands
+- Remove dead ArgMatchesExt import from add redfish-endpoints handler
+- Consolidate dry-run helpers + dispatcher cleanups
+- Drop clap dep, hand-roll minimal arg parser
+
+### Testing
+
+- Move delete-configurations dry-run parse tests to the binary's unit-test target
+- Assert `-D` short alias for `add node --disabled` parses
+- Catch up to current ServerState + get_configurations shape
+
 ## [2.0.0-beta.56] - 2026-06-16
 
 ### Build
