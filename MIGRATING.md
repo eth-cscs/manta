@@ -240,12 +240,24 @@ $ manta-server --version
 manta-server 2.0.0
 
 $ manta-server --help
+Manta HTTPS server — proxies CLI requests to CSM/Ochami backends.
+
 Usage: manta-server [OPTIONS]
 
-  --port <PORT>                  Override [server] port from server.toml
-  --listen-address <ADDRESS>     Override [server] listen_address
-  --cert <CERT>                  Override [server] cert
-  --key <KEY>                    Override [server] key
+Options:
+      --port <PORT>                    Override [server] port from server.toml.
+      --cert <CERT>                    Override [server] cert from server.toml.
+      --key <KEY>                      Override [server] key from server.toml.
+      --listen-address <ADDR>          Override [server] listen_address from server.toml.
+      --allow-http                     Allow listening over plain HTTP when no cert/key is
+                                       set. Use only when TLS terminates upstream (reverse
+                                       proxy, sidecar).
+      --emit-openapi                   Dump the OpenAPI spec to stdout as JSON and exit.
+                                       Used to regenerate crates/manta-cli/openapi.json
+                                       after handler or schema changes — no config file is
+                                       read.
+  -h, --help                           Print help.
+  -V, --version                        Print version.
 ```
 
 A Dockerfile is provided (`crates/manta-server/Dockerfile`).

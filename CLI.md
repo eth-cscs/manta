@@ -388,7 +388,8 @@ Create a new HSM group.
 | `-l/--label` | string | **yes** | Group name |
 | `-D/--description` | string | no | Group description |
 | `-n/--nodes` | string | no | Initial members (xnames/nids/hostlist) |
-| `-d/--dry-run` | flag | no | Simulate without changes |
+| `-d/--dry-run` | flag | no | Simulate without changes (skips the confirmation prompt; previews both the `create_group` payload and, if `--nodes` was given, the follow-up `add_nodes_to_group` payload) |
+| `-o/--output` | string | no | Output format: `table`, `json` (default `table`; honored on dry-run) |
 
 > The `-d` short alias is reserved for `--dry-run`; use `-D` (capital) for `--description`.
 
