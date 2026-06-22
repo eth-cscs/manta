@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.58] - 2026-06-22
+
+### Documentation
+
+- Fix broken intra-doc links failing `cargo doc`
+
 ## [2.0.0-beta.57] - 2026-06-22
 
 ### Bug Fixes
