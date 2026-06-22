@@ -138,6 +138,7 @@ impl TestFixture {
       auditor: None,
       auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
+      shutdown_grace_period: Duration::from_secs(30),
       migrate_backup_root: None,
     });
 
@@ -398,16 +399,19 @@ async fn get_groups_happy_path() {
 
 // GET /api/v1/configurations
 //
-// Call chain (csm-rs uses CFS v2 for configurations):
-//   service::configuration::get_configurations
-//     → get_group_name_available           (GET /smd/hsm/v2/groups)
-//     → backend.get_and_filter_configuration
-//         → get_member_vec_from_hsm_name_vec  (GET /smd/hsm/v2/groups?group=compute)
-//         → try_join!:
-//             GET /cfs/v2/configurations
-//             GET /cfs/v2/sessions
-//             GET /bos/v2/sessiontemplates
-//             GET /cfs/v2/components
+// Call chain (csm-rs uses CFS v2 for the listing, v3 for the
+// components-only safe_to_delete verdict):
+//   service::configuration::get_configurations_with_analysis
+//     → service::configuration::get_configurations
+//         → get_group_name_available           (GET /smd/hsm/v2/groups)
+//         → backend.get_and_filter_configuration
+//             → get_member_vec_from_hsm_name_vec  (GET /smd/hsm/v2/groups?group=compute)
+//             → try_join!:
+//                 GET /cfs/v2/configurations
+//                 GET /cfs/v2/sessions
+//                 GET /bos/v2/sessiontemplates
+//                 GET /cfs/v2/components
+//     → backend.get_cfs_components             (GET /cfs/v3/components)
 //
 // The configuration name must contain the HSM group name ("compute") to
 // survive cfs::configuration::utils::filter.
@@ -420,6 +424,7 @@ async fn get_configurations_happy_path() {
   mock_cfs_v2_sessions(&fx.mock_server).await;
   mock_bos_v2_templates(&fx.mock_server).await;
   mock_cfs_v2_components(&fx.mock_server).await;
+  mock_cfs_v3_components(&fx.mock_server).await;
 
   let resp = fx.send(fx.auth_get("/api/v1/configurations")).await;
   assert_eq!(resp.status(), StatusCode::OK);
@@ -427,8 +432,11 @@ async fn get_configurations_happy_path() {
   let body = TestFixture::body_json(resp).await;
   let arr = body.as_array().expect("expected JSON array");
   assert_eq!(arr.len(), 1);
-  assert_eq!(arr[0]["name"], "compute-config");
-  assert!(arr[0]["layers"].is_array());
+  assert_eq!(arr[0]["configuration"]["name"], "compute-config");
+  assert!(arr[0]["configuration"]["layers"].is_array());
+  // Components mock is empty, so nothing lists compute-config as a
+  // desired_config → the verdict must be safe-to-delete.
+  assert_eq!(arr[0]["safe_to_delete"], true);
 }
 
 // GET /api/v1/sessions
