@@ -2,7 +2,7 @@
 
 use clap::{ArgAction, Command, arg};
 
-use super::HOSTLIST_HELP;
+use super::{HOSTLIST_HELP, dry_run_flag};
 
 /// Attach the per-group args for `power on group/cluster`.
 fn add_power_on_group_args(cmd: Command) -> Command {
@@ -22,10 +22,7 @@ fn add_power_on_group_args(cmd: Command) -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
@@ -51,10 +48,7 @@ fn add_power_off_group_args(cmd: Command) -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
@@ -79,10 +73,7 @@ fn add_power_reset_group_args(cmd: Command) -> Command {
         .value_parser(["table", "json"])
         .default_value("table"),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(arg!(-r --reason <TEXT> "Reason for the power operation"))
     .arg(arg!(<GROUP_NAME> "Group name"))
 }
@@ -116,10 +107,7 @@ pub fn subcommand_power() -> Command {
                 .value_parser(["table", "json"])
                 .default_value("table"),
             )
-            .arg(
-              arg!(-d --"dry-run" "Simulate the operation without making changes")
-                .action(ArgAction::SetTrue),
-            )
+            .arg(dry_run_flag())
             // ID preserved as "VALUE" for handler compatibility
             .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP)),
         ),
@@ -153,10 +141,7 @@ pub fn subcommand_power() -> Command {
                 .value_parser(["table", "json"])
                 .default_value("table"),
             )
-            .arg(
-              arg!(-d --"dry-run" "Simulate the operation without making changes")
-                .action(ArgAction::SetTrue),
-            )
+            .arg(dry_run_flag())
             // ID preserved as "VALUE" for handler compatibility
             .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP)),
         ),
@@ -190,10 +175,7 @@ pub fn subcommand_power() -> Command {
                 .value_parser(["table", "json"])
                 .default_value("table"),
             )
-            .arg(
-              arg!(-d --"dry-run" "Simulate the operation without making changes")
-                .action(ArgAction::SetTrue),
-            )
+            .arg(dry_run_flag())
             // ID preserved as "VALUE" for handler compatibility
             .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP)),
         ),

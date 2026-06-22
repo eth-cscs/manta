@@ -1,8 +1,8 @@
 //! Clap definitions for `manta migrate *` subcommands.
 
-use clap::{ArgAction, Command, arg};
+use clap::{Command, arg};
 
-use super::output_flag;
+use super::{dry_run_flag, output_flag};
 
 pub fn subcommand_migrate() -> Command {
   Command::new("migrate")
@@ -19,7 +19,7 @@ pub fn subcommand_migrate() -> Command {
           arg!(<XNAMES> "Xnames, NIDs, or a hostlist expression.\neg: 'x1003c1s7b0n0,x1003c1s7b0n1'")
             .required(true),
         )
-        .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+        .arg(dry_run_flag())
         .arg(output_flag()),
     )
 }

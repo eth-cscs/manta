@@ -38,12 +38,7 @@ pub async fn exec(
   };
 
   if p.dry_run {
-    crate::output::action_result::print_with_data(
-      "Would POST /nodes:",
-      &req,
-      p.output,
-    )?;
-    return Ok(());
+    return action_result::preview_request("POST", "/nodes", &req, p.output);
   }
 
   client

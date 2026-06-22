@@ -2,7 +2,7 @@
 
 use clap::{ArgAction, ArgGroup, Command, arg};
 
-use super::{HOSTLIST_HELP, output_flag};
+use super::{HOSTLIST_HELP, dry_run_flag, output_flag};
 
 pub fn subcommand_delete() -> Command {
   Command::new("delete")
@@ -37,10 +37,7 @@ pub fn subcommand_delete_nodes() -> Command {
       arg!(-g --group <NAME> "Group to remove the nodes from").required(true),
     )
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -82,10 +79,7 @@ pub fn subcommand_delete_node() -> Command {
         .value_name("XNAME")
         .required(true),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -102,7 +96,7 @@ pub fn subcommand_delete_hw_component() -> Command {
       arg!(-p --"parent-group" <PARENT_GROUP_NAME> "Group that receives the freed components")
         .visible_alias("parent-cluster"),
     )
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .arg(
       arg!(-D --"delete-group" "Delete the group if empty after this operation")
         .action(ArgAction::SetTrue)
@@ -115,7 +109,7 @@ pub fn subcommand_delete_image() -> Command {
   Command::new("images")
     .arg_required_else_help(true)
     .about("[experimental] Delete IMS images by ID (refuses to delete images currently booting a node)")
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     // ID preserved as "IMAGE_LIST" for handler compatibility
     .arg(
       arg!(<IMAGE_LIST> "Comma-separated image IDs to delete.\neg: e2ce82f0-e7ba-4f36-9f5c-750346599600,59e0180a-3fdd-4936-bba7-14ba914ffd34")
@@ -139,10 +133,7 @@ pub fn subcommand_delete_configuration() -> Command {
     .arg(arg!(-n --"configuration-name" <VALUE> "Glob pattern to filter by name.\neg: my-config*, my-config-v[1,2]"))
     .arg(arg!(-s --since <DATE> "Delete configurations last updated after this date (format: %Y-%m-%d)"))
     .arg(arg!(-u --until <DATE> "Delete configurations last updated before this date (format: %Y-%m-%d)"))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
     .group(
       ArgGroup::new("since_and_until")
@@ -163,7 +154,7 @@ pub fn subcommand_delete_session() -> Command {
       For dynamic (runtime) sessions, the error count is set to its maximum value.",
     )
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .arg(arg!(<SESSION_NAME> "Name of the session to delete").required(true))
     .arg(output_flag())
 }
@@ -177,7 +168,7 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
       arg!(-H --group <GROUP_NAME> "Remove the listed kernel parameters from every node in this group")
         .visible_alias("hsm-group"),
     )
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     // ID preserved as "VALUE" for handler compatibility
     .arg(arg!(<VALUE> "Comma-separated kernel parameter names to remove.\neg: console,bad_page,crashkernel,hugepagelist,quiet").value_name("PARAMS"))
     .group(
@@ -193,10 +184,7 @@ pub fn subcommand_delete_boot_parameter() -> Command {
     .arg_required_else_help(true)
     .about("Delete boot parameters for nodes")
     .arg(arg!(-H --hosts <XNAMES> "Xnames of the nodes"))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -209,9 +197,6 @@ pub fn subcommand_delete_redfish_endpoint() -> Command {
       arg!(-i --id <XNAME> "Xname of the Redfish endpoint to delete")
         .required(true),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }

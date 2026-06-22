@@ -153,13 +153,12 @@ pub async fn handle_apply(
       };
 
       if dry_run {
-        let output_opt = m.opt_str("output");
-        crate::output::action_result::print_with_data(
-          "Would POST /ephemeral-env:",
+        return crate::output::action_result::preview_request(
+          "POST",
+          "/ephemeral-env",
           &req,
-          output_opt,
-        )?;
-        return Ok(());
+          m.opt_str("output"),
+        );
       }
 
       if !std::io::IsTerminal::is_terminal(&std::io::stdout()) {

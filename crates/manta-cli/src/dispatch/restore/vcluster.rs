@@ -1,6 +1,6 @@
 //! Implements the `manta restore vcluster` command.
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -26,20 +26,51 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let bos_file = p.bos_file;
-  let cfs_file = p.cfs_file;
-  let hsm_file = p.hsm_file;
-  let ims_file = p.ims_file;
-  let image_dir = p.image_dir;
-  let prehook = p.prehook;
-  let posthook = p.posthook;
-  let overwrite = p.overwrite;
-  let output_opt = p.output;
-  let dry_run = p.dry_run;
+  let ExecParams {
+    bos_file,
+    cfs_file,
+    hsm_file,
+    ims_file,
+    image_dir,
+    prehook,
+    posthook,
+    overwrite,
+    output: output_opt,
+    dry_run,
+  } = p;
   let bos_file_value = bos_file.context("BOS file is required")?;
   let cfs_file_value = cfs_file.context("CFS file is required")?;
   let ims_file_value = ims_file.context("IMS file is required")?;
   let hsm_file_value = hsm_file.context("HSM file is required")?;
+
+  if let Some(prehook_path) = prehook {
+    crate::common::hooks::check_hook_perms(Some(prehook_path))
+      .map_err(|e| anyhow::anyhow!("{e}. File: {prehook_path}"))?;
+    tracing::debug!("Pre-hook script exists and is executable.");
+  }
+  if let Some(posthook_path) = posthook {
+    crate::common::hooks::check_hook_perms(Some(posthook_path))
+      .map_err(|e| anyhow::anyhow!("{e}. File: {posthook_path}"))?;
+    tracing::debug!("Post-hook script exists and is executable.");
+  }
+
+  let req = MigrateRestoreRequest {
+    bos_file: bos_file.map(str::to_string),
+    cfs_file: cfs_file.map(str::to_string),
+    hsm_file: hsm_file.map(str::to_string),
+    ims_file: ims_file.map(str::to_string),
+    image_dir: image_dir.map(str::to_string),
+    overwrite: Some(overwrite),
+  };
+
+  if dry_run {
+    return action_result::preview_request(
+      "POST",
+      "/migrate/restore",
+      &req,
+      output_opt,
+    );
+  }
 
   action_result::print(
     &format!(
@@ -53,47 +84,7 @@ pub async fn exec(
     ),
     output_opt,
   )?;
-
-  if let Some(prehook_path) = prehook {
-    match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
-      Ok(()) => {
-        tracing::debug!("Pre-hook script exists and is executable.");
-      }
-      Err(e) => {
-        bail!("{e}. File: {prehook_path}");
-      }
-    }
-  }
-  if let Some(posthook_path) = posthook {
-    match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
-      Ok(()) => {
-        tracing::debug!("Post-hook script exists and is executable.");
-      }
-      Err(e) => {
-        bail!("{e}. File: {posthook_path}");
-      }
-    }
-  }
-
   println!();
-
-  let req = MigrateRestoreRequest {
-    bos_file: bos_file.map(str::to_string),
-    cfs_file: cfs_file.map(str::to_string),
-    hsm_file: hsm_file.map(str::to_string),
-    ims_file: ims_file.map(str::to_string),
-    image_dir: image_dir.map(str::to_string),
-    overwrite: Some(overwrite),
-  };
-
-  if dry_run {
-    action_result::print_with_data(
-      "Would POST /migrate/restore:",
-      &req,
-      output_opt,
-    )?;
-    return Ok(());
-  }
 
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 

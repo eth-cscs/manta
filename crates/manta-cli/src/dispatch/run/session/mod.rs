@@ -111,43 +111,31 @@ async fn run_session(
   let (repo_name_vec, repo_last_commit_id_vec) =
     check_local_repos(repos_paths, p.dry_run)?;
 
+  let req = CreateSessionRequest {
+    cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
+    playbook_yaml_file_name: playbook_yaml_file_name_opt.map(str::to_string),
+    hsm_group: group_name_opt.map(str::to_string),
+    repo_names: repo_name_vec,
+    repo_last_commit_ids: repo_last_commit_id_vec,
+    ansible_limit: ansible_limit_opt.map(str::to_string),
+    ansible_verbosity: ansible_verbosity.map(str::to_string),
+    ansible_passthrough: ansible_passthrough.map(str::to_string),
+  };
+
   if p.dry_run {
-    crate::output::action_result::print_with_data(
-      "Would POST /sessions:",
-      &CreateSessionRequest {
-        cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
-        playbook_yaml_file_name: playbook_yaml_file_name_opt
-          .map(str::to_string),
-        hsm_group: group_name_opt.map(str::to_string),
-        repo_names: repo_name_vec.clone(),
-        repo_last_commit_ids: repo_last_commit_id_vec.clone(),
-        ansible_limit: ansible_limit_opt.map(str::to_string),
-        ansible_verbosity: ansible_verbosity.map(str::to_string),
-        ansible_passthrough: ansible_passthrough.map(str::to_string),
-      },
+    return action_result::preview_request(
+      "POST",
+      "/sessions",
+      &req,
       output_opt,
-    )?;
-    return Ok(());
+    );
   }
 
   // Create CFS session via server
   let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
   let created = client
     .openapi
-    .create_session(
-      client.site_name(),
-      &CreateSessionRequest {
-        cfs_conf_sess_name: cfs_conf_sess_name.map(str::to_string),
-        playbook_yaml_file_name: playbook_yaml_file_name_opt
-          .map(str::to_string),
-        hsm_group: group_name_opt.map(str::to_string),
-        repo_names: repo_name_vec.clone(),
-        repo_last_commit_ids: repo_last_commit_id_vec.clone(),
-        ansible_limit: ansible_limit_opt.map(str::to_string),
-        ansible_verbosity: ansible_verbosity.map(str::to_string),
-        ansible_passthrough: ansible_passthrough.map(str::to_string),
-      },
-    )
+    .create_session(client.site_name(), &req)
     .await
     .into_anyhow()?;
   let cfs_configuration_name = created.configuration_name;

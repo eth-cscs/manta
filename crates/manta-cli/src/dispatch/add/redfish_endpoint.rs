@@ -56,12 +56,12 @@ pub async fn exec(
   };
 
   if p.dry_run {
-    crate::output::action_result::print_with_data(
-      "Would POST /redfish-endpoints:",
+    return action_result::preview_request(
+      "POST",
+      "/redfish-endpoints",
       &req,
       p.output,
-    )?;
-    return Ok(());
+    );
   }
 
   client

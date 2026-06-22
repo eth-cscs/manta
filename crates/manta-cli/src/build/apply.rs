@@ -3,7 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
-use super::{HOSTLIST_HELP, output_flag, output_flag_long_only};
+use super::{HOSTLIST_HELP, dry_run_flag, output_flag, output_flag_long_only};
 
 /// Attach the hardware-rescale argument set to a clap `Command`.
 ///
@@ -27,7 +27,7 @@ fn add_apply_hw_group_args(cmd: Command) -> Command {
         .required(true)
         .visible_alias("parent-cluster"),
     )
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .arg(
       arg!(-c --"create-target-group" "Create the target group if it does not exist")
         .visible_alias("create-target-hsm-group"),
@@ -76,7 +76,7 @@ pub fn subcommand_apply_template() -> Command {
       arg!(-i --"include-disabled" "Include nodes marked as disabled in the hardware state manager")
         .action(ArgAction::SetTrue),
     )
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
 }
 
 pub fn subcommand_apply_ephemeral_environment() -> Command {
@@ -88,10 +88,7 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
       Returns an SSH hostname once the environment is ready (usually within a few seconds).",
     )
     .arg(arg!(-i --"image-id" <IMAGE_ID> "Image ID to use").required(true))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -151,7 +148,7 @@ pub fn subcommand_apply_sat_file() -> Command {
     .arg(arg!(-p --"pre-hook" <SCRIPT> "Command to run before processing.\neg: --pre-hook \"echo hello\""))
     .arg(arg!(-a --"post-hook" <SCRIPT> "Command to run after successful processing.\neg: --post-hook \"echo hello\""))
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .arg(output_flag_long_only())
 }
 
@@ -175,7 +172,7 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to the nodes"))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")
         .args(["boot-image", "boot-image-configuration"]),
@@ -196,7 +193,7 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all group members"))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")
         .args(["boot-image", "boot-image-configuration"]),
@@ -230,10 +227,7 @@ fn add_boot_parameters_args(cmd: Command) -> Command {
     .arg(arg!(-p --"params" <VALUE> "Kernel parameters"))
     .arg(arg!(-k --"kernel" <VALUE> "S3 path to the kernel file"))
     .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -274,10 +268,7 @@ fn add_redfish_endpoint_args(cmd: Command) -> Command {
 pub fn subcommand_apply_redfish_endpoint() -> Command {
   add_redfish_endpoint_args(Command::new("redfish-endpoints"))
     .about("Update an existing Redfish endpoint")
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
 }
 
 pub fn subcommand_apply_kernel_parameters() -> Command {
@@ -289,7 +280,7 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
       arg!(-H --group <GROUP_NAME> "Replace kernel parameters on every node in this group")
         .visible_alias("hsm-group"),
     )
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     // ID preserved as "VALUE" for handler compatibility
     .arg(
       arg!(<VALUE> "Space-separated kernel parameters to apply.\neg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M")

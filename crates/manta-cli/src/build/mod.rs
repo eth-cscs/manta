@@ -51,6 +51,16 @@ pub(super) fn output_flag_long_only() -> clap::Arg {
     .default_value("table")
 }
 
+/// Standard `-d/--dry-run` flag for mutating verbs. Use this for every
+/// new mutating leaf so the short alias `-d` stays reserved for dry-run
+/// across the CLI. Verbs needing a custom help message (e.g. `upgrade`,
+/// `delete configurations`) declare their flag inline rather than
+/// through this helper.
+pub(super) fn dry_run_flag() -> clap::Arg {
+  arg!(-d --"dry-run" "Simulate the operation without making changes")
+    .action(clap::ArgAction::SetTrue)
+}
+
 /// Build the clap CLI command tree for manta.
 pub fn build_cli() -> Command {
   // Hard-coded "manta" rather than `env!("CARGO_PKG_NAME")` because the

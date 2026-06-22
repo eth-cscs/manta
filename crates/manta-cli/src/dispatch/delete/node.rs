@@ -15,12 +15,7 @@ pub async fn exec(
   dry_run: bool,
 ) -> Result<(), Error> {
   if dry_run {
-    crate::output::action_result::print_with_data(
-      "Would DELETE node:",
-      &id,
-      output_opt,
-    )?;
-    return Ok(());
+    return action_result::preview_request("DELETE", "node", &id, output_opt);
   }
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   client

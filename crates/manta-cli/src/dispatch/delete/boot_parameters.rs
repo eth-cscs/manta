@@ -15,18 +15,18 @@ pub async fn exec(
   output_opt: Option<&str>,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let req = DeleteBootParametersRequest { hosts };
 
   if dry_run {
-    crate::output::action_result::print_with_data(
-      "Would DELETE boot-parameters:",
+    return action_result::preview_request(
+      "DELETE",
+      "boot-parameters",
       &req,
       output_opt,
-    )?;
-    return Ok(());
+    );
   }
 
+  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   client
     .openapi
     .delete_boot_parameters(client.site_name(), &req)

@@ -15,12 +15,12 @@ pub async fn exec(
   dry_run: bool,
 ) -> Result<(), Error> {
   if dry_run {
-    crate::output::action_result::print_with_data(
-      "Would DELETE redfish-endpoint:",
+    return action_result::preview_request(
+      "DELETE",
+      "redfish-endpoint",
       &id,
       output_opt,
-    )?;
-    return Ok(());
+    );
   }
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;

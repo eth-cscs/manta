@@ -31,6 +31,27 @@ pub async fn exec(
     exclusive_group: Some("false".to_string()),
   };
 
+  let add_nodes_req = p.hosts_expression.map(|expr| AddNodesToGroupRequest {
+    hosts_expression: expr.to_string(),
+  });
+
+  if p.dry_run {
+    // Two payloads in one preview — route through `print_with_data` so
+    // the dry-run honours `-o json` like every other mutating verb.
+    let preview = match &add_nodes_req {
+      Some(req) => serde_json::json!({
+        "create_group": &grp,
+        "add_nodes_to_group": req,
+      }),
+      None => serde_json::json!({ "create_group": &grp }),
+    };
+    return action_result::print_with_data(
+      "Would create group (and add nodes if provided):",
+      &preview,
+      p.output,
+    );
+  }
+
   if !common::confirm::confirm(
     &format!(
       "This operation will create the group below:\n{}\nPlease confirm to proceed",
@@ -40,30 +61,6 @@ pub async fn exec(
     p.assume_yes,
   ) {
     bail!("Operation cancelled by user");
-  }
-
-  // Build the second payload up-front so dry-run can surface it too.
-  let add_nodes_req = p.hosts_expression.map(|expr| AddNodesToGroupRequest {
-    hosts_expression: expr.to_string(),
-  });
-
-  if p.dry_run {
-    println!(
-      "Dry-run: would POST create_group with the payload below; no backend call will be made.\n\
-       create_group payload:\n{}",
-      serde_json::to_string_pretty(&grp)
-        .context("Failed to serialize group")?
-    );
-    if let Some(req) = &add_nodes_req {
-      println!(
-        "\nDry-run: would then POST add_nodes_to_group to group '{}' with the payload below.\n\
-         add_nodes_to_group payload:\n{}",
-        p.label,
-        serde_json::to_string_pretty(req)
-          .context("Failed to serialize add_nodes_to_group request")?
-      );
-    }
-    return Ok(());
   }
 
   let client = MantaClient::from_app_ctx(ctx, Some(auth_token))?;

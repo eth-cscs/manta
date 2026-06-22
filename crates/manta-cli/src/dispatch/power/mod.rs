@@ -11,7 +11,7 @@
 
 use std::{fmt, time::Duration};
 
-use anyhow::{Context, Error, anyhow, bail};
+use anyhow::{Error, anyhow, bail};
 use clap::ArgMatches;
 use serde_json::Value;
 
@@ -34,76 +34,30 @@ pub const DEFAULT_POWER_POLL_INTERVAL_SECS: u64 = 3;
 /// transition show <id>` by hand.
 pub const DEFAULT_POWER_MAX_POLL_ATTEMPTS: u32 = 300;
 
-/// Dispatch a `power on group` invocation.
-async fn dispatch_power_on_group(
-  m: &ArgMatches,
-  ctx: &AppContext<'_>,
-  token: &str,
-) -> Result<(), Error> {
-  exec_cluster(
-    ctx,
-    token,
-    PowerOpts {
-      action: PowerAction::On,
-      target: m.req_str("GROUP_NAME")?,
-      force: false,
-      no_wait: m.get_flag("no-wait"),
-      assume_yes: m.get_flag("assume-yes"),
-      output: m.req_str("output")?,
-      dry_run: m.get_flag("dry-run"),
-    },
-  )
-  .await
-}
-
-/// Dispatch a `power off group` invocation.
-async fn dispatch_power_off_group(
-  m: &ArgMatches,
-  ctx: &AppContext<'_>,
-  token: &str,
-) -> Result<(), Error> {
-  let graceful = m
-    .get_one::<bool>("graceful")
-    .context("The 'graceful' argument must have a value")?;
-  exec_cluster(
-    ctx,
-    token,
-    PowerOpts {
-      action: PowerAction::Off,
-      target: m.req_str("GROUP_NAME")?,
-      force: !graceful,
-      no_wait: m.get_flag("no-wait"),
-      assume_yes: m.get_flag("assume-yes"),
-      output: m.req_str("output")?,
-      dry_run: m.get_flag("dry-run"),
-    },
-  )
-  .await
-}
-
-/// Dispatch a `power reset group` invocation.
-async fn dispatch_power_reset_group(
-  m: &ArgMatches,
-  ctx: &AppContext<'_>,
-  token: &str,
-) -> Result<(), Error> {
-  let force = m
-    .get_one::<bool>("graceful")
-    .context("The 'graceful' argument must have a value")?;
-  exec_cluster(
-    ctx,
-    token,
-    PowerOpts {
-      action: PowerAction::Reset,
-      target: m.req_str("GROUP_NAME")?,
-      force: *force,
-      no_wait: m.get_flag("no-wait"),
-      assume_yes: m.get_flag("assume-yes"),
-      output: m.req_str("output")?,
-      dry_run: m.get_flag("dry-run"),
-    },
-  )
-  .await
+/// Build a [`PowerOpts`] from the clap matches at the leaf subcommand
+/// (e.g. `power off group`). `target_key` names the positional arg
+/// holding the host/group expression — `"GROUP_NAME"` for `group` leaves,
+/// `"VALUE"` for `nodes` leaves. `force` is derived from `--graceful`
+/// on `Off`/`Reset` and is unconditionally `false` for `On` (the
+/// `--graceful` flag is not declared on `on` leaves).
+fn build_opts<'a>(
+  action: PowerAction,
+  target_key: &'static str,
+  m: &'a ArgMatches,
+) -> Result<PowerOpts<'a>, Error> {
+  let force = match action {
+    PowerAction::On => false,
+    PowerAction::Off | PowerAction::Reset => !m.get_flag("graceful"),
+  };
+  Ok(PowerOpts {
+    action,
+    target: m.req_str(target_key)?,
+    force,
+    no_wait: m.get_flag("no-wait"),
+    assume_yes: m.get_flag("assume-yes"),
+    output: m.req_str("output")?,
+    dry_run: m.get_flag("dry-run"),
+  })
 }
 
 /// Dispatch `manta power` subcommands (on, off, reset —
@@ -114,80 +68,24 @@ pub async fn handle_power(
 ) -> Result<(), Error> {
   let token = get_api_token(ctx).await?;
 
-  match cli_power.subcommand() {
-    Some(("on", m)) => match m.subcommand() {
-      Some(("group", m)) => dispatch_power_on_group(m, ctx, &token).await?,
-      Some(("nodes", m)) => {
-        exec_nodes(
-          ctx,
-          &token,
-          PowerOpts {
-            action: PowerAction::On,
-            target: m.req_str("VALUE")?,
-            force: false,
-            no_wait: m.get_flag("no-wait"),
-            assume_yes: m.get_flag("assume-yes"),
-            output: m.req_str("output")?,
-            dry_run: m.get_flag("dry-run"),
-          },
-        )
-        .await?;
-      }
-      Some((other, _)) => bail!("Unknown 'power on' subcommand: {other}"),
-      None => bail!("No 'power on' subcommand provided"),
-    },
-    Some(("off", m)) => match m.subcommand() {
-      Some(("group", m)) => dispatch_power_off_group(m, ctx, &token).await?,
-      Some(("nodes", m)) => {
-        let graceful = m
-          .get_one::<bool>("graceful")
-          .context("The 'graceful' argument must have a value")?;
-        exec_nodes(
-          ctx,
-          &token,
-          PowerOpts {
-            action: PowerAction::Off,
-            target: m.req_str("VALUE")?,
-            force: !graceful,
-            no_wait: m.get_flag("no-wait"),
-            assume_yes: m.get_flag("assume-yes"),
-            output: m.req_str("output")?,
-            dry_run: m.get_flag("dry-run"),
-          },
-        )
-        .await?;
-      }
-      Some((other, _)) => bail!("Unknown 'power off' subcommand: {other}"),
-      None => bail!("No 'power off' subcommand provided"),
-    },
-    Some(("reset", m)) => match m.subcommand() {
-      Some(("group", m)) => dispatch_power_reset_group(m, ctx, &token).await?,
-      Some(("nodes", m)) => {
-        let graceful = m
-          .get_one::<bool>("graceful")
-          .context("The 'graceful' argument must have a value")?;
-        exec_nodes(
-          ctx,
-          &token,
-          PowerOpts {
-            action: PowerAction::Reset,
-            target: m.req_str("VALUE")?,
-            force: !graceful,
-            no_wait: m.get_flag("no-wait"),
-            assume_yes: m.get_flag("assume-yes"),
-            output: m.req_str("output")?,
-            dry_run: m.get_flag("dry-run"),
-          },
-        )
-        .await?;
-      }
-      Some((other, _)) => bail!("Unknown 'power reset' subcommand: {other}"),
-      None => bail!("No 'power reset' subcommand provided"),
-    },
+  let (action, kind_m) = match cli_power.subcommand() {
+    Some(("on", m)) => (PowerAction::On, m),
+    Some(("off", m)) => (PowerAction::Off, m),
+    Some(("reset", m)) => (PowerAction::Reset, m),
     Some((other, _)) => bail!("Unknown 'power' subcommand: {other}"),
     None => bail!("No 'power' subcommand provided"),
+  };
+
+  match kind_m.subcommand() {
+    Some(("group", m)) => {
+      exec_cluster(ctx, &token, build_opts(action, "GROUP_NAME", m)?).await
+    }
+    Some(("nodes", m)) => {
+      exec_nodes(ctx, &token, build_opts(action, "VALUE", m)?).await
+    }
+    Some((other, _)) => bail!("Unknown 'power {action}' subcommand: {other}"),
+    None => bail!("No 'power {action}' subcommand provided"),
   }
-  Ok(())
 }
 
 /// The three power operations supported by the backend.
@@ -321,12 +219,12 @@ async fn dispatch_and_wait(
   };
 
   if opts.dry_run {
-    action_result::print_with_data(
-      "Would POST /power:",
+    return action_result::preview_request(
+      "POST",
+      "/power",
       &req,
       Some(opts.output),
-    )?;
-    return Ok(());
+    );
   }
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;

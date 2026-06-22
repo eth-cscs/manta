@@ -70,6 +70,21 @@ pub fn print_with_data<T: serde::Serialize>(
   Ok(())
 }
 
+/// `--dry-run` preview for mutating verbs: render a
+/// `Would <METHOD> <path>:` line followed by the request body that
+/// would have been sent. Routes through [`print_with_data`] so dry-run
+/// preview honours `-o json` just like the live success path. Use this
+/// from every mutating dispatcher's dry-run branch so the format stays
+/// uniform across verbs.
+pub fn preview_request<T: serde::Serialize>(
+  method: &str,
+  path: &str,
+  body: &T,
+  output_opt: Option<&str>,
+) -> Result<()> {
+  print_with_data(&format!("Would {method} {path}:"), body, output_opt)
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

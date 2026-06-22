@@ -3,7 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 use std::path::PathBuf;
 
-use super::{HOSTLIST_HELP, output_flag};
+use super::{HOSTLIST_HELP, dry_run_flag, output_flag};
 
 pub fn subcommand_add_group() -> Command {
   Command::new("group")
@@ -12,10 +12,7 @@ pub fn subcommand_add_group() -> Command {
     .arg(arg!(-l --label <NAME> "Group name").required(true))
     .arg(arg!(-D --description <VALUE> "Group description"))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -44,10 +41,7 @@ pub fn subcommand_add_node() -> Command {
       arg!(-D --disabled "Register the node as disabled")
         .action(ArgAction::SetTrue),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
@@ -64,10 +58,7 @@ pub fn subcommand_add_hwcomponent() -> Command {
       arg!(-p --"parent-group" <NAME> "Group that donates the components")
         .visible_alias("parent-cluster"),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(
       arg!(-c --"create-group" "Create the target group if it does not exist")
         .visible_alias("create-hsm-group"),
@@ -100,10 +91,7 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
         .action(ArgAction::SetTrue),
     )
     .arg(arg!(-t --"template-id" <VALUE> "Discovery template ID"))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
     .arg_required_else_help(true)
 }
@@ -119,10 +107,7 @@ pub fn subcommand_add_boot_parameters() -> Command {
     .arg(arg!(-k --"kernel" <VALUE> "S3 path to the kernel file"))
     .arg(arg!(-i --"initrd" <VALUE> "S3 path to the initrd file"))
     .arg(arg!(-c --"cloud-init" <VALUE> "Cloud-init script"))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(
       arg!(-y --"assume-yes" "Skip confirmation prompts")
         .action(ArgAction::SetTrue),
@@ -146,7 +131,7 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     )
     .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "Do not reboot nodes after applying changes").action(ArgAction::SetTrue))
-    .arg(arg!(-d --"dry-run" "Simulate the operation without making changes").action(ArgAction::SetTrue))
+    .arg(dry_run_flag())
     // ID preserved as "VALUE" for handler compatibility
     .arg(
       arg!(<VALUE> "Space-separated kernel parameters to append.\neg: bos_update_frequency=4h console=ttyS0,115200 crashkernel=512M")
@@ -187,9 +172,6 @@ pub fn subcommand_add_nodes() -> Command {
     .arg_required_else_help(true)
     .arg(arg!(-g --group <NAME> "Group to add the nodes to").required(true))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }

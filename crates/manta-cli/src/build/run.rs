@@ -3,7 +3,7 @@
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
-use super::output_flag;
+use super::{dry_run_flag, output_flag};
 
 /// Attach the session-run argument set to a clap `Command`.
 fn add_run_session_args(cmd: Command) -> Command {
@@ -48,10 +48,7 @@ fn add_run_session_args(cmd: Command) -> Command {
         .args(["group", "ansible-limit"])
         .required(true),
     )
-    .arg(
-      arg!(-d --"dry-run" "Simulate the operation without making changes")
-        .action(ArgAction::SetTrue),
-    )
+    .arg(dry_run_flag())
     .arg(output_flag())
 }
 
