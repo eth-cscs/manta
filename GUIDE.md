@@ -677,7 +677,7 @@ curl -sk -H "Authorization: Bearer $TOKEN" \
 
 ### Preview before mutating with `--dry-run`
 
-Every backend-mutating `manta` verb accepts `-d/--dry-run`. The CLI builds the exact request payload it would have sent, prints it via `action_result::print_with_data` (honors `-o table | json`), and exits 0 without contacting the server, executing any user-supplied hooks, or running any confirmation prompts.
+Every backend-mutating `manta` verb accepts `-d/--dry-run`. The CLI builds the exact request payload it would have sent, prints it through the shared output renderer (honors `-o table | json`), and exits 0 without contacting the server, executing any user-supplied hooks, or running any confirmation prompts.
 
 ```bash
 # See exactly what would be sent without touching the server
