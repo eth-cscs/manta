@@ -30,8 +30,8 @@ pub fn subcommand_config() -> Command {
   let subcommand_config_unset_hsm =
     Command::new("hsm").about("Clear the active node group");
 
-  let subcommand_config_unset_read_only = Command::new("read-only")
-    .about("Allow backend-mutating commands again");
+  let subcommand_config_unset_read_only =
+    Command::new("read-only").about("Allow backend-mutating commands again");
 
   Command::new("config")
     .arg_required_else_help(true)

@@ -37,7 +37,11 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let boot_parameters = client
     .openapi
-    .get_kernel_parameters(group_name, params.nodes.as_deref(), client.site_name())
+    .get_kernel_parameters(
+      group_name,
+      params.nodes.as_deref(),
+      client.site_name(),
+    )
     .await
     .into_anyhow()?;
 

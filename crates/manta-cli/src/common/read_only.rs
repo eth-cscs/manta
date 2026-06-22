@@ -10,8 +10,9 @@
 use clap::ArgMatches;
 
 /// Top-level CLI verbs that change backend state.
-pub const MUTATING_VERBS: &[&str] =
-  &["add", "apply", "delete", "migrate", "power", "run", "restore"];
+pub const MUTATING_VERBS: &[&str] = &[
+  "add", "apply", "delete", "migrate", "power", "run", "restore",
+];
 
 /// Top-level CLI verbs that do not change backend state. Held
 /// alongside [`MUTATING_VERBS`] so the consistency test can assert
@@ -55,10 +56,7 @@ pub fn dry_run_set(verb_matches: &ArgMatches) -> bool {
 /// escape hatches: `--dry-run` to preview, or `manta config unset
 /// read-only` to disable the policy. Every entry in
 /// [`MUTATING_VERBS`] has a `--dry-run` flag on its leaf subcommands.
-pub fn ensure_can_mutate(
-  read_only: bool,
-  verb: &str,
-) -> anyhow::Result<()> {
+pub fn ensure_can_mutate(read_only: bool, verb: &str) -> anyhow::Result<()> {
   if !read_only {
     return Ok(());
   }
@@ -104,7 +102,9 @@ mod tests {
 
   #[test]
   fn mutating_verbs_match_spec() {
-    let expected = ["add", "apply", "delete", "migrate", "power", "run", "restore"];
+    let expected = [
+      "add", "apply", "delete", "migrate", "power", "run", "restore",
+    ];
     for v in expected {
       assert!(MUTATING_VERBS.contains(&v), "missing mutating verb: {v}");
     }
@@ -151,8 +151,12 @@ mod tests {
   #[test]
   fn dry_run_set_apply_boot_nodes_with_flag() {
     let m = matches(&[
-      "manta", "apply", "boot", "nodes",
-      "--boot-image", "abc",
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--boot-image",
+      "abc",
       "--dry-run",
       "x1000c0s0b0n0",
     ]);
@@ -163,8 +167,12 @@ mod tests {
   #[test]
   fn dry_run_set_apply_boot_nodes_without_flag() {
     let m = matches(&[
-      "manta", "apply", "boot", "nodes",
-      "--boot-image", "abc",
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--boot-image",
+      "abc",
       "x1000c0s0b0n0",
     ]);
     let (_, verb_matches) = m.subcommand().unwrap();
@@ -197,7 +205,10 @@ mod tests {
     let err = ensure_can_mutate(true, "apply").unwrap_err();
     let msg = format!("{err}");
     assert!(msg.contains("apply"), "msg should name the verb: {msg}");
-    assert!(msg.contains("--dry-run"), "msg should mention --dry-run: {msg}");
+    assert!(
+      msg.contains("--dry-run"),
+      "msg should mention --dry-run: {msg}"
+    );
     assert!(
       msg.contains("manta config unset read-only"),
       "msg should point at the unset command: {msg}"
@@ -209,8 +220,12 @@ mod tests {
   #[test]
   fn gate_allows_when_read_only_off() {
     let m = matches(&[
-      "manta", "apply", "boot", "nodes",
-      "--boot-image", "abc",
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--boot-image",
+      "abc",
       "x1000c0s0b0n0",
     ]);
     assert!(read_only_gate(&m, false).is_ok());
@@ -219,8 +234,12 @@ mod tests {
   #[test]
   fn gate_blocks_mutating_verb_when_read_only_on() {
     let m = matches(&[
-      "manta", "apply", "boot", "nodes",
-      "--boot-image", "abc",
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--boot-image",
+      "abc",
       "x1000c0s0b0n0",
     ]);
     let err = read_only_gate(&m, true).unwrap_err();
@@ -230,8 +249,12 @@ mod tests {
   #[test]
   fn gate_allows_mutating_verb_with_dry_run_when_read_only_on() {
     let m = matches(&[
-      "manta", "apply", "boot", "nodes",
-      "--boot-image", "abc",
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--boot-image",
+      "abc",
       "--dry-run",
       "x1000c0s0b0n0",
     ]);

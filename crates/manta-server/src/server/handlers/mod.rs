@@ -28,6 +28,7 @@ use utoipa::{IntoParams, ToSchema};
 use super::ServerState;
 use super::common::app_context::InfraContext;
 
+mod analysis;
 mod auth;
 mod boot_parameters;
 mod cluster;
@@ -45,9 +46,9 @@ mod power;
 mod redfish_endpoints;
 mod sat_file;
 mod session;
-mod analysis;
 mod template;
 
+pub use analysis::*;
 pub use auth::*;
 pub use boot_parameters::*;
 pub use cluster::*;
@@ -65,7 +66,6 @@ pub use power::*;
 pub use redfish_endpoints::*;
 pub use sat_file::*;
 pub use session::*;
-pub use analysis::*;
 pub use template::*;
 
 // ---------------------------------------------------------------------------
@@ -268,8 +268,9 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     // generic 500). Fall back to 502 Bad Gateway if the embedded code
     // is outside the HTTP status range — that's the canonical "upstream
     // returned something nonsensical" signal.
-    BackendError::CsmError { status, .. } => StatusCode::from_u16(*status)
-      .unwrap_or(StatusCode::BAD_GATEWAY),
+    BackendError::CsmError { status, .. } => {
+      StatusCode::from_u16(*status).unwrap_or(StatusCode::BAD_GATEWAY)
+    }
     // The CSM-side reqwest client times out via `NetError(reqwest::Error)`;
     // surface that as 504 Gateway Timeout so the CLI sees a distinct
     // status (not a generic 500) and the body explicitly names the hop.

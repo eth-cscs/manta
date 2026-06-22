@@ -128,7 +128,10 @@ pub async fn update_redfish_endpoint(
   .await?;
 
   let endpoint = params_to_redfish_endpoint(params);
-  infra.backend.update_redfish_endpoint(token, &endpoint).await
+  infra
+    .backend
+    .update_redfish_endpoint(token, &endpoint)
+    .await
 }
 
 /// Delete a Redfish endpoint registration by id (BMC xname).

@@ -53,7 +53,10 @@ impl MantaClient {
     if !resp.status().is_success() {
       let status = resp.status();
       let body = resp.text().await.unwrap_or_default();
-      bail!("GET session logs returned {status}: {}", unwrap_error_body(&body));
+      bail!(
+        "GET session logs returned {status}: {}",
+        unwrap_error_body(&body)
+      );
     }
 
     let byte_stream = resp.bytes_stream().map_err(std::io::Error::other);

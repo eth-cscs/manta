@@ -322,17 +322,14 @@ impl MantaClient {
 
     // One-shot API calls default to 5 minutes when nothing is
     // configured. An explicit cli.toml override wins.
-    let api_timeout_secs =
-      timeout_secs.unwrap_or(DEFAULT_API_TIMEOUT_SECS);
+    let api_timeout_secs = timeout_secs.unwrap_or(DEFAULT_API_TIMEOUT_SECS);
     let openapi_inner = reqwest::Client::builder()
       .default_headers(default_headers)
       .timeout(std::time::Duration::from_secs(api_timeout_secs))
       .build()
       .context("Failed to build OpenAPI HTTP client")?;
-    let openapi = crate::openapi_client::Client::new_with_client(
-      &base_url,
-      openapi_inner,
-    );
+    let openapi =
+      crate::openapi_client::Client::new_with_client(&base_url, openapi_inner);
 
     Ok(Self {
       openapi,

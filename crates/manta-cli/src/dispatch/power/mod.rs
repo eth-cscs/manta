@@ -175,7 +175,10 @@ pub async fn exec_nodes(
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Nodes expression: {}", opts.target);
   if !opts.dry_run
-    && !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+    && !common::confirm::confirm(
+      opts.action.confirmation_text(),
+      opts.assume_yes,
+    )
   {
     bail!("Operation cancelled by user");
   }
@@ -192,7 +195,10 @@ pub async fn exec_cluster(
   // plain stdout so it doesn't get wrapped in a JSON envelope.
   println!("Group: {}", opts.target);
   if !opts.dry_run
-    && !common::confirm::confirm(opts.action.confirmation_text(), opts.assume_yes)
+    && !common::confirm::confirm(
+      opts.action.confirmation_text(),
+      opts.assume_yes,
+    )
   {
     bail!("Operation cancelled by user");
   }
@@ -261,13 +267,9 @@ async fn dispatch_and_wait(
   let max_attempts = ctx
     .power_max_poll_attempts
     .unwrap_or(DEFAULT_POWER_MAX_POLL_ATTEMPTS);
-  let final_snapshot = poll_until_done(
-    &client,
-    &transition_id,
-    poll_interval,
-    max_attempts,
-  )
-  .await?;
+  let final_snapshot =
+    poll_until_done(&client, &transition_id, poll_interval, max_attempts)
+      .await?;
 
   let failed = failed_count(&final_snapshot);
   let message = if failed > 0 {
@@ -418,7 +420,10 @@ mod tests {
   #[test]
   fn power_reset_nodes_accepts_dry_run() {
     let r = parse(&["manta", "power", "reset", "nodes", "x1000", "--dry-run"]);
-    assert!(r.is_ok(), "expected --dry-run on `power reset nodes`: {r:?}");
+    assert!(
+      r.is_ok(),
+      "expected --dry-run on `power reset nodes`: {r:?}"
+    );
   }
   #[test]
   fn power_reset_nodes_accepts_dry_run_short_alias() {
@@ -453,8 +458,12 @@ mod tests {
   // power reset group ─────────────────────────────────────────
   #[test]
   fn power_reset_group_accepts_dry_run() {
-    let r = parse(&["manta", "power", "reset", "group", "compute", "--dry-run"]);
-    assert!(r.is_ok(), "expected --dry-run on `power reset group`: {r:?}");
+    let r =
+      parse(&["manta", "power", "reset", "group", "compute", "--dry-run"]);
+    assert!(
+      r.is_ok(),
+      "expected --dry-run on `power reset group`: {r:?}"
+    );
   }
   #[test]
   fn power_reset_group_accepts_dry_run_short_alias() {

@@ -140,8 +140,7 @@ manta_server_url = "https://manta-server.example.com:8443"
 
   #[test]
   fn read_only_defaults_to_false_when_absent() {
-    let cfg: CliConfiguration =
-      toml::from_str(&minimal_toml()).expect("parse");
+    let cfg: CliConfiguration = toml::from_str(&minimal_toml()).expect("parse");
     assert!(!cfg.read_only);
   }
 

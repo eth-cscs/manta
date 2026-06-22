@@ -71,4 +71,3 @@ fn cli_apply_boot_group_help_uses_group_name_placeholder() {
     .stdout(predicate::str::contains("<GROUP_NAME>"))
     .stdout(predicate::str::contains("CLUSTER_NAME").not());
 }
-

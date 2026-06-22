@@ -25,9 +25,7 @@ use crate::service;
 // GET /api/v1/sessions
 // ---------------------------------------------------------------------------
 
-pub use manta_shared::types::api::queries::{
-  DeleteSessionQuery, SessionQuery,
-};
+pub use manta_shared::types::api::queries::{DeleteSessionQuery, SessionQuery};
 
 /// GET /sessions — list CFS sessions with optional filters.
 #[utoipa::path(get, path = "/sessions", tag = "sessions",

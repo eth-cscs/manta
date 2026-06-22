@@ -14,8 +14,8 @@ use manta_backend_dispatcher::{
   interfaces::console::{ConsoleAttachment, ConsoleTrait, TermSize},
   types::{K8sAuth, K8sDetails},
 };
-use tokio::sync::mpsc::Sender;
 use tokio::io::AsyncWriteExt;
+use tokio::sync::mpsc::Sender;
 
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
@@ -514,9 +514,9 @@ mod tests {
       "resize text frame was forwarded to console stdin (should be parsed)"
     );
     // The parsed size must have been forwarded to the resize channel.
-    let size = resize_rx
-      .try_recv()
-      .expect("resize message should have been forwarded to the resize channel");
+    let size = resize_rx.try_recv().expect(
+      "resize message should have been forwarded to the resize channel",
+    );
     assert_eq!(size.width, 120);
     assert_eq!(size.height, 40);
 

@@ -7,8 +7,8 @@ use manta_shared::common::config::{read_config_toml, write_config_toml};
 use toml_edit::DocumentMut;
 
 pub async fn exec() -> Result<(), Error> {
-  let (path, mut doc) = read_config_toml()
-    .context("Could not read CLI configuration file")?;
+  let (path, mut doc) =
+    read_config_toml().context("Could not read CLI configuration file")?;
   unset_read_only_in_doc(&mut doc);
   write_config_toml(&path, &doc)
     .context("Could not write CLI configuration file")?;
@@ -35,7 +35,10 @@ mod tests {
     unset_read_only_in_doc(&mut doc);
     let out = doc.to_string();
     assert!(!out.contains("read_only"), "key should be gone: {out}");
-    assert!(out.contains("site = \"alps\""), "site should survive: {out}");
+    assert!(
+      out.contains("site = \"alps\""),
+      "site should survive: {out}"
+    );
   }
 
   #[test]

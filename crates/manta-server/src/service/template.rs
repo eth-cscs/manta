@@ -210,5 +210,8 @@ pub async fn create_bos_session(
   token: &str,
   bos_session: BosSession,
 ) -> Result<BosSession, Error> {
-  infra.backend.post_template_session(token, bos_session).await
+  infra
+    .backend
+    .post_template_session(token, bos_session)
+    .await
 }

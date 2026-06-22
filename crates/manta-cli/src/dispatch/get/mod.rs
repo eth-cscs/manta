@@ -2,9 +2,9 @@
 
 pub mod boot_parameters;
 pub mod configurations;
-pub mod hardware_group;
 pub mod group_nodes;
 pub mod groups;
+pub mod hardware_group;
 pub mod hardware_nodes;
 pub mod images;
 pub mod kernel_parameters;

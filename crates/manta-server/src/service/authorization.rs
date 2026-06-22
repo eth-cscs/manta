@@ -24,7 +24,8 @@ pub async fn validate_user_group_access(
     return Ok(());
   }
 
-  let group_available_vec = infra.backend.get_group_name_available(token).await?;
+  let group_available_vec =
+    infra.backend.get_group_name_available(token).await?;
 
   validate_group_vec_access(&[group_name.to_string()], &group_available_vec)
 }
@@ -46,7 +47,8 @@ pub async fn validate_user_group_vec_access(
     return Ok(());
   }
 
-  let group_available_vec = infra.backend.get_group_name_available(token).await?;
+  let group_available_vec =
+    infra.backend.get_group_name_available(token).await?;
 
   validate_group_vec_access(group_vec, &group_available_vec)
 }

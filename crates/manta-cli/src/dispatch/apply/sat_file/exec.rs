@@ -158,7 +158,9 @@ pub async fn exec(
     .openapi
     .post_sat_validate(
       client.site_name(),
-      &PostSatValidateRequest { sat_file: sat_file.clone() },
+      &PostSatValidateRequest {
+        sat_file: sat_file.clone(),
+      },
     )
     .await
     .into_anyhow()

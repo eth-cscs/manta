@@ -60,7 +60,8 @@ pub async fn exec(
   // field optionality / integer width (u32 vs i32).
   let bp_wire: crate::openapi_client::types::BootParameters =
     serde_json::from_value(
-      serde_json::to_value(&bp).context("Failed to serialize BootParameters")?,
+      serde_json::to_value(&bp)
+        .context("Failed to serialize BootParameters")?,
     )
     .context("Failed to convert BootParameters to wire type")?;
 

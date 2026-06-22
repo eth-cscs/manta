@@ -45,8 +45,8 @@ use syn::{ImplItem, Item, TraitItem};
 #[test]
 fn dispatcher_covers_every_trait_method() {
   let trait_src = trait_crate_interfaces_dir();
-  let wrapper_src = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-    .join("src/backend_dispatcher");
+  let wrapper_src =
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/backend_dispatcher");
 
   let mut trait_pairs = HashSet::new();
   for file in rs_files(&trait_src) {
@@ -146,10 +146,7 @@ fn rs_files(dir: &Path) -> Vec<PathBuf> {
 
 /// Parse `file` and add `(trait_name, method_name)` for every method
 /// declared on every `pub trait` item.
-fn collect_trait_methods(
-  file: &Path,
-  out: &mut HashSet<(String, String)>,
-) {
+fn collect_trait_methods(file: &Path, out: &mut HashSet<(String, String)>) {
   let src = std::fs::read_to_string(file).unwrap_or_else(|e| {
     panic!("cannot read trait source {}: {e}", file.display())
   });

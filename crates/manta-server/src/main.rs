@@ -221,8 +221,8 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .install_default()
     .ok();
 
-  let cli = parse_cli_args()
-    .map_err(|e| format!("{e}\nRun with --help for usage."))?;
+  let cli =
+    parse_cli_args().map_err(|e| format!("{e}\nRun with --help for usage."))?;
 
   if cli.emit_openapi {
     use utoipa::OpenApi;

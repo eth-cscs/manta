@@ -120,7 +120,10 @@ pub async fn get_power_transition(
   token: &str,
   transition_id: &str,
 ) -> Result<TransitionResponse, Error> {
-  let transition = infra.backend.pcs_transitions_get(token, transition_id).await?;
+  let transition = infra
+    .backend
+    .pcs_transitions_get(token, transition_id)
+    .await?;
 
   let xnames: Vec<String> =
     transition.tasks.iter().map(|t| t.xname.clone()).collect();

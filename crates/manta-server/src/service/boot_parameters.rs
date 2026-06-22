@@ -101,7 +101,10 @@ pub async fn add_boot_parameters(
   validate_user_group_members_access(infra, token, &boot_parameters.hosts)
     .await?;
 
-  infra.backend.add_bootparameters(token, boot_parameters).await
+  infra
+    .backend
+    .add_bootparameters(token, boot_parameters)
+    .await
 }
 
 /// Replace the BSS boot-parameter record for `params.hosts` with the
@@ -129,7 +132,10 @@ pub async fn update_boot_parameters(
 
   tracing::debug!("new boot params: {:#?}", boot_parameters);
 
-  infra.backend.update_bootparameters(token, &boot_parameters).await
+  infra
+    .backend
+    .update_bootparameters(token, &boot_parameters)
+    .await
 }
 
 /// Result of preparing boot configuration changes.
@@ -247,8 +253,10 @@ pub(crate) async fn persist_boot_config(
 
   for boot_parameter in &changeset.boot_param_vec {
     tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
-    let component_patch_rep =
-      infra.backend.update_bootparameters(token, boot_parameter).await;
+    let component_patch_rep = infra
+      .backend
+      .update_bootparameters(token, boot_parameter)
+      .await;
     tracing::debug!(
       "Component boot parameters resp:\n{:#?}",
       component_patch_rep
@@ -275,7 +283,10 @@ pub(crate) async fn persist_boot_config(
         Error::MissingField("Image id is missing".to_string())
       })?;
       let patch_image: PatchImage = image.clone().into();
-      infra.backend.update_image(token, &image_id, &patch_image).await?;
+      infra
+        .backend
+        .update_image(token, &image_id, &patch_image)
+        .await?;
     }
   } else {
     tracing::info!("Runtime configuration does not change.");

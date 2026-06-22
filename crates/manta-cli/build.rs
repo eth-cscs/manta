@@ -51,20 +51,25 @@ fn generate_openapi_client() -> Result<(), Error> {
 
   let spec_content = fs::read_to_string(spec_path)?;
   let mut spec_value: serde_json::Value = serde_json::from_str(&spec_content)
-    .map_err(|e| Error::other(format!("openapi.json is not valid JSON: {e}")))?;
+    .map_err(|e| {
+    Error::other(format!("openapi.json is not valid JSON: {e}"))
+  })?;
 
   downconvert_to_openapi_30(&mut spec_value);
 
-  let spec: openapiv3::OpenAPI = serde_json::from_value(spec_value)
-    .map_err(|e| Error::other(format!("openapi.json is not valid OpenAPI: {e}")))?;
+  let spec: openapiv3::OpenAPI =
+    serde_json::from_value(spec_value).map_err(|e| {
+      Error::other(format!("openapi.json is not valid OpenAPI: {e}"))
+    })?;
 
   let mut generator = progenitor::Generator::default();
   let tokens = generator
     .generate_tokens(&spec)
     .map_err(|e| Error::other(format!("progenitor codegen failed: {e}")))?;
 
-  let ast = syn::parse2(tokens)
-    .map_err(|e| Error::other(format!("generated tokens did not parse: {e}")))?;
+  let ast = syn::parse2(tokens).map_err(|e| {
+    Error::other(format!("generated tokens did not parse: {e}"))
+  })?;
   let pretty = prettyplease::unparse(&ast);
 
   let out_dir = std::env::var_os("OUT_DIR").ok_or_else(|| {
@@ -114,13 +119,19 @@ fn downconvert_to_openapi_30(value: &mut serde_json::Value) {
     }
 
     if let Some(serde_json::Value::Array(arr)) = obj.get("oneOf").cloned() {
-      let has_null = arr
-        .iter()
-        .any(|e| e.as_object().and_then(|o| o.get("type")).and_then(|v| v.as_str()) == Some("null"));
+      let has_null = arr.iter().any(|e| {
+        e.as_object()
+          .and_then(|o| o.get("type"))
+          .and_then(|v| v.as_str())
+          == Some("null")
+      });
       let non_null: Vec<serde_json::Value> = arr
         .iter()
         .filter(|e| {
-          e.as_object().and_then(|o| o.get("type")).and_then(|v| v.as_str()) != Some("null")
+          e.as_object()
+            .and_then(|o| o.get("type"))
+            .and_then(|v| v.as_str())
+            != Some("null")
         })
         .cloned()
         .collect();
@@ -128,10 +139,7 @@ fn downconvert_to_openapi_30(value: &mut serde_json::Value) {
         obj.remove("oneOf");
         let only = non_null.into_iter().next().expect("checked len == 1");
         if only.as_object().is_some_and(|o| o.contains_key("$ref")) {
-          obj.insert(
-            "allOf".to_string(),
-            serde_json::Value::Array(vec![only]),
-          );
+          obj.insert("allOf".to_string(), serde_json::Value::Array(vec![only]));
         } else if let serde_json::Value::Object(inner) = only {
           for (k, v) in inner {
             obj.insert(k, v);

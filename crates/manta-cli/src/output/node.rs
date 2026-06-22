@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use comfy_table::{Cell, ContentArrangement, Table};
 use crate::openapi_client::types::NodeDetails;
+use comfy_table::{Cell, ContentArrangement, Table};
 
 use crate::common::multi_line::string_vec_to_multi_line_string;
 

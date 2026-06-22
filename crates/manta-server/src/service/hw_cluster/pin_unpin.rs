@@ -607,7 +607,11 @@ pub async fn apply_group_updates(
          been selected, removing it.",
         u.parent_group
       );
-      match infra.backend.delete_group(shasta_token, u.parent_group).await {
+      match infra
+        .backend
+        .delete_group(shasta_token, u.parent_group)
+        .await
+      {
         Ok(_) => tracing::info!("HSM group removed successfully."),
         Err(e) => tracing::debug!(
           "Error removing the HSM group. \

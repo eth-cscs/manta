@@ -106,12 +106,7 @@ mod tests {
   #[test]
   fn accepts_dry_run_short_alias() {
     let result = crate::build::build_cli().try_get_matches_from([
-      "manta",
-      "add",
-      "group",
-      "--label",
-      "compute",
-      "-d",
+      "manta", "add", "group", "--label", "compute", "-d",
     ]);
     assert!(
       result.is_ok(),

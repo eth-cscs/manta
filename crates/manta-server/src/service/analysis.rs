@@ -338,8 +338,10 @@ mod tests {
       vec![],
       vec![],
     );
-    let desired =
-      rows.iter().find(|r| r.configuration.name == "desired").unwrap();
+    let desired = rows
+      .iter()
+      .find(|r| r.configuration.name == "desired")
+      .unwrap();
     let other = rows
       .iter()
       .find(|r| r.configuration.name == "nobody-cares")

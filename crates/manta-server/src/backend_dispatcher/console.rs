@@ -1,6 +1,8 @@
 //! `ConsoleTrait` impl for `StaticBackendDispatcher`.
 
-use manta_backend_dispatcher::interfaces::console::{ConsoleAttachment, TermSize};
+use manta_backend_dispatcher::interfaces::console::{
+  ConsoleAttachment, TermSize,
+};
 
 use super::*;
 

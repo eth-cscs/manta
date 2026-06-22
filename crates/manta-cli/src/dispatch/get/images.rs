@@ -8,8 +8,8 @@ use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
-use manta_shared::types::dto::Image;
 use manta_shared::types::api::image::GetImagesParams;
+use manta_shared::types::dto::Image;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
 fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {
@@ -53,13 +53,7 @@ pub async fn exec(
         .await
         .into_anyhow()
     },
-    async {
-      client
-        .openapi
-        .get_image_analysis(site)
-        .await
-        .into_anyhow()
-    },
+    async { client.openapi.get_image_analysis(site).await.into_anyhow() },
   )?;
 
   // The server returns IMS images as a JSON array. Deserialize into

@@ -85,7 +85,10 @@ pub async fn get_groups(
     )
     .await?;
 
-  infra.backend.get_groups(token, Some(&target_group_vec)).await
+  infra
+    .backend
+    .get_groups(token, Some(&target_group_vec))
+    .await
 }
 
 /// Check that deleting `label` would not leave any node without a
@@ -106,8 +109,7 @@ pub async fn validate_group_deletion(
     .get_member_vec_from_group_name_vec(token, &[label.to_string()])
     .await?;
 
-  let xname_vec_ref: Vec<&str> =
-    xname_vec.iter().map(String::as_str).collect();
+  let xname_vec_ref: Vec<&str> = xname_vec.iter().map(String::as_str).collect();
   let mut xname_map = infra
     .backend
     .get_group_map_and_filter_by_group_vec(token, &xname_vec_ref)
@@ -248,7 +250,12 @@ pub async fn add_nodes_to_group(
     ));
   }
 
-  if infra.backend.get_group(token, target_hsm_name).await.is_err() {
+  if infra
+    .backend
+    .get_group(token, target_hsm_name)
+    .await
+    .is_err()
+  {
     return Err(Error::NotFound(format!(
       "Target HSM group '{target_hsm_name}' does not exist"
     )));

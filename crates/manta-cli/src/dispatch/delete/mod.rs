@@ -178,14 +178,9 @@ pub async fn handle_delete(
         m.req_str("IMAGE_LIST")?.split(',').map(str::trim).collect();
       let dry_run: bool = m.get_flag("dry-run");
       let output_opt = m.opt_str("output");
-      if let Err(e) = images::exec(
-        ctx,
-        &token,
-        image_id_vec.as_slice(),
-        dry_run,
-        output_opt,
-      )
-      .await
+      if let Err(e) =
+        images::exec(ctx, &token, image_id_vec.as_slice(), dry_run, output_opt)
+          .await
       {
         bail!("Failed to delete images: {e}");
       }

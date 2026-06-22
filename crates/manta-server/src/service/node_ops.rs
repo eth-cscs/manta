@@ -130,8 +130,10 @@ pub async fn from_user_hosts_expression_to_xname_vec(
   hosts_expression: &str,
   is_include_siblings: bool,
 ) -> Result<Vec<String>, Error> {
-  let node_metadata_available_vec =
-    infra.backend.get_node_metadata_available(shasta_token).await?;
+  let node_metadata_available_vec = infra
+    .backend
+    .get_node_metadata_available(shasta_token)
+    .await?;
 
   let mut xname_vec = from_hosts_expression_to_xname_vec(
     hosts_expression,

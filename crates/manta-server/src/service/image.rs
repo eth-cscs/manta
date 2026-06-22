@@ -24,8 +24,10 @@ pub async fn get_images(
   token: &str,
   params: &GetImagesParams,
 ) -> Result<Vec<Image>, Error> {
-  let mut image_vec =
-    infra.backend.get_images(token, params.id.as_deref()).await?;
+  let mut image_vec = infra
+    .backend
+    .get_images(token, params.id.as_deref())
+    .await?;
 
   image_vec = apply_pattern_filter(image_vec, params.pattern.as_deref())?;
 
@@ -239,8 +241,8 @@ mod tests {
       image("login-a"),
       image("storage-3"),
     ];
-    let out =
-      apply_pattern_filter(input, Some("compute-*")).expect("'compute-*' valid");
+    let out = apply_pattern_filter(input, Some("compute-*"))
+      .expect("'compute-*' valid");
     assert_eq!(out.len(), 2);
     assert!(out.iter().all(|i| i.name.starts_with("compute-")));
   }
@@ -279,13 +281,12 @@ mod tests {
     // character. If we ever swap libraries, this test will fail
     // and force a deliberate decision rather than silent drift.
     let input = vec![
-      image("a"),       // 1 char — no match (pattern needs >=2)
-      image("ab"),      // 2 chars — match
-      image("abc"),     // 3 chars — match
-      image("abcd"),    // 4 chars — no match
+      image("a"),    // 1 char — no match (pattern needs >=2)
+      image("ab"),   // 2 chars — match
+      image("abc"),  // 3 chars — match
+      image("abcd"), // 4 chars — no match
     ];
-    let out =
-      apply_pattern_filter(input, Some("a??")).expect("'a??' is valid");
+    let out = apply_pattern_filter(input, Some("a??")).expect("'a??' is valid");
     assert_eq!(out.len(), 1);
     assert_eq!(out[0].name, "abc");
   }

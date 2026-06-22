@@ -6,8 +6,8 @@ use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::configuration::print_table_struct;
-use manta_shared::types::dto::CfsConfigurationResponse;
 use manta_shared::types::api::configuration::GetConfigurationParams;
+use manta_shared::types::dto::CfsConfigurationResponse;
 
 /// Parse CLI arguments into typed [`GetConfigurationParams`].
 fn parse_configuration_params(

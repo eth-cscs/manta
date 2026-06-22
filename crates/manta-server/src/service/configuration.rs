@@ -93,8 +93,10 @@ pub async fn get_configurations_with_analysis(
   params: &GetConfigurationParams,
 ) -> Result<Vec<crate::service::analysis::ConfigurationAnalysis>, Error> {
   let configs = get_configurations(infra, token, params).await?;
-  let components =
-    infra.backend.get_cfs_components(token, None, None, None).await?;
+  let components = infra
+    .backend
+    .get_cfs_components(token, None, None, None)
+    .await?;
   Ok(crate::service::analysis::build_configuration_analysis(
     configs,
     components,

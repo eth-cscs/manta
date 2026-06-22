@@ -2,7 +2,9 @@
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
-use crate::openapi_client::types::{ApplyKernelParametersRequest, KernelParamOp};
+use crate::openapi_client::types::{
+  ApplyKernelParametersRequest, KernelParamOp,
+};
 use crate::output::action_result;
 use anyhow::Error;
 

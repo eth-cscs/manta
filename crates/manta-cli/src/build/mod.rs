@@ -148,9 +148,8 @@ mod tests {
   fn site_flag_accepted_after_subcommand_at_top() {
     // After `.global(true)`: `--site` works following any subcommand,
     // not just at the position before it.
-    let matches = build_cli().get_matches_from([
-      "manta", "get", "sessions", "--site", "prealps",
-    ]);
+    let matches = build_cli()
+      .get_matches_from(["manta", "get", "sessions", "--site", "prealps"]);
     let site = matches.get_one::<String>("site");
     assert_eq!(site.map(String::as_str), Some("prealps"));
   }
@@ -173,5 +172,4 @@ mod tests {
     let site = matches.get_one::<String>("site");
     assert_eq!(site.map(String::as_str), Some("alpsb"));
   }
-
 }

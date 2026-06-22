@@ -70,8 +70,10 @@ pub async fn get_image_vec_related_cfs_configuration_name(
         cfs_session_name
       );
 
-      let image_vec_rslt =
-        infra.backend.get_images(shasta_token, Some(&image_id)).await;
+      let image_vec_rslt = infra
+        .backend
+        .get_images(shasta_token, Some(&image_id))
+        .await;
 
       match image_vec_rslt {
         Ok(mut image_vec) => {

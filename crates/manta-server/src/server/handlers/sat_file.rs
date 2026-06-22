@@ -70,8 +70,7 @@ use super::{
 pub use manta_shared::types::api::sat_file::{
   CreateImageCfsSessionRequest, PostSatConfigurationRequest,
   PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
-  PostSatValidateRequest,
-  StampImageFromSessionRequest,
+  PostSatValidateRequest, StampImageFromSessionRequest,
 };
 
 #[utoipa::path(post, path = "/sat-file/configurations", tag = "sat-file",
@@ -358,7 +357,10 @@ pub async fn post_sat_session_template(
 fn mock_bos_session_for_template(
   template: &manta_backend_dispatcher::types::bos::session_template::BosSessionTemplate,
 ) -> BosSession {
-  let template_name = template.name.clone().unwrap_or_else(|| "<unnamed>".to_string());
+  let template_name = template
+    .name
+    .clone()
+    .unwrap_or_else(|| "<unnamed>".to_string());
   BosSession {
     name: Some(format!("dry-run-{template_name}")),
     tenant: None,
@@ -453,8 +455,7 @@ mod tests {
   use super::{
     CreateImageCfsSessionRequest, PostSatConfigurationRequest,
     PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
-    PostSatValidateRequest,
-    StampImageFromSessionRequest,
+    PostSatValidateRequest, StampImageFromSessionRequest,
   };
 
   /// Lock the shape of the CLI's POST /sat-file/configurations body.
@@ -636,8 +637,7 @@ mod tests {
         "session_templates": [],
       }
     });
-    let req: PostSatValidateRequest =
-      serde_json::from_value(cli_body).unwrap();
+    let req: PostSatValidateRequest = serde_json::from_value(cli_body).unwrap();
     assert!(req.sat_file.get("configurations").is_some());
   }
 }

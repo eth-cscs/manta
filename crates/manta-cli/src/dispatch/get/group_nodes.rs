@@ -6,9 +6,9 @@ use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
+use manta_shared::types::api::cluster::GetClusterParams;
 use manta_shared::types::cluster_status;
 use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
-use manta_shared::types::api::cluster::GetClusterParams;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
 fn parse_cluster_params(
