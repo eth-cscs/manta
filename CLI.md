@@ -102,7 +102,7 @@ manta config set hsm compute
 
 ### config set site \<SITE_NAME\>
 
-Set the active site (must match a `[sites.<name>]` entry in config).
+Set the active site, persisted as `site = "..."` in `cli.toml` and sent as the `X-Manta-Site` header. The server validates it against its configured sites; the CLI does no local validation.
 
 ```
 manta config set site cscs_prod

@@ -1,9 +1,7 @@
 //! Implements the `manta config show` command.
 
-use std::collections::HashMap;
-
-use anyhow::{Context, Error};
-use config::{Config, Value};
+use anyhow::Error;
+use config::Config;
 
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::config_summary::{self, ConfigSummary};
@@ -47,22 +45,13 @@ async fn show(
     None
   };
 
-  let site_table: HashMap<String, Value> = settings
-    .get_table("sites")
-    .context("'sites' table not found in config")?;
-
-  let site_name = settings
-    .get_string("site")
-    .context("'site' key not found in config")?;
-
   let summary = ConfigSummary {
     config_file: get_cli_config_file_path().map_or_else(
       |_| "<unknown>".to_string(),
       |p| p.to_string_lossy().to_string(),
     ),
     log_level,
-    sites: site_table.keys().cloned().collect(),
-    current_site: site_name,
+    current_site: client.site_name().to_string(),
     read_only: settings.get_bool("read_only").unwrap_or(false),
     groups_available: hsm_group_available_opt,
     current_hsm: settings_hsm_group,

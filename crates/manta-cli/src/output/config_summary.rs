@@ -19,9 +19,8 @@ pub struct ConfigSummary {
   pub config_file: String,
   /// `EnvFilter` directive string from `cli.toml`.
   pub log_level: String,
-  /// Names of every `[sites.X]` section in `cli.toml`.
-  pub sites: Vec<String>,
-  /// The site currently selected via `site = "..."` in `cli.toml`.
+  /// The resolved active site for this invocation: the `--site`
+  /// override when given, otherwise `site = "..."` from `cli.toml`.
   pub current_site: String,
   /// Mirror of `CliConfiguration.read_only`. When `true`, the
   /// chokepoint in `dispatch::process::process_cli` refuses
@@ -47,7 +46,6 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
   } else {
     println!("Configuration file: {}", summary.config_file);
     println!("Log level: {}", summary.log_level);
-    println!("Sites: {}", summary.sites.join(", "));
     println!("Current site: {}", summary.current_site);
     println!(
       "Read-only: {}",
@@ -72,7 +70,6 @@ mod tests {
     ConfigSummary {
       config_file: "/home/u/.config/manta/cli.toml".to_string(),
       log_level: "info".to_string(),
-      sites: vec!["alps".to_string(), "tasna".to_string()],
       current_site: "alps".to_string(),
       read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
@@ -97,7 +94,6 @@ mod tests {
     let v: Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["config_file"], "/home/u/.config/manta/cli.toml");
     assert_eq!(v["log_level"], "info");
-    assert_eq!(v["sites"][0], "alps");
     assert_eq!(v["current_site"], "alps");
     assert_eq!(v["read_only"], false);
     assert_eq!(v["groups_available"][0], "compute");
