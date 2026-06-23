@@ -8,18 +8,13 @@ use crate::output::config_summary::{self, ConfigSummary};
 use manta_shared::common::config::get_cli_config_file_path;
 
 /// Display the current manta configuration.
+///
+/// `client` is `Some` only when a site was selected (`--site` or
+/// `cli.toml`'s `site`); without one we still print the local config,
+/// just without the per-site, server-derived fields (available groups,
+/// current site).
 pub async fn exec(
-  client: &MantaClient,
-  token: &str,
-  settings: &Config,
-  output_opt: Option<&str>,
-) -> Result<(), Error> {
-  show(client, Some(token.to_string()), settings, output_opt).await
-}
-
-async fn show(
-  client: &MantaClient,
-  shasta_token_opt: Option<String>,
+  client: Option<&MantaClient>,
   settings: &Config,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
@@ -28,7 +23,9 @@ async fn show(
     .unwrap_or_else(|_| "error".to_string());
   let settings_hsm_group = settings.get_string("hsm_group").unwrap_or_default();
 
-  let hsm_group_available_opt = if shasta_token_opt.is_some() {
+  // Available groups are per-site, so fetch them only when we have a
+  // site-bound (and authenticated) client.
+  let hsm_group_available_opt = if let Some(client) = client {
     match client
       .openapi
       .get_available_groups(client.site_name())
@@ -51,7 +48,7 @@ async fn show(
       |p| p.to_string_lossy().to_string(),
     ),
     log_level,
-    current_site: client.site_name().to_string(),
+    current_site: client.map(|c| c.site_name().to_string()),
     read_only: settings.get_bool("read_only").unwrap_or(false),
     groups_available: hsm_group_available_opt,
     current_hsm: settings_hsm_group,

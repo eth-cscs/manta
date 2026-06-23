@@ -21,7 +21,9 @@ pub struct ConfigSummary {
   pub log_level: String,
   /// The resolved active site for this invocation: the `--site`
   /// override when given, otherwise `site = "..."` from `cli.toml`.
-  pub current_site: String,
+  /// `None` when neither is set — `config show` still works without a
+  /// site, it just can't report one (serializes to `null` in JSON).
+  pub current_site: Option<String>,
   /// Mirror of `CliConfiguration.read_only`. When `true`, the
   /// chokepoint in `dispatch::process::process_cli` refuses
   /// backend-mutating verbs. See `crate::common::read_only`.
@@ -46,15 +48,21 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
   } else {
     println!("Configuration file: {}", summary.config_file);
     println!("Log level: {}", summary.log_level);
-    println!("Current site: {}", summary.current_site);
+    println!(
+      "Current site: {}",
+      summary.current_site.as_deref().unwrap_or("(unset)")
+    );
     println!(
       "Read-only: {}",
       if summary.read_only { "yes" } else { "no" }
     );
-    let groups = summary.groups_available.as_ref().map_or_else(
-      || "Could not get list of groups available".to_string(),
-      |v| v.join(", "),
-    );
+    let groups = match (&summary.groups_available, &summary.current_site) {
+      (Some(v), _) => v.join(", "),
+      // No site selected, so there was nothing to query — distinguish
+      // this from a genuine lookup failure against a selected site.
+      (None, None) => "(no site selected)".to_string(),
+      (None, Some(_)) => "Could not get list of groups available".to_string(),
+    };
     println!("Groups available: {groups}");
     println!("Current HSM: {}", summary.current_hsm);
   }
@@ -70,7 +78,7 @@ mod tests {
     ConfigSummary {
       config_file: "/home/u/.config/manta/cli.toml".to_string(),
       log_level: "info".to_string(),
-      current_site: "alps".to_string(),
+      current_site: Some("alps".to_string()),
       read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
       current_hsm: "compute".to_string(),
@@ -107,5 +115,22 @@ mod tests {
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
     assert!(v["groups_available"].is_null());
+  }
+
+  #[test]
+  fn current_site_none_renders_as_null_in_json() {
+    let mut s = sample();
+    s.current_site = None;
+    let json = serde_json::to_string(&s).unwrap();
+    let v: Value = serde_json::from_str(&json).unwrap();
+    assert!(v["current_site"].is_null());
+  }
+
+  /// Text mode must not panic when no site is set; it prints a sentinel.
+  #[test]
+  fn text_mode_renders_with_no_site() {
+    let mut s = sample();
+    s.current_site = None;
+    print(&s, None).unwrap();
   }
 }
