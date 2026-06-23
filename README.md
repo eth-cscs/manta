@@ -258,7 +258,7 @@ The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side
 ```toml
 log = "info"
 
-site             = "alps"                                # active site (X-Manta-Site header)
+site             = "alps"                                # optional: active site (X-Manta-Site header); omit and pass --site per invocation
 manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
 request_timeout_secs = 600                                   # optional: per-request HTTP timeout (seconds). Default 300 for REST calls; streams (SSE log tail, WS console) unlimited. Setting this also caps streams — pick a value larger than your worst-case session if you set it.

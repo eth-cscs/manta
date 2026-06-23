@@ -161,6 +161,8 @@ pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
 
 /// Minimal CLI config sample shown in the NotFound error.
 const CLI_CONFIG_SAMPLE: &str = r#"log = "info"
+# Optional: the active site (`X-Manta-Site` header). Omit it and pass
+# `--site <name>` per invocation instead; the server validates the name.
 site = "<site_name>"
 manta_server_url = "https://manta-server.example.com:8443"
 

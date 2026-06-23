@@ -8,6 +8,9 @@
 # Override the path with the `MANTA_CLI_CONFIG` env var.
 
 log = "info"
+# Optional: the active site, sent as the `X-Manta-Site` header. Omit it
+# and pass `--site <name>` per invocation instead. The server validates
+# the name against its configured sites.
 site = "alps"
 manta_server_url = "https://manta-server.example.com:8443"
 
