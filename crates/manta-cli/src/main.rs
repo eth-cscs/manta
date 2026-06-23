@@ -60,7 +60,8 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let site_name: String = cli_matches
     .get_one::<String>("site")
     .cloned()
-    .unwrap_or_else(|| configuration.site.clone());
+    .or_else(|| configuration.site.clone())
+    .ok_or("No site selected. Pass --site <name> or set `site` in cli.toml")?;
 
   if let Some(socks_proxy) = &configuration.socks5_proxy
     && !socks_proxy.is_empty()
