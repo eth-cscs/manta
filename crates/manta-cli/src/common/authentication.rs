@@ -71,13 +71,13 @@ where
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
 /// is validated through `manta-server`.
-#[tracing::instrument(skip_all, fields(site = %ctx.site_name))]
+#[tracing::instrument(skip_all, fields(site = ctx.site_name.unwrap_or("<unset>")))]
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   // Auth endpoints are the ones that *obtain* or *check* the token,
   // so we pass `None` as the bearer here; no default `Authorization`
   // header gets attached.
-  let client = MantaClient::new(ctx.manta_server_url, ctx.site_name)?;
-  let site_name = ctx.site_name;
+  let site_name = ctx.require_site()?;
+  let client = MantaClient::new(ctx.manta_server_url, site_name)?;
 
   tracing::info!(
     server = %ctx.manta_server_url,

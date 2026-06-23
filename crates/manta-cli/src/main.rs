@@ -54,14 +54,17 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
     .build()?;
 
   // Resolve the active site name (just a header value — the server
-  // validates it). Set the SOCKS5 proxy env var while we are still
-  // single-threaded; the proxy is used to reach manta-server, not the
-  // backends — per-site backend proxying is the server's concern.
-  let site_name: String = cli_matches
+  // validates it). Left `None` when neither `--site` nor `cli.toml`'s
+  // `site` is set; commands that reach the server raise the error
+  // lazily via `AppContext::require_site`, so purely-local config
+  // commands (e.g. `config set site`) still work with no site set.
+  // Set the SOCKS5 proxy env var while we are still single-threaded;
+  // the proxy is used to reach manta-server, not the backends —
+  // per-site backend proxying is the server's concern.
+  let site_name: Option<String> = cli_matches
     .get_one::<String>("site")
     .cloned()
-    .or_else(|| configuration.site.clone())
-    .ok_or("No site selected. Pass --site <name> or set `site` in cli.toml")?;
+    .or_else(|| configuration.site.clone());
 
   if let Some(socks_proxy) = &configuration.socks5_proxy
     && !socks_proxy.is_empty()
@@ -75,12 +78,13 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   rt.block_on(run_cli(settings, configuration, site_name, cli_matches))
 }
 
-/// CLI startup — takes the resolved site name and forwards it on every
-/// request via the `X-Manta-Site` header.
+/// CLI startup — takes the resolved site name (`None` when unset) and
+/// forwards it on every server request via the `X-Manta-Site` header.
+/// Commands that need it but find `None` fail via `require_site`.
 async fn run_cli(
   settings: config::Config,
   configuration: CliConfiguration,
-  site_name: String,
+  site_name: Option<String>,
   cli_matches: ArgMatches,
 ) -> core::result::Result<(), Box<dyn std::error::Error>> {
   let log_level = settings
@@ -100,7 +104,7 @@ async fn run_cli(
   let manta_server_url = configuration.manta_server_url.as_str();
 
   let app_context = AppContext {
-    site_name: &site_name,
+    site_name: site_name.as_deref(),
     manta_server_url,
     settings_group_name_opt: settings_hsm_group_name_opt.as_deref(),
     request_timeout_secs: configuration.request_timeout_secs,

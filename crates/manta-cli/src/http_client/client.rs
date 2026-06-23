@@ -259,7 +259,7 @@ impl MantaClient {
   ) -> anyhow::Result<Self> {
     Self::new_with_timeout(
       ctx.manta_server_url,
-      ctx.site_name,
+      ctx.require_site()?,
       ctx.request_timeout_secs,
       token,
     )

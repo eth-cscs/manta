@@ -11,9 +11,13 @@ use config::Config;
 /// handlers and commands.
 #[derive(Debug)]
 pub struct AppContext<'a> {
-  /// Site name used to set the `X-Manta-Site` header on outbound
-  /// `MantaClient` requests.
-  pub site_name: &'a str,
+  /// Resolved site (`--site` override, else `cli.toml`'s `site`), or
+  /// `None` when neither was supplied. It's just the `X-Manta-Site`
+  /// header on outbound `MantaClient` requests; commands that reach
+  /// the server obtain it via [`AppContext::require_site`]. The
+  /// purely-local `config set`/`config unset` commands never call
+  /// that, so they work with no site configured.
+  pub site_name: Option<&'a str>,
   /// URL of the manta HTTP server this CLI talks to. Required.
   pub manta_server_url: &'a str,
   /// Optional default group name from `cli.toml`'s
@@ -50,4 +54,55 @@ pub struct AppContext<'a> {
   /// `crate::dispatch::process::process_cli` consults this before
   /// allowing any mutating verb to dispatch.
   pub read_only: bool,
+}
+
+impl<'a> AppContext<'a> {
+  /// The site this invocation targets, or a user-facing error when
+  /// neither `--site` nor `cli.toml`'s `site` was supplied. Call this
+  /// at every point that needs to issue a request to `manta-server`;
+  /// commands that touch only the local config file must not.
+  pub fn require_site(&self) -> anyhow::Result<&'a str> {
+    self.site_name.ok_or_else(|| {
+      anyhow::anyhow!(
+        "No site selected. Pass --site <name> or set `site` in cli.toml"
+      )
+    })
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn ctx_with_site(site: Option<&'static str>) -> AppContext<'static> {
+    // `settings` is borrowed, so leak a default Config for the test's
+    // lifetime — cheap and avoids threading a real cli.toml through.
+    let settings: &'static Config = Box::leak(Box::new(Config::default()));
+    AppContext {
+      site_name: site,
+      manta_server_url: "https://example:8443",
+      settings_group_name_opt: None,
+      request_timeout_secs: None,
+      power_poll_interval_secs: None,
+      power_max_poll_attempts: None,
+      sat_file_poll_interval_secs: None,
+      sat_file_poll_budget_secs: None,
+      sat_file_not_visible_budget_secs: None,
+      settings,
+      read_only: false,
+    }
+  }
+
+  #[test]
+  fn require_site_returns_the_name_when_set() {
+    let ctx = ctx_with_site(Some("alps"));
+    assert_eq!(ctx.require_site().unwrap(), "alps");
+  }
+
+  #[test]
+  fn require_site_errors_when_unset() {
+    let ctx = ctx_with_site(None);
+    let err = ctx.require_site().unwrap_err().to_string();
+    assert!(err.contains("No site selected"), "got: {err}");
+  }
 }

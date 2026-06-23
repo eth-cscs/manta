@@ -15,12 +15,15 @@ pub async fn exec(
   dry_run: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
+  // A delete always targets a site; resolve it up front so even a
+  // dry-run fails fast when no site is selected.
+  let site = ctx.require_site()?;
+
   if dry_run {
     // DELETE has no JSON body — describe the request that would go to the
     // backend so the user can confirm label + force flag before committing.
     println!(
-      "Dry-run: would DELETE group '{label}' on site '{}' (force={force}); no backend call will be made.",
-      ctx.site_name,
+      "Dry-run: would DELETE group '{label}' on site '{site}' (force={force}); no backend call will be made.",
     );
     return Ok(());
   }
