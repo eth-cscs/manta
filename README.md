@@ -30,7 +30,7 @@ mkdir -p "$CONFIG_DIR"
 cat > "$CONFIG_DIR/cli.toml" <<'EOF'
 log              = "info"
 site             = "ochami"
-parent_hsm_group = "nodes_free"
+hsm_group        = "nodes_free"
 manta_server_url = "https://manta-server.example.com:8443"   # required
 EOF
 # server.toml is site-specific (TLS certs + per-site backend URLs) —
@@ -150,7 +150,7 @@ cat > "$CONFIG_DIR/cli.toml" <<EOF
 log = "info"
 
 site = "ochami"
-parent_hsm_group = "nodes_free"
+hsm_group = "nodes_free"
 manta_server_url = "https://manta-server.example.com:8443"   # required
 EOF
 ```
@@ -249,7 +249,7 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `parent_hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream.
+The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream.
 
 **`cli.toml`**
 

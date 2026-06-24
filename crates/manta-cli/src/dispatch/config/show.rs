@@ -21,7 +21,12 @@ pub async fn exec(
   let log_level = settings
     .get_string("log")
     .unwrap_or_else(|_| "error".to_string());
-  let settings_hsm_group = settings.get_string("hsm_group").unwrap_or_default();
+  // Absent or empty `hsm_group` both mean "no default group selected",
+  // mirroring how `current_site` is `None` when unset.
+  let settings_hsm_group = settings
+    .get_string("hsm_group")
+    .ok()
+    .filter(|s| !s.is_empty());
 
   // Available groups are per-site, so fetch them only when we have a
   // site-bound (and authenticated) client.

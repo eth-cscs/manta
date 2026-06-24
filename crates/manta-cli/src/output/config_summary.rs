@@ -31,8 +31,10 @@ pub struct ConfigSummary {
   /// HSM groups the bearer token is permitted to access; `None` when
   /// the server lookup failed.
   pub groups_available: Option<Vec<String>>,
-  /// Active default HSM group from `hsm_group = "..."`.
-  pub current_hsm: String,
+  /// Active default HSM group from `hsm_group = "..."`. `None` when the
+  /// key is absent or empty — like `current_site`, it then renders as
+  /// `(unset)` in text and `null` in JSON.
+  pub current_hsm: Option<String>,
 }
 
 /// Render `summary` to stdout. Plain text by default (one line per
@@ -64,7 +66,10 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
       (None, Some(_)) => "Could not get list of groups available".to_string(),
     };
     println!("Groups available: {groups}");
-    println!("Current HSM: {}", summary.current_hsm);
+    println!(
+      "Current group: {}",
+      summary.current_hsm.as_deref().unwrap_or("(unset)")
+    );
   }
   Ok(())
 }
@@ -81,7 +86,7 @@ mod tests {
       current_site: Some("alps".to_string()),
       read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
-      current_hsm: "compute".to_string(),
+      current_hsm: Some("compute".to_string()),
     }
   }
 
@@ -124,6 +129,15 @@ mod tests {
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
     assert!(v["current_site"].is_null());
+  }
+
+  #[test]
+  fn current_hsm_none_renders_as_null_in_json() {
+    let mut s = sample();
+    s.current_hsm = None;
+    let json = serde_json::to_string(&s).unwrap();
+    let v: Value = serde_json::from_str(&json).unwrap();
+    assert!(v["current_hsm"].is_null());
   }
 
   /// Text mode must not panic when no site is set; it prints a sentinel.
