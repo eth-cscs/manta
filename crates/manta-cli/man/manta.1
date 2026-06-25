@@ -1,6 +1,6 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH manta 1  "manta 2.0.0-beta.54" 
+.TH manta 1  "manta 2.0.0-beta.59" 
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
 .SH NAME
@@ -65,17 +65,6 @@ Print help
 .TP
 \fIGROUP_NAME\fR
 Node group name
-.SS "manta config set site"
-Set the active site
-.TP
-[\fB\-\-site\fR] \fI<SITE_NAME>\fR
-Override the active site for this invocation
-.TP
-[\fB\-h\fR, \fB\-\-help\fR]
-Print help
-.TP
-\fISITE_NAME\fR
-Site name
 .SS "manta config set log"
 Set the log verbosity level
 .TP
@@ -87,16 +76,27 @@ Print help
 .TP
 \fILOG_LEVEL\fR
 Log verbosity level
-.SS "manta config unset"
-Clear a configuration value
+.SS "manta config set read-only"
+Refuse every backend\-mutating command until unset
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
-.SS "manta config unset hsm"
-Clear the active node group
+.SS "manta config set site"
+Set the active site
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.TP
+\fISITE_NAME\fR
+Site name
+.SS "manta config unset"
+Clear a configuration value
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -111,8 +111,24 @@ Override the active site for this invocation
 .TP
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
+.SS "manta config unset hsm"
+Clear the active node group
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
+.SS "manta config unset read-only"
+Allow backend\-mutating commands again
+.TP
+[\fB\-\-site\fR] \fI<SITE_NAME>\fR
+Override the active site for this invocation
+.TP
+[\fB\-h\fR, \fB\-\-help\fR]
+Print help
 .SS "manta get"
-Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters
+Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -230,6 +246,12 @@ Output format
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Show only configurations whose layers target this group
 .TP
+[\fB\-\-only\-safe\-to\-delete\fR]
+Show only configurations that are safe to delete
+.TP
+[\fB\-\-only\-unsafe\-to\-delete\fR]
+Show only configurations that are NOT safe to delete (in use)
+.TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
 .TP
@@ -339,16 +361,11 @@ Return only the most recent (equivalent to \-\-limit 1)
 [\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
 Return only the <VALUE> most recent images
 .TP
-[\fB\-\-site\fR] \fI<SITE_NAME>\fR
-Override the active site for this invocation
+[\fB\-\-only\-safe\-to\-delete\fR]
+Show only images that are safe to delete
 .TP
-[\fB\-h\fR, \fB\-\-help\fR]
-Print help
-.SS "manta get summary"
-Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)
-.TP
-[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
-Output format
+[\fB\-\-only\-unsafe\-to\-delete\fR]
+Show only images that are NOT safe to delete (currently used as a node\*(Aqs boot image)
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -445,8 +462,11 @@ File containing hardware information
 [\fB\-a\fR, \fB\-\-arch\fR] \fI<VALUE>\fR
 Node architecture
 .TP
-[\fB\-d\fR, \fB\-\-disabled\fR]
+[\fB\-D\fR, \fB\-\-disabled\fR]
 Register the node as disabled
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -486,7 +506,7 @@ Create a node group
 \fB\-l\fR, \fB\-\-label\fR \fI<NAME>\fR
 Group name
 .TP
-[\fB\-d\fR, \fB\-\-description\fR] \fI<VALUE>\fR
+[\fB\-D\fR, \fB\-\-description\fR] \fI<VALUE>\fR
 Group description
 .TP
 [\fB\-n\fR, \fB\-\-nodes\fR] \fI<NODES>\fR
@@ -494,8 +514,8 @@ Xnames, NIDs, or a hostlist expression.
 eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .TP
-[\fB\-\-dry\-run\fR]
-Validate input and print the payload(s) that would be sent to the backend without making changes
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -616,7 +636,7 @@ Arbitrary user\-provided name for the endpoint
 [\fB\-H\fR, \fB\-\-hostname\fR] \fI<VALUE>\fR
 Hostname (FQDN host portion); normally identical to the xname
 .TP
-[\fB\-d\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
+[\fB\-D\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
 Domain (FQDN domain portion)
 .TP
 [\fB\-f\fR, \fB\-\-fqdn\fR] \fI<VALUE>\fR
@@ -648,6 +668,9 @@ Trigger rediscovery when endpoint information is updated
 .TP
 [\fB\-t\fR, \fB\-\-template\-id\fR] \fI<VALUE>\fR
 Discovery template ID
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -730,8 +753,8 @@ Values file to expand jinja2 variables in the SAT file
 [\fB\-V\fR, \fB\-\-values\fR] \fI<VALUE>\fR
 Inline values to expand jinja2 variables (overrides \-\-values\-file)
 .TP
-[\fB\-\-reboot\fR]
-Reboot nodes after applying session templates
+[\fB\-\-create\-bos\-session\fR]
+After each BOS session template is created, create a BOS session from it so its target nodes boot via the new template (this typically causes a reboot)
 .TP
 [\fB\-v\fR, \fB\-\-ansible\-verbosity\fR] \fI<VALUE>\fR
 Ansible verbosity level (1 = \-v, 2 = \-vv, …, max 4)
@@ -896,7 +919,7 @@ Arbitrary user\-provided name for the endpoint
 [\fB\-H\fR, \fB\-\-hostname\fR] \fI<VALUE>\fR
 Hostname (FQDN host portion)
 .TP
-[\fB\-d\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
+[\fB\-D\fR, \fB\-\-domain\fR] \fI<VALUE>\fR
 Domain (FQDN domain portion)
 .TP
 [\fB\-f\fR, \fB\-\-fqdn\fR] \fI<VALUE>\fR
@@ -931,6 +954,9 @@ Discovery template ID
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -970,6 +996,12 @@ Returns an SSH hostname once the environment is ready (usually within a few seco
 .TP
 \fB\-i\fR, \fB\-\-image\-id\fR \fI<IMAGE_ID>\fR
 Image ID to use
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
+[\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
+Output format
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -1034,6 +1066,9 @@ Print help (see a summary with \*(Aq\-h\*(Aq)
 Name of the group to delete
 .SS "manta delete node"
 Remove a node from the hardware state manager (the node disappears from the inventory). To only remove it from a group\*(Aqs membership without deleting it, use `manta delete nodes` (plural).
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -1102,6 +1137,9 @@ Delete boot parameters for nodes
 [\fB\-H\fR, \fB\-\-hosts\fR] \fI<XNAMES>\fR
 Xnames of the nodes
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
@@ -1128,6 +1166,9 @@ Delete configurations last updated after this date (format: %Y\-%m\-%d)
 .TP
 [\fB\-u\fR, \fB\-\-until\fR] \fI<DATE>\fR
 Delete configurations last updated before this date (format: %Y\-%m\-%d)
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -1209,6 +1250,9 @@ Delete a Redfish endpoint
 .TP
 \fB\-i\fR, \fB\-\-id\fR \fI<XNAME>\fR
 Xname of the Redfish endpoint to delete
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
@@ -1322,6 +1366,9 @@ eg: \-\-post\-hook "echo hello"
 [\fB\-o\fR, \fB\-\-overwrite\fR]
 Overwrite existing data
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
@@ -1370,6 +1417,9 @@ Limit the session to specific nodes (must be a subset of \-\-group if both are p
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Run the session against every node in this group
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
@@ -1409,6 +1459,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
 .TP
@@ -1428,6 +1481,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -1465,6 +1521,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
 .TP
@@ -1487,6 +1546,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation
@@ -1521,6 +1583,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
 .TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
+.TP
 [\fB\-r\fR, \fB\-\-reason\fR] \fI<TEXT>\fR
 Reason for the power operation
 .TP
@@ -1546,6 +1611,9 @@ Return as soon as the transition is queued; don\*(Aqt poll for completion
 .TP
 [\fB\-o\fR, \fB\-\-output\fR] \fI<FORMAT>\fR
 Output format
+.TP
+[\fB\-d\fR, \fB\-\-dry\-run\fR]
+Simulate the operation without making changes
 .TP
 [\fB\-\-site\fR] \fI<SITE_NAME>\fR
 Override the active site for this invocation

@@ -28,7 +28,7 @@ complete -c manta -n "__fish_manta_needs_command" -l site -d 'Override the activ
 complete -c manta -n "__fish_manta_needs_command" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_needs_command" -s V -l version -d 'Print version'
 complete -c manta -n "__fish_manta_needs_command" -f -a "config" -d 'Show or change CLI-side settings (active site, default node group, log level)'
-complete -c manta -n "__fish_manta_needs_command" -f -a "get" -d 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters'
+complete -c manta -n "__fish_manta_needs_command" -f -a "get" -d 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
 complete -c manta -n "__fish_manta_needs_command" -f -a "add" -d 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
 complete -c manta -n "__fish_manta_needs_command" -f -a "apply" -d 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
 complete -c manta -n "__fish_manta_needs_command" -f -a "delete" -d 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
@@ -56,33 +56,34 @@ complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "hsm" -d 'Set the active node group'
-complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "site" -d 'Set the active site'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "log" -d 'Set the log verbosity level'
+complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "read-only" -d 'Refuse every backend-mutating command until unset'
+complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "site" -d 'Set the active site'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from set" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "hsm" -d 'Clear the active node group'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "auth" -d 'Clear the cached authentication token'
+complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "hsm" -d 'Clear the active node group'
+complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "read-only" -d 'Allow backend-mutating commands again'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from unset" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "show" -d 'Show current configuration values'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "set" -d 'Set a configuration value'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "unset" -d 'Clear a configuration value'
 complete -c manta -n "__fish_manta_using_subcommand config; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "groups" -d 'List node groups visible to your token (or look up one by name)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "hardware" -d 'Inspect hardware components'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "sessions" -d 'List configuration sessions'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "configurations" -d 'List CFS configurations (filter by name, glob, group, or recency)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "templates" -d 'List BOS session templates (filter by name, group, or recency)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "group-nodes" -d 'Show node details and status for a group'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "nodes" -d 'Show node details and status'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "images" -d 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "summary" -d 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images summary boot-parameters kernel-parameters redfish-endpoints help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -s h -l help -d 'Print help'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "groups" -d 'List node groups visible to your token (or look up one by name)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "hardware" -d 'Inspect hardware components'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "sessions" -d 'List configuration sessions'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "configurations" -d 'List CFS configurations (filter by name, glob, group, or recency)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "templates" -d 'List BOS session templates (filter by name, group, or recency)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "group-nodes" -d 'Show node details and status for a group'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "nodes" -d 'Show node details and status'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "images" -d 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from groups" -s o -l output -d 'Output format' -r -f -a "json\t''
 table\t''"
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from groups" -l site -d 'Override the active site for this invocation' -r
@@ -114,6 +115,8 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -s H -l group -l hsm-group -d 'Show only configurations whose layers target this group' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -s m -l most-recent -d 'Return only the most recent (equivalent to --limit 1)'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -l only-safe-to-delete -d 'Show only configurations that are safe to delete'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -l only-unsafe-to-delete -d 'Show only configurations that are NOT safe to delete (in use)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s n -l name -d 'Show only the template with this exact name' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s l -l limit -d 'Return only the <VALUE> most recent templates' -r
@@ -160,11 +163,9 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s l -l limit -d 'Return only the <VALUE> most recent images' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s m -l most-recent -d 'Return only the most recent (equivalent to --limit 1)'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -l only-safe-to-delete -d 'Show only images that are safe to delete'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -l only-unsafe-to-delete -d 'Show only images that are NOT safe to delete (currently used as a node\'s boot image)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s h -l help -d 'Print help'
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from summary" -s o -l output -d 'Output format' -r -f -a "table\t''
-json\t''"
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from summary" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from summary" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from boot-parameters" -s H -l group -l hsm-group -d 'Show boot parameters for every node in this group' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from boot-parameters" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from boot-parameters" -l site -d 'Override the active site for this invocation' -r
@@ -193,7 +194,6 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "group-nodes" -d 'Show node details and status for a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "nodes" -d 'Show node details and status'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "images" -d 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "summary" -d 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -218,7 +218,8 @@ Other\t''"
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -s d -l disabled -d 'Register the node as disabled'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -s D -l disabled -d 'Register the node as disabled'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from node" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s g -l group -d 'Group to add the nodes to' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
@@ -228,12 +229,12 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s l -l label -d 'Group name' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s d -l description -d 'Group description' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s D -l description -d 'Group description' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -l dry-run -d 'Validate input and print the payload(s) that would be sent to the backend without making changes'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hardware" -s P -l pattern -d 'Hardware component pattern' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from hardware" -s t -l target-group -l target-cluster -d 'Group to add components to' -r
@@ -270,7 +271,7 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s i -l id -d 'Xname of the BMC or controller' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s n -l name -d 'Arbitrary user-provided name for the endpoint' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s H -l hostname -d 'Hostname (FQDN host portion); normally identical to the xname' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s d -l domain -d 'Domain (FQDN domain portion)' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s D -l domain -d 'Domain (FQDN domain portion)' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s f -l fqdn -d 'Fully-qualified domain name on the management network (derived from hostname + domain)' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s u -l user -d 'Username for endpoint authentication' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s p -l password -d 'Password for endpoint authentication' -r
@@ -284,11 +285,12 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s U -l use-ssdp -d 'Use SSDP for discovery if the endpoint supports it'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s m -l mac-required -d 'Require a MAC address for geolocation'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s r -l rediscover-on-update -d 'Trigger rediscovery when endpoint information is updated'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoints" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s i -l id -d 'Xname of the BMC or controller' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s n -l name -d 'Arbitrary user-provided name for the endpoint' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s H -l hostname -d 'Hostname (FQDN host portion); normally identical to the xname' -r
-complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s d -l domain -d 'Domain (FQDN domain portion)' -r
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s D -l domain -d 'Domain (FQDN domain portion)' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s f -l fqdn -d 'Fully-qualified domain name on the management network (derived from hostname + domain)' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s u -l user -d 'Username for endpoint authentication' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s p -l password -d 'Password for endpoint authentication' -r
@@ -302,6 +304,7 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s U -l use-ssdp -d 'Use SSDP for discovery if the endpoint supports it'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s m -l mac-required -d 'Require a MAC address for geolocation'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s r -l rediscover-on-update -d 'Trigger rediscovery when endpoint information is updated'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from redfish-endpoint" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "node" -d 'Register a new node in the hardware state manager'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from help" -f -a "nodes" -d 'Add existing nodes to a group'
@@ -340,7 +343,7 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -l reboot -d 'Reboot nodes after applying session templates'
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -l create-bos-session -d 'After each BOS session template is created, create a BOS session from it so its target nodes boot via the new template (this typically causes a reboot)'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -s o -l overwrite-configuration -d 'Overwrite an existing configuration with the same name'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -s w -l watch-logs -d 'Stream session logs to stdout'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from sat-file" -s T -l timestamps -d 'Show log timestamps'
@@ -366,7 +369,7 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s i -l id -d 'Xname of the endpoint to update' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s n -l name -d 'Arbitrary user-provided name for the endpoint' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s H -l hostname -d 'Hostname (FQDN host portion)' -r
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s d -l domain -d 'Domain (FQDN domain portion)' -r
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s D -l domain -d 'Domain (FQDN domain portion)' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s f -l fqdn -d 'Fully-qualified domain name on the management network' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s u -l user -d 'Username for endpoint authentication' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s p -l password -d 'Password for endpoint authentication' -r
@@ -380,11 +383,12 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s U -l use-ssdp -d 'Use SSDP for discovery if the endpoint supports it'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s m -l mac-required -d 'Require a MAC address for geolocation'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s r -l rediscover-on-update -d 'Trigger rediscovery when endpoint information is updated'
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoints" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s i -l id -d 'Xname of the endpoint to update' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s n -l name -d 'Arbitrary user-provided name for the endpoint' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s H -l hostname -d 'Hostname (FQDN host portion)' -r
-complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s d -l domain -d 'Domain (FQDN domain portion)' -r
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s D -l domain -d 'Domain (FQDN domain portion)' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s f -l fqdn -d 'Fully-qualified domain name on the management network' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s u -l user -d 'Username for endpoint authentication' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s p -l password -d 'Password for endpoint authentication' -r
@@ -398,6 +402,7 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s U -l use-ssdp -d 'Use SSDP for discovery if the endpoint supports it'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s m -l mac-required -d 'Require a MAC address for geolocation'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s r -l rediscover-on-update -d 'Trigger rediscovery when endpoint information is updated'
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from redfish-endpoint" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s H -l group -l hsm-group -d 'Replace kernel parameters on every node in this group' -r
@@ -407,7 +412,10 @@ complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subco
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from kernel-parameters" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -s i -l image-id -d 'Image ID to use' -r
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -s o -l output -d 'Output format' -r -f -a "table\t''
+json\t''"
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from ephemeral-environment" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s n -l name -d 'Name of the boot session to create' -r
 complete -c manta -n "__fish_manta_using_subcommand apply; and __fish_seen_subcommand_from template" -s o -l operation -d 'Boot operation to perform' -r -f -a "reboot\t''
@@ -451,6 +459,7 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from node" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from node" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from node" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from node" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -s g -l group -d 'Group to remove the nodes from' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
@@ -470,6 +479,7 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from boot-parameters" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from boot-parameters" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from boot-parameters" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from boot-parameters" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s n -l configuration-name -d 'Glob pattern to filter by name. eg: my-config*, my-config-v[1,2]' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s s -l since -d 'Delete configurations last updated after this date (format: %Y-%m-%d)' -r
@@ -477,6 +487,7 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from configurations" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from session" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
@@ -502,11 +513,13 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoints" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoints" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoints" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoints" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoint" -s i -l id -d 'Xname of the Redfish endpoint to delete' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoint" -s o -l output -d 'Output format' -r -f -a "table\t''
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoint" -l site -d 'Override the active site for this invocation' -r
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoint" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from redfish-endpoint" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "group" -d 'Delete a node group'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from help" -f -a "node" -d 'Remove a node from the hardware state manager'
@@ -561,6 +574,7 @@ complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_sub
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from vcluster" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from vcluster" -s o -l overwrite -d 'Overwrite existing data'
+complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from vcluster" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from vcluster" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from help" -f -a "vcluster" -d 'Restore a virtual cluster from a backup bundle'
 complete -c manta -n "__fish_manta_using_subcommand restore; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
@@ -584,6 +598,7 @@ json\t''"
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from session" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from session" -s w -l watch-logs -d 'Stream session logs to stdout'
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from session" -s t -l timestamps -d 'Show log timestamps'
+complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from session" -s d -l dry-run -d 'Simulate the operation without making changes'
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from session" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from help" -f -a "session" -d 'Create and run a configuration session from a local repo'
 complete -c manta -n "__fish_manta_using_subcommand run; and __fish_seen_subcommand_from help" -f -a "help" -d 'Print this message or the help of the given subcommand(s)'
@@ -649,7 +664,7 @@ complete -c manta -n "__fish_manta_using_subcommand upgrade" -s d -l dry-run -d 
 complete -c manta -n "__fish_manta_using_subcommand upgrade" -s y -l assume-yes -d 'Skip the confirmation prompt before replacing the binary'
 complete -c manta -n "__fish_manta_using_subcommand upgrade" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "config" -d 'Show or change CLI-side settings (active site, default node group, log level)'
-complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "get" -d 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, summary, and boot/kernel parameters'
+complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "get" -d 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "add" -d 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "apply" -d 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
 complete -c manta -n "__fish_manta_using_subcommand help; and not __fish_seen_subcommand_from config get add apply delete migrate backup restore run power log console gen-autocomplete gen-man upgrade help" -f -a "delete" -d 'Remove nodes, groups, images, configurations, sessions, boot/kernel parameters, or Redfish endpoints'
@@ -675,7 +690,6 @@ complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcom
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "group-nodes" -d 'Show node details and status for a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "nodes" -d 'Show node details and status'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "images" -d 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
-complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "summary" -d 'Aggregate view of CFS configurations, sessions, BOS templates, and IMS images, linked by image id (one row per image)'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
