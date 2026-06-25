@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.60] - 2026-06-25
+
+### Build
+
+- Remove unused bytes and regex deps from manta-cli
+
+### Miscellaneous Tasks
+
+- [**breaking**] Make site field optional and remove [sites] table (#103)
+- Regenerate man pages + shell completions [skip ci]
+
 ## [2.0.0-beta.59] - 2026-06-22
 
 ### Documentation
