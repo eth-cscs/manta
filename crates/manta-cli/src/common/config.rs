@@ -20,7 +20,7 @@ pub struct CliConfiguration {
   /// request to manta-server. Overridable per-invocation with `--site`.
   /// The server validates that the name matches one of its configured
   /// sites; the CLI does no local validation.
-  pub site: String,
+  pub site: Option<String>,
   /// When `true`, the CLI refuses backend-mutating verbs (`add`,
   /// `apply`, `delete`, `migrate`, `power`, `run`, `restore`)
   /// before any HTTP request leaves the process. Toggled by
@@ -86,7 +86,7 @@ mod tests {
   fn cli_configuration_roundtrip_toml_minimal() {
     let cfg = CliConfiguration {
       log: "info".to_string(),
-      site: "alps".to_string(),
+      site: Some("alps".to_string()),
       read_only: false,
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
@@ -99,12 +99,22 @@ mod tests {
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
-    assert_eq!(parsed.site, "alps");
+    assert_eq!(parsed.site.as_deref(), Some("alps"));
     assert_eq!(parsed.manta_server_url, "https://manta-server.cscs.ch:8443");
     assert_eq!(
       parsed.socks5_proxy.as_deref(),
       Some("socks5h://127.0.0.1:1080")
     );
+  }
+
+  #[test]
+  fn cli_configuration_site_optional() {
+    let toml_str = r#"
+      log = "info"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+    "#;
+    let parsed: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(parsed.site.is_none());
   }
 
   #[test]

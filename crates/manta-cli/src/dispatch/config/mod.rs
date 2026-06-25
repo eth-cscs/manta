@@ -23,10 +23,17 @@ pub async fn handle_config(
 ) -> Result<(), Error> {
   match cli_config.subcommand() {
     Some(("show", m)) => {
-      let token = get_api_token(ctx).await?;
-      let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
       let output_opt = m.opt_str("output");
-      show::exec(&client, &token, ctx.settings, output_opt).await?;
+      // `config show` is mostly local config, so it works without a
+      // site. Only when one is selected do we authenticate and build a
+      // client to fetch the per-site list of available groups.
+      let client = if ctx.site_name.is_some() {
+        let token = get_api_token(ctx).await?;
+        Some(MantaClient::from_app_ctx(ctx, Some(&token))?)
+      } else {
+        None
+      };
+      show::exec(client.as_ref(), ctx.settings, output_opt).await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {

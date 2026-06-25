@@ -19,10 +19,11 @@ pub struct ConfigSummary {
   pub config_file: String,
   /// `EnvFilter` directive string from `cli.toml`.
   pub log_level: String,
-  /// Names of every `[sites.X]` section in `cli.toml`.
-  pub sites: Vec<String>,
-  /// The site currently selected via `site = "..."` in `cli.toml`.
-  pub current_site: String,
+  /// The resolved active site for this invocation: the `--site`
+  /// override when given, otherwise `site = "..."` from `cli.toml`.
+  /// `None` when neither is set — `config show` still works without a
+  /// site, it just can't report one (serializes to `null` in JSON).
+  pub current_site: Option<String>,
   /// Mirror of `CliConfiguration.read_only`. When `true`, the
   /// chokepoint in `dispatch::process::process_cli` refuses
   /// backend-mutating verbs. See `crate::common::read_only`.
@@ -30,8 +31,10 @@ pub struct ConfigSummary {
   /// HSM groups the bearer token is permitted to access; `None` when
   /// the server lookup failed.
   pub groups_available: Option<Vec<String>>,
-  /// Active default HSM group from `hsm_group = "..."`.
-  pub current_hsm: String,
+  /// Active default HSM group from `hsm_group = "..."`. `None` when the
+  /// key is absent or empty — like `current_site`, it then renders as
+  /// `(unset)` in text and `null` in JSON.
+  pub current_hsm: Option<String>,
 }
 
 /// Render `summary` to stdout. Plain text by default (one line per
@@ -47,18 +50,26 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
   } else {
     println!("Configuration file: {}", summary.config_file);
     println!("Log level: {}", summary.log_level);
-    println!("Sites: {}", summary.sites.join(", "));
-    println!("Current site: {}", summary.current_site);
+    println!(
+      "Current site: {}",
+      summary.current_site.as_deref().unwrap_or("(unset)")
+    );
     println!(
       "Read-only: {}",
       if summary.read_only { "yes" } else { "no" }
     );
-    let groups = summary.groups_available.as_ref().map_or_else(
-      || "Could not get list of groups available".to_string(),
-      |v| v.join(", "),
-    );
+    let groups = match (&summary.groups_available, &summary.current_site) {
+      (Some(v), _) => v.join(", "),
+      // No site selected, so there was nothing to query — distinguish
+      // this from a genuine lookup failure against a selected site.
+      (None, None) => "(no site selected)".to_string(),
+      (None, Some(_)) => "Could not get list of groups available".to_string(),
+    };
     println!("Groups available: {groups}");
-    println!("Current HSM: {}", summary.current_hsm);
+    println!(
+      "Current group: {}",
+      summary.current_hsm.as_deref().unwrap_or("(unset)")
+    );
   }
   Ok(())
 }
@@ -72,11 +83,10 @@ mod tests {
     ConfigSummary {
       config_file: "/home/u/.config/manta/cli.toml".to_string(),
       log_level: "info".to_string(),
-      sites: vec!["alps".to_string(), "tasna".to_string()],
-      current_site: "alps".to_string(),
+      current_site: Some("alps".to_string()),
       read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
-      current_hsm: "compute".to_string(),
+      current_hsm: Some("compute".to_string()),
     }
   }
 
@@ -97,7 +107,6 @@ mod tests {
     let v: Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["config_file"], "/home/u/.config/manta/cli.toml");
     assert_eq!(v["log_level"], "info");
-    assert_eq!(v["sites"][0], "alps");
     assert_eq!(v["current_site"], "alps");
     assert_eq!(v["read_only"], false);
     assert_eq!(v["groups_available"][0], "compute");
@@ -111,5 +120,31 @@ mod tests {
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
     assert!(v["groups_available"].is_null());
+  }
+
+  #[test]
+  fn current_site_none_renders_as_null_in_json() {
+    let mut s = sample();
+    s.current_site = None;
+    let json = serde_json::to_string(&s).unwrap();
+    let v: Value = serde_json::from_str(&json).unwrap();
+    assert!(v["current_site"].is_null());
+  }
+
+  #[test]
+  fn current_hsm_none_renders_as_null_in_json() {
+    let mut s = sample();
+    s.current_hsm = None;
+    let json = serde_json::to_string(&s).unwrap();
+    let v: Value = serde_json::from_str(&json).unwrap();
+    assert!(v["current_hsm"].is_null());
+  }
+
+  /// Text mode must not panic when no site is set; it prints a sentinel.
+  #[test]
+  fn text_mode_renders_with_no_site() {
+    let mut s = sample();
+    s.current_site = None;
+    print(&s, None).unwrap();
   }
 }
