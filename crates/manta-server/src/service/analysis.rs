@@ -126,10 +126,10 @@ pub fn build_configuration_analysis(
 
   // Add configs that produced any BSS-referenced image.
   for bp in &boot_params {
-    if let Some(image_id) = bp.try_get_boot_image_id() {
-      if let Some(cfg) = image_id_to_config.get(&image_id) {
-        unsafe_configs.insert(cfg.clone());
-      }
+    if let Some(image_id) = bp.try_get_boot_image_id()
+      && let Some(cfg) = image_id_to_config.get(&image_id)
+    {
+      unsafe_configs.insert(cfg.clone());
     }
   }
 
