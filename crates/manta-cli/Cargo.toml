@@ -49,7 +49,6 @@ manta-shared = { workspace = true }
 
 # --- END MANTA DEPENDENCIES ---
 
-regex              = { workspace = true }
 nodeset = "0.5.0"
 chrono = { version = "0.4.41", default-features = false }
 anyhow = { version = "1.0.44", default-features = false }
@@ -110,7 +109,6 @@ semver = "1.0"
 # Runtime support for the progenitor-generated API client. The generated
 # code in OUT_DIR (see build.rs) references types from this crate.
 progenitor-client = "0.14"
-bytes = "1"
 
 # Server-only deps (axum, axum-server, utoipa*, tower-http, rustls,
 # rustls-pemfile) moved to crates/manta-server with the HTTP server itself.
