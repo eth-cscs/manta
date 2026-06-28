@@ -342,7 +342,37 @@ backend URLs, k8s/vault URLs (no secrets ever logged).
 Kafka topic. Same field shape as v1's audit block. If you don't run
 Kafka, omit the section — auditing is silent.
 
-### 2.7 Verify
+### 2.7 Read-only access (optional)
+
+`manta-server` enforces a read-only policy when the caller's bearer
+token carries the realm role `manta-read-only`: every
+`POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*` is refused with
+`403 Forbidden`. Safe methods (`GET`/`HEAD`) and `/api/v1/auth/*`
+(login) pass through, so a read-only user can still inspect the
+cluster and refresh their token.
+
+The role is provisioned in your identity provider — there is no
+`server.toml` knob. For Keycloak:
+
+```bash
+# Create the realm role
+kcadm.sh create roles -r <realm> -s name=manta-read-only \
+  -s 'description=manta: refuses POST/PUT/PATCH/DELETE on /api/v1/*'
+
+# Assign it to a user
+kcadm.sh add-roles -r <realm> --uusername alice \
+  --rolename manta-read-only
+```
+
+No server restart is needed — the role takes effect on the next
+token the user obtains. The role string is `manta-read-only`,
+verbatim; it is not configurable. If your operators are also
+familiar with the CLI-side `read_only = true` flag in `cli.toml`,
+note that the two policies are independent: the JWT-role gate
+applies server-side regardless of which client (CLI, `curl`,
+script) sent the request.
+
+### 2.8 Verify
 
 ```bash
 # Health check (no auth)
