@@ -61,49 +61,15 @@ fn dot_notation_to_yaml(dot_notation: &str) -> Result<Value, Error> {
     return Err(Error::InvalidPattern("Invalid format".to_string()));
   }
 
-  let keys: Vec<&str> = parts[0].trim().split('.').collect();
+  let path = parts[0].trim();
   let value_str = parts[1].trim().trim_matches('"');
-  let value: Value = Value::String(value_str.to_string());
+  let leaf = Value::String(value_str.to_string());
 
-  let mut root = Value::Mapping(Mapping::new());
-  let mut current_level = &mut root;
-
-  for (i, &key) in keys.iter().enumerate() {
-    if i == keys.len() - 1 {
-      if let Value::Mapping(map) = current_level {
-        map.insert(Value::String(key.to_string()), value.clone());
-      }
-    } else {
-      let next_level = if let Value::Mapping(map) = current_level {
-        if map.contains_key(Value::String(key.to_string())) {
-          map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::TemplateError(
-              "Failed to get mutable reference to existing YAML map entry"
-                .to_string(),
-            )
-          })?
-        } else {
-          map.insert(
-            Value::String(key.to_string()),
-            Value::Mapping(Mapping::new()),
-          );
-          map.get_mut(Value::String(key.to_string())).ok_or_else(|| {
-            Error::TemplateError(
-              "Failed to get mutable reference to newly inserted YAML map entry"
-                .to_string(),
-            )
-          })?
-        }
-      } else {
-        return Err(Error::TemplateError(
-          "Unexpected structure encountered".to_string(),
-        ));
-      };
-      current_level = next_level;
-    }
-  }
-
-  Ok(root)
+  Ok(path.split('.').rev().fold(leaf, |acc, key| {
+    let mut m = Mapping::new();
+    m.insert(Value::String(key.to_string()), acc);
+    Value::Mapping(m)
+  }))
 }
 
 /// Render a SAT file as a Jinja2 template, optionally merging a values

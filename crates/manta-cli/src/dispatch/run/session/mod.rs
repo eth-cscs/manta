@@ -222,7 +222,7 @@ fn check_local_repos(
   repos: &[PathBuf],
   dry_run: bool,
 ) -> Result<(Vec<String>, Vec<String>), Error> {
-  let mut layers_summary = vec![];
+  let mut layers_summary: Vec<String> = Vec::new();
   let mut repo_name_vec = Vec::new();
   let mut repo_last_commit_id_vec = Vec::new();
 
@@ -297,11 +297,9 @@ fn check_local_repos(
       local_last_commit.message().unwrap_or("no commit message")
     );
 
-    layers_summary.push(vec![
-      i.to_string(),
-      repo_name_raw.clone(),
-      all_committed.to_string(),
-    ]);
+    layers_summary.push(format!(
+      " - Layer-{i}; repo name: {repo_name_raw}; local changes committed: {all_committed}"
+    ));
 
     repo_last_commit_id_vec.push(local_last_commit.id().to_string());
 
@@ -311,19 +309,8 @@ fn check_local_repos(
 
   // Print CFS session/configuration layers summary
   println!("Please review the following CFS layers:");
-  for layer_summary in layers_summary {
-    let layer_num = layer_summary
-      .first()
-      .map_or("?", std::string::String::as_str);
-    let repo_name = layer_summary
-      .get(1)
-      .map_or("unknown", std::string::String::as_str);
-    let committed = layer_summary
-      .get(2)
-      .map_or("unknown", std::string::String::as_str);
-    println!(
-      " - Layer-{layer_num}; repo name: {repo_name}; local changes committed: {committed}"
-    );
+  for line in &layers_summary {
+    println!("{line}");
   }
 
   if !dry_run {

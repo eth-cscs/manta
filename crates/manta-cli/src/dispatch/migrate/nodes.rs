@@ -10,7 +10,6 @@
 
 use anyhow::Error;
 
-use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::MigrateNodesRequest;
 use crate::output::action_result;
@@ -28,15 +27,12 @@ pub struct ExecParams<'a> {
 ///
 /// # Errors
 ///
-/// Returns an error when the HTTP client cannot be built or when the
-/// `migrate_nodes` call fails (authorisation, validation, or backend
-/// errors).
+/// Returns an error when the `migrate_nodes` call fails (authorisation,
+/// validation, or backend errors).
 pub async fn exec(
-  ctx: &AppContext<'_>,
-  token: &str,
+  client: &MantaClient,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let result = client
     .openapi
     .migrate_nodes(

@@ -172,7 +172,8 @@ pub async fn run_image_pipeline(
     )
     .await?;
   } else {
-    poll_session_until_terminal(client, &session_name, budgets).await?;
+    poll_session_until_terminal(client, &session_name, budgets, Instant::now())
+      .await?;
   }
 
   // 3. Stamp + PATCH the produced IMS image (server does the fetch +
@@ -200,12 +201,20 @@ pub async fn run_image_pipeline(
 /// channel closing and the session resource flipping to `complete` —
 /// without it we would sometimes call the stamp endpoint against a
 /// still-running session and 400 on the missing `result_id`.
+///
+/// `start` is captured before entering this function so both the
+/// streaming phase and the fallback poll phase share a single elapsed
+/// budget (the poll budget clock does not restart after the stream
+/// closes).
 async fn stream_session_until_terminal(
   client: &MantaClient,
   session_name: &str,
   timestamps: bool,
   budgets: SatMonitorBudgets,
 ) -> anyhow::Result<()> {
+  // Capture start before streaming so the fallback poll phase counts
+  // wall time already consumed by the stream against the same budget.
+  let start = Instant::now();
   tracing::info!("Streaming logs for CFS session '{session_name}' ...");
   let reader = client
     .stream_session_logs(session_name, timestamps)
@@ -224,14 +233,19 @@ async fn stream_session_until_terminal(
     }
   }
 
-  poll_session_until_terminal(client, session_name, budgets).await
+  poll_session_until_terminal(client, session_name, budgets, start).await
 }
 
 /// Default branch: poll session status until terminal.
+///
+/// `start` is passed in by the caller so the streaming phase and the
+/// poll phase share a single elapsed budget when `--watch-logs` is
+/// set. For the no-logs path the caller passes `Instant::now()`.
 async fn poll_session_until_terminal(
   client: &MantaClient,
   session_name: &str,
   budgets: SatMonitorBudgets,
+  start: Instant,
 ) -> anyhow::Result<()> {
   tracing::info!(
     "Polling CFS session '{session_name}' until it reaches terminal status \
@@ -239,7 +253,6 @@ async fn poll_session_until_terminal(
     budgets.poll_interval.as_secs(),
     budgets.poll_budget.as_secs() / 3600,
   );
-  let start = Instant::now();
   let mut first_not_visible_at: Option<Instant> = None;
   loop {
     if start.elapsed() > budgets.poll_budget {
@@ -318,10 +331,18 @@ async fn fetch_session_opt(
     .into_anyhow()
     .with_context(|| format!("fetch CFS session '{session_name}'"))?;
 
-  // Server returns an array under the wire shape. Round-trip into
-  // the typed shape so callers keep using `.status()`.
-  let sessions: Vec<CfsSessionGetResponse> =
-    serde_json::from_value(sessions_value)
-      .context("deserialise CFS session list response")?;
-  Ok(sessions.into_iter().next())
+  // Deserialise as raw Values first, extract the one element we need,
+  // then convert only that element to the typed shape. Avoids
+  // deserialising the full Vec<CfsSessionGetResponse> when only the
+  // first (and typically only) entry is consumed.
+  let first = serde_json::from_value::<Vec<serde_json::Value>>(sessions_value)
+    .context("deserialise CFS session list response")?
+    .into_iter()
+    .next();
+  match first {
+    None => Ok(None),
+    Some(v) => Ok(Some(
+      serde_json::from_value(v).context("deserialise CFS session")?,
+    )),
+  }
 }

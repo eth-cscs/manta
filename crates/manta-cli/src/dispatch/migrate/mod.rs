@@ -34,6 +34,10 @@ pub async fn handle_migrate(
       let xnames_string = m.req_str("XNAMES")?;
       let output_opt = m.opt_str("output");
 
+      // Build the client once; reuse it for both the optional
+      // accessible-groups lookup and the migrate_nodes call in nodes::exec.
+      let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+
       // If --from is set, use just that group; otherwise fan out to every
       // group the token can access. The accessible-group list comes from
       // the manta server. Server-side `validate_user_group_vec_access`
@@ -41,7 +45,6 @@ pub async fn handle_migrate(
       let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
         None => {
-          let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
           client
             .openapi
             .get_available_groups(client.site_name())
@@ -52,8 +55,7 @@ pub async fn handle_migrate(
       let to = vec![to.to_string()];
 
       nodes::exec(
-        ctx,
-        &token,
+        &client,
         nodes::ExecParams {
           target_groups: &to,
           parent_groups: &from,

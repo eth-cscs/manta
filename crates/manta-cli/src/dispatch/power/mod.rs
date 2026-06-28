@@ -182,6 +182,30 @@ pub struct PowerOpts<'a> {
   pub dry_run: bool,
 }
 
+/// Shared core for [`exec_nodes`] and [`exec_cluster`]: print a
+/// context label, gate on `dry_run` + user confirmation, then
+/// delegate to [`dispatch_and_wait`].
+async fn exec_power(
+  label: &str,
+  target_type: PowerTargetType,
+  ctx: &AppContext<'_>,
+  token: &str,
+  opts: PowerOpts<'_>,
+) -> Result<(), Error> {
+  // Interactive context printed before the confirm prompt; intentionally
+  // plain stdout so it doesn't get wrapped in a JSON envelope.
+  println!("{label}: {}", opts.target);
+  if !opts.dry_run
+    && !common::confirm::confirm(
+      opts.action.confirmation_text(),
+      opts.assume_yes,
+    )
+  {
+    bail!("Operation cancelled by user");
+  }
+  dispatch_and_wait(ctx, token, &opts, target_type).await
+}
+
 /// Execute a power action against a list of nodes resolved
 /// from a hosts expression.
 ///
@@ -194,18 +218,7 @@ pub async fn exec_nodes(
   token: &str,
   opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
-  // Interactive context printed before the confirm prompt; intentionally
-  // plain stdout so it doesn't get wrapped in a JSON envelope.
-  println!("Nodes expression: {}", opts.target);
-  if !opts.dry_run
-    && !common::confirm::confirm(
-      opts.action.confirmation_text(),
-      opts.assume_yes,
-    )
-  {
-    bail!("Operation cancelled by user");
-  }
-  dispatch_and_wait(ctx, token, &opts, PowerTargetType::Nodes).await
+  exec_power("Nodes expression", PowerTargetType::Nodes, ctx, token, opts).await
 }
 
 /// Execute a power action against all nodes in an HSM group.
@@ -219,18 +232,7 @@ pub async fn exec_cluster(
   token: &str,
   opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
-  // Interactive context printed before the confirm prompt; intentionally
-  // plain stdout so it doesn't get wrapped in a JSON envelope.
-  println!("Group: {}", opts.target);
-  if !opts.dry_run
-    && !common::confirm::confirm(
-      opts.action.confirmation_text(),
-      opts.assume_yes,
-    )
-  {
-    bail!("Operation cancelled by user");
-  }
-  dispatch_and_wait(ctx, token, &opts, PowerTargetType::Cluster).await
+  exec_power("Group", PowerTargetType::Cluster, ctx, token, opts).await
 }
 
 /// POST `/power` to start the transition, then (unless `no_wait`)

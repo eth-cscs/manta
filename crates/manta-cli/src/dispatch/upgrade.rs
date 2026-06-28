@@ -70,6 +70,7 @@ pub async fn handle_upgrade(
 const REPO_OWNER: &str = "eth-cscs";
 const REPO_NAME: &str = "manta";
 const TAG_PREFIX: &str = "v";
+const USER_AGENT: &str = concat!("manta-cli/", env!("CARGO_PKG_VERSION"));
 
 /// Result of the version check; serialised under `data` when
 /// `--output json` is requested.
@@ -120,7 +121,8 @@ pub fn exec(
   let target = self_update::get_target();
   ensure_supported_target(target)?;
 
-  let latest = fetch_latest_cli_version()?;
+  let client = reqwest::blocking::Client::new();
+  let latest = fetch_latest_cli_version(&client, current.major)?;
 
   let asset_name = format!("manta-cli-{target}.tar.xz");
   let asset_url = format!(
@@ -173,7 +175,7 @@ pub fn exec(
     bail!("upgrade cancelled by user");
   }
 
-  let new_bin = download_and_extract(&asset_url, target, &exe_path)?;
+  let new_bin = download_and_extract(&client, &asset_url, target, &exe_path)?;
   fs::rename(&new_bin, &exe_path).with_context(|| {
     format!(
       "failed to replace {} with the new binary at {}",
@@ -237,16 +239,18 @@ fn ensure_supported_target(target: &str) -> Result<()> {
   Ok(())
 }
 
-/// Hit the GitHub releases API, filter to `manta-cli-v*` tags, and
-/// return the highest semver.
-fn fetch_latest_cli_version() -> Result<Version> {
+/// Hit the GitHub releases API, filter to `v*` tags in the same
+/// major as `current_major`, and return the highest semver.
+fn fetch_latest_cli_version(
+  client: &reqwest::blocking::Client,
+  current_major: u64,
+) -> Result<Version> {
   let url =
     format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases");
   // Need a `User-Agent` — GitHub rejects API requests without one.
-  let ua = concat!("manta-cli/", env!("CARGO_PKG_VERSION"));
-  let resp: Vec<Value> = reqwest::blocking::Client::new()
+  let resp: Vec<Value> = client
     .get(&url)
-    .header(reqwest::header::USER_AGENT, ua)
+    .header(reqwest::header::USER_AGENT, USER_AGENT)
     .header(reqwest::header::ACCEPT, "application/vnd.github+json")
     .send()
     .with_context(|| format!("failed to GET {url}"))?
@@ -259,10 +263,6 @@ fn fetch_latest_cli_version() -> Result<Version> {
   // `v1.X` tags from before the consolidated tag scheme don't get
   // picked as "latest" while we wait for the next same-major bump
   // to ship. Auto-adapts when v3 lands.
-  let current_major = Version::parse(env!("CARGO_PKG_VERSION"))
-    .map(|v| v.major)
-    .unwrap_or(0);
-
   let mut versions: Vec<Version> = resp
     .iter()
     .filter_map(|r| r.get("tag_name").and_then(Value::as_str))
@@ -283,17 +283,15 @@ fn fetch_latest_cli_version() -> Result<Version> {
 /// in the same directory as `exe_path` (so we can rename across the
 /// same filesystem), set it executable, and return its path.
 fn download_and_extract(
+  client: &reqwest::blocking::Client,
   asset_url: &str,
   target: &str,
   exe_path: &Path,
 ) -> Result<PathBuf> {
   eprintln!("Downloading {asset_url}");
-  let bytes = reqwest::blocking::Client::new()
+  let bytes = client
     .get(asset_url)
-    .header(
-      reqwest::header::USER_AGENT,
-      concat!("manta-cli/", env!("CARGO_PKG_VERSION")),
-    )
+    .header(reqwest::header::USER_AGENT, USER_AGENT)
     .send()
     .with_context(|| format!("failed to GET {asset_url}"))?
     .error_for_status()
