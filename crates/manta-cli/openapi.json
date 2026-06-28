@@ -10,7 +10,7 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.55"
+    "version": "2.0.0-beta.61"
   },
   "servers": [
     {
@@ -128,6 +128,16 @@
               }
             }
           },
+          "404": {
+            "description": "Unknown site",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "429": {
             "description": "Rate limit exceeded",
             "content": {
@@ -185,6 +195,16 @@
           },
           "401": {
             "description": "Token rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown site",
             "content": {
               "application/json": {
                 "schema": {
@@ -4473,7 +4493,7 @@
     "schemas": {
       "AddHwComponentRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/hardware-clusters/{target}/members`.\n\nMoves nodes matching `pattern` out of `parent_cluster` and into\nthe path-level target cluster.",
+        "description": "Request body for `POST /api/v1/hardware-clusters/{target}/members`.\n\nMoves nodes matching `pattern` out of `parent_cluster` and into\nthe path-level target cluster. The reverse direction lives in\n[`DeleteHwComponentRequest`]; both operations are also expressible\nin unified form via [`ApplyHwConfigurationRequest`] with\n[`HwClusterMode::Pin`] vs [`HwClusterMode::Unpin`].",
         "required": [
           "parent_cluster",
           "pattern"
@@ -4538,7 +4558,7 @@
       },
       "AddNodeRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/nodes`.",
+        "description": "Request body for `POST /api/v1/nodes`.\n\nPaired with [`super::responses::AddNodeResponse`] on success.\n\n# Wire shape\n\n```json\n{\n  \"id\": \"x3000c0s1b0n0\",\n  \"group\": \"alps\",\n  \"enabled\": true,\n  \"arch\": \"X86\"\n}\n```",
         "required": [
           "id",
           "group"
@@ -4567,7 +4587,7 @@
       },
       "AddNodeResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v1/nodes` — echoes the registered xname.",
+        "description": "Response for `POST /api/v1/nodes` — echoes the registered xname.\n\nPaired with [`super::node::AddNodeRequest`].\n\n# Wire shape\n\n```json\n{ \"id\": \"x3000c0s1b0n0\" }\n```",
         "required": [
           "id"
         ],
@@ -4580,7 +4600,7 @@
       },
       "AddNodesToGroupRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/groups/{name}/members`.",
+        "description": "Request body for `POST /api/v1/groups/{name}/members`.\n\nPaired with [`AddNodesToGroupResponse`] on success.",
         "required": [
           "hosts_expression"
         ],
@@ -4593,7 +4613,7 @@
       },
       "AddNodesToGroupResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v1/groups/{name}/members`.\n\nThe `removed` field name is retained for wire stability; its value\nis the final, sorted membership of the group after the update —\n**not** a list of removed nodes.",
+        "description": "Response body for `POST /api/v1/groups/{name}/members`.\n\nThe `removed` field name is retained for wire stability; its value\nis the final, sorted membership of the group after the update —\n**not** a list of removed nodes.\n\n`added` and `final_members` are both sorted alphabetically by xname.\n\n# Wire shape\n\n```json\n{\n  \"added\": [\"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"final_members\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"removed\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"]\n}\n```",
         "required": [
           "added",
           "final_members"
@@ -4604,7 +4624,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Xnames that were added to the group as part of this request."
+            "description": "Xnames that were added to the group as part of this request,\nsorted alphabetically."
           },
           "final_members": {
             "type": "array",
@@ -4624,7 +4644,7 @@
       },
       "ApplyBootConfigRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).",
+        "description": "Request body for `POST /api/v1/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).\n\nAt least one of `boot_image_id`, `boot_image_configuration`,\n`kernel_parameters`, or `runtime_configuration` should be set;\n`null` fields are left unchanged on the targeted nodes.\n\n# Wire shape\n\n```json\n{\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_image_configuration\": null,\n  \"kernel_parameters\": \"console=ttyS0 nosmt\",\n  \"runtime_configuration\": \"cos-2.5\",\n  \"dry_run\": false\n}\n```",
         "required": [
           "hosts_expression"
         ],
@@ -4641,7 +4661,7 @@
               "string",
               "null"
             ],
-            "description": "IMS image ID to set as the boot image."
+            "description": "IMS image ID to set as the boot image. Mutually exclusive with\n`boot_image_configuration`: set one or the other, not both."
           },
           "dry_run": {
             "type": "boolean",
@@ -4703,7 +4723,7 @@
       },
       "ApplyKernelParametersRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/kernel-parameters/apply`.",
+        "description": "Request body for `POST /api/v1/kernel-parameters/apply`.\n\nOne of `xnames_expression` or `hsm_group` must be set (not both).\nThe chosen [`KernelParamOp`] determines what `params` means:\nmerge-keys, replace-set, or remove-set.\n\n# Wire shape\n\n```json\n{\n  \"xnames_expression\": \"x3000c0s1b0n[0-3]\",\n  \"hsm_group\": null,\n  \"operation\": \"add\",\n  \"params\": \"console=ttyS0 nosmt\",\n  \"overwrite\": false,\n  \"project_sbps\": true,\n  \"dry_run\": false\n}\n```",
         "required": [
           "operation",
           "params"
@@ -4747,7 +4767,7 @@
       },
       "AuthTokenRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/auth/token`.",
+        "description": "Request body for `POST /api/v1/auth/token`.\n\nPaired with [`AuthTokenResponse`] on success. The `/auth/*`\nsub-router is wrapped by `strip_body_for_logs`, so neither the\nrequest body nor the issued token appears in access logs.\n\n# Wire shape\n\n```json\n{ \"username\": \"alice\", \"password\": \"hunter2\" }\n```",
         "required": [
           "username",
           "password"
@@ -4765,7 +4785,7 @@
       },
       "AuthTokenResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v1/auth/token`.",
+        "description": "Response body for `POST /api/v1/auth/token`.\n\nReturned in exchange for a valid [`AuthTokenRequest`].\n\n# Wire shape\n\n```json\n{ \"token\": \"eyJhbGciOi...\" }\n```",
         "required": [
           "token"
         ],
@@ -4778,7 +4798,7 @@
       },
       "BackendSummary": {
         "type": "object",
-        "description": "One row of the backend-data summary, anchored on an IMS image.\n\nEvery IMS image visible to the caller produces exactly one row.\nThe row's `image_id` and `name` are always populated; the rest are\n`Option<String>` and are filled in only when the corresponding\nrelation resolves.",
+        "description": "One row of the backend-data summary, anchored on an IMS image.\n\nEvery IMS image visible to the caller produces exactly one row.\nThe row's `image_id` and `name` are always populated; the rest are\n`Option<String>` and are filled in only when the corresponding\nrelation resolves.\n\nSee also [`super::configuration_analysis::ConfigurationAnalysis`]\nfor the parallel configuration-centric projection.\n\n# Wire shape\n\n```json\n{\n  \"image_id\": \"0a1b2c3d-...\",\n  \"name\": \"compute-cos-2.5\",\n  \"image_created\": \"2026-05-12T10:14:22Z\",\n  \"configuration_name\": \"cos-2.5\",\n  \"safe_to_delete\": false\n}\n```",
         "required": [
           "image_id",
           "name",
@@ -4865,7 +4885,7 @@
       },
       "CompletedResponse": {
         "type": "object",
-        "description": "Response for endpoints that simply confirm a backup / restore /\nlong-running migrate operation finished. Emitted by\n`POST /api/v1/migrate/backup` and `POST /api/v1/migrate/restore`.",
+        "description": "Response for endpoints that simply confirm a backup / restore /\nlong-running migrate operation finished. Emitted by\n`POST /api/v1/migrate/backup` and `POST /api/v1/migrate/restore`.\n\n# Wire shape\n\n```json\n{ \"completed\": true }\n```",
         "required": [
           "completed"
         ],
@@ -4878,7 +4898,7 @@
       },
       "ConfigurationAnalysis": {
         "type": "object",
-        "description": "One row of the configuration-deletion-safety analysis.",
+        "description": "One row of the configuration-deletion-safety analysis.\n\nConfiguration-centric counterpart to\n[`super::analysis::BackendSummary`]; one entry per CFS\nconfiguration the caller can see.",
         "required": [
           "configuration",
           "safe_to_delete"
@@ -4950,7 +4970,7 @@
       },
       "CreateSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/sessions`.\n\nThe CLI submits this when the user runs `manta run session`; the\nserver deserialises it in `handlers::session::create_session`.\n`repo_names` and `repo_last_commit_ids` are parallel-indexed —\n`repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.",
+        "description": "Request body for `POST /api/v1/sessions`.\n\nThe CLI submits this when the user runs `manta run session`; the\nserver deserialises it in `handlers::session::create_session`.\n`repo_names` and `repo_last_commit_ids` are parallel-indexed —\n`repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.\nThe two vectors must therefore have the same length.\n\nPaired with [`super::responses::CreateSessionResponse`].",
         "required": [
           "repo_names",
           "repo_last_commit_ids"
@@ -5016,7 +5036,7 @@
       },
       "CreateSessionResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v1/sessions` — names of the created CFS\nsession and its underlying configuration.",
+        "description": "Response for `POST /api/v1/sessions` — names of the created CFS\nsession and its underlying configuration.\n\nPaired with [`super::session::CreateSessionRequest`]. When the\ncaller did not supply `cfs_conf_sess_name`, the server-generated\nname is echoed back here.",
         "required": [
           "session_name",
           "configuration_name"
@@ -5034,7 +5054,7 @@
       },
       "CreatedResponse": {
         "type": "object",
-        "description": "Response for endpoints that simply confirm a write happened.\n\nEmitted by `POST /api/v1/redfish-endpoints`,\n`POST /api/v1/boot-parameters`, and `POST /api/v1/groups`.",
+        "description": "Response for endpoints that simply confirm a write happened.\n\nEmitted by `POST /api/v1/redfish-endpoints`,\n`POST /api/v1/boot-parameters`, and `POST /api/v1/groups`.\n\n# Wire shape\n\n```json\n{ \"created\": true }\n```",
         "required": [
           "created"
         ],
@@ -5080,7 +5100,7 @@
       },
       "DeleteHwComponentRequest": {
         "type": "object",
-        "description": "Request body for `DELETE /api/v1/hardware-clusters/{target}/members`.",
+        "description": "Request body for `DELETE /api/v1/hardware-clusters/{target}/members`.\n\nReverse of [`AddHwComponentRequest`]: moves nodes matching\n`pattern` out of the path-level target cluster and back to\n`parent_cluster`.",
         "required": [
           "parent_cluster",
           "pattern"
@@ -5236,7 +5256,7 @@
       },
       "MigrateBackupRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/migrate/backup`.",
+        "description": "Request body for `POST /api/v1/migrate/backup`.\n\nPaired with [`super::responses::CompletedResponse`] on success.",
         "properties": {
           "bos": {
             "type": [
@@ -5290,7 +5310,7 @@
       },
       "MigrateNodesRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/migrate/nodes`.",
+        "description": "Request body for `POST /api/v1/migrate/nodes`.\n\nPaired with [`super::responses::MigrateNodesResponse`] on success.\n`target_hsm_names` and `parent_hsm_names` are length-matched: each\n`parent_hsm_names[i]` donates members to `target_hsm_names[i]`.\n\n# Wire shape\n\n```json\n{\n  \"target_hsm_names\": [\"zinal\"],\n  \"parent_hsm_names\": [\"alps\"],\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"dry_run\": false,\n  \"create_hsm_group\": false\n}\n```",
         "required": [
           "target_hsm_names",
           "parent_hsm_names",
@@ -5327,7 +5347,7 @@
       },
       "MigrateNodesResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v1/migrate/nodes` — moved xnames plus a\nper-(target,parent) result list. Dry-run uses the same shape so the\nCLI consumes one type regardless of mode.",
+        "description": "Response for `POST /api/v1/migrate/nodes` — moved xnames plus a\nper-(target,parent) result list. Dry-run uses the same shape so the\nCLI consumes one type regardless of mode.\n\nPaired with [`super::migrate::MigrateNodesRequest`]. The `results`\narray runs in lockstep with the request's `target_hsm_names` /\n`parent_hsm_names` pairs.",
         "required": [
           "xnames",
           "results"
@@ -5351,7 +5371,7 @@
       },
       "MigrateRestoreRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/migrate/restore`.",
+        "description": "Request body for `POST /api/v1/migrate/restore`.\n\nPaired with [`super::responses::CompletedResponse`] on success.\nEvery `*_file` field is optional independently — supplying only\n`cfs_file` restores CFS configurations and leaves BOS, HSM, IMS,\nand image layers untouched.",
         "properties": {
           "bos_file": {
             "type": [
@@ -5396,7 +5416,7 @@
       },
       "NodeDetails": {
         "type": "object",
-        "description": "Per-node details returned by `GET /api/v1/nodes`.\n\nMirror of `csm_rs::node::types::NodeDetails` with identical fields\nand identical JSON wire format. No conversion impl is needed in\nthe server crate — the response is serialised straight from the\ncsm-rs type and the CLI deserialises it into this mirror.\n\nAll fields are wire-stringified (CSM serializes them that way);\ncallers parse them as needed for display or comparison.",
+        "description": "Per-node details returned by `GET /api/v1/nodes`.\n\nMirror of `csm_rs::node::types::NodeDetails` with identical fields\nand identical JSON wire format. No conversion impl is needed in\nthe server crate — the response is serialised straight from the\ncsm-rs type and the CLI deserialises it into this mirror.\n\nAll fields are wire-stringified (CSM serializes them that way);\ncallers parse them as needed for display or comparison. The empty\nstring is the conventional \"unset\" sentinel — see\n`cluster_status::compute_summary_status` for case-insensitive\nmatching on the status fields.\n\n# Wire shape\n\n```json\n{\n  \"xname\": \"x3000c0s1b0n0\",\n  \"nid\": \"nid001313\",\n  \"hsm\": \"alps,zinal\",\n  \"power_status\": \"On\",\n  \"desired_configuration\": \"cos-2.5\",\n  \"configuration_status\": \"configured\",\n  \"enabled\": \"true\",\n  \"error_count\": \"0\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_configuration\": \"cos-2.5\",\n  \"kernel_params\": \"console=ttyS0 ...\"\n}\n```",
         "required": [
           "xname",
           "nid",
@@ -5530,13 +5550,13 @@
         ],
         "properties": {
           "sat_file": {
-            "description": "Parsed SAT file content. Same shape as\n`PostSatConfigurationRequest::configuration` aggregated into\nthe full SAT document (`{ configurations, images,\nsession_templates, hardware }`)."
+            "description": "Parsed SAT file content — the **whole** SAT document, not a\nsingle entry. Sketch:\n\n```text\n{\n  \"configurations\":    [ {...}, ... ],   // entries of PostSatConfigurationRequest::configuration shape\n  \"images\":            [ {...}, ... ],   // entries of CreateImageCfsSessionRequest::image shape\n  \"session_templates\": [ {...}, ... ],   // entries of PostSatSessionTemplateRequest::session_template shape\n  \"hardware\":          [ {...}, ... ]\n}\n```"
           }
         }
       },
       "PostTemplateSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/templates/{name}/sessions`.",
+        "description": "Request body for `POST /api/v1/templates/{name}/sessions`.\n\nCreates a BOS session from an existing session template (the\n`{name}` path segment).\n\n# Wire shape\n\n```json\n{\n  \"operation\": \"reboot\",\n  \"limit\": \"x3000c0s1b0n[0-3]\",\n  \"session_name\": null,\n  \"include_disabled\": false,\n  \"dry_run\": false\n}\n```",
         "required": [
           "operation",
           "limit"
@@ -5578,7 +5598,7 @@
       },
       "PowerRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/power`.",
+        "description": "Request body for `POST /api/v1/power`.\n\nThe interpretation of `host_expression` depends on [`PowerTargetType`];\nthe action itself is one of [`PowerAction`]'s variants.\n\n# Wire shape\n\n```json\n{\n  \"action\": \"on\",\n  \"host_expression\": \"x3000c0s1b0n[0-3]\",\n  \"target_type\": \"nodes\",\n  \"force\": false\n}\n```",
         "required": [
           "action",
           "host_expression",
@@ -5679,7 +5699,7 @@
       },
       "UpdateRedfishEndpointParams": {
         "type": "object",
-        "description": "Typed parameters for updating/adding a Redfish endpoint.",
+        "description": "Typed parameters for adding or updating a Redfish endpoint.\n\nShared request body for **both** `POST /redfish-endpoints` (add a\nnew endpoint) and `PUT /redfish-endpoints` (replace an existing\none by `id`). PUT is a full replacement — every field is written,\nso partial updates require reading the existing endpoint first.",
         "required": [
           "id",
           "enabled",
@@ -5775,7 +5795,7 @@
       },
       "ValidateTokenRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/auth/validate`.",
+        "description": "Request body for `POST /api/v1/auth/validate`.\n\nUsed to check a previously-issued [`AuthTokenResponse::token`]\nbefore relying on it. The server returns `200 OK` for a valid\ntoken and `401` otherwise — there is no dedicated response body.",
         "required": [
           "token"
         ],

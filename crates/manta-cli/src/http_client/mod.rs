@@ -39,7 +39,9 @@ mod console;
 mod streaming;
 mod wire;
 
-pub use client::{AuthServerUnreachable, MantaClient, OpenApiResultExt};
+pub use client::{
+  AuthServerUnreachable, MantaClient, OpenApiResultExt, SiteNotFound,
+};
 pub(super) use wire::ws_base_url;
 
 #[cfg(test)]

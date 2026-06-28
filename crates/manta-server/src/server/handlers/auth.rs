@@ -6,12 +6,17 @@
 //! `crate::server::auth_middleware`; this file just maps requests to
 //! [`crate::service::auth`].
 //!
-//! Every auth failure surfaces a generic `401 invalid credentials` so
-//! the response never reveals whether a username exists, whether a
-//! site is configured, or what the backend actually rejected. The
-//! specific reason is captured server-side with `tracing::warn!` and
-//! sent to the audit channel when one is configured on
-//! [`ServerState`].
+//! An unknown `X-Manta-Site` is reported explicitly as `404 Not
+//! Found` — consistent with every authenticated endpoint, which 404s
+//! on an unknown site during [`crate::server::handlers::RequestCtx`]
+//! extraction — so the CLI can fail fast instead of prompting for
+//! credentials that can never succeed.
+//!
+//! Every *other* auth failure surfaces a generic `401 invalid
+//! credentials` so the response never reveals whether a username
+//! exists or what the backend actually rejected. The specific reason
+//! is captured server-side with `tracing::warn!` and sent to the
+//! audit channel when one is configured on [`ServerState`].
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -30,13 +35,28 @@ use manta_shared::types::auth::{
 use super::{ErrorResponse, ServerState, SiteHeader, SiteName};
 use crate::service;
 
-/// Single generic 401 surfaced to clients for any `/auth/*` failure.
-/// Detail stays server-side in `tracing::warn!`.
+/// Single generic 401 surfaced to clients for any `/auth/*`
+/// *credential* failure. Detail stays server-side in `tracing::warn!`.
 fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
   (
     StatusCode::UNAUTHORIZED,
     Json(ErrorResponse {
       error: "invalid credentials".to_string(),
+    }),
+  )
+}
+
+/// `404` returned when the `X-Manta-Site` header names a site that is
+/// not configured on this server. Unlike credential failures (which
+/// stay a generic 401), an unknown site is reported explicitly so the
+/// CLI can fail fast instead of prompting for credentials that can
+/// never succeed. Matches the 404 every authenticated endpoint already
+/// returns for an unknown site.
+fn site_not_found(site: &str) -> (StatusCode, Json<ErrorResponse>) {
+  (
+    StatusCode::NOT_FOUND,
+    Json(ErrorResponse {
+      error: format!("site '{site}' not found"),
     }),
   )
 }
@@ -48,6 +68,7 @@ fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
   responses(
     (status = 200, description = "Token issued", body = AuthTokenResponse),
     (status = 401, description = "Invalid credentials", body = ErrorResponse),
+    (status = 404, description = "Unknown site", body = ErrorResponse),
     (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
   )
@@ -61,7 +82,7 @@ pub async fn auth_token(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = state.infra_context(&site_name).map_err(|e| {
     tracing::warn!("auth_token: site lookup failed: {}", e);
-    generic_invalid_credentials()
+    site_not_found(&site_name)
   })?;
   let source_ip = peer.ip().to_string();
 
@@ -119,6 +140,7 @@ pub async fn auth_token(
   responses(
     (status = 200, description = "Token is valid"),
     (status = 401, description = "Token rejected", body = ErrorResponse),
+    (status = 404, description = "Unknown site", body = ErrorResponse),
     (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
   )
@@ -131,7 +153,7 @@ pub async fn auth_validate(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = state.infra_context(&site_name).map_err(|e| {
     tracing::warn!("auth_validate: site lookup failed: {}", e);
-    generic_invalid_credentials()
+    site_not_found(&site_name)
   })?;
   tracing::info!(site = %site_name, "auth_validate: token check requested");
   match service::auth::validate_api_token(&infra, &req.token).await {

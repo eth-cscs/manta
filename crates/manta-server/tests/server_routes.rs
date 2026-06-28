@@ -125,6 +125,26 @@ fn post_json(uri: &str, body: &str) -> Request<Body> {
     .unwrap()
 }
 
+/// Build an **unauthenticated** POST to a public `/auth/*` endpoint
+/// for an arbitrary `X-Manta-Site`. No Bearer token (these endpoints
+/// are how a token is obtained). The `ConnectInfo` extension is
+/// injected so `auth_token`'s `ConnectInfo<SocketAddr>` extractor
+/// resolves under `oneshot` (which doesn't set it) and the handler
+/// body — where the site lookup lives — actually runs.
+fn post_auth(uri: &str, site: &str, body: &str) -> Request<Body> {
+  let mut req = Request::builder()
+    .method(Method::POST)
+    .uri(uri)
+    .header(header::CONTENT_TYPE, "application/json")
+    .header("X-Manta-Site", site)
+    .body(Body::from(body.to_string()))
+    .unwrap();
+  req.extensions_mut().insert(axum::extract::ConnectInfo(
+    "127.0.0.1:65000".parse::<std::net::SocketAddr>().unwrap(),
+  ));
+  req
+}
+
 // ---------------------------------------------------------------------------
 // Health check
 // ---------------------------------------------------------------------------
@@ -625,6 +645,79 @@ async fn console_session_without_auth_returns_401() {
     .oneshot(ws_upgrade("/api/v1/sessions/my-session/console"))
     .await
     .unwrap();
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+// ---------------------------------------------------------------------------
+// Auth endpoints — unknown site is reported as 404 (issue #102)
+//
+// The public `/auth/*` endpoints used to collapse every failure
+// (including "site not configured") into a generic 401. They now 404
+// on an unknown `X-Manta-Site`, matching every authenticated endpoint,
+// so the CLI can fail fast instead of prompting for credentials that
+// can never succeed. A *known* site must NOT 404 — the backend call is
+// attempted and its failure stays a generic 401.
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn auth_token_unknown_site_returns_404() {
+  let resp = router()
+    .oneshot(post_auth(
+      "/api/v1/auth/token",
+      "nonexistent-site",
+      r#"{"username":"alice","password":"hunter2"}"#,
+    ))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+  let body = body_string(resp.into_body()).await;
+  assert!(
+    body.contains("nonexistent-site"),
+    "404 body should name the missing site, got: {body}"
+  );
+}
+
+#[tokio::test]
+async fn auth_validate_unknown_site_returns_404() {
+  let resp = router()
+    .oneshot(post_auth(
+      "/api/v1/auth/validate",
+      "nonexistent-site",
+      r#"{"token":"some-token"}"#,
+    ))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn auth_token_known_site_is_not_404() {
+  // Site "test" exists; the stub backend at http://stub.invalid can't
+  // be reached, so the credential exchange fails — but as a generic
+  // 401, never a 404 (which is reserved for unknown sites).
+  let resp = router()
+    .oneshot(post_auth(
+      "/api/v1/auth/token",
+      "test",
+      r#"{"username":"alice","password":"hunter2"}"#,
+    ))
+    .await
+    .unwrap();
+  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn auth_validate_known_site_is_not_404() {
+  let resp = router()
+    .oneshot(post_auth(
+      "/api/v1/auth/validate",
+      "test",
+      r#"{"token":"some-token"}"#,
+    ))
+    .await
+    .unwrap();
+  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
   assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
 }
 

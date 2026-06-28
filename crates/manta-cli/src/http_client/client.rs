@@ -57,6 +57,32 @@ impl std::fmt::Display for AuthServerUnreachable {
 
 impl std::error::Error for AuthServerUnreachable {}
 
+/// Marker error attached as anyhow context whenever an `/auth/*` HTTP
+/// call returns `404 Not Found` — the manta server is reachable but the
+/// `site` in your config isn't one it serves. Lets
+/// [`crate::common::authentication`] short-circuit the
+/// env → file → interactive-prompt cascade instead of asking for
+/// credentials that can never succeed against a site that doesn't exist.
+#[derive(Debug)]
+pub struct SiteNotFound {
+  /// The `X-Manta-Site` value the server rejected. Surfaced in the
+  /// error message and recoverable via `downcast_ref`.
+  pub site: String,
+}
+
+impl std::fmt::Display for SiteNotFound {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "site '{}' is not configured on the manta server. \
+       Check the `site` value in your `cli.toml`.",
+      self.site,
+    )
+  }
+}
+
+impl std::error::Error for SiteNotFound {}
+
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
 ///
