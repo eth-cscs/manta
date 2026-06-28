@@ -1,7 +1,7 @@
 [package]
 name        = "manta-server"
 description = "Manta HTTP server — single API that proxies to CSM / Ochami backends."
-publish     = false
+publish     = true
 version.workspace      = true
 edition.workspace      = true
 authors.workspace      = true
