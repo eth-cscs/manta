@@ -732,19 +732,21 @@ Manta resolves the bearer token in a defined order; scripts running in CI / cron
 
 ```mermaid
 flowchart TD
-    Start[manta subcommand] --> Env{MANTA_TOKEN env var set?}
-    Env -->|yes| Use[use env value<br/>no cache read, no prompt]
-    Env -->|no| Cache{cache file exists?<br/>config-dir/site_auth, mode 0600}
-    Cache -->|yes, not expired| ReadCache[load token from cache]
-    Cache -->|expired or missing| TTY{stdin is a TTY?}
+    Start[manta subcommand] --> Env{MANTA_CSM_TOKEN env var set?}
+    Env -->|yes| ValEnv{server accepts token?}
+    Env -->|no| Cache
+    ValEnv -->|yes| Run[run command with Bearer token]
+    ValEnv -->|no| Cache{cache file exists?<br/>config-dir/site_auth, mode 0600}
+    Cache -->|yes| ValCache{server accepts token?}
+    Cache -->|no| TTY{stdin is a TTY?}
+    ValCache -->|yes| Run
+    ValCache -->|no| TTY
     TTY -->|no| Fail[exit non-zero<br/>no way to prompt non-interactively]
     TTY -->|yes| Prompt[prompt user -> POST /auth/token<br/>write 0600 cache]
-    Use --> Run[run command with Bearer token]
-    ReadCache --> Run
     Prompt --> Run
 ```
 
-For scripts, set `MANTA_TOKEN` from a secret-fetch step before the `manta` invocation — that bypasses the cache and the prompt entirely.
+For scripts, set `MANTA_CSM_TOKEN` from a secret-fetch step before the `manta` invocation. If the server rejects the token (e.g. expired), the CLI falls through to the cached file and then to an interactive prompt — see the flowchart above.
 
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
 

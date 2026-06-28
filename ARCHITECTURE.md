@@ -159,7 +159,7 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 
 ### Hardware-cluster pin/unpin algorithm
 
-The algorithm has a fixed phase shape: parse the requested hardware pattern, fetch the target + parent group inventory, score candidate nodes, move the winners, verify. Failures during the move phase trigger a best-effort rollback — see the implementation in `crates/manta-server/src/service/hw_cluster/pin_unpin.rs` for the exact retry / partial-failure handling, which is **not** transactional.
+The algorithm has a fixed phase shape: parse the requested hardware pattern, fetch the target + parent group inventory, score candidate nodes, move the winners. Failures during the move phase are **not** rolled back — the design relies on target-group updates being idempotent and on operators retrying. See the rollback-contract rustdoc in `crates/manta-server/src/service/hw_cluster/pin_unpin.rs` for the per-step guarantees.
 
 *Flowchart: phase shape of `apply hw-cluster` from CLI to backend.*
 
@@ -172,9 +172,8 @@ flowchart TD
     Validate -->|sufficient| Score["calculate_hw_component_scarcity_scores<br/>+ per-node scoring"]
     Score --> Pick["get_best_candidate_in_target_and_parent_hsm"]
     Pick --> Move["apply_group_updates<br/>POST /groups/.../members"]
-    Move -->|partial failure| Rollback["best-effort revert moved nodes<br/>NOT transactional"]
+    Move -->|partial failure| Err5xx["500 with details<br/>target update may be left in place<br/>operator inspects + retries (idempotent)"]
     Move -->|all succeeded| Done["200 OK"]
-    Rollback --> Err5xx["500 with details<br/>operator must inspect group state"]
 ```
 
 ---
