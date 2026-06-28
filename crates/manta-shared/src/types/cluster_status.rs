@@ -86,8 +86,16 @@ pub fn compute_summary_status(nodes: &[NodeDetails]) -> &'static str {
 
 /// Aggregate hardware component counts across nodes (summary view).
 ///
-/// Counts processors and accelerators by info string, converts
-/// memory from MiB to GiB, and counts HSN NICs.
+/// Counts processors, accelerators, and HSN NICs by their `info`
+/// string (verbatim, including whitespace) and accumulates memory
+/// as **GiB** under a key like `"Memory (GiB)"` (raw MiB / 1024,
+/// non-numeric capacities counted as 0). Components whose `info`
+/// is `None` are skipped (memory is the exception — it still
+/// contributes a 0 entry).
+///
+/// Companion to [`get_cluster_hw_pattern`] — they look similar but
+/// the outputs are **not** interchangeable; see that function's doc
+/// for the differences.
 pub fn calculate_group_hw_component_summary(
   node_summary_vec: &[NodeSummary],
 ) -> HashMap<String, usize> {
@@ -140,7 +148,20 @@ pub fn calculate_group_hw_component_summary(
   node_hw_component_summary
 }
 
-/// Compute a hardware pattern (component counts with whitespace stripped).
+/// Compute a hardware pattern signature for cluster-matching.
+///
+/// Differs from [`calculate_group_hw_component_summary`] in three
+/// load-bearing ways — picking the wrong helper silently shifts the
+/// numbers consumers see:
+///
+/// - Processor / accelerator keys have **all whitespace stripped**
+///   (`"AMDEPYC7763"`, not `"AMD EPYC 7763"`), so two clusters with
+///   the same CPU model but different vendor-string formatting hash
+///   to the same pattern.
+/// - Memory is accumulated under the literal key `"memory"` as the
+///   **raw MiB total**, not divided by 1024 and not suffixed
+///   `(GiB)`.
+/// - HSN NICs are not counted.
 pub fn get_cluster_hw_pattern(
   hsm_summary: Vec<NodeSummary>,
 ) -> HashMap<String, usize> {

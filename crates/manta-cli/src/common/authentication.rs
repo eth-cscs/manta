@@ -1,9 +1,36 @@
-//! Token acquisition: env var → cached file → interactive Keycloak login.
+//! Token acquisition: env var -> cached file -> interactive Keycloak login.
 //!
 //! Every path checks the candidate token against the configured
 //! `manta-server` (via `MantaClient`), which in turn validates it
 //! against the CSM/OCHAMI backend. The CLI never reaches a backend
 //! directly.
+//!
+//! ## Resolution order
+//!
+//! [`get_api_token`] walks the candidates in this order and returns
+//! the first one that the server's `/api/v1/auth/validate` accepts:
+//!
+//! 1. `MANTA_CSM_TOKEN` environment variable.
+//! 2. Cached file at `<cache_dir>/<site>_auth` (0600-permissions). The
+//!    cache directory comes from
+//!    [`manta_shared::common::config::get_default_cache_path`].
+//! 3. Interactive Keycloak username + password prompt
+//!    (`dialoguer`-based), retried up to [`MAX_LOGIN_ATTEMPTS`] times
+//!    against `/api/v1/auth/token`. A successful interactive login is
+//!    written back to the cache file.
+//!
+//! ## Short-circuit on unreachable server
+//!
+//! If any step fails because the manta server itself is unreachable
+//! (DNS / TCP / TLS) — surfaced by the
+//! [`crate::http_client::AuthServerUnreachable`] typed context — the
+//! cascade aborts immediately. Trying the next path would hit the
+//! same dead endpoint, and re-prompting would only confuse the
+//! operator.
+//!
+//! Non-interactive callers (`stdin` is not a TTY) also stop after the
+//! cached-token attempt rather than blocking on a prompt that can
+//! never be answered.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{AuthServerUnreachable, MantaClient};
@@ -71,6 +98,21 @@ where
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
 /// is validated through `manta-server`.
+///
+/// On a successful interactive login the token is written back to
+/// `<cache_dir>/<site>_auth` with `0600` permissions so subsequent
+/// invocations re-use it.
+///
+/// # Errors
+///
+/// - No site is set (`ctx.require_site()` fails).
+/// - The manta server is unreachable at any point — the cascade
+///   aborts and surfaces an
+///   [`crate::http_client::AuthServerUnreachable`]-wrapped error.
+/// - All three candidates failed (no env var, no cached file or
+///   stale cached token, and either the interactive retries hit
+///   [`MAX_LOGIN_ATTEMPTS`] or stdin isn't a terminal).
+/// - File I/O for the cache write fails after a successful login.
 #[tracing::instrument(skip_all, fields(site = ctx.site_name.unwrap_or("<unset>")))]
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   // Auth endpoints are the ones that *obtain* or *check* the token,

@@ -1,4 +1,11 @@
-//! Hardware inventory queries.
+//! Hardware-inventory query handlers.
+//!
+//! - `GET /api/v1/groups/hardware`        → [`get_groups_hardware`] (canonical)
+//! - `GET /api/v1/hardware-clusters`      → [`get_hardware_clusters_deprecated`] (deprecated alias)
+//! - `GET /api/v1/hardware-nodes-list`    → [`get_hardware_nodes_list`]
+//!
+//! All wrap `crate::service::hardware::*`. The deprecated alias logs
+//! a warning and forwards to the canonical endpoint.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 

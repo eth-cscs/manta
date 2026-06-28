@@ -1,6 +1,20 @@
-//! Ephemeral CFS environment provisioning — launches a temporary
-//! container booted from an existing IMS image and returns its
-//! hostname.
+//! Ephemeral CFS environment provisioning — launches a temporary IMS
+//! customize container booted from an existing IMS image and returns
+//! its SSH hostname.
+//!
+//! Unlike most service modules this one bypasses the backend
+//! dispatcher and talks to CSM via [`csm_rs::ShastaClient`] directly:
+//! the IMS `jobs.customize` API is CSM-specific and isn't exposed
+//! through `manta-backend-dispatcher`. The handler is wired only on
+//! the CSM site.
+//!
+//! Flow:
+//!
+//! 1. Read the JWT's `preferred_username` claim.
+//! 2. Look the user's public SSH key up in IMS — registered keys are
+//!    keyed by username on the IMS side.
+//! 3. POST an IMS customize job referencing `image_id` and the key id.
+//! 4. Extract the SSH hostname from the response and return it.
 
 use csm_rs::ShastaClient;
 use manta_backend_dispatcher::error::Error;
@@ -21,6 +35,17 @@ const EPHEMERAL_IMAGE_NAME: &str = "__ephemeral_image";
 /// at `/ssh_containers/0/connection_info/customer_access/host`; a
 /// missing field is reported as `MissingField` rather than a generic
 /// error so operators can tell schema drift from real failures.
+///
+/// # Errors
+///
+/// - [`Error::JwtMalformed`] (via `wire_conv::to_backend`) when the
+///   JWT carries no `preferred_username`.
+/// - [`Error::BadRequest`] if the Shasta HTTP client cannot be built
+///   or the IMS customize job submission fails.
+/// - [`Error::NotFound`] when the caller has no SSH public key
+///   registered in IMS.
+/// - [`Error::MissingField`] when the IMS response is missing the
+///   server-generated key id or the SSH container host field.
 pub async fn exec(
   infra: &InfraContext<'_>,
   token: &str,

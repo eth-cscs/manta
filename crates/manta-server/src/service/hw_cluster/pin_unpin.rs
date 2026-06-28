@@ -1,6 +1,42 @@
 //! Pin / Unpin node-selection algorithms and their shared infrastructure
 //! (pattern parsing, target-group existence check, resource-sufficiency
 //! validation, and group-membership update orchestration).
+//!
+//! # Algorithm shape
+//!
+//! Both [`calculate_target_group_pin`] and
+//! [`calculate_target_group_unpin`] are greedy iterators over candidate
+//! nodes. Each iteration:
+//!
+//! 1. Recomputes per-node scores from the current combined inventory
+//!    (see `scoring::calculate_group_node_scores_from_final_hsm`).
+//! 2. Picks the highest-scoring candidate — Pin prefers existing
+//!    target-group members so memberships are kept stable; Unpin
+//!    treats target and parent as a single pool.
+//! 3. Records the move and removes the node from the working sets.
+//! 4. Repeats until `keep_iterating_final_hsm` reports the combined
+//!    summary has converged on the user-requested counts.
+//!
+//! # Rollback semantics
+//!
+//! Selection itself is in-memory and side-effect-free: the working
+//! `NodeHwCountVec`s are mutated, but no backend call is issued until
+//! [`apply_group_updates`] runs. If selection fails mid-flight (e.g.
+//! `InsufficientResources` because no candidate scores positively for
+//! the remaining pattern) no group membership is touched — the caller
+//! gets the error and the cluster is untouched.
+//!
+//! Backend mutation in [`apply_group_updates`] is *not* transactional:
+//! it issues the target-group update first, then the parent. A failure
+//! on the parent leaves the target update in place. The pattern is
+//! tolerated because target updates are idempotent and operators
+//! retry — there is no shared-state corruption.
+//!
+//! # Dry-run
+//!
+//! `dryrun` short-circuits every backend mutation in
+//! [`apply_group_updates`] but otherwise walks the full plan, so the
+//! returned `ApplyHwResult` still reflects the would-be membership.
 
 use std::collections::HashMap;
 
@@ -13,8 +49,22 @@ use crate::server::common::app_context::InfraContext;
 
 // ── Pin algorithm ────────────────────────────────────────────────────────────
 
-/// Node selection algorithm for PIN mode — keeps as many existing target nodes
-/// as possible, pulling from parent only when needed.
+/// Node selection algorithm for PIN mode — keeps as many existing
+/// target nodes as possible, pulling from parent only when needed.
+///
+/// Greedy: each iteration picks the node with the highest current
+/// score, prefers existing target members on ties (see
+/// `scoring::get_best_candidate_in_target_and_parent_hsm`), records the
+/// move, and recomputes scores against the smaller combined pool.
+/// Terminates when the running combined summary matches
+/// `user_defined_hsm_hw_components_count_hashmap`.
+///
+/// # Errors
+///
+/// Returns [`Error::InsufficientResources`] if at any iteration no
+/// candidate can be selected (e.g. all remaining nodes have already
+/// been moved or the working sets are empty before the pattern is
+/// satisfied).
 //
 // Scores are HW-component scarcity ratios — always non-negative, always
 // well within `usize` range. The `f64 as usize` casts used as hashmap
@@ -236,8 +286,18 @@ pub fn calculate_target_group_pin(
 
 // ── Unpin algorithm ──────────────────────────────────────────────────────────
 
-/// Node selection algorithm for UNPIN mode — merges target and parent, then
-/// selects nodes to move back to parent.
+/// Node selection algorithm for UNPIN mode — treats target and
+/// parent as a single combined pool and picks nodes to move back to
+/// parent until the user-requested counts are met.
+///
+/// Unlike pin, there's no preference for keeping target members in
+/// place: a single `get_best_candidate_in_hsm` call picks the best
+/// candidate from the merged pool each iteration.
+///
+/// # Errors
+///
+/// Returns [`Error::InsufficientResources`] if at any iteration no
+/// candidate can be selected before the pattern is satisfied.
 pub fn calculate_target_group_unpin(
   user_defined_hsm_hw_components_count_hashmap: &HashMap<String, usize>,
   user_defined_hw_component_vec: &[String],
@@ -367,8 +427,16 @@ pub fn calculate_target_group_unpin(
 
 // ── apply_hw_configuration support ───────────────────────────────────────────
 
-/// Parse user pattern `"a100:4:epyc:10"` into hw component names and a hashmap
-/// of `{component -> usize count}`.
+/// Parse user pattern `"a100:4:epyc:10"` into hw component names and a
+/// hashmap of `{component -> usize count}`. The target group name is
+/// prepended internally before splitting, so the input pattern itself
+/// must *not* include a leading group prefix.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidPattern`] if the pattern lacks a colon
+/// separator, has an odd number of component:count pairs, or a count
+/// element fails to parse as `usize`.
 pub fn parse_hw_pattern_usize(
   target_hsm_group_name: &str,
   pattern: &str,
@@ -426,7 +494,18 @@ pub fn parse_hw_pattern_usize(
   Ok((hw_component_vec, hw_component_count))
 }
 
-/// Ensure the target HSM group exists, creating it if `create_target_hsm_group` is set.
+/// Ensure the target HSM group exists, creating it if
+/// `create_target_hsm_group` is set. The created group has no members
+/// and `exclusive_group = false`; population happens later in
+/// [`apply_group_updates`].
+///
+/// # Errors
+///
+/// - [`Error::NotFound`] if the group is missing and
+///   `create_target_hsm_group` is `false`.
+/// - [`Error::BadRequest`] if `dryrun` is `true` and the group needs
+///   to be created (creation isn't simulated).
+/// - [`Error::BadRequest`] if the backend `add_group` call fails.
 pub async fn ensure_target_group_exists(
   infra: &InfraContext<'_>,
   shasta_token: &str,
@@ -483,7 +562,14 @@ pub async fn ensure_target_group_exists(
   Ok(())
 }
 
-/// Validate that combined target+parent resources can fulfil the user request.
+/// Validate that combined target+parent resources can fulfil the user
+/// request. Run before the selection algorithm to fail fast with a
+/// caller-facing error rather than mid-way through scoring.
+///
+/// # Errors
+///
+/// Returns [`Error::InsufficientResources`] if any requested component
+/// count exceeds the union of target and parent supply.
 pub fn validate_resource_sufficiency(
   target_hw: &[(String, HashMap<String, usize>)],
   parent_hw: &[(String, HashMap<String, usize>)],
@@ -539,7 +625,22 @@ pub struct GroupUpdate<'a> {
   pub delete_empty_parent: bool,
 }
 
-/// Apply group membership updates to both target and parent HSM groups.
+/// Apply group membership updates to both target and parent HSM
+/// groups: target first, then parent. Optionally deletes the parent if
+/// it ends up empty and `delete_empty_parent` is set. Each call is a
+/// remove-then-add against the backend's `update_group_members`
+/// endpoint.
+///
+/// Not transactional: a failure on the parent update leaves the target
+/// update in place. See the module docs for the rollback contract.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] if either `update_group_members` call
+///   fails on the backend.
+/// - The empty-parent `delete_group` call is best-effort; failures are
+///   only logged (this matches CSM's quirky delete-group behaviour;
+///   see the inline comment).
 pub async fn apply_group_updates(
   infra: &InfraContext<'_>,
   shasta_token: &str,

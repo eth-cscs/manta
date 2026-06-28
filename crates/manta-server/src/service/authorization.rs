@@ -1,4 +1,21 @@
-//! Authorization helpers: validate user access to HSM groups and their members.
+//! Authorization helpers: validate user access to HSM groups and
+//! their members.
+//!
+//! Every service-layer function that takes a node, group, or session
+//! label from the caller runs one of these checks before touching the
+//! backend. The standard pattern is:
+//!
+//! 1. Resolve the caller's request to a `Vec<String>` of xnames or
+//!    group labels (often via [`crate::service::node_ops`]).
+//! 2. Call [`validate_user_group_members_access`] (xnames) or
+//!    [`validate_user_group_vec_access`] (group labels).
+//! 3. Proceed to the actual backend mutation.
+//!
+//! Admin tokens carrying the [`PA_ADMIN`] role short-circuit every
+//! check to `Ok(())` without touching the backend, mirroring the
+//! "admin sees everything" expectation. Listing endpoints still
+//! validate so the response can't disclose more than the caller
+//! could have asked for directly.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;

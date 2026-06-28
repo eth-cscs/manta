@@ -1,4 +1,11 @@
 //! Implements the `manta delete hardware` command.
+//!
+//! Removes hardware components matching `--pattern` from a target HSM
+//! cluster, returning them to `--parent-group`. Forwards to
+//! `DELETE /api/v1/hardware-clusters/{target}/members` with
+//! server-side `dry_run` honoured. If `--delete-group` is set the
+//! server also removes the now-empty target HSM group. Inverse of
+//! [`super::super::add::hardware`].
 
 use anyhow::{Error, anyhow};
 
@@ -17,6 +24,12 @@ pub struct ExecParams<'a> {
 }
 
 /// Remove hardware components from a cluster group.
+///
+/// # Errors
+///
+/// Returns an error when neither the CLI nor `cli.toml` supplies a
+/// target or parent group, when the HTTP client cannot be built, or
+/// when the `delete_hw_component` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

@@ -1,5 +1,21 @@
 //! CFS configuration queries, layer-detail lookups, and cascading deletion of
 //! all dependent resources (sessions, BOS templates, IMS images).
+//!
+//! The module is the service-layer counterpart to the
+//! `/configurations` handlers. It wraps three backend trait families:
+//!
+//! - [`CfsTrait`] — list and filter CFS configurations, fetch CFS
+//!   components for the post-list analysis pass.
+//! - [`DeleteConfigurationsAndDataRelatedTrait`] — walk every CFS
+//!   session, BOS session template, and IMS image that depends on a
+//!   set of configurations, then issue the cascading delete.
+//! - [`GroupTrait`] — derive the caller's accessible-group set when no
+//!   explicit `group_name` is supplied (used for both listing and
+//!   deletion scoping).
+//!
+//! All public helpers funnel access checks through
+//! [`crate::service::authorization`] so the response can't leak rows
+//! that belong to a group the caller can't see.
 
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::error::Error;
@@ -38,6 +54,14 @@ pub struct DeletionCandidates {
 /// first; otherwise the search is scoped to every group the token
 /// already grants access to. Name / pattern / date filters and the
 /// per-call `limit` are applied by the backend.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `params.group_name` names a group the
+///   caller cannot reach (raised by the authorization helper).
+/// - [`Error::NetError`] / [`Error::CsmError`] propagated from the
+///   `get_group_available` and `get_and_filter_configuration`
+///   backend calls.
 pub async fn get_configurations(
   infra: &InfraContext<'_>,
   token: &str,
@@ -87,6 +111,12 @@ pub async fn get_configurations(
 /// configuration; skipping the BSS and IMS fetches keeps this listing
 /// fast and avoids the upstream-proxy resets that fanning out four
 /// heavy fetches has been prone to.
+///
+/// # Errors
+///
+/// Any error produced by [`get_configurations`] plus
+/// [`Error::NetError`] / [`Error::CsmError`] from the secondary
+/// `get_cfs_components` call used to build the link graph.
 pub async fn get_configurations_with_analysis(
   infra: &InfraContext<'_>,
   token: &str,
@@ -121,6 +151,14 @@ pub async fn get_configurations_with_analysis(
 /// reachable from the supplied group set, so the candidates returned
 /// here are guaranteed to be reachable through the caller's
 /// accessible-group lens.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `since > until`, or when
+///   `settings_hsm_group_name_opt` names a group the caller cannot
+///   reach.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_group_name_available` or `get_data_to_delete`.
 pub(crate) async fn get_deletion_candidates(
   infra: &InfraContext<'_>,
   token: &str,
@@ -174,6 +212,12 @@ pub(crate) async fn get_deletion_candidates(
 ///
 /// Extracted so the HTTP handler and CLI can share the check without
 /// constructing a full backend context.
+///
+/// # Errors
+///
+/// [`Error::BadRequest`] when both bounds are supplied and
+/// `since > until`. Returns `Ok(())` whenever either bound is `None`,
+/// including when they are equal.
 pub fn validate_date_range(
   since: Option<NaiveDateTime>,
   until: Option<NaiveDateTime>,
@@ -196,6 +240,12 @@ pub fn validate_date_range(
 /// `candidates`. The two-step plan/apply split exists so the caller
 /// can show the user exactly what is about to disappear before any
 /// state changes.
+///
+/// # Errors
+///
+/// [`Error::NetError`] / [`Error::CsmError`] from the backend's
+/// `delete` call. The delete is non-transactional — a failure
+/// mid-batch can leave some derivatives removed and others intact.
 pub(crate) async fn delete_configurations_and_derivatives(
   infra: &InfraContext<'_>,
   token: &str,

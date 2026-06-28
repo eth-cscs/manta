@@ -1,4 +1,10 @@
 //! Implements the `manta get sessions` command.
+//!
+//! Hits `GET /sessions` on `manta-server` to list CFS sessions (image
+//! builds and runtime configuration applications) with support for
+//! several filters and a `--most-recent` shortcut. The user-facing
+//! `runtime` value for `--type` is normalised to CFS's internal
+//! `dynamic`. Output is rendered by [`crate::output::session`].
 
 use anyhow::{Context, Error};
 
@@ -10,6 +16,10 @@ use manta_shared::types::api::session::GetSessionParams;
 use manta_shared::types::dto::CfsSessionGetResponse;
 
 /// Parse CLI arguments into typed [`GetSessionParams`].
+///
+/// `--most-recent` forces `limit = Some(1)`, overriding any explicit
+/// `--limit` value. `--type runtime` is rewritten to `dynamic` so the
+/// value matches CFS's internal session-type vocabulary.
 fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
   let limit = if let Some(true) = cli_args.get_one("most-recent") {
     Some(1u8)
@@ -39,8 +49,16 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
 
 /// CLI adapter for `manta get sessions`.
 ///
-/// Parses CLI arguments into typed parameters, delegates to
-/// the service layer, and formats the output.
+/// Consumes clap matches for the `sessions` subcommand (`--group`,
+/// `--xnames`, `--min-age`, `--max-age`, `--type`, `--status`,
+/// `--name`, `--limit`, `--most-recent`, `--output`), calls the server
+/// once, and renders the response via [`crate::output::session::print`].
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails, deserialising the
+/// `serde_json::Value` payload into a typed [`CfsSessionGetResponse`]
+/// list fails, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

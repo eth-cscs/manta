@@ -23,6 +23,24 @@ pub enum KernelParamOp {
 }
 
 /// Request body for `POST /api/v1/kernel-parameters/apply`.
+///
+/// One of `xnames_expression` or `hsm_group` must be set (not both).
+/// The chosen [`KernelParamOp`] determines what `params` means:
+/// merge-keys, replace-set, or remove-set.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "xnames_expression": "x3000c0s1b0n[0-3]",
+///   "hsm_group": null,
+///   "operation": "add",
+///   "params": "console=ttyS0 nosmt",
+///   "overwrite": false,
+///   "project_sbps": true,
+///   "dry_run": false
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ApplyKernelParametersRequest {
   /// Hosts expression (xnames, NIDs, or hostlist notation); mutually
@@ -87,6 +105,9 @@ fn default_true() -> bool {
 }
 
 /// Typed parameters for fetching kernel boot parameters.
+///
+/// Precedence: `nodes` > `group_name` > `settings_group_name`.
+/// At least one must resolve to a non-empty value.
 pub struct GetKernelParametersParams {
   /// Group whose members' kernel parameters should be returned.
   pub group_name: Option<String>,

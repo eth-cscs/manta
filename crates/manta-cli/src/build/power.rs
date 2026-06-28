@@ -1,4 +1,13 @@
 //! Clap definitions for `manta power *` subcommands.
+//!
+//! Builds `manta power {on,off,reset} {nodes,group}` — six leaves
+//! that drive PCS transitions. By default each command blocks until
+//! the transition completes; `--no-wait` returns once the request is
+//! queued. Execution dispatched in `crate::dispatch::power`.
+//!
+//! The per-group argument sets are factored into private
+//! `add_power_*_group_args` helpers so the same flag surface appears
+//! on each `group` leaf.
 
 use clap::{ArgAction, Command, arg};
 
@@ -78,6 +87,8 @@ fn add_power_reset_group_args(cmd: Command) -> Command {
     .arg(arg!(<GROUP_NAME> "Group name"))
 }
 
+/// Top-level `manta power` verb — wires the `on` / `off` / `reset`
+/// subtrees together. Invoked from `build_cli` in `super::mod`.
 pub fn subcommand_power() -> Command {
   Command::new("power")
     .arg_required_else_help(true)

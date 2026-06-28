@@ -1,4 +1,15 @@
 //! HSM group CRUD + membership handlers.
+//!
+//! - `GET    /api/v1/groups`                  → [`get_groups`]
+//! - `GET    /api/v1/groups/available`        → [`get_available_groups`]
+//! - `POST   /api/v1/groups`                  → [`create_group`]
+//! - `DELETE /api/v1/groups/{label}`          → [`delete_group`]
+//! - `POST   /api/v1/groups/{name}/members`   → [`add_nodes_to_group`]
+//! - `DELETE /api/v1/groups/{name}/members`   → [`delete_group_members`]
+//!
+//! All wrap `crate::service::group::*`. `get_available_groups`
+//! calls the backend `GroupTrait::get_group_name_available` directly
+//! — it's a tiny passthrough that backs CLI authorization helpers.
 
 use axum::{
   Json,

@@ -1,13 +1,29 @@
-//! Hardware cluster pin/unpin and hw-component add/delete service logic.
+//! Hardware-cluster pin/unpin and hw-component add/delete service logic.
 //!
-//! Split into three (private) sub-modules:
+//! # Model
+//!
+//! CSM groups nodes into HSM groups. A *parent* group holds the
+//! shared pool; a *target* group represents a sub-pool reserved for a
+//! particular workload. "Pinning" moves nodes from the parent into
+//! the target so that the target satisfies a user-supplied hardware
+//! pattern (e.g. `a100:8,milan:2` — eight A100s and two Milan CPUs).
+//! "Unpinning" is the reverse: nodes are released back to the parent.
+//!
+//! Both operations are framed as a search over candidate moves where
+//! each candidate is scored by how *useful* a node is for the target
+//! workload, with a scarcity weighting that prefers giving up common
+//! components and keeping rare ones. See `scoring` for the rubric.
+//!
+//! # Layout
+//!
+//! Split into four (private) sub-modules plus shared types:
 //!
 //! - `scoring` — pure-computation functions for component scarcity,
 //!   per-node scoring, candidate selection, pattern parsing, and the
 //!   parallel hw-inventory fetcher. Also hosts
 //!   `resolve_hw_description_to_xnames`, which dispatches between
 //!   pin and unpin.
-//! - `pin_unpin` — the `calculate_target_hsm_pin` / `_unpin` node
+//! - `pin_unpin` — the `calculate_target_group_pin` / `_unpin` node
 //!   selection algorithms plus the shared coordination helpers used
 //!   by `apply_hw_configuration` (pattern parsing, target-group
 //!   existence check, resource-sufficiency validation, group-update
@@ -15,10 +31,15 @@
 //! - `apply` — high-level coordinators called by the server
 //!   handlers: `apply_hw_configuration`, `add_hw_component`,
 //!   `delete_hw_component`.
+//! - `hw_inventory_utils` — JSON-pointer helpers that extract memory,
+//!   processor, and accelerator data from raw HSM inventory payloads.
 //!
 //! Public types (`AddHwResult`, `DeleteHwResult`, `ApplyHwResult`,
 //! `NodeHwCountVec`, `HwClusterMode`) and shared constants live here
-//! so all three sub-modules can use them.
+//! so all sub-modules can use them. The public surface is re-exported
+//! at the bottom of this file; callers (the `hw_cluster` handlers
+//! under `crate::server::handlers`) should depend only on those
+//! re-exports.
 
 use std::collections::HashMap;
 

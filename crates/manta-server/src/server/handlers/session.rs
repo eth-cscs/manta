@@ -1,4 +1,16 @@
-//! Session handlers (get/create/delete + log streaming).
+//! CFS session handlers.
+//!
+//! - `GET    /api/v1/sessions`              → [`get_sessions`]
+//! - `POST   /api/v1/sessions`              → [`create_session`]
+//! - `DELETE /api/v1/sessions/{name}`       → [`delete_session`]
+//!   — with `?dry_run=true`, returns the deletion plan only.
+//! - `GET    /api/v1/sessions/{name}/logs`  → [`get_session_logs`] —
+//!   Server-Sent Events stream from the CFS session's pod log.
+//!
+//! All wrap `crate::service::session::*` and (for create) the
+//! backend `CfsTrait` for the actual CFS object. The log stream
+//! requires Vault for K8s creds plus the per-site `k8s_api_url`;
+//! when either is missing it returns 501.
 
 use std::convert::Infallible;
 

@@ -70,10 +70,18 @@ pub fn build_cache(
 }
 
 /// Sequence the two upstream fetches and run the pure linker.
+///
 /// Sequenced rather than concurrent: `get_all_bootparameters` returns
 /// a cluster-scale list, and fanning two heavy fetches at the same
 /// upstream is the shape that produced upstream connection-resets on
 /// the configuration variant.
+///
+/// # Errors
+///
+/// - Backend errors from `get_all_bootparameters` (BSS upstream
+///   failure, auth, etc.) propagate as-is.
+/// - Backend / IMS errors from
+///   [`crate::service::image::get_images`] propagate as-is.
 pub async fn get_image_analysis(
   infra: &InfraContext<'_>,
   token: &str,

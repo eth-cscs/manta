@@ -1,10 +1,13 @@
 //! Clap definition for `manta upgrade` — self-update the manta binary
 //! from the project's GitHub releases.
+//!
+//! Handler: `crate::dispatch::upgrade`.
 
 use clap::{ArgAction, Command, arg};
 
 use super::output_flag;
 
+/// Build `manta upgrade`.
 pub fn subcommand_upgrade() -> Command {
   Command::new("upgrade")
     .about("Replace this `manta` binary with the latest release")

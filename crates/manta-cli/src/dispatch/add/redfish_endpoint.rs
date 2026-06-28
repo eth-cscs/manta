@@ -1,4 +1,11 @@
 //! Implements the `manta add redfish-endpoint` command.
+//!
+//! Registers a Redfish endpoint with HSM via
+//! `POST /api/v1/redfish-endpoints`. The endpoint has no server-side
+//! `dry_run` flag; `--dry-run` is a client-side short-circuit that
+//! prints the `UpdateRedfishEndpointParams` payload that *would* be
+//! sent and returns. The sibling [`super::super::apply::redfish_endpoint`]
+//! is the update side of the same record.
 
 use anyhow::Error;
 
@@ -31,6 +38,12 @@ pub struct ExecParams<'a> {
 }
 
 /// CLI adapter for `manta add redfish-endpoint`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `POST /redfish-endpoints` call fails, or when the dry-run preview
+/// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

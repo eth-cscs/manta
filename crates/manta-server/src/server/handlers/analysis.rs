@@ -1,5 +1,13 @@
-//! Cross-resource analyses:
-//! - GET /api/v1/analysis/images — image-centric link graph.
+//! Cross-resource analyses.
+//!
+//! Surfaces the image-centric "link graph" computed by
+//! [`crate::service::analysis`] over the four CFS/BOS/IMS resource
+//! lists the caller can see. Exposes:
+//!
+//! - `GET /api/v1/analysis/images` — one row per IMS image, joined
+//!   against CFS configurations, CFS sessions, and BOS session
+//!   templates. The row carries `safe_to_delete` and orphan hints
+//!   the CLI uses for cascading-delete preview.
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 

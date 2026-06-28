@@ -1,4 +1,11 @@
 //! Implements the `manta delete nodes` command.
+//!
+//! Removes (unassigns) the xnames matching a host expression from an
+//! HSM group via `DELETE /api/v1/groups/{label}/members`. Always
+//! prompts for confirmation before sending the request (no
+//! `--assume-yes` plumbing on this leaf). `--dry-run` prints a summary
+//! and returns without contacting the server. Inverse of
+//! [`super::super::add::nodes`].
 
 use anyhow::{Error, bail};
 
@@ -8,7 +15,13 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::DeleteGroupMembersRequest;
 use crate::output::action_result;
 
-/// Remove/unassign a list of xnames from a list of HSM groups
+/// Remove/unassign a list of xnames from a list of HSM groups.
+///
+/// # Errors
+///
+/// Returns an error when the user declines the confirmation prompt,
+/// when the HTTP client cannot be built, or when the
+/// `delete_group_members` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

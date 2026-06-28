@@ -1,4 +1,10 @@
-//! Template + post_template_session handlers.
+//! BOS session-template handlers.
+//!
+//! - `GET  /api/v1/templates`                       → [`get_templates`] —
+//!   wraps `service::template::get_templates`.
+//! - `POST /api/v1/templates/{name}/sessions`       → [`post_template_session`] —
+//!   wraps `service::template::create_template_session`; starts a
+//!   BOS session from the named template.
 
 use axum::{
   Json,

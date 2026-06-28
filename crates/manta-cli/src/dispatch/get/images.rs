@@ -1,4 +1,13 @@
 //! Implements the `manta get images` command.
+//!
+//! Fans out two parallel calls — `GET /images` and `GET /images/analysis`
+//! — and joins them by IMS image id, then renders the list with a
+//! `safe_to_delete` column via [`crate::output::image`]. Images are
+//! keyed by IMS id (names are not unique because rebuilds reuse them).
+//! Optional `--only-safe-to-delete` / `--only-unsafe-to-delete` filters
+//! drop rows whose verdict does not match the requested kind; rows with
+//! an unknown verdict (no IMS id, or no analysis row) are excluded.
+//! Same orchestration pattern as [`super::configurations`].
 
 use std::collections::HashMap;
 
@@ -12,6 +21,9 @@ use manta_shared::types::api::image::GetImagesParams;
 use manta_shared::types::dto::Image;
 
 /// Parse CLI arguments into typed [`GetImagesParams`].
+///
+/// `--most-recent` forces `limit = Some(1)`, overriding any explicit
+/// `--limit` value.
 fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {
   let limit = if let Some(true) = cli_args.get_one("most-recent") {
     Some(1u8)
@@ -27,6 +39,17 @@ fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {
 }
 
 /// CLI adapter for `manta get images`.
+///
+/// Consumes clap matches for the `images` subcommand (`--id`,
+/// `--pattern`, `--limit`, `--most-recent`, `--only-safe-to-delete`,
+/// `--only-unsafe-to-delete`), fetches the listing and analysis in
+/// parallel, applies the optional safety filter, and renders the
+/// merged table.
+///
+/// # Errors
+///
+/// Returns an error if either HTTP request fails or deserialising the
+/// IMS images list into typed [`Image`] values fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

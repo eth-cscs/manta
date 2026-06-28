@@ -1,8 +1,16 @@
 //! Typed schema for `cli.toml`.
 //!
-//! The untyped `config::Config` is loaded by
-//! [`manta_shared::common::config::get_cli_configuration`]; this module
-//! owns the typed deserialisation target.
+//! [`manta_shared::common::config::get_cli_configuration`] reads
+//! `~/.config/manta/cli.toml` into a `config::Config` (the untyped
+//! layered loader from the `config` crate) and then `try_deserialize`s
+//! it into the [`CliConfiguration`] declared here. Every CLI
+//! subcommand pulls its operational knobs (timeouts, poll intervals,
+//! read-only gate, server URL) out of this struct via
+//! [`crate::common::app_context::AppContext`].
+//!
+//! Field-level docs below double as the operator-facing reference for
+//! each TOML key. The TOML key name matches the Rust field name —
+//! `serde` rename attributes are not used.
 
 use serde::{Deserialize, Serialize};
 

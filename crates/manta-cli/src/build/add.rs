@@ -1,10 +1,24 @@
 //! Clap definitions for `manta add *` subcommands.
+//!
+//! Builds the `manta add` subtree: registering new groups, nodes,
+//! hardware components, Redfish endpoints, and creating BSS
+//! boot/kernel-parameter records. Execution is dispatched in
+//! `crate::dispatch::add`.
+//!
+//! Subtle distinctions worth noting:
+//! - `add node` (singular) registers a brand-new node in the hardware
+//!   state manager; `add nodes` (plural) attaches existing nodes to a
+//!   group's membership.
+//! - `add kernel-parameters` uses an `ArgGroup("cluster_or_nodes")` to
+//!   require exactly one of `--nodes` / `--group`.
 
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 use std::path::PathBuf;
 
 use super::{HOSTLIST_HELP, dry_run_flag, output_flag};
 
+/// `manta add group` — create a new node group. Handler:
+/// `crate::dispatch::add::group`.
 pub fn subcommand_add_group() -> Command {
   Command::new("group")
     .about("Create a node group")
@@ -16,6 +30,8 @@ pub fn subcommand_add_group() -> Command {
     .arg(output_flag())
 }
 
+/// `manta add node` — register a brand-new node (by xname) in the
+/// hardware state manager. Handler: `crate::dispatch::add::node`.
 pub fn subcommand_add_node() -> Command {
   Command::new("node")
     .about("Register a new node in the hardware state manager")
@@ -45,6 +61,9 @@ pub fn subcommand_add_node() -> Command {
     .arg(output_flag())
 }
 
+/// `manta add hardware` — pattern-driven addition of hardware
+/// components to a group (donating them from a parent group).
+/// Handler: `crate::dispatch::add::hw_component`.
 pub fn subcommand_add_hwcomponent() -> Command {
   Command::new("hardware")
     .arg_required_else_help(true)
@@ -66,6 +85,9 @@ pub fn subcommand_add_hwcomponent() -> Command {
     .arg(output_flag())
 }
 
+/// `manta add redfish-endpoints` — register a new BMC/controller
+/// Redfish endpoint with the hardware state manager. Handler:
+/// `crate::dispatch::add::redfish_endpoint`.
 pub fn subcommand_add_redfish_endpoint() -> Command {
   Command::new("redfish-endpoints")
     .visible_alias("redfish-endpoint")
@@ -96,6 +118,9 @@ pub fn subcommand_add_redfish_endpoint() -> Command {
     .arg_required_else_help(true)
 }
 
+/// `manta add boot-parameters` — create a BSS boot-parameters entry
+/// (kernel, initrd, params, cloud-init) for a set of nodes. Handler:
+/// `crate::dispatch::add::boot_parameters`.
 pub fn subcommand_add_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
@@ -115,6 +140,10 @@ pub fn subcommand_add_boot_parameters() -> Command {
     .arg(output_flag())
 }
 
+/// `manta add kernel-parameters` — append kernel parameters to a node
+/// set or group (existing values preserved unless `--overwrite`).
+/// Uses an `ArgGroup("cluster_or_nodes")` to require exactly one of
+/// `--nodes` / `--group`. Handler: `crate::dispatch::add::kernel_parameters`.
 pub fn subcommand_add_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
@@ -144,6 +173,8 @@ pub fn subcommand_add_kernel_parameters() -> Command {
     )
 }
 
+/// Top-level `manta add` verb — wires every `add <noun>` subcommand
+/// together. Invoked from `build_cli` in `super::mod`.
 pub fn subcommand_add() -> Command {
   Command::new("add")
     .arg_required_else_help(true)

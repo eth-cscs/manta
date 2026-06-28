@@ -30,6 +30,21 @@ impl BosOperation {
 }
 
 /// Request body for `POST /api/v1/templates/{name}/sessions`.
+///
+/// Creates a BOS session from an existing session template (the
+/// `{name}` path segment).
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "operation": "reboot",
+///   "limit": "x3000c0s1b0n[0-3]",
+///   "session_name": null,
+///   "include_disabled": false,
+///   "dry_run": false
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct PostTemplateSessionRequest {
   /// BOS operation to run (boot, reboot, or shutdown).

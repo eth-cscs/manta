@@ -39,6 +39,11 @@ use crate::openapi_client::types::{
 /// whole-file `POST /sat-file` endpoint still uses for SAT files with
 /// a `hardware:` section, so output looks identical to users mixing
 /// the two paths.
+/// # Errors
+///
+/// Returns the first per-element failure encountered: a configuration
+/// or session_template POST that the server rejects, or a failure
+/// inside [`run_image_pipeline`] for an `Image` element.
 pub async fn dispatch_plan(
   ctx: &crate::common::app_context::AppContext<'_>,
   client: &MantaClient,

@@ -1,4 +1,11 @@
 //! Implements the `manta add node` command.
+//!
+//! Registers a new node in HSM via `POST /api/v1/nodes` and adds it
+//! to the requested group in the same call. `--dry-run` is a
+//! client-side short-circuit (the endpoint has no `dry_run` flag): the
+//! leaf prints the `AddNodeRequest` payload that *would* be sent via
+//! [`crate::output::action_result::preview_request`] and returns
+//! before any HTTP call.
 
 use anyhow::Result;
 use std::path::PathBuf;
@@ -23,6 +30,12 @@ pub struct ExecParams<'a> {
 }
 
 /// CLI adapter for `manta add node`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `POST /nodes` call fails, or when the dry-run preview fails to
+/// serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

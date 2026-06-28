@@ -31,6 +31,10 @@ impl MantaClient {
   ///
   /// The returned `AsyncWrite` carries terminal stdin to the server; the
   /// returned `AsyncRead` delivers console output back to the terminal.
+  ///
+  /// # Errors
+  ///
+  /// See [`Self::connect_console_ws`].
   pub async fn console_node(
     &self,
     xname: &str,
@@ -51,6 +55,10 @@ impl MantaClient {
   }
 
   /// Open a WebSocket console to a CFS session container.
+  ///
+  /// # Errors
+  ///
+  /// See [`Self::connect_console_ws`].
   pub async fn console_session(
     &self,
     session_name: &str,
@@ -76,6 +84,15 @@ impl MantaClient {
   /// `tokio::io::duplex` pipes. The caller receives:
   /// - an `AsyncWrite` to write terminal stdin (sent as Binary WS frames)
   /// - an `AsyncRead` to read console output (received as Binary WS frames)
+  ///
+  /// # Errors
+  ///
+  /// - The `MantaClient` was built with `token = None`.
+  /// - The URL cannot be parsed into a tungstenite request, or the
+  ///   token / site-name contain non-ASCII header-incompatible bytes.
+  /// - The HTTP-upgrade handshake fails; connect-level failures are
+  ///   surfaced with the same "cannot reach manta server" wording as
+  ///   the HTTP paths.
   async fn connect_console_ws(
     &self,
     url: &str,

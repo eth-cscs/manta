@@ -1,4 +1,15 @@
-//! WebSocket console handlers (node + session).
+//! WebSocket console handlers (interactive PTY attachments).
+//!
+//! - `WS /api/v1/nodes/{xname}/console`    → [`console_node_ws`] —
+//!   attach to a single node's console.
+//! - `WS /api/v1/sessions/{name}/console`  → [`console_session_ws`] —
+//!   attach to a CFS-session-spawned ephemeral environment.
+//!
+//! Both require Vault (for Kubernetes credentials) and the per-site
+//! `k8s_api_url` — the handlers return `501 Not Implemented` if
+//! either is missing (see [`super::require_vault`] /
+//! [`super::require_k8s_url`]). Idle sessions are reaped after
+//! [`crate::server::ServerState::console_inactivity_timeout`].
 
 use axum::{
   Json,

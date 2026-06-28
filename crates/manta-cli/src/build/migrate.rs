@@ -1,9 +1,14 @@
 //! Clap definitions for `manta migrate *` subcommands.
+//!
+//! Builds the `manta migrate nodes` command — atomically moves nodes
+//! from one group to another (a `delete nodes` + `add nodes` pair).
+//! Execution dispatched in `crate::dispatch::migrate`.
 
 use clap::{Command, arg};
 
 use super::{dry_run_flag, output_flag};
 
+/// Top-level `manta migrate` verb.
 pub fn subcommand_migrate() -> Command {
   Command::new("migrate")
     .arg_required_else_help(true)

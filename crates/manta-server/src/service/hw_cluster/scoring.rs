@@ -4,6 +4,37 @@
 //! `resolve_hw_description_to_xnames` lives here as a higher-level
 //! coordinator that picks between the pin/unpin algorithms; it calls
 //! into `super::pin_unpin`.
+//!
+//! # Scoring rubric
+//!
+//! A node's score is the sum of its components' contributions, each
+//! weighted by component scarcity (`total_components / supply_of_kind`,
+//! so rarer components carry more weight).
+//!
+//! For each `(component, qty)` pair on the node:
+//!
+//! - If the user-requested pattern doesn't mention the component at
+//!   all, contribute *negatively* — the node has hw the workload
+//!   doesn't care about, so moving it is cheap.
+//! - If the user wants *less* of this component than the current
+//!   parent supply provides, contribute *positively* — keeping this
+//!   node in the target satisfies that part of the pattern.
+//! - Otherwise contribute *negatively* — the node has hw the workload
+//!   doesn't need (yet), so it's a cheap candidate to release.
+//!
+//! Highest score wins. Pin mode breaks ties in favour of nodes already
+//! in the target group so memberships are stable across reruns; Unpin
+//! treats target and parent as a single pool. See
+//! [`get_best_candidate_in_hsm`] and
+//! [`get_best_candidate_in_target_and_parent_hsm`].
+//!
+//! # Concurrency
+//!
+//! [`get_group_node_hw_component_counter`] fans out per-node inventory
+//! fetches under a `tokio::sync::Semaphore` bounded by
+//! [`HW_COMPONENT_CONCURRENCY_LIMIT`]. Memory DIMM capacities are
+//! normalised against `MEMORY_CAPACITY_LCM` (16 GiB) so the scorer
+//! sees integer DIMM counts rather than raw MiB.
 
 use std::{collections::HashMap, sync::Arc, time::Instant};
 
@@ -22,7 +53,10 @@ use super::{
 use crate::dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
 
-/// Compute a scarcity score for each hardware component type across all nodes.
+/// Compute a scarcity score for each hardware component type across
+/// all nodes: `total_components_in_pool / supply_of_this_kind`. Rarer
+/// components score higher and dominate the per-node weights used by
+/// [`calculate_group_node_scores_from_final_hsm`].
 //
 // The `usize -> f64` casts below would trigger `clippy::cast_precision_loss`
 // because f64's 52-bit mantissa can't represent every 64-bit usize. In
@@ -75,7 +109,12 @@ pub fn calculate_hw_component_scarcity_scores(
   hw_component_scarcity_score_hashmap
 }
 
-/// Calculates a normalised score for each node based on component scarcity.
+/// Score each node in the input vector against the user-requested
+/// pattern. Implements the rubric in this module's header: components
+/// the user wants pull positively when the parent has surplus,
+/// negatively otherwise; components the user doesn't ask for always
+/// pull negatively. Weighted by the precomputed scarcity scores so
+/// rare hw dominates.
 //
 // Same `cast_precision_loss` justification as above — qty is a per-node
 // component count, never large enough to overflow f64's mantissa.
@@ -124,7 +163,10 @@ pub fn calculate_group_node_scores_from_final_hsm(
   node_score_vec
 }
 
-/// Check whether further iteration is needed to satisfy the target hw pattern.
+/// Check whether further iteration is needed to satisfy the target hw
+/// pattern. Returns `true` while any user-requested component still has
+/// more supply in the current pool than the user asked for — i.e.
+/// there's still slack to drain.
 pub fn keep_iterating_final_hsm(
   group_final_hw_component_summary_hashmap: &HashMap<String, usize>,
   group_current_hw_component_summary_hashmap: &HashMap<String, usize>,
@@ -420,7 +462,10 @@ pub async fn get_group_node_hw_component_counter(
   target_group_node_hw_component_count_vec
 }
 
-/// Selects the best candidate node by highest score, breaking ties by xname.
+/// Select the best candidate node by highest score, breaking ties by
+/// xname (lexicographic ascending) for determinism. Returns `None` if
+/// either input is empty. Used directly by Unpin; Pin layers
+/// [`get_best_candidate_in_target_and_parent_hsm`] on top.
 pub fn get_best_candidate_in_hsm(
   group_score_vec: &mut [(String, f64)],
   group_hw_component_vec: &[(String, HashMap<String, usize>)],
@@ -444,7 +489,11 @@ pub fn get_best_candidate_in_hsm(
     .map(|best_candidate_hw| (best_candidate, best_candidate_hw.1.clone()))
 }
 
-/// For PIN mode: selects best candidate preferring existing target nodes first.
+/// For PIN mode: select the best candidate, preferring existing target
+/// nodes whenever the target pool still has one to offer. Falls back to
+/// the parent pool only when the target is exhausted. This is what
+/// makes Pin "stable" — runs converge to the same target memberships
+/// when the inputs don't change.
 pub fn get_best_candidate_in_target_and_parent_hsm(
   target_group_node_score_tuple_vec: &mut [(String, f64)],
   parent_group_node_score_tuple_vec: &mut [(String, f64)],
@@ -476,8 +525,18 @@ pub fn get_best_candidate_in_target_and_parent_hsm(
   }
 }
 
-/// Resolves a hardware description pattern into concrete xnames.
-/// Returns (new_target, remaining_parent).
+/// Resolve a hardware description pattern into concrete xnames by
+/// running the Pin or Unpin selection algorithm against the supplied
+/// inventories. Returns `(new_target, remaining_parent)` — the
+/// post-move membership lists ready to feed to
+/// `super::pin_unpin::apply_group_updates`.
+///
+/// # Errors
+///
+/// Propagates `InsufficientResources` from
+/// [`super::pin_unpin::calculate_target_group_pin`] /
+/// [`super::pin_unpin::calculate_target_group_unpin`] when no valid
+/// selection plan exists.
 //
 // `type_complexity`: the tuple-of-vecs-of-tuples shape is exactly
 // what this function negotiates and renaming the parts behind a
@@ -569,8 +628,16 @@ pub fn resolve_hw_description_to_xnames(
   ))
 }
 
-/// Parse a hardware pattern string like `"a100:4:epyc:10"` into component names
-/// and a hashmap of `{component -> isize count}`.
+/// Parse a hardware pattern string like `"a100:4:epyc:10"` into
+/// component names and a hashmap of `{component -> isize count}`.
+/// Counts are signed (`isize`) so callers can express deltas, but in
+/// practice they're non-negative; see `apply::compute_final_*_summary`
+/// for the explicit overflow guards.
+///
+/// # Errors
+///
+/// Returns [`Error::InvalidPattern`] if the pattern has an odd number
+/// of elements or a count fails to parse as `isize`.
 pub fn parse_hw_pattern(
   pattern_elements: &[&str],
 ) -> Result<(Vec<String>, HashMap<String, isize>), Error> {
@@ -607,8 +674,15 @@ pub fn parse_hw_pattern(
   Ok((hw_component_vec, hw_component_count))
 }
 
-/// Fetch HSM group members, compute per-node hw component counts, and return
-/// the member list, per-node counts, and group summary.
+/// Fetch HSM group members, compute per-node hw component counts, and
+/// return the member list, per-node counts (sorted by xname), and
+/// group-wide summary. Inventory fetches run concurrently — see
+/// [`get_group_node_hw_component_counter`].
+///
+/// # Errors
+///
+/// Returns [`Error::NotFound`] when the group lookup fails — usually
+/// because the group doesn't exist or the token lacks access.
 pub async fn fetch_group_hw_inventory(
   infra: &InfraContext<'_>,
   shasta_token: &str,

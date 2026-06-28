@@ -1,4 +1,16 @@
 //! HSM group CRUD operations and membership management.
+//!
+//! Backs the `/groups` family of handlers. Every public function
+//! gates access through [`crate::service::authorization`] before
+//! reaching the backend so callers can only see and mutate groups
+//! their JWT grants them.
+//!
+//! Membership operations (`add_nodes_to_group`,
+//! `delete_group_members`) resolve a hosts expression via
+//! [`node_ops::from_user_hosts_expression_to_xname_vec`] first and
+//! re-validate per-xname group access before issuing per-node backend
+//! writes — the resolver runs against full cluster metadata so the
+//! caller-supplied expression may name nodes outside their reach.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::{
@@ -32,6 +44,13 @@ pub use manta_shared::types::api::group::GetGroupParams;
 /// rejected with `BadRequest` if `settings_group_name_opt` names a
 /// group they can't see); admin tokens short-circuit, matching the
 /// behaviour of [`crate::service::authorization::validate_user_group_vec_access`].
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the non-admin caller's
+///   `settings_group_name_opt` is not in their accessible-group set.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_group_available`.
 pub async fn resolve_target_and_available_groups(
   infra: &InfraContext<'_>,
   token: &str,
@@ -69,6 +88,14 @@ pub async fn resolve_target_and_available_groups(
 /// grants access to. Group access is re-validated before the backend
 /// call so the response can't leak labels the caller couldn't have
 /// listed directly.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `params.group_name` is unreachable
+///   for a non-admin caller.
+/// - Any error from
+///   [`resolve_target_and_available_groups`] or the backend's
+///   `get_groups` call.
 pub async fn get_groups(
   infra: &InfraContext<'_>,
   token: &str,
@@ -99,6 +126,14 @@ pub async fn get_groups(
 /// `Error::Conflict` listing the orphans so the operator can decide
 /// whether to move them first or pass `force` to
 /// [`delete_group`].
+///
+/// # Errors
+///
+/// - [`Error::Conflict`] when one or more members would be orphaned;
+///   the message lists the affected xnames sorted alphabetically.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the
+///   `get_member_vec_from_group_name_vec` and
+///   `get_group_map_and_filter_by_group_vec` backend calls.
 pub async fn validate_group_deletion(
   infra: &InfraContext<'_>,
   token: &str,
@@ -139,6 +174,12 @@ pub async fn validate_group_deletion(
 ///
 /// Unless `force` is set, [`validate_group_deletion`] runs first and
 /// the delete is rejected if any node would be orphaned.
+///
+/// # Errors
+///
+/// Any error from [`validate_group_deletion`] when `force` is false,
+/// plus [`Error::NetError`] / [`Error::CsmError`] from the backend
+/// `delete_group` call.
 pub async fn delete_group(
   infra: &InfraContext<'_>,
   token: &str,
@@ -155,6 +196,12 @@ pub async fn delete_group(
 ///
 /// The backend rejects duplicate labels; manta does no pre-check
 /// beyond the standard authorization layer applied by the handler.
+///
+/// # Errors
+///
+/// [`Error::NetError`] / [`Error::CsmError`] / [`Error::Conflict`]
+/// surfaced verbatim from the backend's `add_group` call (the latter
+/// when `group.label` already exists).
 pub async fn create_group(
   infra: &InfraContext<'_>,
   token: &str,
@@ -170,6 +217,20 @@ pub async fn create_group(
 /// mutation. Errors from the per-node deletion abort the loop and
 /// surface to the handler, so a partially completed batch is
 /// possible.
+///
+/// # Errors
+///
+/// - [`Error::InvalidNodeId`] / [`Error::BadRequest`] when
+///   `host_expression` can't be parsed by
+///   [`from_hosts_expression_to_xname_vec`].
+/// - [`Error::BadRequest`] when the resolution produces no xnames
+///   (a literal "nothing to do" guard).
+/// - [`Error::BadRequest`] when the caller lacks access to one of the
+///   resolved xnames (via
+///   [`crate::service::authorization::validate_user_group_members_access`]).
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_node_metadata_available` and per-node
+///   `delete_member_from_group`.
 pub async fn delete_group_members(
   infra: &InfraContext<'_>,
   token: &str,
@@ -228,6 +289,15 @@ pub async fn delete_group_members(
 /// returned rather than the backend's opaque error). An empty
 /// resolution is rejected with `BadRequest`. Returns the resolved
 /// xnames alongside the group's sorted, post-update membership.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `hosts_expression` is invalid,
+///   resolves to an empty set, or names xnames the caller cannot
+///   reach.
+/// - [`Error::NotFound`] when `target_hsm_name` does not exist.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `add_members_to_group`.
 pub async fn add_nodes_to_group(
   infra: &InfraContext<'_>,
   token: &str,

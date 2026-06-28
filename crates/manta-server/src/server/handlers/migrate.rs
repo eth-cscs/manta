@@ -1,4 +1,17 @@
-//! Migrate nodes/backup/restore handlers.
+//! Migration handlers (node moves + cluster backup/restore).
+//!
+//! - `POST /api/v1/migrate/nodes`   → [`migrate_nodes`] — bulk node
+//!   moves between HSM groups.
+//! - `POST /api/v1/migrate/backup`  → [`migrate_backup`] — dump the
+//!   site's configuration state to a server-local file.
+//! - `POST /api/v1/migrate/restore` → [`migrate_restore`] — load a
+//!   previously-written backup.
+//!
+//! The two backup endpoints are gated by
+//! [`crate::server::ServerState::migrate_backup_root`]: when `None`,
+//! both return 501. When `Some(root)`, every filesystem path
+//! supplied by the caller is run through [`confine_to_root`] so a
+//! relative or escaping path cannot read/write outside `root`.
 
 use std::path::{Path, PathBuf};
 

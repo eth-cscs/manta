@@ -1,4 +1,11 @@
 //! Clap definitions for `manta restore *` subcommands.
+//!
+//! Builds `manta restore vcluster` — the inverse of
+//! `manta backup vcluster` (see `super::backup`). Each backup file
+//! type (BOS template, CFS configuration, HSM group, IMS metadata,
+//! image blobs) is passed as its own flag because backups produced
+//! by older versions may have only a subset of these. Execution
+//! dispatched in `crate::dispatch::restore`.
 
 use clap::{ArgAction, Command, ValueHint, arg};
 

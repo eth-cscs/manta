@@ -75,13 +75,37 @@ const TAG_PREFIX: &str = "v";
 /// `--output json` is requested.
 #[derive(serde::Serialize)]
 struct VersionInfo<'a> {
+  /// `CARGO_PKG_VERSION` of the running binary.
   current: &'a str,
+  /// Highest matching tag on GitHub Releases (same major as `current`).
   latest: String,
+  /// `rust target triple` of the running binary (e.g.
+  /// `aarch64-apple-darwin`).
   target: &'a str,
+  /// Full URL of the tarball that would be downloaded for `target`.
   asset_url: String,
+  /// `true` when no upgrade is available (`latest <= current`).
   up_to_date: bool,
 }
 
+/// Run the upgrade flow synchronously: probe GitHub Releases for the
+/// newest `v*` tag in the same major as the running binary, and (when
+/// not in `--check` / `--dry-run`) download the platform tarball,
+/// extract the `manta` binary to a same-directory tempfile, and
+/// `fs::rename` it over the current executable.
+///
+/// Called from a `tokio::task::spawn_blocking` because every step
+/// (HTTP, XZ decode, tar walk, filesystem rename) is blocking.
+///
+/// # Errors
+///
+/// - The current binary's version string is not valid semver.
+/// - The host's target triple is not in the supported list (see
+///   [`ensure_supported_target`]).
+/// - The GitHub Releases API call fails or yields no matching tag.
+/// - The user declined the confirmation prompt.
+/// - The tarball download or extraction failed, or the rename over
+///   the current binary failed (cross-filesystem, permissions, …).
 pub fn exec(
   check_only: bool,
   dry_run: bool,

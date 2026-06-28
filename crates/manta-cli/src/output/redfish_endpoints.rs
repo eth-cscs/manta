@@ -1,4 +1,10 @@
-//! Table and JSON renderers for Redfish endpoint output.
+//! Renderer for Redfish endpoint records (kept as `serde_json::Value`
+//! because the wire shape uses CSM's PascalCase field names).
+//!
+//! Called by `manta get redfish-endpoints`. Supported output formats:
+//! `"table"` (default) and `"json"`. Anything other than `"json"`
+//! falls through to the table path — same regression-prevention
+//! shape as [`crate::output::template`].
 
 use anyhow::{Context, Error};
 use comfy_table::{ContentArrangement, Table};
@@ -29,6 +35,10 @@ fn print_table(json: &Value) {
 }
 
 /// Print Redfish endpoints in the requested format (`"json"` or `"table"`).
+///
+/// # Errors
+///
+/// Returns `Err` if JSON serialisation fails (JSON path only).
 pub fn print(json: &Value, format: &str) -> Result<(), Error> {
   if format == "json" {
     println!(

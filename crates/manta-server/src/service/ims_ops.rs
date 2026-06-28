@@ -20,6 +20,12 @@ use crate::server::common::app_context::InfraContext;
 /// garbage-collected IMS doesn't break callers that just want
 /// whatever images still exist (boot-config application, SAT-file
 /// rendering, etc.).
+///
+/// # Errors
+///
+/// [`Error::NetError`] / [`Error::CsmError`] from the backend
+/// `get_sessions` call. IMS image lookups that 404 are logged and
+/// skipped without surfacing an error.
 pub async fn get_image_vec_related_cfs_configuration_name(
   infra: &InfraContext<'_>,
   shasta_token: &str,

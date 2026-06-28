@@ -1,4 +1,9 @@
 //! Implements the `manta get redfish-endpoints` command.
+//!
+//! Hits `GET /redfish-endpoints` on `manta-server` to list the BMC
+//! Redfish endpoints (BMCs, chassis controllers, PDUs) known to HSM,
+//! optionally filtered by id, FQDN, UUID, MAC, or IP. Output defaults
+//! to the `table` view in [`crate::output::redfish_endpoints`].
 
 use anyhow::Error;
 
@@ -22,6 +27,15 @@ fn parse_redfish_endpoints_params(
 }
 
 /// CLI adapter for `manta get redfish-endpoints`.
+///
+/// Consumes clap matches for the `redfish-endpoints` subcommand
+/// (`--id`, `--fqdn`, `--uuid`, `--macaddr`, `--ipaddress`,
+/// `--output`), issues a single `get_redfish_endpoints` call, and
+/// hands the response to [`crate::output::redfish_endpoints::print`].
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

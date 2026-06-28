@@ -1,4 +1,12 @@
 //! Implements the `manta migrate nodes` command.
+//!
+//! Moves xnames between HSM groups via
+//! `POST /api/v1/migrate/nodes`. The dispatcher resolves the source
+//! groups before calling this leaf — either the single `--from` group
+//! or the full accessible-groups list when `--from` is omitted. The
+//! server then re-checks per-name access and atomically removes each
+//! xname from its current parent group and adds it to the target.
+//! Honours `dry_run` server-side.
 
 use anyhow::Error;
 
@@ -17,6 +25,12 @@ pub struct ExecParams<'a> {
 }
 
 /// Move nodes between HSM groups with validation.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `migrate_nodes` call fails (authorisation, validation, or backend
+/// errors).
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

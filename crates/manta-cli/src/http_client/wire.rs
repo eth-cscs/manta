@@ -6,8 +6,23 @@
 //! and by the wrapper's debug logging in `client.rs`. The auto-
 //! generated client handles its own URL construction and doesn't
 //! call into either helper.
+//!
+//! Redaction policy:
+//!
+//! - The `Authorization` header value is replaced with
+//!   `Bearer <REDACTED>` (or just `<REDACTED>` when not a bearer
+//!   token).
+//! - Request body fields named `password` or `token` (at any depth)
+//!   are replaced with `<REDACTED>`. Bodies that aren't valid JSON
+//!   pass through untouched — non-JSON bodies on this client are
+//!   rare and never carry credentials.
 
-/// Convert an `http://` or `https://` base URL to the corresponding `ws://` / `wss://` URL.
+/// Convert an `http://` or `https://` base URL to the corresponding
+/// `ws://` / `wss://` URL.
+///
+/// Path and query are preserved. Any input that doesn't start with a
+/// recognised HTTP scheme is returned unchanged — defensive behaviour
+/// for a URL the caller never expected to be HTTP in the first place.
 pub fn ws_base_url(http_url: &str) -> String {
   if let Some(rest) = http_url.strip_prefix("https://") {
     format!("wss://{rest}")
@@ -18,9 +33,15 @@ pub fn ws_base_url(http_url: &str) -> String {
   }
 }
 
-/// Render `req` as a copy-pasteable `curl` invocation. Used by
-/// `MantaClient::log_request_as_curl`; the secrets-redaction policy
-/// lives here so it's consistent across every call site.
+/// Render `req` as a copy-pasteable `curl` invocation, with header
+/// and body secrets redacted (see the module-level redaction
+/// policy).
+///
+/// Always passes `-k` (insecure TLS) since the development manta
+/// servers commonly use self-signed certs; the rendered command is
+/// for debugging convenience, not security. Used by
+/// `MantaClient::log_request_as_curl` to emit a single redacted
+/// curl line per outbound request when tracing is enabled.
 pub fn format_request_as_curl(req: &reqwest::Request) -> String {
   let mut out = format!("  curl -k -X {} '{}'", req.method(), req.url());
   for (name, value) in req.headers() {
@@ -44,10 +65,11 @@ pub fn format_request_as_curl(req: &reqwest::Request) -> String {
   out
 }
 
-/// Walk `body` as JSON, replacing any `password` or `token` field value
-/// with `<REDACTED>`. Falls back to the original string when the body
-/// isn't parseable as JSON — non-JSON bodies are rare on this client
-/// and never carry credentials.
+/// Walk `body` as JSON, replacing any `password` or `token` field
+/// value with the literal string `<REDACTED>`. Recurses into nested
+/// objects and arrays. Falls back to the original string when the
+/// body isn't parseable as JSON — non-JSON bodies are rare on this
+/// client and never carry credentials.
 pub fn redact_json_secrets(body: &str) -> String {
   let Ok(mut value) = serde_json::from_str::<serde_json::Value>(body) else {
     return body.to_string();

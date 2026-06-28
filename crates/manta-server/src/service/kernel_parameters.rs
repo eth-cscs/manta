@@ -1,4 +1,23 @@
-//! Kernel boot parameter mutations (add, apply, delete) with SBPS iSCSI image projection.
+//! Kernel boot parameter mutations (add, apply, delete) with SBPS
+//! iSCSI image projection.
+//!
+//! All three mutations share the same two-phase flow:
+//!
+//! 1. `prepare_kernel_params_changes` (crate-private) reads the current
+//!    `/v1/bootparameters` records for the target xnames, applies the
+//!    `KernelParamOperation` in memory, and records which records
+//!    changed (so the caller can target the reboot list). For
+//!    `Add`/`Apply` it also walks each unique boot image referenced
+//!    by an iSCSI-ready boot parameter and resolves it via
+//!    [`futures::future::try_join_all`] — the resolved images are the
+//!    SBPS projection candidates.
+//! 2. [`apply_kernel_params_changes`] writes the prepared records
+//!    back, then patches each `images_to_project` image so SBPS picks
+//!    it up.
+//!
+//! The split exists so the CLI / HTTP layer can show the operator the
+//! exact changeset (and the iSCSI image list) for confirmation before
+//! anything is persisted.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
@@ -18,6 +37,12 @@ pub use manta_shared::types::api::kernel_parameters::GetKernelParametersParams;
 /// (host expression → `group_name` → `settings_group_name` fallback
 /// from `cli.toml`). The caller's access to every resolved xname is
 /// validated before the BSS query runs.
+///
+/// # Errors
+///
+/// Any error from [`node_ops::resolve_target_nodes`] plus
+/// [`Error::NetError`] / [`Error::CsmError`] from the backend
+/// `get_bootparameters` call.
 pub async fn get_kernel_parameters(
   infra: &InfraContext<'_>,
   token: &str,
@@ -109,7 +134,17 @@ pub struct KernelParamsChangeset {
 /// each unique boot-image referenced by a changed record is
 /// inspected once: if its root kernel-parameters look iSCSI-ready it
 /// is appended to `sbps_candidates` so the caller can decide whether
-/// to project it through SBPS.
+/// to project it through SBPS. The per-image fetches run in parallel
+/// via [`futures::future::try_join_all`] so the total wall-clock cost
+/// stays bounded by the slowest image lookup, not their sum.
+///
+/// # Errors
+///
+/// - [`Error::NotFound`] when an SBPS candidate image id resolves to
+///   an empty image list (i.e. the image was deleted since the boot
+///   parameter was written).
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_bootparameters` or any of the per-image `get_images` calls.
 pub(crate) async fn prepare_kernel_params_changes(
   infra: &InfraContext<'_>,
   token: &str,
@@ -183,6 +218,18 @@ pub(crate) async fn prepare_kernel_params_changes(
 /// first backend write. `images_to_project` is normally built by
 /// [`build_images_to_project`]; pass an empty map (as the delete path
 /// does) to skip SBPS projection entirely.
+///
+/// Writes are sequential (not transactional): a failure mid-loop can
+/// leave a subset of records updated.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the caller's access to a reboot
+///   target has been revoked since the changeset was prepared.
+/// - [`Error::MissingField`] when one of the `images_to_project`
+///   entries has no `id`.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `update_bootparameters` or `update_image`.
 pub async fn apply_kernel_params_changes(
   infra: &InfraContext<'_>,
   token: &str,

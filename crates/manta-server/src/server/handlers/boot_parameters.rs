@@ -1,4 +1,14 @@
-//! Boot-parameters + apply_boot_config handlers.
+//! BSS boot-parameter handlers.
+//!
+//! - `GET    /api/v1/boot-parameters` → [`get_boot_parameters`]
+//! - `POST   /api/v1/boot-parameters` → [`add_boot_parameters`]
+//! - `PUT    /api/v1/boot-parameters` → [`update_boot_parameters`]
+//! - `DELETE /api/v1/boot-parameters` → [`delete_boot_parameters`]
+//! - `POST   /api/v1/boot-config`     → [`apply_boot_config`]
+//!
+//! All five wrap `crate::service::boot_parameters::*`. `apply_boot_config`
+//! optionally runs as dry-run (`?dry_run=true`) and returns the prepared
+//! changeset without persisting.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;

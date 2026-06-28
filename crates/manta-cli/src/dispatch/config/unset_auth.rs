@@ -1,4 +1,9 @@
 //! Implements the `manta config unset auth` command.
+//!
+//! Lists the cached per-site token files under the manta cache
+//! directory, prompts the user to pick one, and deletes it. The next
+//! invocation that targets that site will re-run the device-code login
+//! flow.
 
 use std::fs;
 
@@ -9,6 +14,15 @@ use crate::output::action_result;
 use manta_shared::common::config::get_default_cache_path;
 
 /// Remove cached authentication credentials.
+///
+/// Interactive: prompts via `dialoguer::Select`; not suitable for
+/// non-TTY contexts.
+///
+/// # Errors
+///
+/// Returns an error if the cache directory cannot be read, no cached
+/// tokens are present, the interactive prompt fails, or the file
+/// cannot be removed.
 pub fn exec() -> Result<(), Error> {
   unset_auth()
 }

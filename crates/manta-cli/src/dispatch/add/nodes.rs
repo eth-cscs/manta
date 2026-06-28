@@ -1,4 +1,12 @@
 //! Implements the `manta add nodes` command.
+//!
+//! Assigns the xnames matching a host expression to an existing HSM
+//! group via `POST /api/v1/groups/{label}/members`. Always shows an
+//! interactive confirmation prompt (no `--assume-yes` plumbing on this
+//! leaf) before sending the request. `--dry-run` prints what *would*
+//! happen and returns without calling the server. Sibling of
+//! [`super::group`] (which can also seed initial members at
+//! creation time) and inverse of [`super::super::delete::nodes`].
 
 use anyhow::{Error, bail};
 
@@ -9,6 +17,12 @@ use crate::openapi_client::types::AddNodesToGroupRequest;
 use crate::output::action_result;
 
 /// Add/assign a list of xnames to an HSM group.
+///
+/// # Errors
+///
+/// Returns an error when the user declines the confirmation prompt,
+/// when the HTTP client cannot be built, or when the
+/// `add_nodes_to_group` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

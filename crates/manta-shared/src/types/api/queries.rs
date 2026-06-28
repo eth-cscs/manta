@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 use utoipa::IntoParams;
 
 /// Query parameters for `GET /api/v1/sessions`.
+///
+/// Server-side counterpart to [`super::session::GetSessionParams`].
+/// `min_age` / `max_age` are parsed as Go-style duration strings
+/// (`"1h"`, `"2d30m"`, `"45s"`).
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct SessionQuery {
   /// HSM group whose sessions should be returned.

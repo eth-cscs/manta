@@ -109,10 +109,17 @@ pub struct PostSatSessionTemplateResponse {
 /// validator without re-parsing.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct PostSatValidateRequest {
-  /// Parsed SAT file content. Same shape as
-  /// `PostSatConfigurationRequest::configuration` aggregated into
-  /// the full SAT document (`{ configurations, images,
-  /// session_templates, hardware }`).
+  /// Parsed SAT file content — the **whole** SAT document, not a
+  /// single entry. Sketch:
+  ///
+  /// ```text
+  /// {
+  ///   "configurations":    [ {...}, ... ],   // entries of PostSatConfigurationRequest::configuration shape
+  ///   "images":            [ {...}, ... ],   // entries of CreateImageCfsSessionRequest::image shape
+  ///   "session_templates": [ {...}, ... ],   // entries of PostSatSessionTemplateRequest::session_template shape
+  ///   "hardware":          [ {...}, ... ]
+  /// }
+  /// ```
   #[schema(value_type = serde_json::Value)]
   pub sat_file: serde_json::Value,
 }

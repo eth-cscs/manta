@@ -44,6 +44,20 @@ const NOT_FOUND: &str = "Not found";
 ///
 /// The caller is expected to have already validated group access to
 /// every xname; this helper does no authorization of its own.
+///
+/// The five backend calls — CFS components (filtered to the requested
+/// xname set), BSS boot parameters, full HSM-component metadata,
+/// successful CFS sessions (for the image → CFS-config map), and the
+/// full group list (for membership labels) — are issued through
+/// [`tokio::try_join!`] so they overlap on the wire. The join is
+/// purely in-memory and the result is sorted by xname for stable
+/// rendering.
+///
+/// # Errors
+///
+/// [`Error::NetError`] / [`Error::CsmError`] propagated from any of
+/// the five concurrent backend calls; the first error short-circuits
+/// the join.
 pub async fn get_node_details(
   infra: &InfraContext<'_>,
   token: &str,

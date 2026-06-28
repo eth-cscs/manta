@@ -1,7 +1,14 @@
 //! Clap definitions for `manta console *` subcommands.
+//!
+//! Builds the `manta console node` and `manta console target-ansible`
+//! commands — interactive shells, dispatched in
+//! `crate::dispatch::console`. The actual console transport (PTY
+//! attach to the conman or Ansible container) is provided by the
+//! backend via the server's console proxy.
 
 use clap::{Command, arg};
 
+/// Top-level `manta console` verb.
 pub fn subcommand_console() -> Command {
   Command::new("console")
     .arg_required_else_help(true)

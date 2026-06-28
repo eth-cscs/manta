@@ -39,7 +39,28 @@ use utoipa::ToSchema;
 /// csm-rs type and the CLI deserialises it into this mirror.
 ///
 /// All fields are wire-stringified (CSM serializes them that way);
-/// callers parse them as needed for display or comparison.
+/// callers parse them as needed for display or comparison. The empty
+/// string is the conventional "unset" sentinel — see
+/// `cluster_status::compute_summary_status` for case-insensitive
+/// matching on the status fields.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "xname": "x3000c0s1b0n0",
+///   "nid": "nid001313",
+///   "hsm": "alps,zinal",
+///   "power_status": "On",
+///   "desired_configuration": "cos-2.5",
+///   "configuration_status": "configured",
+///   "enabled": "true",
+///   "error_count": "0",
+///   "boot_image_id": "0a1b2c3d-...",
+///   "boot_configuration": "cos-2.5",
+///   "kernel_params": "console=ttyS0 ..."
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct NodeDetails {
   /// Physical location ID, e.g. `x3000c0s1b0n0`.

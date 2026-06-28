@@ -1,4 +1,10 @@
 //! Implements the `manta get templates` command.
+//!
+//! Hits `GET /templates` on `manta-server` to list BOS session
+//! templates. The server returns the BOS payload as `serde_json::Value`
+//! since the upstream type lacks `ToSchema`; the handler deserialises
+//! into [`BosSessionTemplate`] before rendering via
+//! [`crate::output::template`].
 
 use anyhow::{Context, Error};
 
@@ -10,6 +16,10 @@ use manta_shared::types::api::template::GetTemplateParams;
 use manta_shared::types::dto::BosSessionTemplate;
 
 /// Parse CLI arguments into typed [`GetTemplateParams`].
+///
+/// `--most-recent` forces `limit = Some(1)`, overriding any explicit
+/// `--limit` value. `settings_hsm_group_name_opt` is the default group
+/// from `cli.toml`, used as a fallback when `--group` is omitted.
 fn parse_template_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
@@ -29,6 +39,17 @@ fn parse_template_params(
 }
 
 /// CLI adapter for `manta get templates`.
+///
+/// Consumes clap matches for the `templates` subcommand (`--name`,
+/// `--group`, `--limit`, `--most-recent`, required `--output`), calls
+/// the server once, and prints either the renderer's output or a "no
+/// templates found" notice when the list is empty.
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails, the `serde_json::Value`
+/// payload cannot be deserialised into [`BosSessionTemplate`] values,
+/// the required `--output` flag is missing, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

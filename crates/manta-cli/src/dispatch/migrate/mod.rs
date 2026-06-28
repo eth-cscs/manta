@@ -12,6 +12,14 @@ use clap::ArgMatches;
 /// Dispatch `manta migrate` subcommands. Today only `nodes` exists —
 /// the `vCluster {backup,restore}` aliases have been removed; use
 /// `manta backup vcluster` / `manta restore vcluster` instead.
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when
+/// `--to` or the `XNAMES` positional is missing, when no subcommand
+/// is provided or the name is unknown, when the
+/// `get_available_groups` fallback fails (only when `--from` is also
+/// unset), or when the [`nodes::exec`] call fails.
 pub async fn handle_migrate(
   cli_migrate: &ArgMatches,
   ctx: &AppContext<'_>,

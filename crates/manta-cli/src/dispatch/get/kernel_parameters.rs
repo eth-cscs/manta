@@ -1,4 +1,11 @@
 //! Implements the `manta get kernel-parameters` command.
+//!
+//! Hits `GET /kernel-parameters` on `manta-server` to read the kernel
+//! command-line parameters configured for either a group or a host
+//! expression — a narrower view than [`super::boot_parameters`], which
+//! also returns kernel/initrd identifiers. Output is either pretty JSON
+//! or a [`crate::output::kernel_parameters`] table optionally narrowed
+//! by `--filter`.
 
 use anyhow::{Context, Error, bail};
 
@@ -9,6 +16,9 @@ use crate::output;
 use manta_shared::types::api::kernel_parameters::GetKernelParametersParams;
 
 /// Parse CLI arguments into typed [`GetKernelParametersParams`].
+///
+/// `settings_hsm_group_name_opt` is the default group from `cli.toml`,
+/// used as a fallback when `--group` is omitted.
 fn parse_kernel_parameters_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
@@ -21,6 +31,17 @@ fn parse_kernel_parameters_params(
 }
 
 /// CLI adapter for `manta get kernel-parameters`.
+///
+/// Consumes clap matches for the `kernel-parameters` subcommand
+/// (`--group`, `--nodes`, required `--output`, optional `--filter`),
+/// issues a single `get_kernel_parameters` call, and renders the
+/// response.
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails, the required `--output`
+/// flag is missing or holds an unrecognised value, or JSON
+/// serialisation fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

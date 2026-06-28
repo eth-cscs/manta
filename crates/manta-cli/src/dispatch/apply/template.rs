@@ -1,4 +1,11 @@
 //! Implements the `manta apply template` command.
+//!
+//! Creates a BOS session from an existing session template via
+//! `POST /api/v1/sessiontemplates/{name}/session`. The `--operation`
+//! argument is one of `boot`, `reboot`, `shutdown` — anything else
+//! aborts before any HTTP call. The endpoint honours `dry_run`
+//! server-side and returns the created session JSON, which the leaf
+//! hands to [`crate::output::action_result::print_with_data`].
 
 use anyhow::Error;
 
@@ -18,6 +25,12 @@ pub struct ExecParams<'a> {
 }
 
 /// Create a BOS session template and optionally boot.
+///
+/// # Errors
+///
+/// Returns an error when `--operation` is not `boot` / `reboot` /
+/// `shutdown`, when the HTTP client cannot be built, or when the
+/// `post_template_session` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

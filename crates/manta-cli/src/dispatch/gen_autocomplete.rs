@@ -31,6 +31,21 @@ pub async fn handle_gen_autocomplete(
 }
 
 /// Generate (and by default install) the shell completion script.
+///
+/// Determines the target shell from `--shell` or `$SHELL`, then
+/// either prints the completion script to stdout (`--print`) or
+/// writes it under `--path` / the XDG default directory for that
+/// shell (see [`default_install_dir`]). Emits a post-install hint
+/// for shells that need extra setup (zsh: `$fpath` + `compinit`).
+///
+/// # Errors
+///
+/// - Shell name could not be resolved (`$SHELL` unset and `--shell`
+///   omitted, or value is not one of `bash` / `zsh` / `fish`).
+/// - No `--path` was given and the XDG / `$HOME` environment is
+///   insufficient to compute a default install location.
+/// - The destination directory could not be created.
+/// - Writing the completion script failed (clap-complete I/O error).
 pub fn exec(mut cli: Command, cli_gen_autocomplete: &ArgMatches) -> Result<()> {
   let shell_opt: Option<String> =
     cli_gen_autocomplete.opt_str("shell").map(str::to_owned);

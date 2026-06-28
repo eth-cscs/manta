@@ -1,4 +1,10 @@
 //! Implements the `manta delete boot-parameters` command.
+//!
+//! Removes the BSS boot-parameter records for the given hosts via
+//! `DELETE /api/v1/boot-parameters`. `--dry-run` is a client-side
+//! short-circuit (the endpoint has no `dry_run` flag): the leaf prints
+//! the request payload that *would* be sent via
+//! [`crate::output::action_result::preview_request`] and returns.
 
 use anyhow::Error;
 
@@ -8,6 +14,12 @@ use crate::openapi_client::types::DeleteBootParametersRequest;
 use crate::output::action_result;
 
 /// CLI adapter for `manta delete boot-parameters`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `delete_boot_parameters` call fails, or when the dry-run preview
+/// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

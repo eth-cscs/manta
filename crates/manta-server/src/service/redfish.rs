@@ -1,4 +1,15 @@
-//! Redfish-endpoint queries and CRUD operations.
+//! HSM Redfish-endpoint registry queries and CRUD.
+//!
+//! Wraps the `/Inventory/RedfishEndpoints` HSM family. A registration
+//! describes how HSM should talk to a BMC: hostname/FQDN,
+//! credentials, MAC and IP, discovery flags. Every mutation runs
+//! through [`validate_user_group_members_access`] so a caller can
+//! only touch a BMC whose xname they already have group access to.
+//!
+//! Listing is the only special case: admin tokens may broadly list
+//! every endpoint, but non-admin callers MUST scope the query by
+//! `id`, because the full listing would otherwise leak every BMC's
+//! identity and credentials cluster-wide.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::redfish_endpoint::RedfishEndpointTrait;
@@ -51,6 +62,13 @@ pub(crate) fn params_to_redfish_endpoint(
 ///   then validated against the caller's accessible groups; without
 ///   an `id`, the response could leak every BMC's identity and
 ///   credentials. The non-admin broad listing returns `BadRequest`.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when a non-admin caller omits `params.id`,
+///   or names an xname outside their accessible groups.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   `get_redfish_endpoints` call.
 pub async fn get_redfish_endpoints(
   infra: &InfraContext<'_>,
   token: &str,
@@ -88,6 +106,14 @@ pub async fn get_redfish_endpoints(
 ///
 /// The caller-supplied `UpdateRedfishEndpointParams` is converted to a
 /// single-element `RedfishEndpointArray` before reaching the backend.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the caller cannot reach `params.id`
+///   through any of their HSM groups.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   `add_redfish_endpoint` call (including conflicts when an
+///   endpoint with that `id` is already registered).
 pub async fn add_redfish_endpoint(
   infra: &InfraContext<'_>,
   token: &str,
@@ -113,6 +139,12 @@ pub async fn add_redfish_endpoint(
 ///
 /// All fields on `UpdateRedfishEndpointParams` are written; partial
 /// updates aren't supported by the backend contract.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the caller cannot reach `params.id`.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   `update_redfish_endpoint` call.
 pub async fn update_redfish_endpoint(
   infra: &InfraContext<'_>,
   token: &str,
@@ -138,6 +170,12 @@ pub async fn update_redfish_endpoint(
 ///
 /// `NotFound` is surfaced by the backend when `id` does not match an
 /// existing registration; the service forwards it unchanged.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the caller cannot reach `id`.
+/// - [`Error::NotFound`] / other backend errors from the
+///   `delete_redfish_endpoint` call.
 pub async fn delete_redfish_endpoint(
   infra: &InfraContext<'_>,
   token: &str,

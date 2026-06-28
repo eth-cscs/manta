@@ -33,6 +33,14 @@ impl MantaClient {
   /// Returns a buffered reader over the SSE byte stream. The caller is
   /// responsible for stripping the `data: ` prefix that the server wraps
   /// around each log line.
+  ///
+  /// # Errors
+  ///
+  /// - Transport-level failure on the GET (refused connection,
+  ///   timeout, TLS error, …).
+  /// - The server responded with a non-2xx status; the body is
+  ///   pulled through [`super::client::unwrap_error_body`] before
+  ///   being formatted into the error message.
   pub async fn stream_session_logs(
     &self,
     session_name: &str,

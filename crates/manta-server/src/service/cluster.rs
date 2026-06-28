@@ -1,4 +1,9 @@
 //! Cluster-scoped node detail queries using HSM group membership.
+//!
+//! Companion to [`crate::service::node`]: where `node` resolves an
+//! arbitrary hosts expression to xnames, this module starts from one
+//! or more HSM groups, expands them to xnames, and produces the same
+//! [`NodeDetails`] rows.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
@@ -16,6 +21,14 @@ pub use manta_shared::types::api::cluster::GetClusterParams;
 /// group the token can access. The optional `status_filter` matches
 /// case-insensitively against either the power or configuration
 /// status. Results are sorted by xname for stable rendering.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `params.group_name` names a group the
+///   caller can't access.
+/// - Backend errors from `get_group_available`,
+///   `get_member_vec_from_group_name_vec`, or the per-xname detail
+///   fetch in [`node_details::get_node_details`].
 pub async fn get_cluster_nodes(
   infra: &InfraContext<'_>,
   token: &str,

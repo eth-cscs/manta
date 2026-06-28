@@ -1,4 +1,9 @@
 //! Implements the `manta config show` command.
+//!
+//! Builds a [`ConfigSummary`] from the merged local settings and,
+//! when a site is selected, augments it with the per-site available
+//! groups fetched from `GET /groups/available`. Rendering is delegated
+//! to [`crate::output::config_summary`].
 
 use anyhow::Error;
 use config::Config;
@@ -12,7 +17,15 @@ use manta_shared::common::config::get_cli_config_file_path;
 /// `client` is `Some` only when a site was selected (`--site` or
 /// `cli.toml`'s `site`); without one we still print the local config,
 /// just without the per-site, server-derived fields (available groups,
-/// current site).
+/// current site). A failure to fetch the available groups is logged at
+/// warn level and the field is left empty rather than aborting the
+/// whole `show`.
+///
+/// # Errors
+///
+/// Returns an error only if the renderer fails. The config file path
+/// lookup falls back to `"<unknown>"`, individual `Config` lookups use
+/// defaults, and the available-groups fetch is best-effort.
 pub async fn exec(
   client: Option<&MantaClient>,
   settings: &Config,
@@ -30,21 +43,15 @@ pub async fn exec(
 
   // Available groups are per-site, so fetch them only when we have a
   // site-bound (and authenticated) client.
-  let hsm_group_available_opt = if let Some(client) = client {
-    match client
+  let hsm_group_available_opt = match client {
+    Some(c) => c
       .openapi
-      .get_available_groups(client.site_name())
+      .get_available_groups(c.site_name())
       .await
       .into_anyhow()
-    {
-      Ok(groups) => Some(groups),
-      Err(e) => {
-        tracing::warn!("Failed to fetch available HSM groups: {}", e);
-        None
-      }
-    }
-  } else {
-    None
+      .inspect_err(|e| tracing::warn!("Failed to fetch available HSM groups: {e}"))
+      .ok(),
+    None => None,
   };
 
   let summary = ConfigSummary {
@@ -56,7 +63,7 @@ pub async fn exec(
     current_site: client.map(|c| c.site_name().to_string()),
     read_only: settings.get_bool("read_only").unwrap_or(false),
     groups_available: hsm_group_available_opt,
-    current_hsm: settings_hsm_group,
+    current_group: settings_hsm_group,
   };
 
   config_summary::print(&summary, output_opt)?;

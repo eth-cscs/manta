@@ -1,4 +1,10 @@
 //! Clap definitions for `manta backup *` subcommands.
+//!
+//! Builds the `manta backup vcluster` command, which serialises a
+//! virtual cluster's images, boot settings, and group membership to a
+//! local directory. Execution dispatched in
+//! `crate::dispatch::backup`. The companion verb is
+//! `manta restore` (see `super::restore`).
 
 use clap::{Command, ValueHint, arg};
 

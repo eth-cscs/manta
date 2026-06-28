@@ -1,5 +1,10 @@
 //! Root CLI dispatcher: matches the parsed top-level verb and calls
 //! the per-verb handler in this module's siblings.
+//!
+//! All verbs except the local-only `gen-man` / `gen-autocomplete` and
+//! the read-only `get` family go through the read-only gate first; the
+//! gate refuses backend-mutating verbs when `read_only = true` is set
+//! in `cli.toml`, before any HTTP request leaves the process.
 
 use crate::common::app_context::AppContext;
 use anyhow::{Error, bail};
@@ -12,6 +17,13 @@ use crate::dispatch::{
 
 /// Parse CLI arguments and dispatch to the appropriate
 /// subcommand handler.
+///
+/// # Errors
+///
+/// Returns an error when the read-only gate refuses a mutating verb,
+/// when no subcommand is provided, when the subcommand name is unknown,
+/// or when the chosen verb's handler returns an error (authentication,
+/// HTTP, validation, or backend failures).
 pub async fn process_cli(
   cli_root: &ArgMatches,
   ctx: &AppContext<'_>,

@@ -1,4 +1,8 @@
 //! Implements the `manta config set log` command.
+//!
+//! Writes `log = "<level>"` to `cli.toml`. The value is consumed by the
+//! tracing subscriber at next CLI startup; no validation is performed
+//! here — clap restricts the input via its value parser.
 
 use anyhow::Error;
 use clap::ArgMatches;
@@ -8,6 +12,14 @@ use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Set the logging verbosity level.
+///
+/// Consumes the clap matches for `config set log` (positional
+/// `LOG_LEVEL`) and writes the value via `set_log`.
+///
+/// # Errors
+///
+/// Returns an error if `LOG_LEVEL` is missing or the config file
+/// cannot be read or written.
 pub fn exec(cli_config_set_log: &ArgMatches) -> Result<(), Error> {
   let log_level: &String = cli_config_set_log
     .get_one("LOG_LEVEL")

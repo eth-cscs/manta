@@ -1,4 +1,10 @@
 //! Implements the `manta delete images` command.
+//!
+//! Removes IMS images by id (comma-separated list) via
+//! `DELETE /api/v1/images?ids=…&dry_run=…`. The server honours
+//! `--dry-run` and returns the cascade plan (boot images, S3 artifacts,
+//! IMS records) without persisting any changes; live runs return the
+//! actually-deleted set.
 
 use anyhow::Error;
 
@@ -7,6 +13,11 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// Delete IMS images and their linked artifacts.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `delete_images` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

@@ -1,4 +1,24 @@
 //! Implements the `manta run session` command.
+//!
+//! Build, validate, and run a one-off CFS session driven by local Git
+//! repos:
+//!
+//! 1. For every `--repo-path`, open the git repo, capture name + HEAD
+//!    commit id, and (interactively) confirm any uncommitted changes.
+//!    Implemented in [`check_local_repos`], with git helpers in
+//!    [`local_git_repo`].
+//! 2. POST `/api/v1/sessions` (`create_session`) with the layer list,
+//!    the optional `--playbook`, `--ansible-limit`, `--ansible-verbosity`,
+//!    and `--ansible-passthrough`. Server returns the created CFS
+//!    configuration and session names.
+//! 3. If `--watch-logs` is set, stream the session log over SSE
+//!    (`stream_session_logs`) to stdout, optionally with timestamps.
+//!
+//! `--dry-run` prints the would-be request via
+//! [`crate::output::action_result::preview_request`] and skips both the
+//! POST and the log stream; the repo walk still runs (so the preview
+//! reflects the would-be commit ids) but uncommitted files are
+//! tolerated with a warning instead of a prompt.
 
 use std::path::PathBuf;
 
@@ -22,6 +42,12 @@ const GITEA_REPO_NAME_PREFIX: &str = "cray/";
 /// Authorization (target HSM group access + every xname in
 /// `--ansible-limit` belonging to an accessible group) is enforced
 /// server-side by `POST /api/v1/sessions`.
+///
+/// # Errors
+///
+/// Returns an error when `--repo-path` is missing, when [`run_session`]
+/// returns an error (repo walk, prompt declined, HTTP failure, or log
+/// stream failure).
 pub async fn exec(
   cli_run_session: &ArgMatches,
   ctx: &AppContext<'_>,

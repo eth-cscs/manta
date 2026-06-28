@@ -88,12 +88,15 @@ impl Clone for Kafka {
 }
 
 impl Kafka {
-  /// Create a new `Kafka` instance with the given broker
-  /// list and topic name.
+  /// Create a new `Kafka` instance with the given broker list and
+  /// topic name. Uses the crate-internal `message.timeout.ms` and
+  /// delivery-wait defaults (5000ms and fire-and-forget,
+  /// respectively); for non-default values, deserialize a `Kafka`
+  /// from `server.toml`'s `[auditor.kafka]` block instead.
   ///
   /// The actual `FutureProducer` is built lazily on the first
-  /// `produce_message` call, so this constructor is cheap and
-  /// infallible.
+  /// [`Audit::produce_message`] call, so this constructor is cheap
+  /// and infallible.
   pub fn new(brokers: Vec<String>, topic: String) -> Self {
     Self {
       brokers,

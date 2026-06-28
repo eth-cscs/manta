@@ -1,7 +1,13 @@
-//! `PCSTrait` (power control) impl for `StaticBackendDispatcher`.
+//! [`PCSTrait`] (power control) impl for [`StaticBackendDispatcher`].
 //!
-//! `POST /power` returns immediately with a transition id (via
-//! `pcs_transitions_post`); the CLI then polls `pcs_transitions_get`
+//! Forwards to the CSM PCS (Power Control Service)
+//! `/apis/power-control/v1/{power-status,transitions}` endpoints.
+//! Both CSM and Ochami implement this trait natively.
+//!
+//! `POST /transitions` returns immediately with a transition id (via
+//! [`pcs_transitions_post`](StaticBackendDispatcher::pcs_transitions_post));
+//! the CLI then polls
+//! [`pcs_transitions_get`](StaticBackendDispatcher::pcs_transitions_get)
 //! until the transition is `completed`. The older blocking
 //! `power_*_sync` trait methods (server-side polling loop) have been
 //! removed.
@@ -11,6 +17,10 @@ use manta_backend_dispatcher::types::pcs::power_status::types::PowerStatusAll;
 use super::*;
 
 impl PCSTrait for StaticBackendDispatcher {
+  /// `GET /power-status?xname=...` — current power state for each
+  /// `nodes` entry. `power_status_filter` and `management_state_filter`
+  /// map to the upstream `powerStatusFilter` / `managementStateFilter`
+  /// query parameters.
   async fn power_status(
     &self,
     auth_token: &str,
@@ -28,6 +38,11 @@ impl PCSTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `POST /transitions` — start a power `operation` (e.g. `on`,
+  /// `off`, `soft-restart`) against `nodes`. Returns the transition
+  /// id; the caller polls
+  /// [`pcs_transitions_get`](Self::pcs_transitions_get) for the
+  /// outcome.
   async fn pcs_transitions_post(
     &self,
     auth_token: &str,
@@ -46,6 +61,8 @@ impl PCSTrait for StaticBackendDispatcher {
     }
   }
 
+  /// `GET /transitions/{id}` — single transition's progress / final
+  /// status. Polled by the CLI to drive the power-op wait loop.
   async fn pcs_transitions_get(
     &self,
     auth_token: &str,

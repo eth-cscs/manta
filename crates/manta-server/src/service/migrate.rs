@@ -4,6 +4,13 @@
 //! dispatcher; handlers call those directly. Only `migrate_nodes`
 //! carries real orchestration (hosts-expression resolution,
 //! HSM-group curation, per-pair member migration).
+//!
+//! Migration is a (target × parent) fan-out: for every requested
+//! target group, every parent group the resolved xnames actually
+//! belong to is paired with it and the backend
+//! `migrate_group_members` call is issued. Nodes that don't live in
+//! one of the named parents are silently skipped, which keeps the
+//! call idempotent when a hosts expression is re-run.
 
 use std::collections::HashMap;
 
@@ -42,6 +49,16 @@ pub struct NodeMigrationResult {
 /// been created). Returns the moved xnames and one
 /// [`NodeMigrationResult`] per (target, parent) pair, with both
 /// membership lists sorted for stable rendering.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the resolved xname list is empty, the
+///   caller lacks group access to one of the resolved xnames, or a
+///   dry-run would require creating a missing target group.
+/// - [`Error::NotFound`] when a target group is missing and
+///   `create_group` is false.
+/// - [`Error::NetError`] / [`Error::CsmError`] from any of the
+///   `get_group` / `migrate_group_members` backend calls.
 pub async fn migrate_nodes(
   infra: &InfraContext<'_>,
   token: &str,

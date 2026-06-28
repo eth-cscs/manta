@@ -5,6 +5,13 @@
 //!   polls the next endpoint until the transition reports `completed`.
 //! - `GET /api/v1/power/transitions/{id}` returns the current snapshot
 //!   of the named transition (status + task counts + per-task detail).
+//!
+//! The two-step shape (start → poll) is dictated by PCS itself: a
+//! transition is a long-running cluster-wide operation, and the
+//! caller is expected to drive completion off the snapshot rather
+//! than blocking the request. Both handlers delegate to
+//! [`crate::service::power`] — target-xname resolution is shared with
+//! the `boot-parameters` and `kernel-parameters` flows.
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 

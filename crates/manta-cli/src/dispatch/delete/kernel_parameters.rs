@@ -1,4 +1,10 @@
 //! Implements the `manta delete kernel-parameters` command.
+//!
+//! Removes specific kernel parameter tokens from the BSS boot-parameter
+//! records of nodes selected by `--group` or `--nodes`. Forwards to
+//! `DELETE /api/v1/kernel-parameters` with server-side `dry_run`.
+//! Nodes whose effective parameter set changes are rebooted by the
+//! server-side workflow.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -16,6 +22,11 @@ pub struct ExecParams<'a> {
 
 /// Deletes the specified kernel parameters from a set of nodes.
 /// Reboots the nodes whose kernel params have changed.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `delete_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

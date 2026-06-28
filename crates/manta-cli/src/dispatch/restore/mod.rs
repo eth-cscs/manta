@@ -1,4 +1,8 @@
 //! `manta restore` subcommands.
+//!
+//! Today only [`vcluster`] exists; it drives a cluster-data restore
+//! via `POST /api/v1/migrate/restore`. Inverse of
+//! [`super::backup`].
 
 pub mod vcluster;
 
@@ -9,6 +13,12 @@ use anyhow::{Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta restore` subcommands.
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when no
+/// subcommand is provided or the name is unknown, or when the leaf
+/// handler fails.
 pub async fn handle_restore(
   cli_restore: &ArgMatches,
   ctx: &AppContext<'_>,

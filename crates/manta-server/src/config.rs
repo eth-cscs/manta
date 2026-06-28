@@ -3,6 +3,31 @@
 //! The untyped `config::Config` is loaded by
 //! [`manta_shared::common::config::get_server_configuration`]; this
 //! module owns the typed deserialisation target.
+//!
+//! The shape on disk is:
+//!
+//! ```toml
+//! log = "info"
+//!
+//! [server]
+//! listen_address = "0.0.0.0"
+//! port = 8443
+//! cert = "/etc/manta/tls/server.crt"
+//! key = "/etc/manta/tls/server.key"
+//! console_inactivity_timeout_secs = 1800
+//! auth_rate_limit_per_minute = 60
+//!
+//! [sites.alps]
+//! backend = "csm"
+//! shasta_base_url = "https://api.alps.cscs.ch"
+//! root_ca_cert_file = "/etc/manta/alps-ca.pem"
+//! ```
+//!
+//! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
+//! and [`Site`] are its nested sections. There is no notion of an
+//! "active" site — the server hosts every entry in `[sites.*]`
+//! simultaneously and clients pick one per request via the
+//! `X-Manta-Site` header.
 
 use std::collections::HashMap;
 
@@ -143,10 +168,14 @@ fn default_request_timeout_secs() -> u64 {
   600
 }
 
-/// Top-level configuration for the `manta-server` binary. Persisted as
-/// TOML under `~/.config/manta/server.toml`. Has no notion of an "active"
-/// site — the server hosts every configured site simultaneously and
-/// clients select per-request via the `X-Manta-Site` header.
+/// Top-level configuration for the `manta-server` binary.
+///
+/// Persisted as TOML under `~/.config/manta/server.toml` and loaded
+/// once at startup. Has no notion of an "active" site — the server
+/// hosts every entry in [`Self::sites`] simultaneously and clients
+/// select per-request via the `X-Manta-Site` header.
+///
+/// See the module-level docs for the on-disk layout.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ServerConfiguration {
   /// `EnvFilter` directive for the tracing subscriber.

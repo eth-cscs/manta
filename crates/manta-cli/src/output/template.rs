@@ -1,10 +1,21 @@
-//! Table and JSON renderers for BOS session template output.
+//! Renderer for [`BosSessionTemplate`] (BOS session templates).
+//!
+//! Called by `manta get template`. Supported output formats:
+//! `"json"` (pretty-printed) and the default table (anything else
+//! — the `else` arm always falls back to the table renderer, per the
+//! regression noted in the tests). One row is emitted per boot set;
+//! the path's `s3://boot-images/` prefix and trailing
+//! `/manifest.json` are trimmed for readability.
 
 use anyhow::{Context, Error};
 use comfy_table::Table;
 use manta_shared::types::dto::BosSessionTemplate;
 
 /// Print BOS session templates in the requested format.
+///
+/// # Errors
+///
+/// Returns `Err` if pretty-printing as JSON fails (JSON path only).
 pub fn print(
   templates: &[BosSessionTemplate],
   output: &str,

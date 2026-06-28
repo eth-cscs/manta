@@ -6,6 +6,22 @@
 //! [`read_only_gate`]; everything else here is reusable building
 //! blocks. The toggle itself is wired by `manta config set/unset
 //! read-only`.
+//!
+//! ## Triggers and bypasses
+//!
+//! [`read_only_gate`] short-circuits to `Ok(())` when *any* of:
+//!
+//! - No subcommand was parsed (top-level `--help` / `--version`).
+//! - `read_only` is `false` (the policy is off).
+//! - The parsed verb is not in [`MUTATING_VERBS`].
+//! - `--dry-run` is set on the leaf subcommand (every entry in
+//!   [`MUTATING_VERBS`] now plumbs it through).
+//!
+//! Otherwise the gate returns the [`ensure_can_mutate`] error, which
+//! points the operator at both escape hatches. The CSM token's own
+//! ACL is *separate*; this gate is a CLI-side belt-and-braces check
+//! that lets sites disable destructive verbs without re-issuing
+//! tokens.
 
 use clap::ArgMatches;
 
@@ -56,6 +72,10 @@ pub fn dry_run_set(verb_matches: &ArgMatches) -> bool {
 /// escape hatches: `--dry-run` to preview, or `manta config unset
 /// read-only` to disable the policy. Every entry in
 /// [`MUTATING_VERBS`] has a `--dry-run` flag on its leaf subcommands.
+///
+/// # Errors
+///
+/// Returns the read-only refusal error when `read_only` is `true`.
 pub fn ensure_can_mutate(read_only: bool, verb: &str) -> anyhow::Result<()> {
   if !read_only {
     return Ok(());
@@ -71,6 +91,11 @@ pub fn ensure_can_mutate(read_only: bool, verb: &str) -> anyhow::Result<()> {
 /// of: no subcommand parsed; `read_only` is `false`; the verb is not
 /// in [`MUTATING_VERBS`]; or `--dry-run` is set. Otherwise returns
 /// the [`ensure_can_mutate`] error.
+///
+/// # Errors
+///
+/// Propagates [`ensure_can_mutate`]'s refusal when none of the
+/// bypass conditions apply.
 pub fn read_only_gate(
   cli_root: &ArgMatches,
   read_only: bool,

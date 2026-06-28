@@ -97,6 +97,14 @@ impl SatMonitorBudgets {
 /// `images[]` entry. Returns the resulting `Image` as `serde_json::Value`
 /// so the caller (`dispatch_plan`) can drop it into the `images: [...]`
 /// summary list unchanged.
+///
+/// # Errors
+///
+/// Returns an error when the create-session POST fails or its
+/// response cannot be deserialised, when the monitor poll exceeds the
+/// configured budget, when the CFS session reports a `fail*` status,
+/// or when the final stamp POST fails. The dry-run branch short-circuits
+/// after step 1 and never reaches the monitor or stamp.
 pub async fn run_image_pipeline(
   ctx: &crate::common::app_context::AppContext<'_>,
   client: &MantaClient,

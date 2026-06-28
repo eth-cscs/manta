@@ -1,7 +1,9 @@
 //! Axum router registration: maps every `/api/v1/` path to its handler.
 //!
 //! The OpenAPI JSON spec is served at `GET /openapi.json` and the
-//! Swagger UI is served at `GET /docs`.
+//! Swagger UI is served at `GET /docs`. The `/api/v1/auth/*`
+//! sub-router carries its own defensive layers (rate limit, body
+//! redaction) — see [`crate::server::auth_middleware`].
 
 use std::sync::Arc;
 
@@ -24,10 +26,20 @@ use super::handlers;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
 ///
-/// The single global `request_timeout` is applied to every route as an
-/// outer `TimeoutLayer`. `POST /power` now returns immediately with a
-/// PCS transition id (the polling loop runs CLI-side), so it fits
-/// well under the default timeout — no per-route override is needed.
+/// Structure:
+/// - `/api/v1/*` — the main resource router, with the global
+///   [`ServerState::request_timeout`] applied as an outer
+///   `TimeoutLayer`. `POST /power` now returns immediately with a
+///   PCS transition id (the polling loop runs CLI-side), so it fits
+///   well under the default timeout — no per-route override is needed.
+/// - `/api/v1/auth/*` — separate sub-router with two layered
+///   defences: per-IP rate limit (see [`AuthRateLimiter`]) and body
+///   redaction from any log span (see [`strip_body_for_logs`]). No
+///   Bearer-token extractor (these endpoints issue the token).
+/// - `/docs` + `/openapi.json` — Swagger UI and the spec from
+///   [`ApiDoc`].
+/// - HSTS header injected on every response by an
+///   `add_hsts_header` middleware (private to this module).
 pub fn build_router(state: Arc<ServerState>) -> Router {
   let api = Router::new()
     // --- GET endpoints ---

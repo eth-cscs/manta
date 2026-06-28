@@ -1,16 +1,32 @@
 //! Dispatcher-meta methods on `InfraContext`.
 //!
-//! The per-domain wrapper methods that used to live in sibling files
+//! `InfraContext<'a>` itself is defined in
+//! [`crate::server::common::app_context`]; this file extends it with
+//! the two helpers every service-layer module needs that aren't
+//! per-domain trait methods on the backend dispatcher:
+//!
+//! - [`InfraContext::backend_kind`] — stable label for tracing /
+//!   diagnostics, no I/O.
+//! - [`InfraContext::backend_clone`] — owned copy for use inside
+//!   `'static`-bound spawned tasks (`tokio::spawn`, `JoinSet::spawn`).
+//!
+//! Earlier revisions of this module hosted per-domain wrappers
 //! (auth/bos/bss/cfs/delete_configurations/hsm/ims/migrate/pcs/redfish/
-//! sat) have been removed; service code now calls
-//! `infra.backend.<method>(...)` directly via the corresponding trait
-//! imports. Only the truly dispatcher-level helpers remain here:
-//! `backend_kind` and `backend_clone`.
+//! sat) that re-exported each backend trait method on `InfraContext`.
+//! Those were removed; service code now imports the trait directly
+//! and calls `infra.backend.<method>(...)`. The result is fewer
+//! abstraction layers between a service function and the backend
+//! contract it's actually targeting.
 
 use crate::server::common::app_context::InfraContext;
 
 impl InfraContext<'_> {
   /// Stable label for the active backend (`csm`, `ochami`, ...).
+  ///
+  /// Cheap, infallible — forwards to
+  /// [`crate::dispatcher::StaticBackendDispatcher::backend_kind`].
+  /// Used as a structured `tracing` field across the service and
+  /// backend_dispatcher layers.
   pub fn backend_kind(&self) -> &'static str {
     self.backend.backend_kind()
   }

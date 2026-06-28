@@ -4,7 +4,14 @@
 //! endpoints clients call *to obtain* a bearer token. The defensive
 //! middleware (rate limit, body redaction) lives in
 //! `crate::server::auth_middleware`; this file just maps requests to
-//! `service::auth`.
+//! [`crate::service::auth`].
+//!
+//! Every auth failure surfaces a generic `401 invalid credentials` so
+//! the response never reveals whether a username exists, whether a
+//! site is configured, or what the backend actually rejected. The
+//! specific reason is captured server-side with `tracing::warn!` and
+//! sent to the audit channel when one is configured on
+//! [`ServerState`].
 
 use std::net::SocketAddr;
 use std::sync::Arc;

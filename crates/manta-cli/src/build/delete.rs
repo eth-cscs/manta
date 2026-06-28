@@ -1,9 +1,26 @@
 //! Clap definitions for `manta delete *` subcommands.
+//!
+//! Builds the `manta delete` subtree — removing groups, nodes,
+//! images, configurations, sessions, boot/kernel parameters, hardware
+//! components, and Redfish endpoints. Execution dispatched in
+//! `crate::dispatch::delete`.
+//!
+//! Notes:
+//! - `delete node` (singular) removes the node from the hardware
+//!   state manager entirely; `delete nodes` (plural) only strips a
+//!   group's membership.
+//! - `delete configurations` uses an `ArgGroup("since_and_until")`
+//!   that requires both `--since` and `--until`, and conflicts with
+//!   `--configuration-name`.
+//! - `delete kernel-parameters` uses `ArgGroup("cluster_or_nodes")`
+//!   to require exactly one of `--nodes` / `--group`.
 
 use clap::{ArgAction, ArgGroup, Command, arg};
 
 use super::{HOSTLIST_HELP, dry_run_flag, output_flag};
 
+/// Top-level `manta delete` verb — wires every `delete <noun>`
+/// subcommand together.
 pub fn subcommand_delete() -> Command {
   Command::new("delete")
     .arg_required_else_help(true)
@@ -41,6 +58,8 @@ pub fn subcommand_delete_nodes() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete group` — delete an empty node group. Handler:
+/// `crate::dispatch::delete::group`.
 pub fn subcommand_delete_group() -> Command {
   Command::new("group")
     .arg_required_else_help(true)
@@ -64,6 +83,8 @@ pub fn subcommand_delete_group() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete node` — remove a node from the hardware state
+/// manager entirely. Handler: `crate::dispatch::delete::node`.
 pub fn subcommand_delete_node() -> Command {
   Command::new("node")
     .arg_required_else_help(true)
@@ -83,6 +104,9 @@ pub fn subcommand_delete_node() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete hardware` — remove hardware components from a group
+/// (donating them back to a parent). Handler:
+/// `crate::dispatch::delete::hw_component`.
 pub fn subcommand_delete_hw_component() -> Command {
   Command::new("hardware")
     .arg_required_else_help(true)
@@ -105,6 +129,9 @@ pub fn subcommand_delete_hw_component() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete images` — delete one or more IMS images by ID
+/// (refuses if an image is currently a node's boot image). Handler:
+/// `crate::dispatch::delete::image`.
 pub fn subcommand_delete_image() -> Command {
   Command::new("images")
     .arg_required_else_help(true)
@@ -119,6 +146,11 @@ pub fn subcommand_delete_image() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete configurations` — cascade-delete CFS configurations
+/// (and all sessions, templates, and images derived from them).
+/// Filter by exact name, glob, or update-date range; the
+/// `since`/`until` `ArgGroup` requires both bounds when used.
+/// Handler: `crate::dispatch::delete::configuration`.
 pub fn subcommand_delete_configuration() -> Command {
   Command::new("configurations")
     .arg_required_else_help(true)
@@ -144,6 +176,9 @@ pub fn subcommand_delete_configuration() -> Command {
     )
 }
 
+/// `manta delete session` — delete a CFS configuration session
+/// (image-building sessions also drop their image). Handler:
+/// `crate::dispatch::delete::session`.
 pub fn subcommand_delete_session() -> Command {
   Command::new("session")
     .arg_required_else_help(true)
@@ -159,6 +194,9 @@ pub fn subcommand_delete_session() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete kernel-parameters` — remove named kernel parameters
+/// (by parameter name, ignoring values) from a node set or group.
+/// Handler: `crate::dispatch::delete::kernel_parameters`.
 pub fn subcommand_delete_kernel_parameter() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
@@ -179,6 +217,9 @@ pub fn subcommand_delete_kernel_parameter() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete boot-parameters` — delete a BSS boot-parameters
+/// entry for the listed hosts. Handler:
+/// `crate::dispatch::delete::boot_parameters`.
 pub fn subcommand_delete_boot_parameter() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
@@ -188,6 +229,9 @@ pub fn subcommand_delete_boot_parameter() -> Command {
     .arg(output_flag())
 }
 
+/// `manta delete redfish-endpoints` — unregister a Redfish endpoint
+/// by xname. Handler:
+/// `crate::dispatch::delete::redfish_endpoint`.
 pub fn subcommand_delete_redfish_endpoint() -> Command {
   Command::new("redfish-endpoints")
     .visible_alias("redfish-endpoint")

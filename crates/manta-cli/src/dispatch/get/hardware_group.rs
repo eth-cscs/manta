@@ -1,4 +1,10 @@
 //! Implements the `manta get hardware group` command.
+//!
+//! Hits `GET /groups/hardware` on `manta-server` to return the
+//! aggregated hardware inventory of an HSM group. Output defaults to
+//! the `summary` view from [`crate::output::hardware::print_cluster`];
+//! pass `--output` for an alternative view. See
+//! [`super::hardware_nodes`] for the per-node variant.
 
 use anyhow::Error;
 
@@ -8,6 +14,9 @@ use crate::output;
 use manta_shared::types::api::hardware::GetHardwareClusterParams;
 
 /// Parse CLI arguments into typed [`GetHardwareClusterParams`].
+///
+/// The positional `GROUP_NAME` takes precedence over the default group
+/// from `cli.toml`.
 fn parse_hardware_cluster_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
@@ -19,6 +28,15 @@ fn parse_hardware_cluster_params(
 }
 
 /// CLI adapter for `manta get hardware group`.
+///
+/// Consumes clap matches for the `hardware group` subcommand
+/// (positional `GROUP_NAME`, optional `--output`), fetches the
+/// aggregated inventory, and hands the JSON to
+/// [`crate::output::hardware::print_cluster`].
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

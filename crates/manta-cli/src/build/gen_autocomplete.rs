@@ -1,11 +1,19 @@
 //! Clap definition for `manta gen-autocomplete` — generates **and
 //! installs** the shell completion script for bash/zsh/fish.
+//!
+//! Distinct from the build-time generation in `crates/manta-cli/build.rs`,
+//! which writes checked-in scripts under
+//! `autocomplete_shell_scripts/` for cargo-dist to ship. This
+//! subcommand installs into the user's XDG directories at runtime.
+//! Handler: `crate::dispatch::gen_autocomplete`.
 
 use clap::{ArgAction, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
 use super::output_flag;
 
+/// Build the `manta gen-autocomplete` command. `--print` and
+/// `--path` conflict (printing is incompatible with installing).
 pub fn subcommand_gen_autocomplete() -> Command {
   Command::new("gen-autocomplete")
     .about("Generate and install shell completion scripts")

@@ -1,4 +1,19 @@
-//! CFS session queries, creation, deletion, and console-readiness validation.
+//! CFS session queries, creation, deletion, and console-readiness
+//! validation.
+//!
+//! Session deletion follows the plan/apply pattern shared with
+//! [`crate::service::boot_parameters`] and
+//! [`crate::service::configuration`]:
+//! [`prepare_session_deletion`] collects everything the delete will
+//! need (the session itself, image ids it produced, CFS components,
+//! BSS boot parameters) without mutating state, and
+//! [`execute_session_deletion`] applies the plan. The two-step shape
+//! lets the CLI render a confirmation prompt with the full blast
+//! radius before any backend write.
+//!
+//! [`validate_session_access`] and [`validate_console_session`] are
+//! standalone pre-checks used by handlers that need to fail-fast
+//! before doing anything else (typically a console attach).
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;

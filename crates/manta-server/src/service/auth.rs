@@ -17,6 +17,18 @@ use crate::server::common::app_context::InfraContext;
 
 /// Exchange `username` + `password` for a CSM bearer token via the
 /// site's configured backend.
+///
+/// The CLI's `auth` command posts to `/api/v1/auth/token`, which
+/// reaches this function. The returned token is the same bearer the
+/// caller then sends as `Authorization: Bearer ...` on every
+/// subsequent request.
+///
+/// # Errors
+///
+/// Whatever the backend's
+/// [`AuthenticationTrait::get_api_token`] returns — typically a
+/// `BackendError::Unauthorized` for bad credentials, or a
+/// `NetError` when the backend's IDP is unreachable.
 #[tracing::instrument(
   skip_all,
   fields(
@@ -54,6 +66,18 @@ pub async fn get_api_token(
 }
 
 /// Verify that `token` is still accepted by the site's backend.
+///
+/// Lightweight probe the CLI calls before kicking off a long-running
+/// operation that would otherwise fail mid-flight (e.g. a multi-node
+/// power transition followed by a poll loop). Does not return any
+/// claim from the token — for that, decode it locally with
+/// `jwt_ops` instead.
+///
+/// # Errors
+///
+/// Whatever
+/// [`AuthenticationTrait::validate_api_token`] returns —
+/// typically `Unauthorized` for an expired or revoked token.
 #[tracing::instrument(
   skip_all,
   fields(

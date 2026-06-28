@@ -1,4 +1,13 @@
 //! Implements the `manta add group` command.
+//!
+//! `POST /api/v1/groups` creates the group. If `--nodes` is provided
+//! the leaf follows up with `POST /api/v1/groups/{label}/members` to
+//! seed initial membership. Both calls are issued only after the
+//! operator confirms the JSON preview shown on stdout
+//! (`--assume-yes` skips the prompt). `--dry-run` skips both POSTs and
+//! prints the preview through
+//! [`crate::output::action_result::print_with_data`] so `-o json`
+//! still works.
 
 use anyhow::{Context, Error, bail};
 
@@ -8,16 +17,31 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::{AddNodesToGroupRequest, Group};
 use crate::output::action_result;
 
+/// Arguments for [`exec`] — mirrors the clap flags on
+/// `manta add group`.
 pub struct ExecParams<'a> {
+  /// Group label (required).
   pub label: &'a str,
+  /// Free-text description.
   pub description: Option<&'a str>,
+  /// Optional `--nodes` host expression to seed initial members via a
+  /// follow-up `POST /api/v1/groups/{label}/members`.
   pub hosts_expression: Option<&'a str>,
+  /// When `true`, skip the interactive confirmation prompt.
   pub assume_yes: bool,
+  /// When `true`, print the preview only and skip every server call.
   pub dry_run: bool,
   pub output: Option<&'a str>,
 }
 
 /// CLI adapter for `manta add group`.
+///
+/// # Errors
+///
+/// Returns an error when the group payload fails to serialise for the
+/// preview, when the user declines the confirmation prompt, when the
+/// HTTP client cannot be built, when the `POST /groups` call fails, or
+/// when the optional `POST /groups/{label}/members` follow-up fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   auth_token: &str,

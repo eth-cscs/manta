@@ -5,6 +5,19 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// Request body for `POST /api/v1/nodes`.
+///
+/// Paired with [`super::responses::AddNodeResponse`] on success.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "id": "x3000c0s1b0n0",
+///   "group": "alps",
+///   "enabled": true,
+///   "arch": "X86"
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddNodeRequest {
   /// Physical location ID (xname) of the node, e.g. `x3000c0s1b0n0`.

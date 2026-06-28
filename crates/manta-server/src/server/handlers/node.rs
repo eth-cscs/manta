@@ -1,4 +1,13 @@
 //! Node CRUD handlers.
+//!
+//! - `GET    /api/v1/nodes`        → [`get_nodes`] — wraps
+//!   `service::node::get_nodes`.
+//! - `POST   /api/v1/nodes`        → [`add_node`].
+//! - `DELETE /api/v1/nodes/{id}`   → [`delete_node`].
+//!
+//! `get_nodes` accepts an xname expression query parameter and an
+//! optional `status` filter; the `include_siblings` flag fans out
+//! to neighbour nodes sharing the same chassis.
 
 use axum::{
   Json,

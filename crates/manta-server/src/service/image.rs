@@ -1,4 +1,17 @@
-//! IMS image queries and safety-checked deletion (rejects images that boot live nodes).
+//! IMS image queries and safety-checked deletion.
+//!
+//! Image-deletion has two failure modes that the service layer
+//! refuses to let through:
+//!
+//! 1. Deleting the boot image of a currently-booted node would brick
+//!    the next boot. [`validate_image_deletion`] cross-references
+//!    every candidate id against the BSS boot-parameter records.
+//! 2. Deleting an image referenced by a node outside the caller's
+//!    accessible groups would let users indirectly remove resources
+//!    they don't own.
+//!
+//! Read-only listing ([`get_images`]) only validates the requested
+//! `pattern` glob and applies the `limit` cap.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;

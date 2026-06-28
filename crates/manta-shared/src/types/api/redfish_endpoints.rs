@@ -17,7 +17,12 @@ pub struct GetRedfishEndpointsParams {
   pub ipaddress: Option<String>,
 }
 
-/// Typed parameters for updating/adding a Redfish endpoint.
+/// Typed parameters for adding or updating a Redfish endpoint.
+///
+/// Shared request body for **both** `POST /redfish-endpoints` (add a
+/// new endpoint) and `PUT /redfish-endpoints` (replace an existing
+/// one by `id`). PUT is a full replacement — every field is written,
+/// so partial updates require reading the existing endpoint first.
 //
 // The four bool fields (`enabled`, `use_ssdp`, `mac_required`,
 // `rediscover_on_update`) are independent BMC feature toggles defined

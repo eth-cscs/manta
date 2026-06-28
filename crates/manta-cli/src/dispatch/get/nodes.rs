@@ -1,4 +1,10 @@
 //! Implements the `manta get nodes` command.
+//!
+//! Hits `GET /nodes` on `manta-server` to resolve a host expression
+//! (xnames, NIDs, host-list syntax) into per-node detail records. The
+//! handler then offers four user-facing presentations driven by clap
+//! flags: a cluster status summary, a one-line CSV of NIDs, JSON, or a
+//! [`crate::output::node`] table.
 
 use anyhow::{Context, Error, bail};
 
@@ -11,6 +17,11 @@ use manta_shared::types::cluster_status;
 use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
 
 /// Parse CLI arguments into typed [`GetNodesParams`].
+///
+/// # Errors
+///
+/// Returns an error if the required `VALUE` positional argument is
+/// missing.
 fn parse_nodes_params(
   cli_args: &clap::ArgMatches,
 ) -> Result<GetNodesParams, Error> {
@@ -24,6 +35,18 @@ fn parse_nodes_params(
 }
 
 /// CLI adapter for `manta get nodes`.
+///
+/// Consumes clap matches for the `nodes` subcommand (positional host
+/// expression, `--include-siblings`, `--status`, `--output`,
+/// `--nids-only-one-line`, `--summary-status`), calls the server once,
+/// and renders the response in the requested form.
+///
+/// # Errors
+///
+/// Returns an error if the positional host expression is missing, the
+/// HTTP request fails, JSON serialisation fails (for `--output json` or
+/// the cluster-status round-trip), or `--output` holds an unrecognised
+/// value.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

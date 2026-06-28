@@ -46,6 +46,16 @@ pub enum SatElement {
 ///
 /// Cross-references inside the SAT file are validated up-front; on the
 /// happy path the caller never sees a plan with a dangling `image_ref`.
+///
+/// # Errors
+///
+/// Returns an error when the root is not a mapping (only relevant if
+/// either filter flag is set), when a filter is requested but the
+/// matching section is missing, when `configurations` / `images` /
+/// `session_templates` is not an array, when two images share a
+/// `ref_name`, when an `image_ref` or `base.image_ref` does not match
+/// any image in the file, or when a cycle is detected in image
+/// dependencies.
 pub fn build_plan(
   sat_file: &mut Value,
   image_only: bool,

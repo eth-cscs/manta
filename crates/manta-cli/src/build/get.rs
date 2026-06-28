@@ -1,9 +1,25 @@
 //! Clap definitions for `manta get *` subcommands.
+//!
+//! Builds the `manta get` read-only subtree: groups, hardware,
+//! sessions, configurations, BOS templates, node details, images, and
+//! boot/kernel parameters. Execution dispatched in
+//! `crate::dispatch::get`.
+//!
+//! Notes:
+//! - Several listing subcommands use mutually-exclusive `ArgGroup`s
+//!   (eg. `hsm-group_or_configuration`, `session_limit`,
+//!   `configuration_safety_filter`, `image_safety_filter`,
+//!   `hsm-group_or_xnames_or_name`) so that conflicting filters error
+//!   at parse time.
+//! - `subcommand_get_hardware_nodes` is `pub` because the dispatch
+//!   layer's unit tests reuse the production builder.
 
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 
 use super::HOSTLIST_HELP;
 
+/// `manta get groups` — list/look-up node groups. Handler:
+/// `crate::dispatch::get::group`.
 pub fn subcommand_get_group() -> Command {
   Command::new("groups")
     .about("List node groups visible to your token (or look up one by name)")
@@ -36,6 +52,9 @@ pub fn subcommand_get_hardware_nodes() -> Command {
     )
 }
 
+/// `manta get hardware` — parent of `nodes` and `group` hardware
+/// inspection subcommands. Handler:
+/// `crate::dispatch::get::hardware`.
 pub fn subcommand_get_hardware() -> Command {
   Command::new("hardware")
     .arg_required_else_help(true)
@@ -44,6 +63,8 @@ pub fn subcommand_get_hardware() -> Command {
     .subcommand(subcommand_get_hardware_group())
 }
 
+/// `manta get hardware group` — hardware inventory for every node in
+/// a group. Handler: `crate::dispatch::get::hardware_group`.
 pub fn subcommand_get_hardware_group() -> Command {
   Command::new("group")
     .arg_required_else_help(true)
@@ -56,6 +77,8 @@ pub fn subcommand_get_hardware_group() -> Command {
     )
 }
 
+/// `manta get configurations` — list CFS configurations. Handler:
+/// `crate::dispatch::get::configuration`.
 pub fn subcommand_get_cfs_configuration() -> Command {
   Command::new("configurations")
     .about("List CFS configurations (filter by name, glob, group, or recency)")
@@ -85,6 +108,8 @@ pub fn subcommand_get_cfs_configuration() -> Command {
     ]))
 }
 
+/// `manta get sessions` — list CFS sessions. Handler:
+/// `crate::dispatch::get::session`.
 pub fn subcommand_get_cfs_session() -> Command {
   Command::new("sessions")
     .about("List configuration sessions")
@@ -115,6 +140,8 @@ pub fn subcommand_get_cfs_session() -> Command {
     .group(ArgGroup::new("session_limit").args(["most-recent", "limit"]))
 }
 
+/// `manta get templates` — list BOS session templates. Handler:
+/// `crate::dispatch::get::template`.
 pub fn subcommand_get_bos_template() -> Command {
   Command::new("templates")
     .about("List BOS session templates (filter by name, group, or recency)")
@@ -136,6 +163,8 @@ pub fn subcommand_get_bos_template() -> Command {
     .group(ArgGroup::new("hsm-group_or_template").args(["group", "name"]))
 }
 
+/// `manta get group-nodes` — node details/status for every member of
+/// a group. Handler: `crate::dispatch::get::group_nodes`.
 pub fn subcommand_get_group_nodes() -> Command {
   Command::new("group-nodes")
     .about("Show node details and status for a group")
@@ -165,6 +194,8 @@ pub fn subcommand_get_group_nodes() -> Command {
     .arg(arg!(<HSM_GROUP_NAME> "Group name").value_name("GROUP_NAME"))
 }
 
+/// `manta get nodes` — node details/status by xname, NID, or hostlist
+/// expression. Handler: `crate::dispatch::get::node_details`.
 pub fn subcommand_get_node_details() -> Command {
   Command::new("nodes")
     .about("Show node details and status")
@@ -197,6 +228,8 @@ pub fn subcommand_get_node_details() -> Command {
     .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP))
 }
 
+/// `manta get images` — list IMS images. Handler:
+/// `crate::dispatch::get::image`.
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
     .about("List IMS images (filter by id, name glob, or recency; sorted most-recent first)")
@@ -219,6 +252,9 @@ pub fn subcommand_get_images() -> Command {
     ]))
 }
 
+/// `manta get boot-parameters` — show BSS boot parameters for nodes
+/// or a group. Handler:
+/// `crate::dispatch::get::boot_parameters`.
 pub fn subcommand_get_boot_parameters() -> Command {
   Command::new("boot-parameters")
     .arg_required_else_help(true)
@@ -230,6 +266,10 @@ pub fn subcommand_get_boot_parameters() -> Command {
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP))
 }
 
+/// `manta get kernel-parameters` — show kernel parameters for nodes
+/// or a group. Required `ArgGroup("hsm-group_or_nodes")` enforces
+/// exactly one selector. Handler:
+/// `crate::dispatch::get::kernel_parameters`.
 pub fn subcommand_get_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .about("Show kernel parameters for nodes or a group")
@@ -250,6 +290,8 @@ pub fn subcommand_get_kernel_parameters() -> Command {
     )
 }
 
+/// `manta get redfish-endpoints` — list registered BMCs/controllers.
+/// Handler: `crate::dispatch::get::redfish_endpoint`.
 pub fn subcommand_get_redfish_endpoints() -> Command {
   Command::new("redfish-endpoints")
     .about("List the BMCs / controllers the hardware state manager has registered as Redfish endpoints")
@@ -267,6 +309,8 @@ pub fn subcommand_get_redfish_endpoints() -> Command {
     )
 }
 
+/// Top-level `manta get` verb — wires every `get <noun>` subcommand
+/// together. Invoked from `build_cli` in `super::mod`.
 pub fn subcommand_get() -> Command {
   Command::new("get")
     .arg_required_else_help(true)

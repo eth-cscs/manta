@@ -1,5 +1,15 @@
 //! CLI context struct threaded through `manta-cli`'s call stack.
 //!
+//! Every dispatch handler in `crate::dispatch::*` receives an
+//! `&AppContext` as its first parameter. It carries: the resolved
+//! site name, the manta-server URL the CLI is bound to, optional
+//! poll-tuning knobs from `cli.toml`, and the raw `config::Config`
+//! handle for fields the typed struct doesn't surface.
+//!
+//! Authentication is *not* on the context — call
+//! [`crate::common::authentication::get_api_token`] when a handler
+//! needs a token, then thread the token into [`crate::http_client::MantaClient::from_app_ctx`].
+//!
 //! The server's analogous `InfraContext` (with backend dispatcher and
 //! per-site URLs) lives in `manta_server::server::common::app_context`
 //! — it depends on `StaticBackendDispatcher`, which the CLI never
@@ -9,6 +19,29 @@ use config::Config;
 
 /// Top-level CLI context, passed as `&AppContext` through CLI
 /// handlers and commands.
+///
+/// # Example
+///
+/// Typical handler shape: resolve a token, build a client, call an
+/// OpenAPI method.
+///
+/// ```ignore
+/// use crate::common::app_context::AppContext;
+/// use crate::common::authentication::get_api_token;
+/// use crate::http_client::{MantaClient, OpenApiResultExt};
+///
+/// async fn list_groups(ctx: &AppContext<'_>) -> anyhow::Result<()> {
+///   let token = get_api_token(ctx).await?;
+///   let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+///   let groups = client
+///     .openapi
+///     .get_groups(None, client.site_name())
+///     .await
+///     .into_anyhow()?;
+///   println!("{groups:#?}");
+///   Ok(())
+/// }
+/// ```
 #[derive(Debug)]
 pub struct AppContext<'a> {
   /// Resolved site (`--site` override, else `cli.toml`'s `site`), or
@@ -61,6 +94,12 @@ impl<'a> AppContext<'a> {
   /// neither `--site` nor `cli.toml`'s `site` was supplied. Call this
   /// at every point that needs to issue a request to `manta-server`;
   /// commands that touch only the local config file must not.
+  ///
+  /// # Errors
+  ///
+  /// Returns `Err` when `site_name` is `None` — the message names
+  /// both ways to set it (`--site <name>` or the `site` key in
+  /// `cli.toml`).
   pub fn require_site(&self) -> anyhow::Result<&'a str> {
     self.site_name.ok_or_else(|| {
       anyhow::anyhow!(

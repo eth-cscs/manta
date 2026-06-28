@@ -1,7 +1,13 @@
 //! Clap definitions for `manta log` (aliased as `logs`).
+//!
+//! Single-verb tail of CFS session logs. The positional argument is
+//! polymorphic — a session name, group name, xname, or NID — and the
+//! handler resolves the most recent session targeting that entity.
+//! Handler: `crate::dispatch::log`.
 
 use clap::{ArgAction, Command, arg};
 
+/// Build `manta log` / `manta logs`.
 pub fn subcommand_log() -> Command {
   Command::new("log")
     .alias("logs")

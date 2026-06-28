@@ -37,9 +37,17 @@ struct WindowState {
   count: u32,
 }
 
-/// In-memory rate-limit table, sized by the number of distinct source IPs
-/// that hit `/auth/*` in the last minute. For typical CLI fleets this is
-/// small; entries older than two windows are pruned on every check.
+/// In-memory rate-limit table, sized by the number of distinct
+/// source IPs that hit `/auth/*` in the last minute. For typical CLI
+/// fleets this is small; entries older than two windows are pruned
+/// on every check.
+///
+/// Constructed once by [`super::routes::build_router`] and threaded
+/// through Axum's `Extension` layer into [`rate_limit`]. The limit
+/// (requests per IP per minute) is read from
+/// [`super::ServerState::auth_rate_limit_per_minute`] on every
+/// request, so it can change at config-reload time without
+/// rebuilding the router.
 #[derive(Default)]
 pub struct AuthRateLimiter {
   windows: Mutex<HashMap<IpAddr, WindowState>>,
@@ -59,7 +67,7 @@ impl AuthRateLimiter {
     self.check_at(ip, limit, Instant::now())
   }
 
-  /// Testable variant of [`check`] with an explicit clock. The split
+  /// Testable variant of [`Self::check`] with an explicit clock. The split
   /// lets unit tests exercise the window-reset and pruning logic
   /// without actually sleeping 60+ seconds.
   fn check_at(&self, ip: IpAddr, limit: u32, now: Instant) -> bool {
@@ -88,9 +96,13 @@ impl AuthRateLimiter {
   }
 }
 
-/// Per-source-IP rate limit middleware.  Reads
-/// `[server].auth_rate_limit_per_minute` from `ServerState`; when `None`,
+/// Per-source-IP rate-limit middleware for the `/api/v1/auth/*`
+/// sub-router. Reads
+/// [`super::ServerState::auth_rate_limit_per_minute`]; when `None`,
 /// the middleware is a no-op (operators rate-limit at the proxy).
+/// When the per-IP request count exceeds the limit, returns
+/// `429 Too Many Requests` with an [`ErrorResponse`] body and a
+/// `tracing::warn!` event.
 pub async fn rate_limit(
   State(state): State<Arc<ServerState>>,
   ConnectInfo(peer): ConnectInfo<SocketAddr>,
@@ -119,9 +131,10 @@ pub async fn rate_limit(
 }
 
 /// Belt-and-braces: ensure no `/auth/*` request body ever reaches a
-/// logger.  The runtime cost is one logger-scoped `tracing` span with
-/// the body field redacted; the body itself is forwarded to the handler
-/// untouched.
+/// logger. The runtime cost is one logger-scoped `tracing` span with
+/// the body field redacted; the body itself is forwarded to the
+/// handler untouched, so deserialisation in
+/// [`super::handlers::auth_token`] still sees the original payload.
 pub async fn strip_body_for_logs(request: Request, next: Next) -> Response {
   let span = tracing::info_span!("auth_request", body = "<redacted>");
   let _enter = span.enter();

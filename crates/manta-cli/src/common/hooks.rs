@@ -9,8 +9,17 @@ use anyhow::{Error, anyhow, bail};
 use execute::{Execute, shell};
 use is_executable::IsExecutable;
 
-/// Executes the hook using a subshell. stdout and stderr are redirected to the main process stdout
-/// returns Ok(exit_code) or Err() with the description of the error
+/// Execute `hook_opt` as a shell command. stdout and stderr inherit
+/// the parent process's streams.
+///
+/// # Errors
+///
+/// - `hook_opt` is `None`.
+/// - The subshell could not be spawned (the `execute` crate surfaces
+///   the OS error).
+/// - The hook exited with a non-zero status (the error names the
+///   exit code).
+/// - The hook was killed by a signal (no exit code available).
 pub fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
   let hook = hook_opt.ok_or_else(|| anyhow!("Hook command is empty"))?;
   let mut command = shell(hook);
@@ -33,6 +42,10 @@ pub fn run_hook(hook_opt: Option<&str>) -> Result<i32, Error> {
 ///
 /// `None` is a no-op success; the caller doesn't have to gate on the
 /// `Option`. Errors propagate `Err` from [`run_hook`] unchanged.
+///
+/// # Errors
+///
+/// Propagates any error from [`run_hook`] when `hook_opt` is `Some`.
 pub fn run_hook_if_present(
   hook_opt: Option<&str>,
   label: &str,
@@ -45,8 +58,16 @@ pub fn run_hook_if_present(
   Ok(())
 }
 
-/// Checks that the hook exists and is executable
-/// returns Ok if all good, an error message otherwise
+/// Verify that the program at the head of `hook_opt`'s command
+/// string exists on disk and has the executable bit set. Only the
+/// first whitespace-separated token is checked; trailing arguments
+/// are ignored.
+///
+/// # Errors
+///
+/// - `hook_opt` is `None` or has no parseable program token.
+/// - The program does not exist at the specified path.
+/// - The file exists but is not executable.
 pub fn check_hook_perms(hook_opt: Option<&str>) -> Result<(), Error> {
   let hook = hook_opt.ok_or_else(|| anyhow!("Hook command is empty"))?;
   let program_name = hook

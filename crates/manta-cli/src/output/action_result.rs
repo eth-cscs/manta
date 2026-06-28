@@ -2,17 +2,25 @@
 //! produce — `add`, `delete`, `update`, `apply`, `migrate`, `power`,
 //! `config set/unset`, and friends.
 //!
-//! Every such command ends with a single short status line like
-//! "Group 'X' added" or "Boot parameters created successfully". With
-//! the renderer plumbed through, the same commands also support
-//! `--output json` and emit `{"status":"ok","message":"..."}` instead,
-//! which lets shell-script callers branch on success without screen-
-//! scraping the human text.
+//! ## Subcommands
 //!
-//! For commands that also need to surface structured data alongside
-//! the status (e.g. an ID assigned by the backend, a list of affected
-//! nodes), use [`print_with_data`] and pass the payload as
-//! `serde_json::Value`.
+//! Used by every mutating verb's success path, every `--dry-run`
+//! preview path (via [`preview_request`]), and `config set` /
+//! `config unset`.
+//!
+//! ## Output formats
+//!
+//! - text (default): a single short status line like "Group 'X'
+//!   added" or "Boot parameters created successfully".
+//! - JSON (`-o json`): `{"status":"ok","message":"..."}`, with an
+//!   optional `"data": ...` field when the helper variant
+//!   [`print_with_data`] is used.
+//!
+//! This lets shell-script callers branch on success without screen-
+//! scraping the human text. For commands that need to surface
+//! structured data alongside the status (e.g. an ID assigned by the
+//! backend, a list of affected nodes), use [`print_with_data`] and
+//! pass the payload as `serde_json::Value`.
 
 use anyhow::{Context, Result};
 use serde_json::json;
@@ -41,6 +49,11 @@ fn json_envelope_with_data<T: serde::Serialize>(
 
 /// Print a single status message. Plain text by default, JSON object
 /// `{"status":"ok","message":"..."}` when `output_opt` is `Some("json")`.
+///
+/// # Errors
+///
+/// Returns `Err` if JSON serialisation fails (only reachable on the
+/// JSON path).
 pub fn print(message: &str, output_opt: Option<&str>) -> Result<()> {
   match output_opt {
     Some("json") => println!("{}", json_envelope(message)?),
@@ -52,6 +65,11 @@ pub fn print(message: &str, output_opt: Option<&str>) -> Result<()> {
 /// Print a status message with an associated structured payload.
 /// In text mode prints the message followed by the data pretty-printed;
 /// in JSON mode prints `{"status":"ok","message":"...","data":<payload>}`.
+///
+/// # Errors
+///
+/// Returns `Err` if `data` cannot be converted to JSON or the
+/// resulting envelope cannot be serialised.
 pub fn print_with_data<T: serde::Serialize>(
   message: &str,
   data: &T,
@@ -76,6 +94,10 @@ pub fn print_with_data<T: serde::Serialize>(
 /// preview honours `-o json` just like the live success path. Use this
 /// from every mutating dispatcher's dry-run branch so the format stays
 /// uniform across verbs.
+///
+/// # Errors
+///
+/// Propagates serialisation failures from [`print_with_data`].
 pub fn preview_request<T: serde::Serialize>(
   method: &str,
   path: &str,

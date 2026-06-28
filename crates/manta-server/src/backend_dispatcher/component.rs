@@ -1,8 +1,15 @@
-//! `ComponentTrait` impl for `StaticBackendDispatcher`.
+//! [`ComponentTrait`] impl for [`StaticBackendDispatcher`].
+//!
+//! Forwards to the HSM (Hardware State Manager)
+//! `/apis/smd/hsm/v2/State/Components` API. Both CSM and Ochami
+//! implement this trait natively.
 
 use super::*;
 
 impl ComponentTrait for StaticBackendDispatcher {
+  /// `GET /State/Components?type=Node` — every node in HSM. When
+  /// `nid_only` is set, the backend forwards `nid_only=true` to the
+  /// HSM which limits the returned representation to the NID field.
   async fn get_all_nodes(
     &self,
     auth_token: &str,
@@ -11,6 +18,9 @@ impl ComponentTrait for StaticBackendDispatcher {
     dispatch!(self, get_all_nodes, auth_token, nid_only)
   }
 
+  /// RBAC-aware node listing: HSM filtered to the components the
+  /// caller's groups grant access to. Used to populate the user's
+  /// visible inventory after auth.
   async fn get_node_metadata_available(
     &self,
     auth_token: &str,
@@ -18,6 +28,10 @@ impl ComponentTrait for StaticBackendDispatcher {
     dispatch!(self, get_node_metadata_available, auth_token)
   }
 
+  /// `GET /State/Components` with the full HSM filter set forwarded
+  /// verbatim. Every `Option<&str>` maps 1:1 to a query parameter on
+  /// the upstream endpoint; the `*_only` parameters restrict the
+  /// returned fields (HSM's "lite" projections).
   async fn get(
     &self,
     auth_token: &str,
@@ -69,6 +83,7 @@ impl ComponentTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `POST /State/Components` — bulk-create node components.
   async fn post_nodes(
     &self,
     auth_token: &str,
@@ -77,6 +92,9 @@ impl ComponentTrait for StaticBackendDispatcher {
     dispatch!(self, post_nodes, auth_token, component)
   }
 
+  /// `DELETE /State/Components/{id}` — remove a single component
+  /// (typically an xname). The returned `HsmActionResponse` reports
+  /// how many records were affected.
   async fn delete_node(
     &self,
     auth_token: &str,
@@ -85,6 +103,10 @@ impl ComponentTrait for StaticBackendDispatcher {
     dispatch!(self, delete_node, auth_token, id)
   }
 
+  /// Resolve a NID expression (single id, range, or regex when
+  /// `is_regex`) to xnames by scanning HSM nodes. The matching logic
+  /// runs client-side because HSM's NID query parameter does not
+  /// support ranges or patterns.
   async fn nid_to_xname(
     &self,
     auth_token: &str,

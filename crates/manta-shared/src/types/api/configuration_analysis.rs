@@ -10,6 +10,10 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// One row of the configuration-deletion-safety analysis.
+///
+/// Configuration-centric counterpart to
+/// [`super::analysis::BackendSummary`]; one entry per CFS
+/// configuration the caller can see.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ConfigurationAnalysis {
   /// Full CFS configuration record as returned by CFS. `CfsConfigurationResponse`

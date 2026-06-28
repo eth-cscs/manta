@@ -1,4 +1,15 @@
 //! Implements the `manta add hardware` command.
+//!
+//! Adds hardware components matching `--pattern` to a target HSM
+//! cluster, drawing the components from `--parent-group`. Forwards to
+//! `POST /api/v1/hardware-clusters/{target}/members`. The server
+//! honours the request's `dry_run` flag (no client-side
+//! short-circuit) and returns the projected component move set even
+//! on a real run; the leaf hands the result to
+//! [`crate::output::action_result::print_with_data`].
+//!
+//! Authorisation on both the target and parent HSM groups is enforced
+//! by the server.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -15,6 +26,12 @@ pub struct ExecParams<'a> {
 }
 
 /// Add hardware components to a cluster group (CLI entry point).
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// server's `add_hw_component` call fails (authorisation, validation,
+/// or backend errors).
 pub async fn exec(
   ctx: &AppContext<'_>,
   shasta_token: &str,

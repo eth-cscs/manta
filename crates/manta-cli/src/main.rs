@@ -2,6 +2,26 @@
 //! launches the CLI command handler. The CLI never talks to CSM /
 //! OCHAMI directly — every operation is forwarded to the manta HTTPS
 //! server named by `cli.toml`'s `manta_server_url`.
+//!
+//! ## Boot sequence
+//!
+//! 1. [`build::build_cli`] constructs the clap tree and parses
+//!    `std::env::args` into `clap::ArgMatches`.
+//! 2. [`manta_shared::common::config::get_cli_configuration`] loads
+//!    `~/.config/manta/cli.toml`, then [`common::config::CliConfiguration`]
+//!    typed-deserialises it.
+//! 3. The active site is resolved (`--site` flag wins over
+//!    `cli.toml`'s `site`); the SOCKS5 env var is set while still
+//!    single-threaded.
+//! 4. A multi-threaded tokio runtime is built and `run_cli` is the
+//!    entry future.
+//! 5. Tracing is configured, the [`common::app_context::AppContext`]
+//!    is assembled, and [`dispatch::process::process_cli`] routes
+//!    based on the parsed verb.
+//!
+//! `dispatch::*`, `output::*`, and `http_client::*` are documented in
+//! their respective modules. The `openapi_client` sibling module is
+//! progenitor-generated at build time from `openapi.json`.
 
 #![warn(missing_docs)]
 

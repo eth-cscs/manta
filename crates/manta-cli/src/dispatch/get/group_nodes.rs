@@ -1,4 +1,10 @@
 //! Implements the `manta get group-nodes` command.
+//!
+//! Hits `GET /groups/nodes` on `manta-server` to enumerate the nodes
+//! belonging to an HSM group. Output mirrors `manta get nodes`: a
+//! cluster status summary, one-line CSV of NIDs or xnames, JSON, or a
+//! [`crate::output::node`] table. See [`super::nodes`] for the
+//! host-expression variant.
 
 use anyhow::{Context, Error, bail};
 
@@ -11,6 +17,9 @@ use manta_shared::types::cluster_status;
 use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
+///
+/// The positional `HSM_GROUP_NAME` takes precedence over the default
+/// group from `cli.toml`.
 fn parse_cluster_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
@@ -23,6 +32,16 @@ fn parse_cluster_params(
 }
 
 /// CLI adapter for `manta get group-nodes`.
+///
+/// Consumes clap matches for the `group-nodes` subcommand (positional
+/// `HSM_GROUP_NAME`, `--status`, `--output`, `--nids-only-one-line`,
+/// `--xnames-only-one-line`, `--summary-status`), calls the server
+/// once, and renders the response in the requested form.
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails, JSON serialisation
+/// fails, or `--output` holds an unrecognised value.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

@@ -1,4 +1,10 @@
 //! Clap definitions for `manta run *` subcommands.
+//!
+//! Builds `manta run session` — creates and runs a CFS configuration
+//! session from a local Ansible git repo. The repo must already exist
+//! in the system's VCS. An `ArgGroup("hsm-group_or_ansible-limit")`
+//! requires exactly one of `--group` / `--ansible-limit`. Execution
+//! dispatched in `crate::dispatch::run`.
 
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;

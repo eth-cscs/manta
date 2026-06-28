@@ -1,10 +1,12 @@
 //! Local-Git-repo helpers for `manta run session`.
 //!
 //! Wraps `git2` to open the operator's working repo, read its HEAD
-//! commit, derive the bare-repo name from its remote URL, and push
-//! the current branch to that remote. The `run session` flow
-//! relies on these to ensure the configuration session runs against
-//! a known-good commit that's been mirrored to the system VCS.
+//! commit, derive the bare-repo name from its remote URL, and check
+//! whether the working tree has any modified or untracked files. The
+//! `manta run session` flow uses these to pin the CFS session to a
+//! known-good commit that's been mirrored to the system VCS — if the
+//! local tree is dirty, the operator is warned that the session won't
+//! see their uncommitted changes.
 //!
 //! See <https://github.com/rust-lang/git2-rs/issues/561> for the
 //! pattern used here.
@@ -14,7 +16,13 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Error, anyhow};
 use git2::{Commit, ObjectType, Repository};
 
-/// Open a local Git repository at the given path.
+/// Open a local Git repository at `repo_path`.
+///
+/// # Errors
+///
+/// `git2::Error` when `repo_path` does not exist, is not a Git
+/// working directory, or libgit2 fails to read the on-disk repo
+/// (e.g. corrupt `.git`).
 pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
   let repo_root = PathBuf::from(repo_path);
 
@@ -24,6 +32,15 @@ pub fn get_repo(repo_path: &str) -> Result<Repository, git2::Error> {
 }
 
 /// Get the most recent commit on the current branch.
+///
+/// Resolves `HEAD`, follows symbolic refs, and peels to a commit
+/// object.
+///
+/// # Errors
+///
+/// `git2::Error` when `HEAD` does not exist (empty repo), is
+/// unborn, or cannot be peeled to a commit (detached `HEAD`
+/// pointing at a non-commit object).
 pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
   let obj = repo.head()?.resolve()?.peel(ObjectType::Commit)?;
   obj.into_commit().map_err(|obj| {
@@ -31,8 +48,19 @@ pub fn get_last_commit(repo: &Repository) -> Result<Commit<'_>, git2::Error> {
   })
 }
 
-/// Return `true` if all tracked files are clean; `false`
-/// if there are untracked or modified files.
+/// Return `true` if the working tree is clean; `false` if there are
+/// untracked or modified files.
+///
+/// Walks the repository index via `add_all(".")` with a callback that
+/// inspects each file's status and aborts the add when the file is
+/// `WT_MODIFIED` or `WT_NEW`. The semantics are "if `add_all` would
+/// have added anything, the tree is dirty".
+///
+/// # Errors
+///
+/// `git2::Error` (boxed) when the index cannot be opened. Other
+/// libgit2 failures during status walking surface as `Ok(false)` —
+/// the callback returns `-1`, which `add_all` treats as "abort".
 pub fn untracked_changed_local_files(
   repo: &Repository,
 ) -> Result<bool, Box<dyn std::error::Error>> {
@@ -67,7 +95,13 @@ pub fn untracked_changed_local_files(
 
 /// Extract the repository name from a remote URL string.
 ///
-/// Takes the last path segment and strips any trailing `.git` suffix.
+/// Takes the last path segment after the rightmost `/` and strips
+/// any trailing `.git` suffix. Returns `None` when the URL contains
+/// no `/` separator (and so has no extractable path segment).
+///
+/// Handles both HTTPS (`https://github.com/org/repo.git`) and
+/// SSH-style remotes (`git@github.com:org/repo.git`) because both
+/// place the repo name after the last `/`.
 pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
   let slash_pos = url.rfind('/')?;
   Some(url[slash_pos + 1..].trim_end_matches(".git").to_string())
@@ -75,8 +109,16 @@ pub fn parse_repo_name_from_url(url: &str) -> Option<String> {
 
 /// Extract the repository name from the "origin" remote URL.
 ///
-/// Finds the `origin` remote, reads its URL, takes the last
-/// path segment, and strips any trailing `.git` suffix.
+/// Finds the `origin` remote, reads its URL, then delegates to
+/// [`parse_repo_name_from_url`].
+///
+/// # Errors
+///
+/// - The repository has no remote named `origin`.
+/// - The stored URL on the `origin` remote is not valid UTF-8
+///   (libgit2 surfaces this since git2 0.21).
+/// - The URL has no `/` separator and therefore no extractable
+///   repo name.
 pub fn parse_repo_name_from_remote(repo: &Repository) -> Result<String, Error> {
   let remote = repo
     .find_remote("origin")

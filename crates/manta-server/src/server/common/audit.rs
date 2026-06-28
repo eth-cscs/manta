@@ -1,4 +1,10 @@
 //! Audit trail helpers: build and send structured JSON messages to Kafka.
+//!
+//! Audit emission is opt-in via the `[auditor.kafka]` section of
+//! `server.toml`; when absent, [`super::super::ServerState::auditor`]
+//! is `None` and [`send_auth_audit`] becomes a no-op. Failures inside
+//! [`send_auth_audit`] log a warning and never bubble up, so an
+//! unreachable Kafka broker cannot abort the outer auth flow.
 
 use manta_shared::common::error::MantaError;
 use serde::{Deserialize, Serialize};

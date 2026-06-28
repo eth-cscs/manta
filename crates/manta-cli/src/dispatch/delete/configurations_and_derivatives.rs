@@ -19,6 +19,17 @@ pub struct ExecParams<'a> {
 }
 
 /// Delete CFS configurations and their derived artifacts.
+///
+/// Forwards to `DELETE /api/v1/configurations` with the
+/// `configuration-name` pattern and the `since` / `until` window
+/// (each formatted as a SQL-style timestamp). The server cascades to
+/// CFS sessions and IMS images derived from each matched
+/// configuration.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `delete_configurations` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

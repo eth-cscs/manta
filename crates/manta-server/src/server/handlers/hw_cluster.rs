@@ -1,4 +1,13 @@
-//! Hardware cluster add/delete/configuration handlers.
+//! Hardware-cluster membership and configuration handlers.
+//!
+//! - `POST   /api/v1/hardware-clusters/{target}/members`        → [`add_hw_component`]
+//! - `DELETE /api/v1/hardware-clusters/{target}/members`        → [`delete_hw_component`]
+//! - `POST   /api/v1/hardware-clusters/{target}/configuration`  → [`apply_hw_configuration`]
+//!
+//! All wrap `crate::service::hw_cluster::*`. Each handler runs
+//! `service::authorization::validate_user_group_access` against both
+//! the target cluster and (where applicable) the parent cluster
+//! before mutating state.
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 

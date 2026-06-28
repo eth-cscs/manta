@@ -59,6 +59,12 @@ fn get_claims_from_jwt_token(token: &str) -> Result<Value, MantaError> {
 /// Extract the `name` claim from a JWT token.
 ///
 /// Returns `"MISSING"` if the claim is absent.
+///
+/// # Errors
+///
+/// Returns [`MantaError::JwtMalformed`] when `token` does not parse
+/// as `header.payload.signature` Base64, or when the payload is not
+/// valid UTF-8 JSON.
 pub fn get_name(token: &str) -> Result<String, MantaError> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 
@@ -73,6 +79,12 @@ pub fn get_name(token: &str) -> Result<String, MantaError> {
 /// Extract the `preferred_username` claim from a JWT token.
 ///
 /// Returns `"MISSING"` if the claim is absent.
+///
+/// # Errors
+///
+/// Returns [`MantaError::JwtMalformed`] when `token` does not parse
+/// as `header.payload.signature` Base64, or when the payload is not
+/// valid UTF-8 JSON.
 pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
   let jwt_claims = get_claims_from_jwt_token(token)?;
 
@@ -85,8 +97,18 @@ pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
   }
 }
 
-/// Returns the list of available HSM groups in JWT user token. The list is filtered and system HSM
-/// groups (eg alps, alpsm, alpse, etc)
+/// Extract the `realm_access.roles` claim from a JWT token.
+///
+/// Returns an empty `Vec` when the claim is absent or is not a JSON
+/// array of strings. Used by [`is_user_admin`] and (downstream) by
+/// the per-handler authorization checks in
+/// `crate::service::authorization`.
+///
+/// # Errors
+///
+/// Returns [`MantaError::JwtMalformed`] when `token` does not parse
+/// as `header.payload.signature` Base64, or when the payload is not
+/// valid UTF-8 JSON.
 pub fn get_roles(token: &str) -> Result<Vec<String>, MantaError> {
   // If JWT does not have `/realm_access/roles` claim, then we will assume, user is admin
   Ok(
@@ -102,7 +124,13 @@ pub fn get_roles(token: &str) -> Result<Vec<String>, MantaError> {
   )
 }
 
-/// This function will return true if the user is an admin, otherwise false
+/// Returns `true` when the token's `realm_access.roles` claim
+/// contains the [`PA_ADMIN`] role. Errors decoding the JWT are
+/// swallowed and treated as "not admin".
+///
+/// Advisory only — see the module-level security caveat: this does
+/// **not** verify the signature, so a forged token is detected only
+/// at the next backend round-trip.
 pub fn is_user_admin(token: &str) -> bool {
   let roles_rslt = get_roles(token);
 

@@ -5,6 +5,20 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// Request body for `POST /api/v1/power`.
+///
+/// The interpretation of `host_expression` depends on [`PowerTargetType`];
+/// the action itself is one of [`PowerAction`]'s variants.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "action": "on",
+///   "host_expression": "x3000c0s1b0n[0-3]",
+///   "target_type": "nodes",
+///   "force": false
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct PowerRequest {
   /// Power operation to perform.

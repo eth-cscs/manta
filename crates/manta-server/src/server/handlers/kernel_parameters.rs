@@ -1,4 +1,14 @@
-//! Kernel-parameters handlers (get/apply/add/delete).
+//! Kernel-parameter handlers.
+//!
+//! - `GET    /api/v1/kernel-parameters`         → [`get_kernel_parameters`]
+//! - `POST   /api/v1/kernel-parameters/apply`   → [`apply_kernel_parameters`]
+//! - `POST   /api/v1/kernel-parameters/add`     → [`add_kernel_parameters`]
+//! - `DELETE /api/v1/kernel-parameters`         → [`delete_kernel_parameters`]
+//!
+//! All wrap `crate::service::kernel_parameters::*`. Target nodes can
+//! be supplied as an xname expression or an HSM group name; the
+//! shared [`super::resolve_xnames_from_request`] helper does the
+//! resolution.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 

@@ -1,4 +1,16 @@
 //! Implements the `manta add kernel-parameters` command.
+//!
+//! Appends (or replaces, with `--overwrite`) kernel parameters on the
+//! BSS boot-parameter records for nodes selected by `--group` or a
+//! hosts expression. Forwards to `POST /api/v1/kernel-parameters`.
+//! The endpoint supports a server-side `dry_run` flag; the leaf
+//! forwards it verbatim. Nodes whose effective kernel parameters
+//! change are rebooted by the server-side workflow.
+//!
+//! See [`super::super::apply::kernel_parameters`] for the
+//! *replace-the-set* variant invoked by `manta apply kernel-parameters`,
+//! and [`super::super::delete::kernel_parameters`] for the symmetric
+//! removal command.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -18,6 +30,11 @@ pub struct ExecParams<'a> {
 /// Adds kernel parameters to the specified nodes,
 /// optionally overwriting existing values.
 /// Reboots the nodes whose kernel params have changed.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// server's `add_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

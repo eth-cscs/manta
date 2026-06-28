@@ -1,4 +1,17 @@
-//! Routes the `manta log` command to its exec function.
+//! Implements the `manta log` command.
+//!
+//! Resolves a user-supplied value (CFS session name or xname) to a
+//! session name by issuing a paginated `GET /sessions?name=…` query
+//! first and falling back to `GET /sessions?xname=…`. Once a session
+//! is identified, the handler opens an SSE stream on
+//! `GET /sessions/{name}/logs` via
+//! [`crate::http_client::MantaClient::stream_session_logs`] and
+//! prints every `data: …` line from the stream to stdout until the
+//! server closes it.
+//!
+//! The `--timestamps` flag is forwarded to the server, which prefixes
+//! each line with the build pod's timestamp before re-emitting it as
+//! an SSE event.
 
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
@@ -10,9 +23,16 @@ use manta_shared::types::dto::CfsSessionGetResponse;
 
 /// Dispatch the `manta log` command to stream CFS session logs.
 ///
-/// In server mode the session is resolved via the server's `GET /sessions`
-/// endpoint; logs are then streamed as SSE from `GET /sessions/{name}/logs`.
-/// In direct mode the existing k8s-backed path is used unchanged.
+/// Resolves `VALUE` (a CFS session name or xname) via two server
+/// queries, then opens an SSE stream and prints every `data: …` line
+/// to stdout until the server closes the connection.
+///
+/// # Errors
+///
+/// - The auth token bootstrap fails.
+/// - Neither the by-name nor by-xname lookup matches a session.
+/// - The SSE stream cannot be opened (server unreachable, 4xx/5xx).
+/// - An I/O error occurs while reading from the stream.
 pub async fn handle_log(
   cli_log: &ArgMatches,
   ctx: &AppContext<'_>,

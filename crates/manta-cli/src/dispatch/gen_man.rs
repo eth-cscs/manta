@@ -34,6 +34,19 @@ pub async fn handle_gen_man(
 }
 
 /// Generate and install the consolidated `manta.1` man page.
+///
+/// Resolves the destination directory (`target` or the XDG user
+/// `man1` default — see [`default_user_man_dir`]), then defers to
+/// [`manpage::render_consolidated`] to walk the clap tree and emit a
+/// single `manta.1` covering every subcommand.
+///
+/// # Errors
+///
+/// - No `target` was given and the XDG / `$HOME` environment is
+///   insufficient to compute a default install location.
+/// - The destination directory could not be created.
+/// - The output file could not be opened, or
+///   [`manpage::render_consolidated`] failed to write the page.
 pub fn exec(
   cli: Command,
   target: Option<PathBuf>,

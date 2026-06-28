@@ -1,4 +1,16 @@
-//! Hardware inventory queries for individual nodes and clusters, with concurrent fetching.
+//! Hardware inventory queries for individual nodes and clusters.
+//!
+//! Both query shapes (cluster-by-group, nodes-by-expression) fan out
+//! one per-xname `get_inventory_hardware_query` call concurrently,
+//! rate-limited by a Tokio semaphore at the
+//! `HW_INVENTORY_CONCURRENCY_LIMIT` constant defined below. Failed
+//! per-node fetches are logged and replaced by an empty [`NodeSummary`]
+//! so the response vector lines up with the input xname list.
+//!
+//! The internal aggregation helper
+//! `calculate_group_hw_component_summary` lives in
+//! `manta_shared::types::cluster_status`; it's only re-imported here
+//! to back the test module.
 
 use std::sync::Arc;
 use std::time::Instant;
@@ -114,6 +126,17 @@ async fn fetch_node_summaries(
 /// `HardwareClusterResult::hsm_group_name`. Per-node inventory
 /// queries run concurrently, capped by `HW_INVENTORY_CONCURRENCY_LIMIT`.
 /// Empty groups are logged but not treated as an error.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `params.group_name` is unreachable
+///   for the caller.
+/// - [`Error::NotFound`] when the caller has no accessible groups
+///   and no `params.group_name` was supplied.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_group_available` / `get_group`. Per-node inventory failures
+///   degrade to an empty `NodeSummary` row rather than surfacing an
+///   error.
 pub async fn get_hardware_cluster(
   infra: &InfraContext<'_>,
   token: &str,
@@ -191,6 +214,17 @@ pub struct HardwareNodesListResult {
 /// silent no-op. The caller's group access to every resolved xname is
 /// validated through [`validate_user_group_members_access`] before
 /// the per-node inventory fan-out runs.
+///
+/// # Errors
+///
+/// - [`Error::InvalidNodeId`] / [`Error::BadRequest`] when the
+///   expression cannot be parsed or resolves to an empty xname set.
+/// - [`Error::BadRequest`] when the caller lacks group access to one
+///   of the resolved xnames.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_node_metadata_available`. Per-node inventory failures
+///   degrade to an empty `NodeSummary` row rather than surfacing an
+///   error.
 pub async fn get_hardware_nodes_list(
   infra: &InfraContext<'_>,
   token: &str,

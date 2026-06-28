@@ -23,6 +23,12 @@ pub struct ExecParams<'a> {
 /// (xnames / NIDs / hostlist notation), not a group name, so this
 /// fetches the group's members first and forwards them as a
 /// comma-separated xname list.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `get_groups` lookup fails, when the named group is absent or has
+/// no members, or when the `apply_boot_config` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

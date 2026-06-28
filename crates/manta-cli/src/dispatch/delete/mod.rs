@@ -1,4 +1,27 @@
 //! `manta delete` subcommands.
+//!
+//! Each leaf removes a resource (or batch of resources) via the
+//! corresponding `DELETE` endpoint:
+//!
+//! - [`node`]              — `DELETE /api/v1/nodes/{id}`
+//! - [`nodes`]             — `DELETE /api/v1/groups/{label}/members`
+//! - [`group`]             — `DELETE /api/v1/groups/{label}`
+//! - [`hardware`]          — `DELETE /api/v1/hardware-clusters/{target}/members`
+//! - [`boot_parameters`]   — `DELETE /api/v1/boot-parameters`
+//! - [`kernel_parameters`] — `DELETE /api/v1/kernel-parameters`
+//! - [`configurations_and_derivatives`] — `DELETE /api/v1/configurations`
+//!   (also cascades through CFS sessions / IMS images derived from
+//!   each configuration; the name reflects the cascade)
+//! - [`images`]            — `DELETE /api/v1/images?ids=…`
+//! - [`session`]           — `DELETE /api/v1/sessions/{name}` (cancel a CFS session)
+//! - [`redfish_endpoint`]  — `DELETE /api/v1/redfish-endpoints/{id}`
+//!
+//! `--dry-run` is supported on every leaf. Most leaves either forward
+//! the flag to the server (when the endpoint accepts `?dry_run=true`)
+//! or short-circuit client-side via
+//! [`crate::output::action_result::preview_request`]; see each leaf's
+//! doc for the exact policy. A few destructive leaves prompt before
+//! firing — `nodes` and `session` always confirm.
 
 pub mod boot_parameters;
 pub mod configurations_and_derivatives;
@@ -20,6 +43,13 @@ use clap::ArgMatches;
 /// Dispatch `manta delete` subcommands (group, node, nodes,
 /// kernel-parameters, boot-parameters, configurations, session,
 /// images, hardware, redfish-endpoints).
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when a
+/// required clap argument is missing, when `--since` / `--until`
+/// cannot be parsed as `YYYY-MM-DD`, when no subcommand is provided
+/// or the name is unknown, or when the leaf handler itself fails.
 pub async fn handle_delete(
   cli_delete: &ArgMatches,
   ctx: &AppContext<'_>,

@@ -62,6 +62,11 @@ pub(super) fn dry_run_flag() -> clap::Arg {
 }
 
 /// Build the clap CLI command tree for manta.
+///
+/// Each top-level verb's subcommand is constructed in its dedicated
+/// sibling module's `subcommand_*` factory. Re-entrant — called once
+/// from `main::run` for argument parsing and again from tests, so
+/// must not have side effects.
 pub fn build_cli() -> Command {
   // Hard-coded "manta" rather than `env!("CARGO_PKG_NAME")` because the
   // package is `manta-cli` but the produced binary is `manta` (see the

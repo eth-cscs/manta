@@ -1,4 +1,11 @@
-//! Redfish-endpoints CRUD handlers.
+//! HSM Redfish-endpoint CRUD handlers.
+//!
+//! - `GET    /api/v1/redfish-endpoints`        → [`get_redfish_endpoints`]
+//! - `POST   /api/v1/redfish-endpoints`        → [`add_redfish_endpoint`]
+//! - `PUT    /api/v1/redfish-endpoints`        → [`update_redfish_endpoint`]
+//! - `DELETE /api/v1/redfish-endpoints/{id}`   → [`delete_redfish_endpoint`]
+//!
+//! All wrap `crate::service::redfish::*`.
 
 use axum::{
   Json,

@@ -1,4 +1,11 @@
 //! Implements the `manta apply boot-parameters` command.
+//!
+//! Updates an existing BSS boot-parameter record via
+//! `PUT /api/v1/boot-parameters`. The CLI parses comma-separated
+//! `--hosts`, `--macs`, and `--nids` into the typed wire shape (NIDs
+//! become `i32` to match the generated client). The endpoint has no
+//! server-side dry-run flag; see [`super::super::add::boot_parameters`]
+//! for the creation side of the same record.
 
 use anyhow::{Context, Error};
 
@@ -18,6 +25,12 @@ pub struct ExecParams<'a> {
 }
 
 /// CLI adapter for `manta apply boot-parameters`.
+///
+/// # Errors
+///
+/// Returns an error when any `--nids` token fails to parse as `i32`,
+/// when the HTTP client cannot be built, or when the
+/// `update_boot_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

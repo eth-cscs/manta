@@ -1,4 +1,21 @@
 //! `manta add` subcommands.
+//!
+//! Each leaf creates a new resource on the server via a `POST` to the
+//! corresponding OpenAPI endpoint:
+//!
+//! - [`node`]  — `POST /api/v1/nodes`
+//! - [`nodes`] — `POST /api/v1/groups/{label}/members` (assign xnames)
+//! - [`group`] — `POST /api/v1/groups` (+ optional members on creation)
+//! - [`hardware`] — `POST /api/v1/hardware-clusters/{target}/members`
+//! - [`boot_parameters`] — `POST /api/v1/boot-parameters`
+//! - [`kernel_parameters`] — `POST /api/v1/kernel-parameters`
+//! - [`redfish_endpoint`] — `POST /api/v1/redfish-endpoints`
+//!
+//! Most leaves accept `--dry-run`. Where the underlying endpoint
+//! supports a server-side dry-run flag, the request is sent with
+//! `dry_run=true`; otherwise the leaf short-circuits client-side via
+//! `action_result::preview_request`. See each leaf's doc for the exact
+//! behaviour.
 
 pub mod boot_parameters;
 pub mod group;
@@ -17,6 +34,13 @@ use std::path::PathBuf;
 
 /// Dispatch `manta add` subcommands (node, nodes, group, hardware,
 /// boot-parameters, kernel-parameters, redfish-endpoints).
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when a
+/// required clap argument is missing, when no `add` subcommand is
+/// provided or the name is unknown, or when the leaf handler itself
+/// fails (HTTP or validation).
 pub async fn handle_add(
   cli_add: &ArgMatches,
   ctx: &AppContext<'_>,

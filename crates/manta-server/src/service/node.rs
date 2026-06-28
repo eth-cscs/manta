@@ -1,4 +1,11 @@
-//! HSM node queries, registration, and deletion, with rollback on partial failure.
+//! HSM node queries, registration, and deletion, with rollback on
+//! partial failure.
+//!
+//! [`add_node`] performs three independent backend writes
+//! (`post_nodes`, optional `post_inventory_hardware`, `post_member`).
+//! Every failure after the initial `post_nodes` triggers a best-effort
+//! rollback that deletes the stub component, so a partial create
+//! does not leave the operator with an unrecoverable mid-state.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::{

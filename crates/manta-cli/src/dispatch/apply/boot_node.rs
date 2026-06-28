@@ -1,4 +1,10 @@
 //! Implements the `manta apply boot nodes` command.
+//!
+//! Applies a boot configuration (image id, runtime configuration,
+//! kernel parameters) to nodes selected by a hosts expression via
+//! `POST /api/v1/boot-config`. Sibling of [`super::boot_group`] which
+//! takes a group name and resolves the members first; both leaves
+//! forward the request's `dry_run` flag verbatim to the server.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -18,6 +24,11 @@ pub struct ExecParams<'a> {
 }
 
 /// Apply a boot configuration to specific nodes.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `apply_boot_config` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

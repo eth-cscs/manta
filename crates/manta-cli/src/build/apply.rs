@@ -1,4 +1,20 @@
 //! Clap definitions for `manta apply *` subcommands.
+//!
+//! Builds the `manta apply` subtree — the "roll out" verb covering SAT
+//! files, boot parameters (per-node and per-group), kernel parameters,
+//! Redfish endpoint updates, hardware rescaling, ephemeral
+//! environments, and BOS session-template-driven boots. Execution is
+//! dispatched in `crate::dispatch::apply`.
+//!
+//! Notes:
+//! - Several subcommands share argument sets, factored into private
+//!   `add_*_args(cmd)` helpers so the same flags appear on both the
+//!   `nodes` and `group` variants.
+//! - `apply boot nodes` / `apply boot group` use an
+//!   `ArgGroup("boot-image_or_boot-config")` to make `--boot-image`
+//!   and `--boot-image-configuration` mutually exclusive.
+//! - `apply sat-file` uses `output_flag_long_only` because `-o` is
+//!   taken by `--overwrite-configuration`.
 
 use clap::{ArgAction, ArgGroup, Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
@@ -40,6 +56,8 @@ fn add_apply_hw_group_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
+/// `manta apply hardware group` — pattern-driven group rescale.
+/// Handler: `crate::dispatch::apply::hw_configuration`.
 pub fn subcommand_apply_hw_configuration() -> Command {
   Command::new("hardware")
     .about("[experimental] Rescale a group's hardware allocation")
@@ -56,6 +74,9 @@ pub fn subcommand_apply_hw_configuration() -> Command {
     )
 }
 
+/// `manta apply template` — create a BOS session from an existing
+/// session template and run a boot/reboot/shutdown operation.
+/// Handler: `crate::dispatch::apply::template`.
 pub fn subcommand_apply_template() -> Command {
   Command::new("template")
     .arg_required_else_help(true)
@@ -79,6 +100,9 @@ pub fn subcommand_apply_template() -> Command {
     .arg(dry_run_flag())
 }
 
+/// `manta apply ephemeral-environment` — spin up an SSH-reachable
+/// throwaway environment from an image. Handler:
+/// `crate::dispatch::apply::ephemeral_environment`.
 pub fn subcommand_apply_ephemeral_environment() -> Command {
   Command::new("ephemeral-environment")
     .arg_required_else_help(true)
@@ -92,6 +116,11 @@ pub fn subcommand_apply_ephemeral_environment() -> Command {
     .arg(output_flag())
 }
 
+/// `manta apply sat-file` — process a Site Admin Toolkit (SAT) file
+/// declaring configurations, images, and session templates. Supports
+/// Jinja2 templating via `--values-file` / `--values`. Handler:
+/// `crate::dispatch::apply::sat_file` (Jinja2 rendering lives in
+/// `crate::dispatch::apply::sat_file::render`).
 pub fn subcommand_apply_sat_file() -> Command {
   Command::new("sat-file")
     .arg_required_else_help(true)
@@ -152,6 +181,9 @@ pub fn subcommand_apply_sat_file() -> Command {
     .arg(output_flag_long_only())
 }
 
+/// `manta apply boot nodes` — set the boot image, runtime
+/// configuration, and kernel parameters for an arbitrary node set.
+/// Handler: `crate::dispatch::apply::boot::nodes`.
 pub fn subcommand_apply_boot_nodes() -> Command {
   Command::new("nodes")
     .arg_required_else_help(true)
@@ -202,6 +234,9 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
+/// `manta apply boot group` — same as `apply boot nodes` but scoped
+/// to every member of a group. Handler:
+/// `crate::dispatch::apply::boot::group`.
 pub fn subcommand_apply_boot_group() -> Command {
   add_apply_boot_group_args(Command::new("group"))
     .about("Update boot parameters for all nodes in a group")
@@ -231,6 +266,9 @@ fn add_boot_parameters_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
+/// `manta apply boot-parameters` — update raw BSS boot-parameters for
+/// the listed hosts. Handler:
+/// `crate::dispatch::apply::boot_parameters`.
 pub fn subcommand_apply_boot_parameters() -> Command {
   add_boot_parameters_args(Command::new("boot-parameters"))
     .about("Update boot parameters for nodes")
@@ -265,12 +303,19 @@ fn add_redfish_endpoint_args(cmd: Command) -> Command {
     .arg(output_flag())
 }
 
+/// `manta apply redfish-endpoints` — update an existing Redfish
+/// endpoint. Handler: `crate::dispatch::apply::redfish_endpoint`.
 pub fn subcommand_apply_redfish_endpoint() -> Command {
   add_redfish_endpoint_args(Command::new("redfish-endpoints"))
     .about("Update an existing Redfish endpoint")
     .arg(dry_run_flag())
 }
 
+/// `manta apply kernel-parameters` — replace the full kernel-cmdline
+/// string for a node set or group (any parameter not listed is
+/// dropped). Uses `ArgGroup("cluster_or_nodes")` to require exactly
+/// one of `--nodes` / `--group`. Handler:
+/// `crate::dispatch::apply::kernel_parameters`.
 pub fn subcommand_apply_kernel_parameters() -> Command {
   Command::new("kernel-parameters")
     .arg_required_else_help(true)
@@ -294,6 +339,8 @@ pub fn subcommand_apply_kernel_parameters() -> Command {
     .arg(output_flag())
 }
 
+/// Top-level `manta apply` verb — wires every `apply <noun>`
+/// subcommand together. Invoked from `build_cli` in `super::mod`.
 pub fn subcommand_apply() -> Command {
   Command::new("apply")
     .arg_required_else_help(true)

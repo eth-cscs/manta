@@ -1,9 +1,16 @@
-//! `ClusterTemplateTrait` (BOS session template) impl for
-//! `StaticBackendDispatcher`.
+//! [`ClusterTemplateTrait`] (BOS session template) impl for
+//! [`StaticBackendDispatcher`].
+//!
+//! Forwards to `/apis/bos/v2/sessiontemplates`. Ochami uses the trait
+//! default and returns [`Error::Message`] ("not implemented for this
+//! backend").
 
 use super::*;
 
 impl ClusterTemplateTrait for StaticBackendDispatcher {
+  /// `GET /sessiontemplates/{id}` when an id is supplied, otherwise
+  /// the full list. Returned as a `Vec` for shape parity with the
+  /// list call; a single-id lookup yields a one-element vector.
   async fn get_template(
     &self,
     token: &str,
@@ -12,6 +19,10 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     dispatch!(self, get_template, token, bos_session_template_id_opt)
   }
 
+  /// Fetch templates and apply client-side filtering by visible
+  /// group names, observed xname members, an exact template name, and
+  /// a max result count. BOS does not support these as native query
+  /// params, so the backend over-fetches and narrows in-process.
   async fn get_and_filter_templates(
     &self,
     token: &str,
@@ -31,6 +42,7 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `GET /sessiontemplates` — every template (unfiltered).
   async fn get_all_templates(
     &self,
     token: &str,
@@ -38,6 +50,8 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     dispatch!(self, get_all_templates, token)
   }
 
+  /// `PUT /sessiontemplates/{name}` — create-or-replace. Returns the
+  /// persisted template (with backend-assigned timestamps).
   async fn put_template(
     &self,
     token: &str,
@@ -47,6 +61,7 @@ impl ClusterTemplateTrait for StaticBackendDispatcher {
     dispatch!(self, put_template, token, bos_template, bos_template_name)
   }
 
+  /// `DELETE /sessiontemplates/{id}`.
   async fn delete_template(
     &self,
     token: &str,

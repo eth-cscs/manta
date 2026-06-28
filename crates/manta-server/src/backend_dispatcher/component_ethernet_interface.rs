@@ -1,4 +1,9 @@
-//! `ComponentEthernetInterfaceTrait` impl for `StaticBackendDispatcher`.
+//! [`ComponentEthernetInterfaceTrait`] impl for
+//! [`StaticBackendDispatcher`].
+//!
+//! Forwards to HSM's
+//! `/apis/smd/hsm/v2/Inventory/EthernetInterfaces` endpoints. Both
+//! CSM and Ochami implement these natively.
 //!
 //! No HTTP handler currently calls these methods; this file exists so
 //! the dispatcher covers the full trait surface. Without it, a handler
@@ -13,6 +18,7 @@ use serde_json::Value;
 use super::*;
 
 impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
+  /// `GET /Inventory/EthernetInterfaces` — every interface.
   async fn get_all_component_ethernet_interfaces(
     &self,
     auth_token: &str,
@@ -20,6 +26,7 @@ impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
     dispatch!(self, get_all_component_ethernet_interfaces, auth_token)
   }
 
+  /// `GET /Inventory/EthernetInterfaces/{id}` — one interface.
   async fn get_component_ethernet_interface(
     &self,
     auth_token: &str,
@@ -33,6 +40,7 @@ impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `POST /Inventory/EthernetInterfaces` — create.
   async fn add_component_ethernet_interface(
     &self,
     auth_token: &str,
@@ -46,6 +54,9 @@ impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `PATCH /Inventory/EthernetInterfaces/{id}` — update
+  /// description and/or the (current_ip, new_ip) mapping. Returns
+  /// HSM's raw JSON response.
   async fn update_component_ethernet_interface(
     &self,
     auth_token: &str,
@@ -63,6 +74,8 @@ impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
     )
   }
 
+  /// `DELETE /Inventory/EthernetInterfaces` — wipe the collection.
+  /// Returns HSM's action-summary JSON.
   async fn delete_all_component_ethernet_interfaces(
     &self,
     auth_token: &str,
@@ -70,6 +83,7 @@ impl ComponentEthernetInterfaceTrait for StaticBackendDispatcher {
     dispatch!(self, delete_all_component_ethernet_interfaces, auth_token)
   }
 
+  /// `DELETE /Inventory/EthernetInterfaces/{id}`.
   async fn delete_component_ethernet_interface(
     &self,
     auth_token: &str,

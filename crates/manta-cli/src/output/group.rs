@@ -1,4 +1,10 @@
-//! Table and JSON renderers for HSM group output.
+//! Renderer for [`Group`] (HSM groups).
+//!
+//! Called by `manta get group`. Supported output formats:
+//! **table only** — JSON is handled by the dispatcher directly off
+//! the wire type. Member xnames are sorted and collapsed via
+//! [`nodeset::NodeSet`] so a long group prints as a compact range
+//! expression.
 
 use comfy_table::{ContentArrangement, Table};
 use nodeset::NodeSet;

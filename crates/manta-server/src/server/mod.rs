@@ -1,5 +1,24 @@
-//! HTTPS server setup: shared state, request-logging middleware, and the
-//! TLS server entry point.
+//! Axum HTTP/HTTPS server setup.
+//!
+//! - [`ServerState`] — shared application state passed through every
+//!   handler via Axum's `State<Arc<ServerState>>` extractor. Holds one
+//!   [`SiteBackend`] per configured site so a single server can fan
+//!   out to multiple CSM/OpenCHAMI clusters.
+//! - [`start_server`] — binary entry point. Builds the router (see
+//!   [`routes::build_router`]), installs the request-logging
+//!   middleware, optionally wraps the listener in TLS, and installs a
+//!   SIGTERM/Ctrl+C handler for graceful shutdown.
+//! - Submodules:
+//!   - [`handlers`] — per-resource Axum handlers; converts HTTP
+//!     requests into service-layer calls.
+//!   - [`routes`] — router registration (one entry per `/api/v1`
+//!     path).
+//!   - [`auth_middleware`] — defensive middleware applied to
+//!     `/api/v1/auth/*` (per-IP rate limit + body redaction).
+//!   - [`common`] — server-only helpers (per-request `InfraContext`,
+//!     Kafka audit producer, JWT claim extractors, Vault client).
+//!   - [`api_doc`] — utoipa OpenAPI document served at
+//!     `GET /openapi.json` + `GET /docs`.
 
 pub mod api_doc;
 pub mod auth_middleware;
@@ -21,7 +40,14 @@ use crate::server::common::kafka::Kafka;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///
-/// Owned by `ServerState` inside a `HashMap` keyed by site name.
+/// Built once at startup from a `[sites.X]` block in `server.toml`,
+/// then owned by [`ServerState::sites`] inside a `HashMap` keyed by
+/// the site name. The matching `[sites.X]` block is selected per
+/// request from the `X-Manta-Site` header.
+///
+/// Borrowed per request as an [`common::app_context::InfraContext`]
+/// via [`ServerState::infra_context`] so the service layer can pass
+/// the per-site bundle around without taking ownership.
 pub struct SiteBackend {
   /// Dispatches API calls to the configured CSM or OpenCHAMI backend.
   pub backend: StaticBackendDispatcher,
@@ -41,10 +67,16 @@ pub struct SiteBackend {
 
 /// Shared state for all HTTP handlers.
 ///
-/// Holds one `SiteBackend` per configured site so that the server can serve
-/// multiple clusters.  Each request supplies the target site via the
-/// `X-Manta-Site` header; handlers call [`ServerState::infra_context`] to
-/// retrieve the per-site data.
+/// Holds one [`SiteBackend`] per configured site so a single server
+/// can serve multiple clusters. Each request supplies the target site
+/// via the `X-Manta-Site` header; handlers call
+/// [`ServerState::infra_context`] (or, via the
+/// [`handlers::RequestCtx`] extractor, the cached
+/// `RequestCtx::infra()` shortcut) to retrieve the per-site data.
+///
+/// Plumbed through Axum's `State<Arc<ServerState>>` extractor. Owned
+/// by [`start_server`] and cloned (cheaply, since it's an `Arc`) into
+/// every spawned task.
 pub struct ServerState {
   /// Per-site connection data, keyed by site name.
   pub sites: HashMap<String, SiteBackend>,
@@ -75,11 +107,16 @@ pub struct ServerState {
 }
 
 impl ServerState {
-  /// Build a borrowed `InfraContext` for the named site.
+  /// Build a borrowed [`InfraContext`] for the named site.
   ///
-  /// Returns `Err(Error::NotFound)` when `site_name` is not in the map.
-  /// Called per-request so the service layer can work with its existing
-  /// `&InfraContext<'_>` API.
+  /// Called per-request so the service layer can work with its
+  /// existing `&InfraContext<'_>` API without taking ownership of the
+  /// underlying [`SiteBackend`].
+  ///
+  /// # Errors
+  ///
+  /// Returns [`Error::NotFound`] when `site_name` is not in
+  /// [`Self::sites`].
   pub fn infra_context<'a>(
     &'a self,
     site_name: &'a str,
@@ -100,6 +137,10 @@ impl ServerState {
   }
 }
 
+/// Request-logging middleware. Logs `method uri → status` at INFO
+/// after the inner handler returns, including handler-internal
+/// error responses. Composed once by [`start_server`] around the
+/// router built by [`routes::build_router`].
 async fn log_requests(
   request: axum::extract::Request,
   next: axum::middleware::Next,
@@ -113,8 +154,25 @@ async fn log_requests(
 
 /// Start the HTTP or HTTPS server.
 ///
-/// When `cert_path` and `key_path` are both `Some`, the server listens with
-/// TLS (`https://`).  When either is `None`, it listens as plain HTTP.
+/// Builds the router via [`routes::build_router`], wraps it with the
+/// request-logging middleware, binds the listener at
+/// `<listen_addr>:<port>`, and serves until a SIGTERM or Ctrl+C is
+/// received — at which point the in-process shutdown handler
+/// triggers `axum_server`'s graceful drain with the
+/// [`ServerState::shutdown_grace_period`] window.
+///
+/// When `cert_path` and `key_path` are both `Some`, the server
+/// listens with TLS (`https://`). When both are `None`, it listens
+/// as plain HTTP. Mixing one of the two is rejected.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when `listen_addr:port` does not parse as
+///   a `SocketAddr`, or when exactly one of `cert_path` / `key_path`
+///   is supplied (they must be set together).
+/// - Any I/O / TLS load error from `RustlsConfig::from_pem_file` or
+///   the underlying `axum_server::bind*` call surfaces via the
+///   `From<io::Error>` impl on [`Error`].
 pub async fn start_server(
   state: Arc<ServerState>,
   listen_addr: &str,

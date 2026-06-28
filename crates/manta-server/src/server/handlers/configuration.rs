@@ -1,4 +1,13 @@
-//! GET/DELETE /api/v1/configurations.
+//! CFS-configuration handlers.
+//!
+//! - `GET    /api/v1/configurations` → [`get_configurations`] —
+//!   wraps `service::configuration::get_configurations_with_analysis`;
+//!   each row carries a `safe_to_delete` verdict derived from CFS
+//!   components only.
+//! - `DELETE /api/v1/configurations` → [`delete_configurations`] —
+//!   wraps `service::configuration::{get_deletion_candidates,
+//!   delete_configurations_and_derivatives}`; with `?dry_run=true`,
+//!   returns the candidate set without deleting.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 

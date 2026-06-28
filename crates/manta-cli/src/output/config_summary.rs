@@ -1,9 +1,13 @@
-//! Renderer for the `manta config show` command.
+//! Renderer for [`ConfigSummary`].
 //!
-//! The summary is a single struct with one field per displayed value;
-//! the renderer turns it into either a multi-line human-readable block
-//! (the legacy format that `config show` used to print line-by-line) or
-//! one structured JSON object suitable for scripting.
+//! Called by `manta config show`. Supported output formats:
+//! **text** (default — multi-line human-readable block in the legacy
+//! field order) and **JSON** (`-o json` — a single structured object
+//! suitable for `jq`).
+//!
+//! The struct is built by [`crate::dispatch::config::show`] from a
+//! mix of the parsed CLI config file and a live call to the server
+//! for the list of HSM groups the token can access.
 
 use anyhow::{Context, Result};
 use serde::Serialize;
@@ -31,15 +35,19 @@ pub struct ConfigSummary {
   /// HSM groups the bearer token is permitted to access; `None` when
   /// the server lookup failed.
   pub groups_available: Option<Vec<String>>,
-  /// Active default HSM group from `hsm_group = "..."`. `None` when the
+  /// Active default group from `hsm_group = "..."`. `None` when the
   /// key is absent or empty — like `current_site`, it then renders as
   /// `(unset)` in text and `null` in JSON.
-  pub current_hsm: Option<String>,
+  pub current_group: Option<String>,
 }
 
 /// Render `summary` to stdout. Plain text by default (one line per
 /// field, in the historical order); structured JSON when
 /// `output_opt` is `Some("json")`.
+///
+/// # Errors
+///
+/// Returns `Err` if JSON serialisation fails (JSON path only).
 pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
   if let Some("json") = output_opt {
     println!(
@@ -68,7 +76,7 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
     println!("Groups available: {groups}");
     println!(
       "Current group: {}",
-      summary.current_hsm.as_deref().unwrap_or("(unset)")
+      summary.current_group.as_deref().unwrap_or("(unset)")
     );
   }
   Ok(())
@@ -86,7 +94,7 @@ mod tests {
       current_site: Some("alps".to_string()),
       read_only: false,
       groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
-      current_hsm: Some("compute".to_string()),
+      current_group: Some("compute".to_string()),
     }
   }
 
@@ -110,7 +118,7 @@ mod tests {
     assert_eq!(v["current_site"], "alps");
     assert_eq!(v["read_only"], false);
     assert_eq!(v["groups_available"][0], "compute");
-    assert_eq!(v["current_hsm"], "compute");
+    assert_eq!(v["current_group"], "compute");
   }
 
   #[test]
@@ -132,12 +140,12 @@ mod tests {
   }
 
   #[test]
-  fn current_hsm_none_renders_as_null_in_json() {
+  fn current_group_none_renders_as_null_in_json() {
     let mut s = sample();
-    s.current_hsm = None;
+    s.current_group = None;
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
-    assert!(v["current_hsm"].is_null());
+    assert!(v["current_group"].is_null());
   }
 
   /// Text mode must not panic when no site is set; it prints a sentinel.

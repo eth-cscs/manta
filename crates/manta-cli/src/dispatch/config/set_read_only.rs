@@ -1,4 +1,8 @@
 //! `manta config set read-only` — writes `read_only = true` to `cli.toml`.
+//!
+//! Read-only mode is a client-side guard: once set, every
+//! backend-mutating subcommand refuses to run. The inverse is
+//! [`super::unset_read_only`].
 
 use anyhow::{Context, Error};
 
@@ -6,6 +10,12 @@ use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 use toml_edit::DocumentMut;
 
+/// Enable read-only mode by writing `read_only = true` to `cli.toml`.
+///
+/// # Errors
+///
+/// Returns an error if the config file cannot be read or written, or
+/// the renderer fails.
 pub async fn exec() -> Result<(), Error> {
   let (path, mut doc) =
     read_config_toml().context("Could not read CLI configuration file")?;

@@ -1,12 +1,17 @@
 //! Clap definition for `manta gen-man` — generate and install the
 //! consolidated `manta.1` man page directly from the running binary's
 //! clap tree.
+//!
+//! Rendering is shared with the build-time generator in
+//! `crates/manta-cli/build.rs` via `super::manpage::render_consolidated`.
+//! Handler: `crate::dispatch::gen_man`.
 
 use clap::{Command, ValueHint, arg, value_parser};
 use std::path::PathBuf;
 
 use super::output_flag;
 
+/// Build the `manta gen-man` command.
 pub fn subcommand_gen_man() -> Command {
   Command::new("gen-man")
     .about("Generate and install the manta man page")

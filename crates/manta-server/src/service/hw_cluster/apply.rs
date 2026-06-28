@@ -1,6 +1,25 @@
-//! High-level coordinators: `apply_hw_configuration` (pin/unpin),
-//! `add_hw_component`, `delete_hw_component`. These are the functions
-//! the server handlers call directly.
+//! High-level coordinators for hardware-cluster mutations.
+//!
+//! Three entry points exposed to handlers:
+//!
+//! - [`apply_hw_configuration`] — pin/unpin entry point. Given a
+//!   target group, parent group, and component pattern, balance the
+//!   two groups so the target satisfies the pattern.
+//! - [`add_hw_component`] — pull nodes from the parent into the
+//!   target to *increase* the target's hardware count by `pattern`'s
+//!   deltas.
+//! - [`delete_hw_component`] — push nodes back from the target to the
+//!   parent to *decrease* the target's hardware count by `pattern`'s
+//!   deltas.
+//!
+//! Every function shares the same skeleton: parse the pattern, fetch
+//! both groups' hardware inventories (one
+//! [`super::scoring::fetch_group_hw_inventory`] call per group, each
+//! itself fan-outs across the group members), compute scarcity
+//! scores so common components are pulled first, and finally issue
+//! the per-node `add_members_to_group` / `delete_member_from_group`
+//! moves. `dryrun` short-circuits every backend write but still
+//! reports the would-be membership.
 
 use std::collections::HashMap;
 
@@ -46,6 +65,19 @@ pub struct ApplyHwConfigurationParams<'a> {
 }
 
 /// Service entry point for `POST /hardware-clusters/{target}/configuration`.
+///
+/// # Errors
+///
+/// - [`Error::InvalidPattern`] when `p.pattern` cannot be parsed.
+/// - [`Error::NotFound`] when the target group is missing and
+///   `p.create_target_group` is false.
+/// - [`Error::BadRequest`] when a dry-run would require creating the
+///   target group.
+/// - [`Error::InsufficientResources`] when the parent group cannot
+///   supply enough of any component named in the pattern.
+/// - [`Error::NetError`] / [`Error::CsmError`] from any of the
+///   `get_group` / hardware-inventory / membership-mutation backend
+///   calls.
 pub async fn apply_hw_configuration(
   infra: &InfraContext<'_>,
   shasta_token: &str,
@@ -246,6 +278,18 @@ fn compute_final_parent_summary(
 /// so common components get pulled first and rare ones are preserved.
 /// In `dryrun` mode the planned move is returned without any backend
 /// mutation.
+///
+/// # Errors
+///
+/// - [`Error::NotFound`] when the target group is missing and
+///   `create_group` is false.
+/// - [`Error::BadRequest`] for a dry-run that would otherwise create
+///   the missing target group.
+/// - [`Error::InvalidPattern`] when `pattern` cannot be parsed.
+/// - [`Error::InsufficientResources`] when removing any component
+///   would over-draw the parent group.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   group / inventory / membership calls.
 pub async fn add_hw_component(
   infra: &InfraContext<'_>,
   shasta_token: &str,
@@ -487,6 +531,14 @@ async fn apply_node_moves(
 /// group whenever possible. After moving, the function deletes the
 /// target group if it ended up empty and `delete_group` is true.
 /// `dryrun` returns the planned move without touching the backend.
+///
+/// # Errors
+///
+/// - [`Error::NotFound`] when the target group is missing, or when
+///   `pattern` names a component absent from the target's summary.
+/// - [`Error::InvalidPattern`] when `pattern` cannot be parsed.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   group / inventory / membership calls.
 pub async fn delete_hw_component(
   infra: &InfraContext<'_>,
   token: &str,

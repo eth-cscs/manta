@@ -1,4 +1,11 @@
-//! BOS session template queries and BOS session creation with access validation.
+//! BOS session template queries and BOS session creation with
+//! access validation.
+//!
+//! BOS session creation runs a two-step
+//! [`validate_and_prepare_template_session`] + [`create_bos_session`]
+//! flow so authorization (which fans across template targets and the
+//! `limit` argument) is separate from the actual `post_template_session`
+//! call. The split also keeps each side individually unit-testable.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bos::{

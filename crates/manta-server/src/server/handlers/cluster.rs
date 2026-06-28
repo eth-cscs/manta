@@ -1,4 +1,9 @@
-//! GET /api/v1/groups/nodes (canonical) and /clusters (deprecated alias).
+//! Group/cluster node-listing handlers.
+//!
+//! - `GET /api/v1/groups/nodes` → [`get_groups_nodes`] (canonical) —
+//!   wraps `service::cluster::get_cluster_nodes`.
+//! - `GET /api/v1/clusters` → [`get_clusters_deprecated`] —
+//!   deprecated alias; logs a server-side warning and forwards.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 

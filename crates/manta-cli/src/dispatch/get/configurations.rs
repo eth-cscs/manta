@@ -1,4 +1,11 @@
 //! Implements the `manta get configurations` command.
+//!
+//! Hits `GET /configurations` on `manta-server` to list CFS
+//! configurations along with a deletion-safety verdict. The server
+//! returns `ConfigurationAnalysis { configuration, safe_to_delete }`
+//! rows; the handler renders either a [`crate::output::configuration`]
+//! table or pretty JSON, optionally filtered by `--only-safe-to-delete`
+//! / `--only-unsafe-to-delete`.
 
 use anyhow::{Context, Error, bail};
 
@@ -10,6 +17,10 @@ use manta_shared::types::api::configuration::GetConfigurationParams;
 use manta_shared::types::dto::CfsConfigurationResponse;
 
 /// Parse CLI arguments into typed [`GetConfigurationParams`].
+///
+/// `--most-recent` forces `limit = Some(1)`, overriding any explicit
+/// `--limit` value. `settings_hsm_group_name_opt` is the default group
+/// from `cli.toml`, used as a fallback when `--group` is omitted.
 fn parse_configuration_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
@@ -32,6 +43,19 @@ fn parse_configuration_params(
 }
 
 /// CLI adapter for `manta get configurations`.
+///
+/// Consumes clap matches for the `configurations` subcommand
+/// (`--name`, `--pattern`, `--group`, `--limit`, `--most-recent`,
+/// `--only-safe-to-delete`, `--only-unsafe-to-delete`, `--output`),
+/// fetches the analysis rows, applies the optional safety filter, and
+/// renders either a typed table or pretty JSON.
+///
+/// # Errors
+///
+/// Returns an error if the HTTP request fails, the server returns no
+/// rows, deserialising the embedded `configuration` JSON into
+/// [`CfsConfigurationResponse`] fails on the table path, or JSON
+/// serialisation fails on the `--output json` path.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

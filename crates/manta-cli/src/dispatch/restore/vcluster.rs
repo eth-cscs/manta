@@ -1,4 +1,14 @@
 //! Implements the `manta restore vcluster` command.
+//!
+//! Drives `POST /api/v1/migrate/restore` to reload BOS / CFS / HSM /
+//! IMS state from a previously-captured bundle. All four
+//! `--*-file` arguments are required (an IMS-only or BOS-only restore
+//! isn't supported by the server-side flow). Runs an optional
+//! pre-hook before the POST and a post-hook after; hook perms are
+//! validated up-front. `--dry-run` short-circuits client-side via
+//! [`crate::output::action_result::preview_request`] (the endpoint
+//! has no `dry_run` flag). Inverse of
+//! [`super::super::backup::vcluster`].
 
 use anyhow::{Context, Error};
 
@@ -21,6 +31,13 @@ pub struct ExecParams<'a> {
 }
 
 /// Restore cluster configuration from a backup bundle.
+///
+/// # Errors
+///
+/// Returns an error when any of `--bos-file`, `--cfs-file`,
+/// `--hsm-file`, `--ims-file` is missing, when a hook script fails its
+/// perms check or its execution, when the HTTP client cannot be built,
+/// or when the `migrate_restore` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

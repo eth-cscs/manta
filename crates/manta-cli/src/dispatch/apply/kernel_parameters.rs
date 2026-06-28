@@ -1,4 +1,13 @@
 //! Implements the `manta apply kernel-parameters` command.
+//!
+//! Sets the kernel parameter set to *exactly* `--VALUE` on nodes
+//! selected by `--group` or a hosts expression — anything previously
+//! present that is not in `VALUE` is removed. Forwards to
+//! `POST /api/v1/kernel-parameters` with `operation=Apply`. The
+//! endpoint reboots affected nodes server-side and honours `dry_run`.
+//! See [`super::super::add::kernel_parameters`] for the additive
+//! variant and [`super::super::delete::kernel_parameters`] for the
+//! removal variant.
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -18,6 +27,11 @@ pub struct ExecParams<'a> {
 
 /// Replaces the kernel parameters for a set of nodes.
 /// Reboots the nodes whose kernel params have changed.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built or when the
+/// `apply_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

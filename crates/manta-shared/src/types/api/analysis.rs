@@ -13,6 +13,21 @@ use utoipa::ToSchema;
 /// The row's `image_id` and `name` are always populated; the rest are
 /// `Option<String>` and are filled in only when the corresponding
 /// relation resolves.
+///
+/// See also [`super::configuration_analysis::ConfigurationAnalysis`]
+/// for the parallel configuration-centric projection.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "image_id": "0a1b2c3d-...",
+///   "name": "compute-cos-2.5",
+///   "image_created": "2026-05-12T10:14:22Z",
+///   "configuration_name": "cos-2.5",
+///   "safe_to_delete": false
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct BackendSummary {
   /// IMS image id (`Image.id`). Row anchor.

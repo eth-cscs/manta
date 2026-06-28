@@ -60,6 +60,11 @@ impl std::error::Error for AuthServerUnreachable {}
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
 ///
+/// Every dispatch handler in `crate::dispatch::*` chains this onto
+/// its `client.openapi.<method>(...).await` call so that the
+/// progenitor envelope is normalised into a uniform anyhow error
+/// before bubbling up.
+///
 /// Implementation: on `Err`, format the progenitor error in a
 /// user-friendly way:
 ///
@@ -71,6 +76,14 @@ impl std::error::Error for AuthServerUnreachable {}
 /// - All other variants: format via `Display` (transport errors,
 ///   payload-decode errors, etc.) — the inner detail is still useful.
 pub trait OpenApiResultExt<T> {
+  /// Convert the progenitor result into `anyhow::Result<T>`. See the
+  /// trait doc for the error-shaping rules.
+  ///
+  /// # Errors
+  ///
+  /// Returns `Err` whenever the wrapped `Result` is `Err`. The
+  /// concrete message depends on the progenitor variant — see the
+  /// trait-level doc.
   fn into_anyhow(self) -> anyhow::Result<T>;
 }
 
@@ -207,12 +220,36 @@ mod into_anyhow_tests {
 
 /// HTTP client that forwards CLI requests to a manta server.
 ///
+/// Wraps three things:
+/// - the progenitor-generated `crate::openapi_client::Client` (the
+///   `openapi` field) for every endpoint declared in `openapi.json`;
+/// - a `reqwest::Client` (`raw`) sharing the same bearer-auth default
+///   header, used by the hand-rolled WebSocket / SSE paths;
+/// - the base URL (`<scheme>://host:port/api/v1`) and the
+///   `X-Manta-Site` header value the server uses to pick the active
+///   backend config.
+///
 /// Two transports inside:
 /// - `openapi` — progenitor-generated typed client. Used by every
 ///   dispatch handler for the API surface declared in `openapi.json`.
 /// - `raw` — plain `reqwest::Client` (same bearer-auth default header
 ///   as `openapi`). Used by the WebSocket consoles and SSE log stream
 ///   that aren't part of the generated client surface.
+///
+/// # Example
+///
+/// ```ignore
+/// use crate::common::authentication::get_api_token;
+/// use crate::http_client::{MantaClient, OpenApiResultExt};
+///
+/// let token = get_api_token(ctx).await?;
+/// let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+/// let groups = client
+///   .openapi
+///   .get_groups(None, client.site_name())
+///   .await
+///   .into_anyhow()?;
+/// ```
 #[derive(Debug)]
 pub struct MantaClient {
   /// Generated typed API client. Dispatch handlers call
@@ -242,6 +279,10 @@ impl MantaClient {
   /// If `server_url` has no scheme, `http://` is prepended. This lets users
   /// write `manta_server_url = "localhost:8080"` in their config without
   /// triggering a "URL scheme is not allowed" error from reqwest.
+  ///
+  /// # Errors
+  ///
+  /// Propagates failures from [`MantaClient::new_with_timeout`].
   pub fn new(server_url: &str, site_name: &str) -> anyhow::Result<Self> {
     Self::new_with_timeout(server_url, site_name, None, None)
   }
@@ -253,6 +294,13 @@ impl MantaClient {
   /// on both the `openapi` client and the `raw` `reqwest::Client`
   /// when `Some`. Pass `None` only for the auth path that *obtains*
   /// the token (`common::authentication`).
+  ///
+  /// # Errors
+  ///
+  /// - `ctx.require_site()` fails when no site is set.
+  /// - `token` contains non-ASCII characters (rejected by reqwest's
+  ///   `HeaderValue` parser).
+  /// - Either internal `reqwest::Client::build` fails.
   pub fn from_app_ctx(
     ctx: &crate::common::app_context::AppContext<'_>,
     token: Option<&str>,
@@ -288,6 +336,12 @@ impl MantaClient {
   ///   long streams; pick a value larger than your worst-case session.
   ///
   /// URL scheme normalisation matches [`MantaClient::new`].
+  ///
+  /// # Errors
+  ///
+  /// - `token` is not a valid HTTP header value (non-ASCII bytes).
+  /// - Either internal `reqwest::Client::build` fails (TLS init,
+  ///   resolver init, etc.).
   pub fn new_with_timeout(
     server_url: &str,
     site_name: &str,

@@ -1,4 +1,10 @@
 //! `manta get` subcommands.
+//!
+//! Each submodule implements one read-only subcommand by parsing clap
+//! matches into a typed `GetXxxParams`, calling the corresponding
+//! `MantaClient::openapi.get_*` method, and handing the response to a
+//! renderer in [`crate::output`]. Every handler authenticates once via
+//! [`get_api_token`] before dispatching.
 
 pub mod boot_parameters;
 pub mod configurations;
@@ -18,9 +24,20 @@ use crate::common::authentication::get_api_token;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch `manta get` subcommands (groups, hardware [nodes, group],
-/// sessions, configurations, templates, group-nodes, nodes, images,
-/// boot-parameters, kernel-parameters, redfish-endpoints).
+/// Dispatch `manta get` subcommands.
+///
+/// Routes the parsed clap matches to one of the per-subcommand `exec`
+/// handlers in this module: `groups`, `group-nodes`, `hardware nodes`,
+/// `hardware group`, `configurations`, `sessions`, `templates`,
+/// `nodes`, `images`, `boot-parameters`, `kernel-parameters`, and
+/// `redfish-endpoints`. The API token is resolved once here and passed
+/// down so each handler can issue HTTPS requests against `manta-server`.
+///
+/// # Errors
+///
+/// Returns an error if token acquisition fails, the selected
+/// subcommand handler fails (network, server error, output formatting),
+/// or no recognised subcommand was provided.
 pub async fn handle_get(
   cli_get: &ArgMatches,
   ctx: &AppContext<'_>,

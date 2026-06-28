@@ -1,4 +1,12 @@
-//! Table and JSON renderers for kernel parameter output.
+//! Renderer for the kernel-parameter slice of [`BootParameters`].
+//!
+//! Called by `manta get kernel-parameters`. Supported output formats:
+//! **table only** — the dispatcher handles JSON directly. The
+//! renderer groups hosts by the exact (sorted) kernel-parameter set
+//! they boot with, so a heterogeneous cluster collapses into a few
+//! distinct rows instead of one per node. An optional
+//! comma-separated filter narrows the displayed params to those
+//! whose token contains one of the supplied keys.
 
 use std::collections::HashMap;
 

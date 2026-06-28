@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// Request body for `POST /api/v1/groups/{name}/members`.
+///
+/// Paired with [`AddNodesToGroupResponse`] on success.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddNodesToGroupRequest {
   /// Hostlist expression (xnames, NIDs, or hostlist notation)
@@ -18,9 +20,22 @@ pub struct AddNodesToGroupRequest {
 /// The `removed` field name is retained for wire stability; its value
 /// is the final, sorted membership of the group after the update —
 /// **not** a list of removed nodes.
+///
+/// `added` and `final_members` are both sorted alphabetically by xname.
+///
+/// # Wire shape
+///
+/// ```json
+/// {
+///   "added": ["x3000c0s1b0n2", "x3000c0s1b0n3"],
+///   "final_members": ["x3000c0s1b0n0", "x3000c0s1b0n1", "x3000c0s1b0n2", "x3000c0s1b0n3"],
+///   "removed": ["x3000c0s1b0n0", "x3000c0s1b0n1", "x3000c0s1b0n2", "x3000c0s1b0n3"]
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddNodesToGroupResponse {
-  /// Xnames that were added to the group as part of this request.
+  /// Xnames that were added to the group as part of this request,
+  /// sorted alphabetically.
   pub added: Vec<String>,
   /// Final, sorted membership of the group after the update.
   pub final_members: Vec<String>,

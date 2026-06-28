@@ -27,6 +27,11 @@ pub trait ArgMatchesExt {
   /// Get a required `&str` argument. Returns an error with the message
   /// `"'<name>' argument is mandatory"` when missing, matching the
   /// convention every handler used to spell out by hand.
+  ///
+  /// # Errors
+  ///
+  /// Returns an `anyhow::Error` when `name` is absent from the
+  /// parsed matches.
   fn req_str(&self, name: &'static str) -> Result<&str>;
 
   /// Get an optional `&str` argument, mirroring

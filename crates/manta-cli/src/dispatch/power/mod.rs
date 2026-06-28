@@ -62,6 +62,14 @@ fn build_opts<'a>(
 
 /// Dispatch `manta power` subcommands (on, off, reset —
 /// each targeting nodes or groups).
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when no
+/// outer or inner subcommand is provided / the name is unknown, when
+/// required clap arguments are missing, or when
+/// [`exec_nodes`] / [`exec_cluster`] returns an error (confirmation
+/// declined, HTTP failure, poll timeout, or failed sub-tasks).
 pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -155,17 +163,32 @@ impl PowerAction {
 
 /// Options shared by `exec_nodes` and `exec_cluster`.
 pub struct PowerOpts<'a> {
+  /// Which power transition to request.
   pub action: PowerAction,
+  /// Host expression (xnames/NIDs/hostlist) for `exec_nodes`, or HSM
+  /// group name for `exec_cluster`.
   pub target: &'a str,
+  /// `true` ⇒ request a forced transition (skip graceful shutdown).
+  /// Always `false` for `On`.
   pub force: bool,
+  /// `true` ⇒ skip the post-POST poll loop and return the
+  /// `transitionID` for manual follow-up.
   pub no_wait: bool,
+  /// Skip the interactive confirmation prompt.
   pub assume_yes: bool,
   pub output: &'a str,
+  /// Print the request the leaf *would* send and return without
+  /// hitting `/power`.
   pub dry_run: bool,
 }
 
 /// Execute a power action against a list of nodes resolved
 /// from a hosts expression.
+///
+/// # Errors
+///
+/// Returns an error when the user declines the confirmation prompt or
+/// when [`dispatch_and_wait`] fails.
 pub async fn exec_nodes(
   ctx: &AppContext<'_>,
   token: &str,
@@ -186,6 +209,11 @@ pub async fn exec_nodes(
 }
 
 /// Execute a power action against all nodes in an HSM group.
+///
+/// # Errors
+///
+/// Returns an error when the user declines the confirmation prompt or
+/// when [`dispatch_and_wait`] fails.
 pub async fn exec_cluster(
   ctx: &AppContext<'_>,
   token: &str,

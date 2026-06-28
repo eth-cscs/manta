@@ -1,6 +1,10 @@
 //! Implements the `manta config set site` command.
+//!
+//! Writes `site = "<name>"` to `cli.toml`. Server-side validation is
+//! deferred until the next request that carries the `X-Manta-Site`
+//! header — the CLI does not check the value locally.
 
-use anyhow::{Context, Error};
+use anyhow::Error;
 use clap::ArgMatches;
 use toml_edit::value;
 
@@ -8,18 +12,21 @@ use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
 /// Set the active site in configuration.
+///
+/// Consumes the clap matches for `config set site` (positional
+/// `SITE_NAME`) and persists the value.
+///
+/// # Errors
+///
+/// Returns an error if the config file cannot be read or written, or
+/// the renderer fails. The `SITE_NAME` positional is declared required
+/// by clap, so its absence panics rather than returns.
 pub fn exec(cli_config_set_site: &ArgMatches) -> Result<(), Error> {
-  let new_site_opt: Option<&str> = cli_config_set_site
+  let new_site = cli_config_set_site
     .get_one::<String>("SITE_NAME")
-    .map(String::as_str);
+    .expect("clap declares SITE_NAME as a required positional");
 
-  set_site(new_site_opt)
-}
-
-fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
   let (path, mut doc) = read_config_toml()?;
-
-  let new_site = new_site_opt.context("Site name argument is required")?;
 
   // The server is the source of truth for valid sites — the CLI does no
   // local validation. Write the name; the server rejects an unknown site
@@ -30,14 +37,7 @@ fn set_site(new_site_opt: Option<&str>) -> Result<(), Error> {
 
   write_config_toml(&path, &doc)?;
 
-  if let Some(hsm_value) = doc.get("site") {
-    action_result::print(&format!("site set to {hsm_value}"), None)?;
-  } else {
-    tracing::error!(
-      "'site' key missing from config after \
-       writing — this should not happen"
-    );
-  }
+  action_result::print(&format!("site set to \"{new_site}\""), None)?;
 
   Ok(())
 }

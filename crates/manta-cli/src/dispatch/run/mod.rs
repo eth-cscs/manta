@@ -1,4 +1,9 @@
 //! `manta run` subcommands.
+//!
+//! Today only [`session`] exists; it creates and runs a one-off CFS
+//! session targeting a group or an `--ansible-limit` host list via
+//! `POST /api/v1/sessions`. See [`session`] for the per-leaf
+//! workflow.
 
 pub mod session;
 
@@ -8,6 +13,12 @@ use anyhow::{Error, bail};
 use clap::ArgMatches;
 
 /// Dispatch `manta run` subcommands.
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when no
+/// subcommand is provided / the name is unknown, or when the leaf
+/// handler fails.
 pub async fn handle_run(
   cli_run: &ArgMatches,
   ctx: &AppContext<'_>,

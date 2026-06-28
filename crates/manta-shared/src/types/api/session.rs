@@ -10,6 +10,9 @@ use utoipa::ToSchema;
 /// server deserialises it in `handlers::session::create_session`.
 /// `repo_names` and `repo_last_commit_ids` are parallel-indexed —
 /// `repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.
+/// The two vectors must therefore have the same length.
+///
+/// Paired with [`super::responses::CreateSessionResponse`].
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateSessionRequest {
   /// Explicit name for the CFS session and configuration;

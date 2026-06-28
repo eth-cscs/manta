@@ -1,4 +1,12 @@
-//! Table and JSON renderers for HSM node output.
+//! Renderer for [`NodeDetails`] (HSM node + power + CFS state).
+//!
+//! Called by `manta get nodes`. Supported output formats:
+//! **table** — the per-node detail table (with an extra
+//! kernel-parameter column when `--wide` is set, soft-wrapped to
+//! [`KERNEL_PARAMS_WRAP_WIDTH`]) — and a **summary** view that
+//! aggregates counts by power status, boot configuration, runtime
+//! configuration, and boot image. JSON is emitted by the dispatcher
+//! directly off the wire type.
 
 use std::collections::HashMap;
 

@@ -1,8 +1,14 @@
-//! `HardwareInventory` impl for `StaticBackendDispatcher`.
+//! [`HardwareInventory`] impl for [`StaticBackendDispatcher`].
+//!
+//! Forwards to HSM's `/apis/smd/hsm/v2/Inventory/Hardware` endpoints.
+//! Both CSM and Ochami implement this trait natively.
 
 use super::*;
 
 impl HardwareInventory for StaticBackendDispatcher {
+  /// `GET /Inventory/Hardware/Query/{xname}` projected to a
+  /// `NodeSummary` (CPU model count, memory, accelerator count, …).
+  /// The thin per-node view used by listings.
   async fn get_inventory_hardware(
     &self,
     auth_token: &str,
@@ -11,6 +17,9 @@ impl HardwareInventory for StaticBackendDispatcher {
     dispatch!(self, get_inventory_hardware, auth_token, xname)
   }
 
+  /// `GET /Inventory/Hardware/Query/{xname}` with the full HSM query
+  /// parameter set — `type`, `children`, `parents`, `partition`,
+  /// `format`. Returns the raw [`HWInventory`] tree.
   async fn get_inventory_hardware_query(
     &self,
     auth_token: &str,
@@ -34,6 +43,10 @@ impl HardwareInventory for StaticBackendDispatcher {
     )
   }
 
+  /// `POST /Inventory/Hardware` — push a hardware-by-location list
+  /// into HSM (used by discovery / restore flows). The returned
+  /// `HsmActionResponse` reports how many records were inserted or
+  /// updated.
   async fn post_inventory_hardware(
     &self,
     auth_token: &str,

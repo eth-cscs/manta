@@ -1,4 +1,10 @@
-//! GET/DELETE /api/v1/images.
+//! IMS image handlers.
+//!
+//! - `GET    /api/v1/images` → [`get_images`] —
+//!   wraps `service::image::get_images`. Sorts by creation time.
+//! - `DELETE /api/v1/images` → [`delete_images`] —
+//!   wraps `service::image::delete_images`; with `?dry_run=true`
+//!   returns the validation result without deleting.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 

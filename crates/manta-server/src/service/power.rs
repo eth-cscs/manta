@@ -69,11 +69,19 @@ pub async fn resolve_target_xnames(
 /// Start a PCS power transition (`on`, `soft-off`, `force-off`,
 /// `soft-restart`, `hard-restart`) against `params.xnames` and return
 /// the transition id immediately. The CLI is responsible for polling
-/// `get_power_transition` until the transition reports `completed`.
+/// [`get_power_transition`] until the transition reports `completed`.
 ///
 /// `params.force` only changes the wire-level PCS operation for
 /// `Off` and `Reset` — it's ignored for `On`, matching today's
-/// behaviour.
+/// behaviour. See `pcs_operation` (crate-private) for the exact
+/// mapping.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when the caller lacks access to one of
+///   `params.xnames`.
+/// - Backend errors from `pcs_transitions_post` (PCS upstream
+///   failure, unknown xname, etc.).
 pub async fn apply_power(
   infra: &InfraContext<'_>,
   token: &str,

@@ -17,6 +17,16 @@ use clap_mangen::Man;
 use clap_mangen::roff::{Inline, Roff, bold, italic, roman};
 
 /// Render the consolidated manta man page into `w`.
+///
+/// `cli` is consumed because clap-mangen mutates the tree during
+/// rendering. The output is a complete roff document: NAME /
+/// SYNOPSIS / DESCRIPTION / OPTIONS at the top, then a single
+/// SUBCOMMANDS section walking the subcommand tree depth-first.
+///
+/// # Errors
+///
+/// Returns `Err` if any write to `w` fails — usually a broken pipe
+/// when stdout is gone.
 pub fn render_consolidated(
   cli: Command,
   w: &mut dyn Write,

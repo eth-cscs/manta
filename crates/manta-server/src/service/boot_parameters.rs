@@ -1,4 +1,16 @@
 //! BSS boot parameter queries, changeset preparation, and persistence.
+//!
+//! Boot parameter writes follow a plan/apply pattern: `prepare_boot_config`
+//! returns a `BootConfigChangeset` describing what would change
+//! without touching the backend, and `persist_boot_config` writes a
+//! previously prepared changeset. The split lets the CLI confirm the
+//! planned change with the user before any state mutation. (Both are
+//! crate-private and called from the handler layer.)
+//!
+//! Direct CRUD helpers ([`get_boot_parameters`],
+//! [`add_boot_parameters`], [`update_boot_parameters`],
+//! [`delete_boot_parameters`]) bypass the changeset machinery for
+//! operations that don't need a preview step.
 
 use manta_backend_dispatcher::{
   error::Error,
@@ -28,6 +40,14 @@ pub use manta_shared::types::api::boot_parameters::{
 /// rather than silently querying nothing; otherwise the caller's
 /// access to every resolved xname is validated before hitting the
 /// backend.
+///
+/// # Errors
+///
+/// - [`Error::BadRequest`] when target resolution produces an empty
+///   xname set, when the hosts expression is malformed, or when the
+///   caller lacks access to one of the resolved xnames.
+/// - Backend errors from `get_node_metadata_available` or
+///   `get_bootparameters`.
 pub async fn get_boot_parameters(
   infra: &InfraContext<'_>,
   token: &str,

@@ -1,4 +1,11 @@
 //! Implements the `manta add boot-parameters` command.
+//!
+//! Builds a [`BootParameters`] payload from `--hosts`, `--macs`,
+//! `--nids`, `--params`, `--kernel`, `--initrd` (and optionally
+//! `--cloud-init`) and POSTs it to `/api/v1/boot-parameters`. The
+//! manta-shared `BootParameters` and the generated openapi type share
+//! the JSON shape but differ in Rust-level optionality / integer width
+//! (u32 vs i32); the bridge here is a serde round-trip.
 
 use anyhow::{Context, Error};
 use manta_shared::types::dto::BootParameters;
@@ -10,6 +17,13 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// CLI adapter for `manta add boot-parameters`.
+///
+/// # Errors
+///
+/// Returns an error when a required clap argument is missing, when any
+/// NID fails to parse as `u32`, when the BootParameters fail to encode
+/// for the wire, when the HTTP client cannot be built, or when the
+/// server rejects the request.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

@@ -1,8 +1,29 @@
-//! `ApplySessionTrait` impl for `StaticBackendDispatcher`.
+//! [`ApplySessionTrait`] impl for [`StaticBackendDispatcher`].
+//!
+//! Forwards to the backend's "apply ad-hoc CFS session" helper, which
+//! builds a `CfsConfigurationRequest` from the supplied Gitea repos +
+//! commit ids, POSTs it to `cfs/v3/configurations`, then POSTs a
+//! `CfsSessionPostRequest` to `cfs/v3/sessions` that runs the
+//! playbook with the supplied Ansible options.
+//!
+//! Ochami uses the trait default and returns [`Error::Message`]
+//! ("Apply session command not implemented for this backend").
 
 use super::*;
 
 impl ApplySessionTrait for StaticBackendDispatcher {
+  /// Build a CFS configuration from `repos_name_vec` /
+  /// `repos_last_commit_id_vec` and run an Ansible session against it.
+  ///
+  /// Returns `(cfs_configuration_name, cfs_session_name)` — the names
+  /// of the artifacts created on the backend.
+  ///
+  /// # Errors
+  ///
+  /// Forwards backend errors verbatim: [`Error::CsmError`] on CFS
+  /// rejection (e.g. duplicate configuration name when the helper
+  /// retries), [`Error::LocalGitError`] when Gitea metadata lookup
+  /// fails, [`Error::Message`] on Ochami.
   async fn apply_session(
     &self,
     gitea_token: &str,

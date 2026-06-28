@@ -1,4 +1,12 @@
 //! `manta config` subcommands.
+//!
+//! Each submodule reads or mutates the local `cli.toml` via
+//! [`manta_shared::common::config::read_config_toml`] /
+//! [`manta_shared::common::config::write_config_toml`] — almost no
+//! server traffic. The exceptions are `show` (optionally fetches the
+//! per-site available-groups list) and `set hsm` (validates the target
+//! group against `GET /groups`). Token acquisition only happens on the
+//! paths that need it.
 
 pub mod set_hsm;
 pub mod set_log;
@@ -16,7 +24,18 @@ use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
-/// Dispatch `manta config` subcommands (show, set, unset).
+/// Dispatch `manta config` subcommands (`show`, `set`, `unset`).
+///
+/// Routes the parsed clap matches to one of the per-subcommand `exec`
+/// handlers in this module. Only `show` (when a site is selected) and
+/// `set hsm` resolve a token and build a [`MantaClient`]; the other
+/// handlers operate purely on the local config file.
+///
+/// # Errors
+///
+/// Returns an error if token acquisition fails on a path that needs
+/// one, the selected handler fails, or no recognised subcommand was
+/// provided.
 pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,

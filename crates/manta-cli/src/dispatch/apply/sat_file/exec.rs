@@ -41,26 +41,48 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::PostSatValidateRequest;
 use crate::output::action_result;
 
-/// Options for applying a SAT file.
+/// Options for applying a SAT file. Built from the clap matches by
+/// the dispatcher in `dispatch/apply/mod.rs` and passed into [`exec`]
+/// and the per-element pipelines.
 #[allow(clippy::struct_excessive_bools)]
 pub struct SatApplyOptions<'a> {
+  /// Raw text of the SAT template before Jinja2 rendering.
   pub sat_file_content: &'a str,
+  /// Optional values-file text providing Jinja2 variables.
   pub values_file_content_opt: Option<&'a str>,
+  /// Optional CLI `--var key=value` overrides (highest precedence).
   pub values_cli_opt: Option<&'a [String]>,
+  /// `--ansible-verbosity` (0-255) forwarded to the per-image CFS
+  /// session.
   pub ansible_verbosity_opt: Option<u8>,
+  /// `--ansible-passthrough` string forwarded to the per-image CFS
+  /// session.
   pub ansible_passthrough_opt: Option<&'a str>,
   /// After each BOS session template is created, immediately create a
   /// BOS session from it so its target nodes boot via the new template.
   /// This typically causes a reboot.
   pub create_bos_session: bool,
+  /// Stream per-image CFS session logs to stdout instead of polling.
   pub watch_logs: bool,
+  /// Include timestamps when streaming logs.
   pub timestamps: bool,
+  /// Path to an executable run before the dispatch loop.
   pub prehook_opt: Option<&'a str>,
+  /// Path to an executable run after the dispatch loop succeeds.
   pub posthook_opt: Option<&'a str>,
+  /// `--image-only`: apply only configurations + images, dropping
+  /// session_templates and hardware. See [`super::plan`].
   pub image_only: bool,
+  /// `--sessiontemplate-only`: keep only session_templates and the
+  /// configurations / images they reference.
   pub session_template_only: bool,
+  /// Forwarded to `POST /sat-file/configurations`; replaces existing
+  /// CFS configurations with the same name.
   pub overwrite: bool,
+  /// Forwarded to every per-element POST; server-side dry-run.
   pub dry_run: bool,
+  /// Skip both the preview and the create-BOS-session confirmation
+  /// prompts.
   pub assume_yes: bool,
   pub output_opt: Option<&'a str>,
 }
@@ -76,6 +98,20 @@ fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
 }
 
 /// Process and apply a SAT file to the system.
+///
+/// Top-level pipeline driver: render Jinja2 -> parse YAML -> filter +
+/// build plan -> preview + confirm -> server-side validate -> pre-hook
+/// -> dispatch -> post-hook -> print summary.
+///
+/// # Errors
+///
+/// Returns an error when a hook script is missing or not executable,
+/// when Jinja2 rendering fails, when the rendered SAT YAML cannot be
+/// parsed, when [`plan::build_plan`] rejects the file (filter
+/// mismatch, dangling `image_ref`, cycle), when the user declines the
+/// preview or BOS-session confirmation prompts, when the server-side
+/// validation call fails, when any plan element's POST fails, or when
+/// a hook process exits non-zero.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

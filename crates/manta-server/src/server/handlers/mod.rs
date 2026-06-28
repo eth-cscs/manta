@@ -163,12 +163,25 @@ pub struct SiteHeader {
 // follows. Each handler shrinks by 3-4 lines.
 // ---------------------------------------------------------------------------
 
-/// Bundled extractor for `State<Arc<ServerState>>` + `BearerToken` +
-/// `SiteName`. Use it in handler signatures instead of the three
-/// individual extractors when all three are needed (the typical case).
+/// Bundled extractor for `State<Arc<ServerState>>` + [`BearerToken`]
+/// + [`SiteName`]. Use it in handler signatures instead of the three
+/// individual extractors when all three are needed (the typical
+/// case). Extraction also validates that the `X-Manta-Site` value
+/// resolves to a configured [`super::SiteBackend`], so
+/// [`Self::infra`] inside the handler body is infallible.
 ///
 /// The unauthenticated `/auth/*` handlers and the health endpoint
 /// still use explicit extractors — they don't need a Bearer token.
+///
+/// # Example
+///
+/// ```ignore
+/// pub async fn get_groups(ctx: RequestCtx) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+///   let infra = ctx.infra();
+///   let groups = service::group::get_groups(&infra, &ctx.token).await.map_err(to_handler_error)?;
+///   Ok(Json(groups))
+/// }
+/// ```
 pub struct RequestCtx {
   /// Shared server state (backend dispatcher, per-site config, TLS
   /// material, optional Vault + k8s URLs).
@@ -235,7 +248,23 @@ fn format_with_causes(e: &(dyn std::error::Error + 'static)) -> String {
   out
 }
 
-/// Convert a `BackendError` into the best-fitting HTTP error response.
+/// Convert a [`BackendError`] (from the service layer) into the
+/// best-fitting `(StatusCode, Json<ErrorResponse>)` pair returned by
+/// every handler. The canonical call shape is
+/// `.map_err(to_handler_error)?` at the end of each service call.
+///
+/// Status mapping (most-specific first):
+/// - `NotFound`, `SessionNotFound`, `ConfigurationNotFound` → 404
+/// - `Conflict`, `ConfigurationAlreadyExistsError` → 409
+/// - `BadRequest`, `InvalidPattern`, `UnsupportedBackend`,
+///   `InvalidNodeId` → 400
+/// - `AuthenticationTokenNotFound`, `JwtMalformed` → 401
+/// - `InsufficientResources` → 422
+/// - `CsmError { status, .. }` → that backend status (verbatim) when
+///   it's a valid HTTP code, else 502 Bad Gateway
+/// - `NetError(rqe)` where `rqe.is_timeout()` → 504 Gateway Timeout
+///   (manta-server → CSM hop)
+/// - everything else → 500 Internal Server Error
 ///
 /// `pub` (rather than `pub(crate)`) so the integration tests in
 /// `crates/manta-server/tests/` can exercise the mapping directly.

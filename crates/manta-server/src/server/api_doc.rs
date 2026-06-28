@@ -1,4 +1,14 @@
 //! OpenAPI specification document for the manta HTTP server.
+//!
+//! [`ApiDoc`] is consumed by [`super::routes::build_router`] and
+//! served at `GET /openapi.json`, with Swagger UI mounted at
+//! `GET /docs`. Every handler in [`super::handlers`] that should
+//! appear in the spec must be listed under the `paths(...)` attribute
+//! below, and every wire-type used in request/response bodies must
+//! be listed under `components(schemas(...))`. The `SecurityAddon`
+//! `Modify` impl registers the `bearerAuth` (HTTP `Bearer` / JWT)
+//! security scheme and declares `/api/v1` as the spec's server URL
+//! so Swagger UI's "Try it out" buttons build full paths.
 
 use utoipa::{
   Modify, OpenApi,

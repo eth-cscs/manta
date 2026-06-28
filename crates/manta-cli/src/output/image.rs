@@ -1,4 +1,11 @@
-//! Table and JSON renderers for IMS image output.
+//! Renderer for [`Image`] (IMS image records).
+//!
+//! Called by `manta get images`. Supported output formats:
+//! **table only** in this module — JSON is emitted directly off
+//! the wire type by the dispatcher. CSM returns the `created`
+//! timestamp in several shapes, so the renderer tries
+//! `NaiveDateTime` first, then `DateTime<Local>`, then falls back to
+//! the raw string.
 
 use std::collections::HashMap;
 

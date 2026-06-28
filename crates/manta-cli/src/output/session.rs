@@ -1,4 +1,11 @@
-//! Table and JSON renderers for CFS session output.
+//! Renderer for [`CfsSessionGetResponse`] (CFS sessions).
+//!
+//! Called by `manta get session`. Supported output formats:
+//! `"json"` (pretty-printed) and the default table (anything else).
+//! Session status is derived from `is_success()` plus presence of a
+//! completion time so a still-running session reports its CFS state
+//! instead of looking like a failure. Duration is computed against
+//! `Local::now()` for in-flight sessions.
 
 use anyhow::{Context, Error};
 use chrono::{DateTime, Local};
@@ -163,6 +170,10 @@ pub fn get_table_struct(
 ///
 /// Supports `"json"` for JSON output or a formatted table
 /// (the default).
+///
+/// # Errors
+///
+/// Returns `Err` if pretty-printing as JSON fails (JSON path only).
 pub fn print(
   sessions: &[CfsSessionGetResponse],
   output: Option<&str>,

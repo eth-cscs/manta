@@ -1,4 +1,12 @@
 //! Implements the `manta apply hardware group` command.
+//!
+//! Pins (or unpins, with `--unpin-nodes`) hardware components matching
+//! `--pattern` to a target HSM cluster, moving them from `--parent-group`.
+//! Forwards to `POST /api/v1/hardware-clusters/{target}` with the
+//! request's `dry_run` flag, `create_target_hsm_group`, and
+//! `delete_empty_parent_hsm_group` flags honoured server-side. See
+//! [`super::super::add::hardware`] for the variant that *adds*
+//! components without flipping the pin mode.
 
 use anyhow::{Context, Error};
 use clap::ArgMatches;
@@ -12,6 +20,13 @@ use crate::openapi_client::types::{
 use crate::output::action_result;
 
 /// Apply a hardware cluster configuration (pin or unpin).
+///
+/// # Errors
+///
+/// Returns an error when `--pattern` is missing, when neither the CLI
+/// nor `cli.toml` supplies a target or parent group, when the HTTP
+/// client cannot be built, or when the `apply_hw_configuration` call
+/// fails.
 pub async fn exec(
   cli_apply_hw_group: &ArgMatches,
   ctx: &AppContext<'_>,

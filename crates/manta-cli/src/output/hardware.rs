@@ -1,4 +1,17 @@
-//! Table and JSON renderers for hardware inventory output.
+//! Renderer for hardware-inventory results (built around
+//! [`NodeSummary`] rows).
+//!
+//! Called by `manta get hardware group` (whole-group view) and
+//! `manta get hardware nodes` (per-node list). Supported output
+//! formats vary by subcommand:
+//!
+//! - [`print_cluster`] — `"json"`, `"summary"`, `"details"`, or
+//!   `"pattern"`. Summary aggregates HW-component counts across the
+//!   group; details renders a per-node matrix with check/warn/cross
+//!   glyphs; pattern produces a colon-delimited fingerprint suitable
+//!   for downstream diffing.
+//! - [`print_nodes_list`] — `"json"` or `"table"` (the per-node
+//!   details matrix).
 
 use std::collections::{HashMap, HashSet};
 
@@ -155,6 +168,13 @@ fn print_table_details(node_summaries: &[NodeSummary]) {
 /// Print hardware cluster data in the requested format.
 ///
 /// Accepted values: `"json"`, `"summary"`, `"details"`, `"pattern"`.
+///
+/// # Errors
+///
+/// - JSON serialisation of `json` fails (JSON path only).
+/// - `json["node_summaries"]` is missing or shape-incompatible with
+///   `Vec<NodeSummary>` (non-JSON paths).
+/// - `output` is none of the four accepted values.
 pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
   if output == "json" {
     println!(
@@ -194,6 +214,12 @@ pub fn print_cluster(json: &Value, output: &str) -> Result<(), Error> {
 /// Print hardware for an explicit list of nodes in the requested format.
 ///
 /// Accepted values: `"table"` (per-node details table) or `"json"`.
+///
+/// # Errors
+///
+/// - JSON serialisation of `json` fails (JSON path only).
+/// - `json["node_summaries"]` is missing or shape-incompatible with
+///   `Vec<NodeSummary>`.
 pub fn print_nodes_list(json: &Value, output: &str) -> Result<(), Error> {
   if output == "json" {
     println!(

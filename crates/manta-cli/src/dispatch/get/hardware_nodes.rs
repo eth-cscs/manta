@@ -1,4 +1,10 @@
 //! Implements the `manta get hardware nodes` command.
+//!
+//! Hits `GET /hardware/nodes` on `manta-server` to return per-node
+//! hardware inventory for the supplied host expression (xnames, NIDs,
+//! host-list syntax). Output is rendered by
+//! [`crate::output::hardware::print_nodes_list`]; default view is the
+//! `table`. See [`super::hardware_group`] for the cluster-wide variant.
 
 use anyhow::{Context, Error};
 
@@ -8,6 +14,11 @@ use crate::output;
 use manta_shared::types::api::hardware::GetHardwareNodesListParams;
 
 /// Parse CLI arguments into typed [`GetHardwareNodesListParams`].
+///
+/// # Errors
+///
+/// Returns an error if the required `VALUE` positional argument is
+/// missing.
 fn parse_hardware_nodes_params(
   cli_args: &clap::ArgMatches,
 ) -> Result<GetHardwareNodesListParams, Error> {
@@ -21,6 +32,16 @@ fn parse_hardware_nodes_params(
 }
 
 /// CLI adapter for `manta get hardware nodes`.
+///
+/// Consumes clap matches for the `hardware nodes` subcommand
+/// (positional host expression, optional `--output`), fetches the
+/// inventory, and hands the JSON to
+/// [`crate::output::hardware::print_nodes_list`].
+///
+/// # Errors
+///
+/// Returns an error if the positional host expression is missing, the
+/// HTTP request fails, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

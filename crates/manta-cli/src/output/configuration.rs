@@ -1,4 +1,12 @@
-//! Table and JSON renderers for CFS configuration output.
+//! Renderer for [`CfsConfigurationResponse`] (CFS Ansible
+//! configurations).
+//!
+//! Called by `manta get configuration`. Supported output formats:
+//! **table only** in this module — the dispatcher emits JSON itself
+//! when `-o json` is set, since the wire type is already serializable
+//! and bypasses this renderer entirely. Each row pairs a
+//! configuration with its `safe_to_delete` verdict sourced from
+//! `/analysis/configurations`.
 
 use chrono::{DateTime, Local};
 use comfy_table::Table;

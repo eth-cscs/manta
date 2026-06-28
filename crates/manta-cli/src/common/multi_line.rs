@@ -6,7 +6,8 @@
 
 /// Render a list of node identifiers (xnames, NIDs, group members…)
 /// as a comma-separated string, wrapping after every `num_columns`
-/// entries with a newline.
+/// entries with a newline. `num_columns == 0` yields the empty string
+/// (degenerate input); `None` or empty `nodes` also returns `""`.
 pub fn string_vec_to_multi_line_string(
   nodes: Option<&[String]>,
   num_columns: usize,

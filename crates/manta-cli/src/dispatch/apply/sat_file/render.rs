@@ -110,6 +110,20 @@ fn dot_notation_to_yaml(dot_notation: &str) -> Result<Value, Error> {
 /// file and CLI-provided overrides in dot notation. Returns the
 /// rendered SAT YAML as a string — callers parse it into the structured
 /// value they need (CLI parses to [`serde_json::Value`]).
+///
+/// Precedence on variable conflicts (highest wins): CLI `--var`
+/// overrides, then the values file, then the SAT file itself. Strict
+/// undefined-variable behaviour is enabled — referencing an unset
+/// variable returns an error rather than rendering an empty string.
+///
+/// # Errors
+///
+/// Returns a [`MantaError`](manta_shared::common::error::MantaError)
+/// when the Jinja2 environment fails to configure, when the values
+/// file is not valid YAML, when a CLI `--var` string is not in
+/// `key.path=value` form, when merging the CLI overrides fails, or
+/// when either render step encounters an undefined variable or
+/// malformed template.
 pub fn render_jinja2_sat_file_yaml(
   sat_file_content: &str,
   values_file_content_opt: Option<&str>,

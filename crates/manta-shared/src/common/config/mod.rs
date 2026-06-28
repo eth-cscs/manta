@@ -1,13 +1,28 @@
 //! Config-file loaders for `cli.toml` and `server.toml`.
 //!
-//! This module owns the file-system paths, env-var overrides
-//! (`MANTA_CLI_CONFIG`, `MANTA_SERVER_CONFIG`), and the loader
-//! functions that parse a config and merge `MANTA_*`-prefixed
-//! environment variables. See [`get_cli_configuration`] and
-//! [`get_server_configuration`] for the canonical entry points.
-//! The typed deserialisation targets live with each binary:
-//! `CliConfiguration` in `manta-cli`, `ServerConfiguration` in
-//! `manta-server`.
+//! This module owns three concerns:
+//!
+//! 1. **Paths** — XDG-resolved defaults via [`get_default_config_path`],
+//!    with per-binary overrides from `MANTA_CLI_CONFIG` /
+//!    `MANTA_SERVER_CONFIG`. See [`get_cli_config_file_path`] and
+//!    [`get_server_config_file_path`].
+//! 2. **Loading** — [`get_cli_configuration`] and
+//!    [`get_server_configuration`] parse the TOML file and merge any
+//!    `MANTA_*`-prefixed environment variables on top, returning an
+//!    untyped `::config::Config`. The typed deserialisation targets
+//!    live with each binary (`CliConfiguration` in `manta-cli`,
+//!    `ServerConfiguration` in `manta-server`) so this module stays
+//!    agnostic of either schema.
+//! 3. **In-place editing** — [`read_config_toml`] / [`write_config_toml`]
+//!    expose a `toml_edit::DocumentMut` view for `manta config set`
+//!    and friends, preserving comments and formatting.
+//!
+//! Missing-file errors are intentionally rich: the
+//! [`MantaError::NotFound`] message includes a minimal example file
+//! and, when a legacy `~/.config/manta/config.toml` is detected, a
+//! field-by-field migration mapping.
+//!
+//! [`MantaError::NotFound`]: crate::common::error::MantaError::NotFound
 
 use std::{
   fs::{self, File},
@@ -42,6 +57,13 @@ fn get_project_dirs() -> Result<ProjectDirs, Error> {
 
 /// Returns the default manta config directory path
 /// (e.g. `~/.config/manta/`).
+///
+/// # Errors
+///
+/// Returns [`MantaError::MissingField`] when the platform cannot resolve
+/// a project-dirs triple (typically because `$HOME` is unset).
+///
+/// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
 pub fn get_default_config_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.config_dir()))
 }
@@ -82,8 +104,17 @@ pub fn get_default_cache_path() -> Result<PathBuf, Error> {
 /// Reads the manta CLI configuration file (`cli.toml`) and parses it as
 /// TOML, honoring `MANTA_CLI_CONFIG`.
 ///
-/// Returns both the file path (for later writing) and the
-/// parsed `DocumentMut`.
+/// Returns both the file path (for later writing via
+/// [`write_config_toml`]) and the parsed `DocumentMut`, which
+/// preserves comments and formatting for in-place edits.
+///
+/// # Errors
+///
+/// - [`MantaError::IoError`] if the file cannot be read.
+/// - [`MantaError::TomlEditError`] if the contents are not valid TOML.
+///
+/// [`MantaError::IoError`]: crate::common::error::MantaError::IoError
+/// [`MantaError::TomlEditError`]: crate::common::error::MantaError::TomlEditError
 pub fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
   let path = get_cli_config_file_path()?;
 
@@ -100,6 +131,17 @@ pub fn read_config_toml() -> Result<(PathBuf, DocumentMut), Error> {
 }
 
 /// Writes a `DocumentMut` back to the manta configuration file.
+///
+/// Opens `path` with `write | truncate` and replaces its contents with
+/// the document's serialised form. Paired with [`read_config_toml`]
+/// for round-tripping `manta config set` edits.
+///
+/// # Errors
+///
+/// Returns [`MantaError::IoError`] if the file cannot be opened,
+/// written to, or flushed.
+///
+/// [`MantaError::IoError`]: crate::common::error::MantaError::IoError
 pub fn write_config_toml(
   path: &std::path::Path,
   doc: &DocumentMut,
@@ -118,6 +160,16 @@ pub fn write_config_toml(
 /// Read the root CA certificate from `file_path`, falling
 /// back to the default config directory if the path is
 /// relative.
+///
+/// # Errors
+///
+/// - [`MantaError::NotFound`] if neither the literal nor the
+///   config-directory-relative path resolves to a readable file.
+/// - [`MantaError::IoError`] if a candidate file opens but cannot be
+///   read to completion.
+///
+/// [`MantaError::NotFound`]: crate::common::error::MantaError::NotFound
+/// [`MantaError::IoError`]: crate::common::error::MantaError::IoError
 pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
   let mut buf = Vec::new();
   let root_cert_file_rslt = File::open(file_path);
@@ -142,6 +194,29 @@ pub fn get_csm_root_cert_content(file_path: &str) -> Result<Vec<u8>, Error> {
 }
 
 /// Returns the CLI config file path, honoring `MANTA_CLI_CONFIG` if set.
+///
+/// When the env var is present its value wins verbatim (no validation,
+/// no relative-path resolution); otherwise the XDG default
+/// (`~/.config/manta/cli.toml` on Linux) is returned.
+///
+/// # Errors
+///
+/// Returns [`MantaError::MissingField`] if `MANTA_CLI_CONFIG` is unset
+/// *and* the platform cannot resolve a project-dirs triple. The
+/// env-var branch is infallible.
+///
+/// # Examples
+///
+/// ```no_run
+/// use manta_shared::common::config::get_cli_config_file_path;
+///
+/// // SAFETY: doc-tests run single-threaded.
+/// unsafe { std::env::set_var("MANTA_CLI_CONFIG", "/etc/manta/cli.toml") };
+/// let path = get_cli_config_file_path().unwrap();
+/// assert_eq!(path, std::path::PathBuf::from("/etc/manta/cli.toml"));
+/// ```
+///
+/// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
 pub fn get_cli_config_file_path() -> Result<PathBuf, Error> {
   if let Ok(env_path) = std::env::var("MANTA_CLI_CONFIG") {
     Ok(PathBuf::from(env_path))
@@ -151,6 +226,27 @@ pub fn get_cli_config_file_path() -> Result<PathBuf, Error> {
 }
 
 /// Returns the server config file path, honoring `MANTA_SERVER_CONFIG` if set.
+///
+/// Symmetric to [`get_cli_config_file_path`]: env-var wins verbatim,
+/// otherwise XDG default (`~/.config/manta/server.toml` on Linux).
+///
+/// # Errors
+///
+/// Returns [`MantaError::MissingField`] if `MANTA_SERVER_CONFIG` is
+/// unset *and* the platform cannot resolve a project-dirs triple.
+///
+/// # Examples
+///
+/// ```no_run
+/// use manta_shared::common::config::get_server_config_file_path;
+///
+/// // SAFETY: doc-tests run single-threaded.
+/// unsafe { std::env::set_var("MANTA_SERVER_CONFIG", "/etc/manta/server.toml") };
+/// let path = get_server_config_file_path().unwrap();
+/// assert_eq!(path, std::path::PathBuf::from("/etc/manta/server.toml"));
+/// ```
+///
+/// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
 pub fn get_server_config_file_path() -> Result<PathBuf, Error> {
   if let Ok(env_path) = std::env::var("MANTA_SERVER_CONFIG") {
     Ok(PathBuf::from(env_path))
@@ -266,6 +362,24 @@ fn missing_config_message(
 /// Load `cli.toml`. Fails loudly if the file is missing; the error
 /// message includes a minimal example and (when a legacy config.toml is
 /// detected) a field-by-field migration mapping.
+///
+/// Reads the file at [`get_cli_config_file_path`] and layers
+/// `MANTA_*`-prefixed environment variables on top (env wins).
+///
+/// # Errors
+///
+/// - [`MantaError::NotFound`] when the resolved config file does not
+///   exist on disk; the message embeds [`CLI_CONFIG_SAMPLE`-equivalent]
+///   guidance.
+/// - [`MantaError::MissingField`] if the resolved path is not valid
+///   UTF-8 (required by the underlying `config` crate).
+/// - [`MantaError::ConfigError`] on TOML parse, env-var type-coercion,
+///   or builder failures.
+///
+/// [`CLI_CONFIG_SAMPLE`-equivalent]: self
+/// [`MantaError::NotFound`]: crate::common::error::MantaError::NotFound
+/// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
+/// [`MantaError::ConfigError`]: crate::common::error::MantaError::ConfigError
 pub fn get_cli_configuration() -> Result<Config, Error> {
   let path = get_cli_config_file_path()?;
   if !path.exists() {
@@ -295,6 +409,23 @@ pub fn get_cli_configuration() -> Result<Config, Error> {
 /// Load `server.toml`. Fails loudly if the file is missing; the error
 /// message includes a minimal example and (when a legacy config.toml is
 /// detected) a field-by-field migration mapping.
+///
+/// Reads the file at [`get_server_config_file_path`] and layers
+/// `MANTA_*`-prefixed environment variables on top (env wins).
+///
+/// # Errors
+///
+/// - [`MantaError::NotFound`] when the resolved config file does not
+///   exist on disk; the message embeds a minimal `server.toml`
+///   example and (if applicable) a migration mapping.
+/// - [`MantaError::MissingField`] if the resolved path is not valid
+///   UTF-8.
+/// - [`MantaError::ConfigError`] on TOML parse, env-var type-coercion,
+///   or builder failures.
+///
+/// [`MantaError::NotFound`]: crate::common::error::MantaError::NotFound
+/// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
+/// [`MantaError::ConfigError`]: crate::common::error::MantaError::ConfigError
 pub fn get_server_configuration() -> Result<Config, Error> {
   let path = get_server_config_file_path()?;
   if !path.exists() {

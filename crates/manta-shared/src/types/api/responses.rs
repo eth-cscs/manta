@@ -12,6 +12,12 @@ use utoipa::ToSchema;
 ///
 /// Emitted by `POST /api/v1/redfish-endpoints`,
 /// `POST /api/v1/boot-parameters`, and `POST /api/v1/groups`.
+///
+/// # Wire shape
+///
+/// ```json
+/// { "created": true }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreatedResponse {
   /// Always `true` on success.
@@ -19,6 +25,14 @@ pub struct CreatedResponse {
 }
 
 /// Response for `POST /api/v1/nodes` — echoes the registered xname.
+///
+/// Paired with [`super::node::AddNodeRequest`].
+///
+/// # Wire shape
+///
+/// ```json
+/// { "id": "x3000c0s1b0n0" }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddNodeResponse {
   /// Physical location ID (xname) of the registered node.
@@ -27,6 +41,10 @@ pub struct AddNodeResponse {
 
 /// Response for `POST /api/v1/sessions` — names of the created CFS
 /// session and its underlying configuration.
+///
+/// Paired with [`super::session::CreateSessionRequest`]. When the
+/// caller did not supply `cfs_conf_sess_name`, the server-generated
+/// name is echoed back here.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateSessionResponse {
   /// Name of the created CFS session.
@@ -46,6 +64,12 @@ pub struct EphemeralEnvResponse {
 /// Response for endpoints that simply confirm a backup / restore /
 /// long-running migrate operation finished. Emitted by
 /// `POST /api/v1/migrate/backup` and `POST /api/v1/migrate/restore`.
+///
+/// # Wire shape
+///
+/// ```json
+/// { "completed": true }
+/// ```
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CompletedResponse {
   /// Always `true` on success.
@@ -71,6 +95,10 @@ pub struct MigrateNodesPairResult {
 /// Response for `POST /api/v1/migrate/nodes` — moved xnames plus a
 /// per-(target,parent) result list. Dry-run uses the same shape so the
 /// CLI consumes one type regardless of mode.
+///
+/// Paired with [`super::migrate::MigrateNodesRequest`]. The `results`
+/// array runs in lockstep with the request's `target_hsm_names` /
+/// `parent_hsm_names` pairs.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct MigrateNodesResponse {
   /// Xnames moved (or that would have been moved, in dry-run).

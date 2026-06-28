@@ -1,4 +1,12 @@
 //! Implements the `manta delete redfish-endpoint` command.
+//!
+//! Removes a registered Redfish endpoint from HSM via
+//! `DELETE /api/v1/redfish-endpoints/{id}`. The endpoint has no
+//! `dry_run` flag; `--dry-run` is a client-side short-circuit that
+//! prints the URI/payload via
+//! [`crate::output::action_result::preview_request`]. Sibling of
+//! [`super::super::add::redfish_endpoint`] (creation) and
+//! [`super::super::apply::redfish_endpoint`] (update).
 
 use anyhow::Error;
 
@@ -7,6 +15,12 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// CLI adapter for `manta delete redfish-endpoint`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `delete_redfish_endpoint` call fails, or when the dry-run preview
+/// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

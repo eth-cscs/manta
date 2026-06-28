@@ -1,9 +1,18 @@
 //! Clap definitions for `manta config *` subcommands.
+//!
+//! Builds the `manta config show|set|unset` subtree, which reads and
+//! mutates the CLI's local configuration file (active site, default
+//! node group, log level, read-only guard, cached auth token).
+//! Execution dispatched in `crate::dispatch::config`. The
+//! configuration file format and loader live in
+//! `manta_shared::common::config`.
 
 use clap::{Command, arg};
 
 use super::output_flag;
 
+/// Top-level `manta config` verb. Builds the full
+/// `show` / `set <key>` / `unset <key>` subtree inline.
 pub fn subcommand_config() -> Command {
   let subcommand_config_set_hsm = Command::new("hsm")
     .about("Set the active node group")

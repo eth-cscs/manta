@@ -1,15 +1,31 @@
 //! Conversions between wire types (`manta-shared`) and backend types
 //! (`manta-backend-dispatcher`).
 //!
-//! Lives server-side because manta-shared has no knowledge of the
-//! backend crates. Orphan rules prevent us from writing
-//! `impl From<MantaError> for BackendError` (both types are foreign
-//! to this crate), so we expose a free function used at call sites
-//! via `.map_err(wire_conv::to_backend)?`.
+//! # Why this module exists
 //!
-//! A NodeDetails conversion isn't needed in-process: the type
-//! boundary is HTTP, and the JSON wire shape is identical between
-//! `csm_rs::node::types::NodeDetails` and
+//! Manta uses two error types (see `CLAUDE.md`'s two-tier error rule):
+//!
+//! - `manta_shared::common::error::MantaError` — produced by shared
+//!   helpers (config loader, audit, JWT, kafka).
+//! - `manta_backend_dispatcher::error::Error` — used everywhere in
+//!   the server's service / backend_dispatcher layers.
+//!
+//! Service-layer code calls into `manta-shared` helpers but needs to
+//! produce `BackendError` results. Rust's orphan rule blocks the
+//! obvious `impl From<MantaError> for BackendError` because both
+//! types are foreign to this crate, so this module exposes a free
+//! function instead: callers write
+//! `.map_err(wire_conv::to_backend)?`.
+//!
+//! Lives server-side rather than in `manta-shared` because
+//! `manta-shared` has no knowledge of the backend dispatcher crate.
+//!
+//! # Scope
+//!
+//! Only error-type mapping is needed at runtime. A `NodeDetails`
+//! converter isn't required: the only place the two `NodeDetails`
+//! types meet is the HTTP wire, and the JSON serialisation is
+//! identical between `csm_rs::node::types::NodeDetails` and
 //! `manta_shared::types::dto::NodeDetails`.
 
 use manta_backend_dispatcher::error::Error as BackendError;

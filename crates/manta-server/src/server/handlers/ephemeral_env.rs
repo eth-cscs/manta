@@ -1,4 +1,9 @@
-//! POST /api/v1/ephemeral-env.
+//! Ephemeral environment handler.
+//!
+//! `POST /api/v1/ephemeral-env` → [`create_ephemeral_env`] — wraps
+//! `service::ephemeral_env::exec`. Launches a short-lived CFS
+//! environment booted from a caller-supplied IMS image and returns
+//! the hostname the user can attach to via the console endpoint.
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;

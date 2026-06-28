@@ -8,7 +8,10 @@ use utoipa::ToSchema;
 /// Request body for `POST /api/v1/hardware-clusters/{target}/members`.
 ///
 /// Moves nodes matching `pattern` out of `parent_cluster` and into
-/// the path-level target cluster.
+/// the path-level target cluster. The reverse direction lives in
+/// [`DeleteHwComponentRequest`]; both operations are also expressible
+/// in unified form via [`ApplyHwConfigurationRequest`] with
+/// [`HwClusterMode::Pin`] vs [`HwClusterMode::Unpin`].
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddHwComponentRequest {
   /// Source HSM group that donates nodes matching `pattern`.
@@ -25,6 +28,10 @@ pub struct AddHwComponentRequest {
 }
 
 /// Request body for `DELETE /api/v1/hardware-clusters/{target}/members`.
+///
+/// Reverse of [`AddHwComponentRequest`]: moves nodes matching
+/// `pattern` out of the path-level target cluster and back to
+/// `parent_cluster`.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DeleteHwComponentRequest {
   /// Destination HSM group that receives nodes moved out of the

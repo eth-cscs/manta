@@ -1,4 +1,34 @@
-//! `manta apply` subcommands.
+//! `manta apply` subcommands — mutating operations that update an
+//! existing resource or drive a workflow against the cluster.
+//!
+//! Leaves and their endpoints:
+//!
+//! - [`sat_file`] — `manta apply sat-file`: renders a SAT template,
+//!   builds an in-memory plan, and POSTs one element at a time to
+//!   `/api/v1/sat-file/{configurations,images,session-templates}`. See
+//!   that module's docs for the plan/apply pattern.
+//! - [`template`] — `manta apply template`: `POST
+//!   /api/v1/sessiontemplates/{name}/session` to create a BOS session.
+//! - [`boot_node`] / [`boot_group`] — `manta apply boot {nodes,group}`:
+//!   `POST /api/v1/boot-config` against an explicit hosts expression
+//!   (the `group` leaf resolves group members first).
+//! - [`boot_parameters`] — `manta apply boot-parameters`: `PUT
+//!   /api/v1/boot-parameters` to update an existing record.
+//! - [`hardware_group`] — `manta apply hardware group`: `POST
+//!   /api/v1/hardware-clusters/{target}` to pin or unpin
+//!   pattern-selected components.
+//! - [`kernel_parameters`] — `manta apply kernel-parameters`: full
+//!   replace, rebooting affected nodes. See
+//!   [`super::add::kernel_parameters`] for the additive variant.
+//! - [`redfish_endpoint`] — `manta apply redfish-endpoint`: update an
+//!   existing record.
+//! - `ephemeral-environment` (handled inline below) — `POST
+//!   /api/v1/ephemeral-env` to provision an ephemeral environment for
+//!   an image; refuses to run if stdout is not a TTY.
+//!
+//! Most leaves accept `--dry-run`; whether that flows to the server or
+//! short-circuits client-side depends on the endpoint and is
+//! documented per-leaf.
 
 pub mod boot_group;
 pub mod boot_node;
@@ -19,6 +49,15 @@ use clap::ArgMatches;
 /// Dispatch `manta apply` subcommands (hardware, sat-file, boot,
 /// boot-parameters, redfish-endpoints, kernel-parameters,
 /// ephemeral-environment, template).
+///
+/// # Errors
+///
+/// Returns an error when the auth token cannot be obtained, when
+/// required clap arguments are missing or malformed (e.g. a non-UUID
+/// `--boot-image` or a non-numeric `--ansible-verbosity`), when no
+/// subcommand is provided or the name is unknown, when stdin is not a
+/// terminal for `ephemeral-environment`, or when the leaf handler
+/// returns an error.
 pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,

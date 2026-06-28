@@ -1,4 +1,9 @@
 //! Implements the `manta delete node` command.
+//!
+//! Removes an HSM node record via `DELETE /api/v1/nodes/{id}`. The
+//! endpoint has no `dry_run` flag; `--dry-run` is a client-side
+//! short-circuit that prints the URI/payload via
+//! [`crate::output::action_result::preview_request`].
 
 use anyhow::Error;
 
@@ -7,6 +12,12 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output::action_result;
 
 /// CLI adapter for `manta delete node`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `delete_node` call fails, or when the dry-run preview fails to
+/// serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

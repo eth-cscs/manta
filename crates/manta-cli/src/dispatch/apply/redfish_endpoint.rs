@@ -1,4 +1,11 @@
 //! Implements the `manta apply redfish-endpoint` command.
+//!
+//! Updates an existing Redfish endpoint via
+//! `PUT /api/v1/redfish-endpoints`. The endpoint has no server-side
+//! `dry_run` flag; `--dry-run` is a client-side short-circuit that
+//! prints the `UpdateRedfishEndpointParams` payload that *would* be
+//! sent. Sibling of [`super::super::add::redfish_endpoint`] (creation)
+//! and [`super::super::delete::redfish_endpoint`] (removal).
 
 use anyhow::Error;
 
@@ -31,6 +38,12 @@ pub struct ExecParams<'a> {
 }
 
 /// CLI adapter for `manta apply redfish-endpoint`.
+///
+/// # Errors
+///
+/// Returns an error when the HTTP client cannot be built, when the
+/// `update_redfish_endpoint` call fails, or when the dry-run preview
+/// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

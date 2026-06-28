@@ -1,6 +1,43 @@
 //! Node-expression resolution: parsing hostlist strings, NID-to-xname
 //! translation, HSM-group expansion, and the authorization helpers
 //! that validate the caller can act on the resolved set.
+//!
+//! The functions here form the "front of the funnel" for any command
+//! that takes `--xnames`, `--nids`, or `--hsm-group`. The two entry
+//! points are:
+//!
+//! - [`from_user_hosts_expression_to_xname_vec`] — `(infra, token,
+//!   expression, include_siblings)` → sorted, deduplicated xname vec.
+//!   Used by every command whose input is a free-form `--xnames`
+//!   string.
+//! - [`resolve_target_nodes`] — `(infra, token, hosts_expression,
+//!   group_name, settings_group_name)` → xname vec via a 3-way
+//!   priority cascade. Used by commands that accept *either* a hosts
+//!   expression or a group name (kernel-parameters, boot-parameters,
+//!   etc.).
+//!
+//! ## Expression grammar
+//!
+//! A hosts expression is whatever
+//! [`hostlist_parser::parse`] accepts, restricted to one of these
+//! shapes after expansion:
+//!
+//! - **NIDs** — `nidNNNNNN`, exactly 9 characters, e.g.
+//!   `nid000123`. Hostlist notation expands to a list (`nid[001-008]`
+//!   → eight NIDs). NIDs are translated to xnames by looking each
+//!   short NID up in
+//!   [`ComponentTrait::get_node_metadata_available`].
+//! - **xnames** — the full HPE Cray xname regex
+//!   (`x\d{4}c[0-7]s([0-9]|[1-5][0-9]|6[0-4])b[0-1]n[0-7]`).
+//!   Hostlist notation works here too (`x1000c[0-7]s0b0n0`).
+//!
+//! Group names are **not** accepted by the hosts-expression path —
+//! they go through `resolve_target_nodes`'s `group_name_arg_opt`
+//! branch instead.
+//!
+//! With `is_include_siblings = true`, every resolved xname is
+//! broadened to its blade prefix (first 10 chars: `xNNNNcSsBb`) and
+//! every node sharing that prefix is included.
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -51,6 +88,16 @@ fn get_short_nid(long_nid: &str) -> Result<usize, Error> {
 
 /// Resolve a NID hostlist expression to xnames by
 /// cross-referencing available node metadata.
+///
+/// `node_vec` is the already-expanded NID list (every entry must be
+/// the 9-character `nidNNNNNN` form). The lookup builds a single
+/// `HashSet<usize>` of short NIDs and scans `node_metadata_available_vec`
+/// once, so the cost is O(N + M) rather than O(N·M).
+///
+/// # Errors
+///
+/// [`Error::InvalidNodeId`] when an entry is the wrong length, lacks
+/// the `nid` prefix, or has non-numeric digits after the prefix.
 pub fn get_xname_from_nid_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
@@ -87,6 +134,15 @@ pub fn get_xname_from_nid_hostlist(
 
 /// Filter available node metadata to only those xnames
 /// present in `node_vec`.
+///
+/// Inputs not appearing in `node_metadata_available_vec` are silently
+/// dropped — the caller decides whether an empty result should be an
+/// error (see [`from_hosts_expression_to_xname_vec`], which does).
+///
+/// # Errors
+///
+/// Returns `Ok` even when the result is empty; this helper is
+/// infallible at the parse layer.
 pub fn get_xname_from_xname_hostlist(
   node_vec: &[String],
   node_metadata_available_vec: &[Component],
@@ -124,6 +180,16 @@ pub fn get_xname_from_xname_hostlist(
 /// backend held in [`InfraContext`]) followed by
 /// [`from_hosts_expression_to_xname_vec`] that recurs in many
 /// command files.
+///
+/// See the module docs for the supported expression grammar.
+///
+/// # Errors
+///
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_node_metadata_available`.
+/// - Any error produced by
+///   [`from_hosts_expression_to_xname_vec`]
+///   (`Error::BadRequest`, `Error::InvalidNodeId`).
 pub async fn from_user_hosts_expression_to_xname_vec(
   infra: &InfraContext<'_>,
   shasta_token: &str,
@@ -149,9 +215,26 @@ pub async fn from_user_hosts_expression_to_xname_vec(
 
 /// Translates a 'host expression' into a list of xnames.
 ///
-/// A host expression is a comma-separated list of NIDs or xnames, a regex,
-/// or a hostlist. When `is_include_siblings` is true, the resulting xnames
-/// are expanded to include all siblings (other nodes on the same BMC).
+/// The expression is first run through
+/// [`hostlist_parser::parse`]; the expanded vector is then required to
+/// be **uniformly** NIDs or **uniformly** xnames (mixing the two in a
+/// single expression is rejected). See the module docs for the
+/// supported grammar.
+///
+/// With `is_include_siblings = true`, every resolved xname is widened
+/// to its 10-character blade prefix and every node in
+/// `node_metadata_available_vec` sharing that prefix is included —
+/// this is how `--include-siblings` brings in all four nodes of a
+/// blade when only one was named.
+///
+/// # Errors
+///
+/// - [`Error::InvalidNodeId`] when `hostlist_parser::parse` cannot
+///   tokenize the input.
+/// - [`Error::BadRequest`] when the expanded list is neither all-NID
+///   nor all-xname, or when the final xname set is empty (either
+///   because the expression resolved to nothing, or because the
+///   parser rejected the input).
 pub fn from_hosts_expression_to_xname_vec(
   user_input: &str,
   is_include_siblings: bool,
@@ -241,6 +324,15 @@ pub fn from_hosts_expression_to_xname_vec(
 /// Groups whose intersection is empty are omitted, so the returned
 /// map contains only groups that actually contribute at least one
 /// matching node.
+///
+/// Used by [`crate::service::migrate::migrate_nodes`] to slice a
+/// single resolved xname list across multiple parent groups for the
+/// per-pair `migrate_group_members` calls.
+///
+/// # Errors
+///
+/// [`Error::NetError`] / [`Error::CsmError`] from
+/// `get_group_name_available` or `get_group_map_and_filter_by_group_vec`.
 pub async fn get_curated_group_from_xname_hostlist(
   infra: &InfraContext<'_>,
   auth_token: &str,
@@ -302,9 +394,10 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 /// Resolve target nodes from either a hosts expression, an
 /// explicit HSM group name, or the settings-level HSM group.
 ///
-/// Priority order:
-/// 1. `hosts_expression` — parsed and validated via
-///    [`from_user_hosts_expression_to_xname_vec`].
+/// Priority order (first non-`None` wins):
+/// 1. `hosts_expression_opt` — parsed and validated via
+///    [`from_user_hosts_expression_to_xname_vec`]. Returns a sorted,
+///    deduplicated `Vec<String>` of xnames.
 /// 2. `group_name_arg_opt` — the group name supplied by the CLI's
 ///    `--group` flag (also accepted as `--hsm-group`); validated for
 ///    access via
@@ -313,7 +406,15 @@ pub(crate) fn validate_xname_format(xname: &str) -> bool {
 /// 3. `settings_group_name_opt` — the group configured in
 ///    `cli.toml`'s `hsm_group`; same treatment as (2).
 ///
-/// Returns a sorted, deduplicated `Vec<String>` of xnames.
+/// # Errors
+///
+/// - [`Error::BadRequest`] when all three options are `None`, or when
+///   the caller lacks access to the chosen group.
+/// - Any error from
+///   [`from_user_hosts_expression_to_xname_vec`] in the
+///   hosts-expression branch.
+/// - [`Error::NetError`] / [`Error::CsmError`] from
+///   `get_member_vec_from_group_name_vec`.
 pub async fn resolve_target_nodes(
   infra: &InfraContext<'_>,
   token: &str,

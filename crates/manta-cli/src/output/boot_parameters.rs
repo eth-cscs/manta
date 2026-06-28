@@ -1,12 +1,23 @@
-//! JSON renderer for BSS boot parameter output. There is no table
-//! variant yet (the BSS payload is too nested for a useful table);
-//! callers always get pretty-printed JSON.
+//! Renderer for [`BootParameters`] (the BSS boot-parameter
+//! resource).
+//!
+//! Called by `manta get boot-parameters`. Supported output formats:
+//! **JSON only** — the nested BSS payload (kernel, initrd, params,
+//! cloud-init, ...) is too deep for a useful table, so the format
+//! is pinned. The `-o` flag still defaults to `"table"` for the
+//! subcommand, but the renderer ignores it and always emits JSON.
 
 use anyhow::Error;
 
 use crate::openapi_client::types::BootParameters;
 
 /// Pretty-print boot parameters as JSON.
+///
+/// # Errors
+///
+/// Returns `Err` if `serde_json::to_string_pretty` fails (only
+/// possible if the wire types stop being `Serialize`, which would
+/// be a compile-time break).
 pub fn print(boot_parameters: &[BootParameters]) -> Result<(), Error> {
   println!("{}", serde_json::to_string_pretty(boot_parameters)?);
   Ok(())

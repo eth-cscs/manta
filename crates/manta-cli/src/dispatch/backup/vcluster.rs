@@ -1,4 +1,10 @@
 //! Implements the `manta backup vcluster` command.
+//!
+//! Drives `POST /api/v1/migrate/backup` to dump a cluster's BOS / CFS
+//! / HSM / IMS state to a destination folder on the server. Runs an
+//! optional pre-hook before the POST and a post-hook after. The hook
+//! perms are validated up-front so a misconfigured hook never blocks
+//! mid-backup. Inverse of [`super::super::restore::vcluster`].
 
 use anyhow::{Context, Error, bail};
 
@@ -16,6 +22,13 @@ pub struct ExecParams<'a> {
 }
 
 /// Back up cluster configuration to a local bundle.
+///
+/// # Errors
+///
+/// Returns an error when `--bos` or `--destination` is missing, when a
+/// hook script fails its perms check, when a hook execution exits
+/// non-zero, when the HTTP client cannot be built, or when the
+/// `migrate_backup` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,

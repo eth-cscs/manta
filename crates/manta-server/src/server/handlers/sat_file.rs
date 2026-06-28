@@ -1,6 +1,7 @@
 //! SAT-file HTTP handlers.
 //!
-//! Per-element endpoints. The CLI's [`apply_sat_file`] plan builder
+//! Per-element endpoints. The CLI's `apply_sat_file` plan builder
+//! (in `manta-cli`, not reachable as an intra-doc link from here)
 //! produces a typed sequence of elements; its dispatcher walks the
 //! plan and POSTs each element to the section-specific endpoint here.
 //!
