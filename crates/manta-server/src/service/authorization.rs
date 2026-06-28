@@ -16,6 +16,11 @@
 //! "admin sees everything" expectation. Listing endpoints still
 //! validate so the response can't disclose more than the caller
 //! could have asked for directly.
+//!
+//! The short-circuit is centralised in the private [`admin_bypass`]
+//! helper so that a future change — e.g. adding audit logging for
+//! admin bypasses, or gating on JWKS verification before skipping
+//! group-scope checks — only needs to touch one place.
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
@@ -25,6 +30,14 @@ use crate::server::common::{app_context::InfraContext, jwt_ops};
 /// Keycloak role name that grants full admin access (bypasses HSM-group
 /// scoping checks).
 pub static PA_ADMIN: &str = "pa_admin";
+
+/// Returns `true` when the caller is admin (carries `PA_ADMIN` in
+/// `realm_access.roles`). Admin tokens short-circuit every group-scope
+/// check in this module — see the module-level security note and the
+/// `jwt_ops.rs` module doc for the no-local-signature-verification posture.
+fn admin_bypass(token: &str) -> bool {
+  jwt_ops::is_user_admin(token)
+}
 
 /// Validate that `group_name` is in the set this token can access.
 ///
@@ -37,7 +50,7 @@ pub async fn validate_user_group_access(
   token: &str,
   group_name: &str,
 ) -> Result<(), Error> {
-  if jwt_ops::is_user_admin(token) {
+  if admin_bypass(token) {
     return Ok(());
   }
 
@@ -60,7 +73,7 @@ pub async fn validate_user_group_vec_access(
   token: &str,
   group_vec: &[String],
 ) -> Result<(), Error> {
-  if jwt_ops::is_user_admin(token) {
+  if admin_bypass(token) {
     return Ok(());
   }
 
@@ -114,7 +127,7 @@ pub async fn validate_ansible_limit_membership_access(
   token: &str,
   ansible_limit: &str,
 ) -> Result<(), Error> {
-  if jwt_ops::is_user_admin(token) {
+  if admin_bypass(token) {
     return Ok(());
   }
 
@@ -137,7 +150,7 @@ pub async fn validate_user_group_members_access(
   token: &str,
   group_members_target_vec: &[String],
 ) -> Result<(), Error> {
-  if jwt_ops::is_user_admin(token) {
+  if admin_bypass(token) {
     return Ok(());
   }
 
@@ -165,7 +178,7 @@ pub async fn validate_group_members_access(
   group_members_target_vec: &[String],
   hsm_groups_user_has_access: &[String],
 ) -> Result<(), Error> {
-  if jwt_ops::is_user_admin(token) {
+  if admin_bypass(token) {
     return Ok(());
   }
 
