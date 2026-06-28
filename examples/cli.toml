@@ -19,6 +19,15 @@ manta_server_url = "https://manta-server.example.com:8443"
 # concern and lives in server.toml.
 # socks5_proxy = "socks5h://127.0.0.1:1080"
 
+# CLI-side read-only mode. When `true`, the CLI refuses backend-mutating
+# verbs (`add`, `apply`, `delete`, `migrate`, `power`, `run`, `restore`)
+# before any HTTP request leaves the process. `--dry-run` invocations
+# bypass the gate. Toggle from the command line with
+# `manta config set/unset read-only` instead of editing this file.
+# Independent of the server-side `manta-read-only` JWT role; see
+# GUIDE.md §13 for the comparison.
+# read_only = false
+
 # Timeout knobs. Values shown are the built-in defaults — delete a
 # line to fall back to the default, or change the value to override.
 #

@@ -32,6 +32,16 @@ shutdown_grace_period_secs      = 30       # drain window after SIGTERM / Ctrl+C
 # existing directory.
 # migrate_backup_root = "/var/lib/manta/migrate"
 
+# ---------------------------------------------------------------
+# Read-only access — NOT configured here
+# ---------------------------------------------------------------
+# `manta-server` refuses POST/PUT/PATCH/DELETE under /api/v1/* with
+# 403 Forbidden when the caller's JWT carries the realm role
+# `manta-read-only`. The role string is fixed and lives in your
+# identity provider (Keycloak) — there is no server.toml knob.
+# See MIGRATING.md §2.7 for the kcadm.sh provisioning recipe, or
+# GUIDE.md §13 for the operator-facing description.
+
 
 # ---------------------------------------------------------------
 # Sites
