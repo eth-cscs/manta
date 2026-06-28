@@ -1,12 +1,15 @@
 //! Console-attach service wrappers.
 //!
-//! [`InfraContext<'a>`] borrows the backend and cannot outlive the
-//! handler frame. WebSocket upgrade closures need owned (move-captured)
-//! state that is `'static`-compatible, so these wrappers accept a
-//! cloned [`StaticBackendDispatcher`] instead of `&InfraContext`.
+//! [`crate::server::common::app_context::InfraContext`] borrows the
+//! backend and cannot outlive the handler frame. WebSocket upgrade
+//! closures need owned (move-captured) state that is
+//! `'static`-compatible, so these wrappers accept a cloned
+//! [`crate::dispatcher::StaticBackendDispatcher`] instead of
+//! `&InfraContext`.
 //!
-//! Handlers call [`InfraContext::backend_clone`] before the borrowed
-//! `infra` is dropped and move the result into the WebSocket closure.
+//! Handlers call [`crate::server::common::app_context::InfraContext::backend_clone`]
+//! before the borrowed `infra` is dropped and move the result into the
+//! WebSocket closure.
 //! The closure then delegates here rather than traversing
 //! `state.sites.get(&site_name).backend` directly.
 //!

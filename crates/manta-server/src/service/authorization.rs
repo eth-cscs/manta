@@ -17,7 +17,7 @@
 //! validate so the response can't disclose more than the caller
 //! could have asked for directly.
 //!
-//! The short-circuit is centralised in the private [`admin_bypass`]
+//! The short-circuit is centralised in the private `admin_bypass`
 //! helper so that a future change — e.g. adding audit logging for
 //! admin bypasses, or gating on JWKS verification before skipping
 //! group-scope checks — only needs to touch one place.

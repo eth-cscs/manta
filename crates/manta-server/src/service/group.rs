@@ -83,7 +83,7 @@ pub async fn resolve_target_and_available_groups(
 ///
 /// Thin forwarder; used by handlers that need the raw accessible-group
 /// label list without the access-validation logic baked into
-/// [`validate_user_group_access`].  Service code that needs the full
+/// [`crate::service::authorization::validate_user_group_access`]. Service code that needs the full
 /// `Vec<Group>` (including members) should call `get_group_available`
 /// on the backend directly — this helper is intentionally label-only.
 pub async fn get_available_groups(
@@ -234,7 +234,7 @@ pub async fn create_group(
 ///
 /// - [`Error::InvalidNodeId`] / [`Error::BadRequest`] when
 ///   `host_expression` can't be parsed by
-///   [`from_hosts_expression_to_xname_vec`].
+///   [`crate::service::node_ops::from_hosts_expression_to_xname_vec`].
 /// - [`Error::BadRequest`] when the resolution produces no xnames
 ///   (a literal "nothing to do" guard).
 /// - [`Error::BadRequest`] when the caller lacks access to one of the
