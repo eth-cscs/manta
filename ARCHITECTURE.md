@@ -295,6 +295,8 @@ This means manta-server is a **single point of compromise** for everyone using i
 
 **Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
 
+**On the `manta-read-only` JWT-role gate.** The role-based gate at `server::auth_middleware::read_only_guard` is *not* a signature-verification boundary — `jwt_ops::has_role` decodes the JWT body without verifying its signature (consistent with `is_user_admin`'s posture, documented inline in `jwt_ops.rs`). A forged token claiming the absence of `manta-read-only` would, in principle, slip past this gate and reach the handler; the handler then makes a backend call with that token, and the backend rejects the forged signature at the first round-trip. The gate is a **defence-in-depth control** that limits damage when a token's signature *does* verify but the user's permissions should still be reduced — it shifts the read-only policy from being a per-workstation `cli.toml` setting to being a property of the token itself, which is auditable in the identity provider. Local signature verification (per-site JWKS cache, `kid`-based rotation) is the long-term direction tracked in the `jwt_ops.rs` security caveat; this gate inherits that verification automatically when it lands.
+
 ---
 
 ## Request timeouts

@@ -372,6 +372,47 @@ note that the two policies are independent: the JWT-role gate
 applies server-side regardless of which client (CLI, `curl`,
 script) sent the request.
 
+**Troubleshooting.** If the role doesn't appear to take effect:
+
+1. Decode the user's token and check `realm_access.roles`:
+
+   ```bash
+   # Get a token as the user, then decode its claims:
+   jq -R 'split(".") | .[1] | @base64d | fromjson' <<<"$TOKEN" \
+     | jq '.realm_access.roles'
+   ```
+
+   The array must contain the literal string `"manta-read-only"`. If
+   missing, re-check the `kcadm.sh add-roles` step — Keycloak silently
+   accepts unknown realm names or usernames in some configurations.
+
+2. Confirm the server is rejecting mutating endpoints:
+
+   ```bash
+   curl -k -X POST -H "Authorization: Bearer $TOKEN" \
+        -H "X-Manta-Site: $SITE" -H "Content-Type: application/json" \
+        -d '{"label":"diag"}' \
+        "https://$SERVER:8443/api/v1/groups"
+   # expected: 403 Forbidden, body contains "manta-read-only"
+   ```
+
+3. Confirm reads still work:
+
+   ```bash
+   curl -k -H "Authorization: Bearer $TOKEN" -H "X-Manta-Site: $SITE" \
+        "https://$SERVER:8443/api/v1/groups"
+   # expected: 200 OK
+   ```
+
+4. Server-side, the refusal appears in the log as:
+
+   ```
+   WARN  rejecting POST /api/v1/groups: caller carries `manta-read-only` role
+   ```
+
+   Grep `journalctl -u manta-server` (or your configured tracing sink)
+   for `manta-read-only` to confirm the gate fired.
+
 ### 2.8 Verify
 
 ```bash
