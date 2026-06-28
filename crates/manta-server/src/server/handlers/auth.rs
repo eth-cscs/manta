@@ -6,11 +6,18 @@
 //! `crate::server::auth_middleware`; this file just maps requests to
 //! [`crate::service::auth`].
 //!
-//! An unknown `X-Manta-Site` is reported explicitly as `404 Not
-//! Found` — consistent with every authenticated endpoint, which 404s
-//! on an unknown site during [`crate::server::handlers::RequestCtx`]
-//! extraction — so the CLI can fail fast instead of prompting for
-//! credentials that can never succeed.
+//! An unknown `X-Manta-Site` is reported explicitly as `404 Not Found`
+//! so the CLI can fail fast instead of prompting for credentials that
+//! can never succeed. This is a deliberate trade-off: because `/auth/*`
+//! takes no bearer token, it lets an *unauthenticated* caller tell a
+//! configured site (401) from an unknown one (404) — reversing this
+//! module's former "reveal nothing about site config" stance. It is
+//! considered acceptable because site names are not secrets and the
+//! per-IP rate limiter in [`crate::server::auth_middleware`] bounds
+//! enumeration. (The authenticated endpoints already expose the same
+//! distinction once *any* syntactically-valid bearer header is present,
+//! since [`crate::server::handlers::RequestCtx`] does the site lookup
+//! before the token is validated against the backend.)
 //!
 //! Every *other* auth failure surfaces a generic `401 invalid
 //! credentials` so the response never reveals whether a username
@@ -50,8 +57,9 @@ fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
 /// not configured on this server. Unlike credential failures (which
 /// stay a generic 401), an unknown site is reported explicitly so the
 /// CLI can fail fast instead of prompting for credentials that can
-/// never succeed. Matches the 404 every authenticated endpoint already
-/// returns for an unknown site.
+/// never succeed. This intentionally reveals site existence to
+/// unauthenticated callers — see the module-level docs for the
+/// trade-off.
 fn site_not_found(site: &str) -> (StatusCode, Json<ErrorResponse>) {
   (
     StatusCode::NOT_FOUND,

@@ -688,6 +688,11 @@ async fn auth_validate_unknown_site_returns_404() {
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+  let body = body_string(resp.into_body()).await;
+  assert!(
+    body.contains("nonexistent-site"),
+    "404 body should name the missing site, got: {body}"
+  );
 }
 
 #[tokio::test]
