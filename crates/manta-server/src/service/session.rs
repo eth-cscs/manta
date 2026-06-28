@@ -352,6 +352,25 @@ pub fn require_result_image(
   Ok(())
 }
 
+/// Tail the Ansible-container log for `session_name` via a buffered reader.
+///
+/// Thin forwarder from the handler into the backend — handlers must not
+/// call `infra.backend.get_session_logs_stream` directly per the
+/// CLAUDE.md boundary rule. Session-access validation must happen
+/// BEFORE this call via [`validate_session_access`].
+pub async fn stream_logs(
+  infra: &InfraContext<'_>,
+  token: &str,
+  session_name: &str,
+  timestamps: bool,
+  k8s: &manta_backend_dispatcher::types::K8sDetails,
+) -> Result<std::pin::Pin<Box<dyn futures::AsyncBufRead + Send>>, Error> {
+  infra
+    .backend
+    .get_session_logs_stream(token, infra.site_name, session_name, timestamps, k8s)
+    .await
+}
+
 /// Validate that a CFS session is suitable for attaching a console.
 ///
 /// Returns `NotFound` if the session doesn't exist, `BadRequest` if the

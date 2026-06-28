@@ -7,9 +7,7 @@
 //! - `POST   /api/v1/groups/{name}/members`   → [`add_nodes_to_group`]
 //! - `DELETE /api/v1/groups/{name}/members`   → [`delete_group_members`]
 //!
-//! All wrap `crate::service::group::*`. `get_available_groups`
-//! calls the backend `GroupTrait::get_group_name_available` directly
-//! — it's a tiny passthrough that backs CLI authorization helpers.
+//! All wrap `crate::service::group::*`.
 
 use axum::{
   Json,
@@ -17,7 +15,6 @@ use axum::{
   http::StatusCode,
   response::IntoResponse,
 };
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -29,9 +26,6 @@ use crate::service;
 pub use manta_shared::types::api::queries::{DeleteGroupQuery, GroupQuery};
 
 /// GET /groups/available — list HSM group names the token can access.
-///
-/// Backs CLI authorization helpers that used to call
-/// `backend.get_group_name_available` directly.
 #[utoipa::path(get, path = "/groups/available", tag = "groups",
   params(SiteHeader),
   security(("bearerAuth" = [])),
@@ -46,9 +40,7 @@ pub async fn get_available_groups(
   ctx: RequestCtx,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
-  let names = infra
-    .backend
-    .get_group_name_available(&ctx.token)
+  let names = service::group::get_available_groups(&infra, &ctx.token)
     .await
     .map_err(to_handler_error)?;
   Ok(Json(names))
@@ -149,13 +141,7 @@ pub async fn create_group(
   // existing ownership to validate against, so the only sensible
   // policy without a separate provisioning system is to require the
   // pa_admin role.
-  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
-    return Err(to_handler_error(
-      manta_backend_dispatcher::error::Error::BadRequest(
-        "group creation requires admin privileges".to_string(),
-      ),
-    ));
-  }
+  service::authorization::require_admin(&ctx.token).map_err(to_handler_error)?;
 
   service::group::create_group(&infra, &ctx.token, group)
     .await

@@ -1,7 +1,8 @@
 //! Node migration between HSM groups.
 //!
-//! vCluster backup/restore are 1:1 pass-throughs to the backend
-//! dispatcher; handlers call those directly. Only `migrate_nodes`
+//! `backup` and `restore` are thin service wrappers so handlers can
+//! comply with the CLAUDE.md boundary rule (handlers → service →
+//! backend, never handlers → backend directly). Only `migrate_nodes`
 //! carries real orchestration (hosts-expression resolution,
 //! HSM-group curation, per-pair member migration).
 //!
@@ -16,6 +17,8 @@ use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
+use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
+use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
@@ -151,4 +154,54 @@ pub async fn migrate_nodes(
   }
 
   Ok((xname_to_move_vec, results))
+}
+
+/// Export BOS session templates (and related artifacts) to backup files.
+///
+/// Thin forwarder; authorization (admin-only) and filesystem path
+/// confinement are enforced by the caller before this function is
+/// invoked.
+pub async fn backup(
+  infra: &InfraContext<'_>,
+  token: &str,
+  bos: Option<&str>,
+  destination: Option<&str>,
+) -> Result<(), Error> {
+  infra.backend.migrate_backup(token, bos, destination).await
+}
+
+/// Restore BOS session templates and related artifacts from backup files.
+///
+/// Thin forwarder; authorization (admin-only) and filesystem path
+/// confinement are enforced by the caller before this function is
+/// invoked.
+#[allow(clippy::too_many_arguments)]
+pub async fn restore(
+  infra: &InfraContext<'_>,
+  token: &str,
+  bos_file: Option<&str>,
+  cfs_file: Option<&str>,
+  hsm_file: Option<&str>,
+  ims_file: Option<&str>,
+  image_dir: Option<&str>,
+  overwrite_group: bool,
+  overwrite_configuration: bool,
+  overwrite_image: bool,
+  overwrite_template: bool,
+) -> Result<(), Error> {
+  infra
+    .backend
+    .migrate_restore(
+      token,
+      bos_file,
+      cfs_file,
+      hsm_file,
+      ims_file,
+      image_dir,
+      overwrite_group,
+      overwrite_configuration,
+      overwrite_image,
+      overwrite_template,
+    )
+    .await
 }

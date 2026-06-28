@@ -17,8 +17,6 @@ use std::path::{Path, PathBuf};
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::error::Error as BackendError;
-use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
-use manta_backend_dispatcher::interfaces::migrate_restore::MigrateRestoreTrait;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
@@ -196,11 +194,7 @@ pub async fn migrate_backup(
   // chosen by the caller. Restrict to admin to prevent
   // non-privileged users from triggering arbitrary writes via the
   // server process's UID.
-  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
-    return Err(to_handler_error(BackendError::BadRequest(
-      "migrate backup requires admin privileges".to_string(),
-    )));
-  }
+  service::authorization::require_admin(&ctx.token).map_err(to_handler_error)?;
 
   // Confine the destination to `[server] migrate_backup_root`. Even
   // admin tokens can't write outside that directory.
@@ -209,9 +203,7 @@ pub async fn migrate_backup(
     .map_err(to_handler_error)?;
   let destination = confined.into_iter().next().flatten();
 
-  infra
-    .backend
-    .migrate_backup(&ctx.token, body.bos.as_deref(), destination.as_deref())
+  service::migrate::backup(&infra, &ctx.token, body.bos.as_deref(), destination.as_deref())
     .await
     .map_err(to_handler_error)?;
 
@@ -244,11 +236,7 @@ pub async fn migrate_restore(
   // Authorization: restore reads from server-side filesystem paths
   // chosen by the caller and rewrites CFS/HSM/IMS state — high
   // blast radius. Restrict to admin.
-  if !crate::server::common::jwt_ops::is_user_admin(&ctx.token) {
-    return Err(to_handler_error(BackendError::BadRequest(
-      "migrate restore requires admin privileges".to_string(),
-    )));
-  }
+  service::authorization::require_admin(&ctx.token).map_err(to_handler_error)?;
 
   // Confine every supplied file path to `[server] migrate_backup_root`.
   // The five paths are independent (some restores omit subsets), so
@@ -273,22 +261,21 @@ pub async fn migrate_restore(
   let ims_file = iter.next().flatten();
   let image_dir = iter.next().flatten();
 
-  infra
-    .backend
-    .migrate_restore(
-      &ctx.token,
-      bos_file.as_deref(),
-      cfs_file.as_deref(),
-      hsm_file.as_deref(),
-      ims_file.as_deref(),
-      image_dir.as_deref(),
-      body.overwrite,
-      body.overwrite,
-      body.overwrite,
-      body.overwrite,
-    )
-    .await
-    .map_err(to_handler_error)?;
+  service::migrate::restore(
+    &infra,
+    &ctx.token,
+    bos_file.as_deref(),
+    cfs_file.as_deref(),
+    hsm_file.as_deref(),
+    ims_file.as_deref(),
+    image_dir.as_deref(),
+    body.overwrite,
+    body.overwrite,
+    body.overwrite,
+    body.overwrite,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json(serde_json::json!({ "completed": true })))
 }

@@ -38,19 +38,11 @@
 //! wire is user-visible. The wire-format-lock tests at the bottom of
 //! this module catch that drift; mirror them when you add a new field.
 //!
-//! Each handler calls the matching `InfraContext` method on
-//! `&infra` directly — the per-trait service shim was removed once the
-//! method bodies stopped doing anything beyond plumbing.
+//! Each handler calls the matching function in
+//! `crate::service::sat_file`, which enforces the CLAUDE.md boundary
+//! rule (handlers → service → backend).
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
-use manta_backend_dispatcher::interfaces::apply_sat_file::{
-  ApplyConfigurationParams as BackendApplyConfigurationParams,
-  ApplyImageCreateSessionParams as BackendApplyImageCreateSessionParams,
-  ApplyImageStampParams as BackendApplyImageStampParams,
-  ApplySessionTemplateParams as BackendApplySessionTemplateParams, SatTrait,
-  ValidateSatFileParams as BackendValidateSatFileParams,
-};
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::bos::session::{
   BosSession, Operation as BosOperation,
 };
@@ -115,21 +107,18 @@ pub async fn post_sat_configuration(
   // relies on the backend's RBAC layer (CSM/OCHAMI), matching the
   // convention used for other non-group-scoped handlers (see
   // ARCHITECTURE.md "Security model").
-  let cfg = infra
-    .backend
-    .apply_configuration(BackendApplyConfigurationParams {
-      shasta_token: &ctx.token,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      gitea_base_url: infra.gitea_base_url,
-      gitea_token: &gitea_token,
-      configuration: body.configuration,
-      dry_run: body.dry_run,
-      overwrite: body.overwrite,
-    })
-    .await
-    .map_err(to_handler_error)?;
+  let cfg = crate::service::sat_file::apply_configuration(
+    &infra,
+    &ctx.token,
+    vault_base_url,
+    k8s_api_url,
+    &gitea_token,
+    body.configuration,
+    body.dry_run,
+    body.overwrite,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json(cfg))
 }
@@ -176,21 +165,19 @@ pub async fn post_sat_image_cfs_session(
     .await
     .map_err(to_handler_error)?;
 
-  let session = infra
-    .backend
-    .apply_sat_image_create_session(BackendApplyImageCreateSessionParams {
-      shasta_token: &ctx.token,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      image: body.image,
-      ref_lookup: body.ref_lookup,
-      ansible_verbosity: body.ansible_verbosity,
-      ansible_passthrough: body.ansible_passthrough.as_deref(),
-      dry_run: body.dry_run,
-    })
-    .await
-    .map_err(to_handler_error)?;
+  let session = crate::service::sat_file::create_image_cfs_session(
+    &infra,
+    &ctx.token,
+    vault_base_url,
+    k8s_api_url,
+    body.image,
+    body.ref_lookup,
+    body.ansible_verbosity,
+    body.ansible_passthrough.as_deref(),
+    body.dry_run,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok((StatusCode::CREATED, Json::<CfsSessionGetResponse>(session)))
 }
@@ -242,14 +229,13 @@ pub async fn post_sat_image_stamp(
   crate::service::session::require_result_image(&session)
     .map_err(to_handler_error)?;
 
-  let image = infra
-    .backend
-    .apply_sat_image_stamp_from_session(BackendApplyImageStampParams {
-      shasta_token: &ctx.token,
-      cfs_session_name: &body.cfs_session_name,
-    })
-    .await
-    .map_err(to_handler_error)?;
+  let image = crate::service::sat_file::stamp_image_from_session(
+    &infra,
+    &ctx.token,
+    &body.cfs_session_name,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(Json::<Image>(image))
 }
@@ -290,28 +276,22 @@ pub async fn post_sat_session_template(
       &body.session_template,
     );
 
-  validate_user_group_vec_access(&infra, &ctx.token, &target_groups)
-    .await
-    .map_err(to_handler_error)?;
-
-  let hsm_group_available_vec = infra
-    .backend
-    .get_group_name_available(&ctx.token)
-    .await
-    .map_err(to_handler_error)?;
-
-  let (template, session) = infra
-    .backend
-    .apply_session_template(BackendApplySessionTemplateParams {
-      shasta_token: &ctx.token,
-      session_template: body.session_template,
-      ref_lookup: body.ref_lookup,
-      hsm_group_available_vec: &hsm_group_available_vec,
-      reboot: body.create_bos_session,
-      dry_run: body.dry_run,
-    })
-    .await
-    .map_err(to_handler_error)?;
+  // Group access validation and the backend call are consolidated in
+  // the service function: it fetches the available-group list once,
+  // validates inline (non-admin callers), and forwards the list to the
+  // backend — eliminating the duplicate get_group_name_available fetch
+  // that previously appeared here.
+  let (template, session) = crate::service::sat_file::apply_session_template(
+    &infra,
+    &ctx.token,
+    body.session_template,
+    body.ref_lookup,
+    &target_groups,
+    body.create_bos_session,
+    body.dry_run,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   // Dry-run + create_bos_session: the backend has returned a mock
   // template but no session (it never actually created one). Synthesise
@@ -418,30 +398,21 @@ pub async fn post_sat_validate(
   let target_groups =
     crate::service::sat_groups::extract_all_target_groups(&body.sat_file);
 
-  validate_user_group_vec_access(&infra, &ctx.token, &target_groups)
-    .await
-    .map_err(to_handler_error)?;
-
-  // Caller's HSM-group scope — same source used by
-  // post_sat_session_template.
-  let hsm_group_available_vec = infra
-    .backend
-    .get_group_name_available(&ctx.token)
-    .await
-    .map_err(to_handler_error)?;
-
-  infra
-    .backend
-    .validate_sat_file(BackendValidateSatFileParams {
-      shasta_token: &ctx.token,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      sat_file: body.sat_file,
-      hsm_group_available_vec: &hsm_group_available_vec,
-    })
-    .await
-    .map_err(to_handler_error)?;
+  // Group access validation and the backend call are consolidated in
+  // the service function: it fetches the available-group list once,
+  // validates inline (non-admin callers), and forwards the list to the
+  // backend — eliminating the duplicate get_group_name_available fetch
+  // that previously appeared here.
+  crate::service::sat_file::validate_sat_file(
+    &infra,
+    &ctx.token,
+    body.sat_file,
+    &target_groups,
+    vault_base_url,
+    k8s_api_url,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok(StatusCode::NO_CONTENT)
 }

@@ -79,6 +79,20 @@ pub async fn resolve_target_and_available_groups(
   Ok((group_available_vec, target_group_vec))
 }
 
+/// List the group names accessible to the caller.
+///
+/// Thin forwarder; used by handlers that need the raw accessible-group
+/// label list without the access-validation logic baked into
+/// [`validate_user_group_access`].  Service code that needs the full
+/// `Vec<Group>` (including members) should call `get_group_available`
+/// on the backend directly — this helper is intentionally label-only.
+pub async fn get_available_groups(
+  infra: &InfraContext<'_>,
+  token: &str,
+) -> Result<Vec<String>, Error> {
+  infra.backend.get_group_name_available(token).await
+}
+
 /// List HSM groups visible to the caller.
 ///
 /// When `params.group_name` is set the lookup is scoped to that

@@ -39,6 +39,22 @@ fn admin_bypass(token: &str) -> bool {
   jwt_ops::is_user_admin(token)
 }
 
+/// Return `Ok(())` when the caller carries the admin role (`pa_admin`);
+/// `Err(Error::BadRequest(...))` otherwise.
+///
+/// Use at handler boundaries that restrict an operation to admin users.
+/// Centralises the check so a future policy change (e.g. a different
+/// admin-role name, or audit-logging on admin access) touches one place.
+pub fn require_admin(token: &str) -> Result<(), Error> {
+  if admin_bypass(token) {
+    Ok(())
+  } else {
+    Err(Error::BadRequest(
+      "this operation requires admin privileges".to_string(),
+    ))
+  }
+}
+
 /// Validate that `group_name` is in the set this token can access.
 ///
 /// Used by handlers that perform privileged HSM-group operations and

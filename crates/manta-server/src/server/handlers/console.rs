@@ -22,7 +22,7 @@ use axum::{
 };
 use futures::StreamExt;
 use manta_backend_dispatcher::{
-  interfaces::console::{ConsoleAttachment, ConsoleTrait, TermSize},
+  interfaces::console::{ConsoleAttachment, TermSize},
   types::{K8sAuth, K8sDetails},
 };
 use tokio::io::AsyncWriteExt;
@@ -58,9 +58,12 @@ pub async fn console_node_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  // Read what we need from the borrowed infra and authorize the xname;
-  // the borrow ends with the block.
-  let (k8s_api_url, vault_base_url, timeout) = {
+  // Read what we need from the borrowed infra, authorize the xname, and
+  // clone the backend before the borrow ends.  The clone is cheap
+  // (StaticBackendDispatcher is Arc-shaped); it is moved into the
+  // WebSocket closure so the closure does not need to re-traverse
+  // `state.sites`.
+  let (k8s_api_url, vault_base_url, timeout, backend) = {
     let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
@@ -74,7 +77,8 @@ pub async fn console_node_ws(
     )
     .await
     .map_err(to_handler_error)?;
-    (k, v, ctx.state.console_inactivity_timeout)
+    let backend = infra.backend_clone();
+    (k, v, ctx.state.console_inactivity_timeout, backend)
   };
 
   let k8s = K8sDetails {
@@ -84,42 +88,39 @@ pub async fn console_node_ws(
     },
   };
 
-  // Move owned state into the spawned WebSocket task. Cannot use
-  // `ctx.infra()` inside the closure because it borrows from ctx.
+  // Move owned state into the spawned WebSocket task. `state` is not
+  // needed inside the closure — the cloned backend is used instead.
   let RequestCtx {
-    state,
+    state: _,
     token,
     site_name,
   } = ctx;
 
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
-    if let Some(site) = state.sites.get(&site_name) {
-      match site
-        .backend
-        .attach_to_node_console(
-          &token,
-          &site_name,
-          &xname,
-          TermSize {
-            width: q.cols,
-            height: q.rows,
-          },
-          &k8s,
-        )
-        .await
-      {
-        Ok(ConsoleAttachment {
-          stdin,
-          stdout,
-          resize,
-        }) => {
-          run_console_bridge(socket, stdin, stdout, resize, timeout).await;
-          tracing::info!("WebSocket console closed for node {xname}");
-        }
-        Err(e) => {
-          tracing::error!("Failed to attach to node console {xname}: {e:#}");
-        }
+    match service::console::attach_to_node_console(
+      &backend,
+      &token,
+      &site_name,
+      &xname,
+      TermSize {
+        width: q.cols,
+        height: q.rows,
+      },
+      &k8s,
+    )
+    .await
+    {
+      Ok(ConsoleAttachment {
+        stdin,
+        stdout,
+        resize,
+      }) => {
+        run_console_bridge(socket, stdin, stdout, resize, timeout).await;
+        tracing::info!("WebSocket console closed for node {xname}");
+      }
+      Err(e) => {
+        tracing::error!("Failed to attach to node console {xname}: {e:#}");
       }
     }
   }))
@@ -147,9 +148,10 @@ pub async fn console_session_ws(
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  // Validate vault/k8s presence, then authorize the caller against
-  // the session's target groups, then check session liveness.
-  let (k8s_api_url, vault_base_url, timeout) = {
+  // Validate vault/k8s presence, authorize the caller against the
+  // session's target groups, check session liveness, then clone the
+  // backend before the infra borrow ends.
+  let (k8s_api_url, vault_base_url, timeout, backend) = {
     let infra = ctx.infra();
     let k = require_k8s_url(infra.k8s_api_url)?.to_string();
     let v = require_vault(infra.vault_base_url)?.to_string();
@@ -163,7 +165,8 @@ pub async fn console_session_ws(
     service::session::validate_console_session(&infra, &ctx.token, &name)
       .await
       .map_err(to_handler_error)?;
-    (k, v, ctx.state.console_inactivity_timeout)
+    let backend = infra.backend_clone();
+    (k, v, ctx.state.console_inactivity_timeout, backend)
   };
 
   let k8s = K8sDetails {
@@ -173,41 +176,39 @@ pub async fn console_session_ws(
     },
   };
 
-  // Move owned state into the spawned WebSocket task.
+  // Move owned state into the spawned WebSocket task. `state` is not
+  // needed inside the closure — the cloned backend is used instead.
   let RequestCtx {
-    state,
+    state: _,
     token,
     site_name,
   } = ctx;
 
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
-    if let Some(site) = state.sites.get(&site_name) {
-      match site
-        .backend
-        .attach_to_session_console(
-          &token,
-          &site_name,
-          &name,
-          TermSize {
-            width: q.cols,
-            height: q.rows,
-          },
-          &k8s,
-        )
-        .await
-      {
-        Ok(ConsoleAttachment {
-          stdin,
-          stdout,
-          resize,
-        }) => {
-          run_console_bridge(socket, stdin, stdout, resize, timeout).await;
-          tracing::info!("WebSocket console closed for session {name}");
-        }
-        Err(e) => {
-          tracing::error!("Failed to attach to session console {name}: {e:#}");
-        }
+    match service::console::attach_to_session_console(
+      &backend,
+      &token,
+      &site_name,
+      &name,
+      TermSize {
+        width: q.cols,
+        height: q.rows,
+      },
+      &k8s,
+    )
+    .await
+    {
+      Ok(ConsoleAttachment {
+        stdin,
+        stdout,
+        resize,
+      }) => {
+        run_console_bridge(socket, stdin, stdout, resize, timeout).await;
+        tracing::info!("WebSocket console closed for session {name}");
+      }
+      Err(e) => {
+        tracing::error!("Failed to attach to session console {name}: {e:#}");
       }
     }
   }))
