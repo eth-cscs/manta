@@ -34,6 +34,13 @@
 //!   authenticate against a site that doesn't exist, so the cascade
 //!   stops rather than prompting for credentials.
 //!
+//!   Note: in the bare interactive case (no env var **and** no cache
+//!   file) the first server contact *is* the credential exchange, so
+//!   one prompt appears before the `404` can be seen; the short-circuit
+//!   then suppresses the remaining retries. Zero-prompt failure happens
+//!   only when an env-var or cached token gives the cascade something to
+//!   validate against the server *before* prompting.
+//!
 //! Non-interactive callers (`stdin` is not a TTY) also stop after the
 //! cached-token attempt rather than blocking on a prompt that can
 //! never be answered.
