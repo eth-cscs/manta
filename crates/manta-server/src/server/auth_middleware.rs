@@ -141,5 +141,67 @@ pub async fn strip_body_for_logs(request: Request, next: Next) -> Response {
   next.run(request).await
 }
 
+/// Reject mutating requests when the caller's bearer token carries
+/// the [`READ_ONLY_ROLE`] role. Read methods (`GET`, `HEAD`,
+/// `OPTIONS`, …) pass through unconditionally.
+///
+/// Missing or malformed tokens also pass through — the handler's
+/// own [`super::handlers::BearerToken`] extractor produces the 401
+/// it already does. This middleware is **not** the authentication
+/// boundary.
+///
+/// Layered in [`super::routes::build_router`] only on the
+/// `/api/v1/*` resource router, not on `/api/v1/auth/*` (login
+/// flow) and not on `/docs` (Swagger UI).
+///
+/// [`READ_ONLY_ROLE`]: super::common::jwt_ops::READ_ONLY_ROLE
+pub async fn read_only_guard(request: Request, next: Next) -> Response {
+  use axum::http::{Method, header};
+
+  let m = request.method();
+  if !matches!(
+    m,
+    &Method::POST | &Method::PUT | &Method::PATCH | &Method::DELETE
+  ) {
+    return next.run(request).await;
+  }
+
+  let token_opt = request
+    .headers()
+    .get(header::AUTHORIZATION)
+    .and_then(|v| v.to_str().ok())
+    .and_then(|v| {
+      v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer "))
+    });
+
+  if let Some(token) = token_opt
+    && super::common::jwt_ops::has_role(
+      token,
+      super::common::jwt_ops::READ_ONLY_ROLE,
+    )
+  {
+    let method = m.clone();
+    let path = request.uri().path().to_string();
+    tracing::warn!(
+      "rejecting {} {}: caller carries `{}` role",
+      method,
+      path,
+      super::common::jwt_ops::READ_ONLY_ROLE,
+    );
+    return (
+      StatusCode::FORBIDDEN,
+      Json(ErrorResponse {
+        error: format!(
+          "Token carries the `{}` role; refusing mutating endpoint.",
+          super::common::jwt_ops::READ_ONLY_ROLE
+        ),
+      }),
+    )
+      .into_response();
+  }
+
+  next.run(request).await
+}
+
 #[cfg(test)]
 mod tests;

@@ -876,3 +876,183 @@ fn to_handler_error_uncategorized_variants_become_500() {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// JWT-role read-only gate
+//
+// A bearer token whose `realm_access.roles` claim carries
+// "manta-read-only" is refused (403) on every mutating method
+// under /api/v1/*. GETs pass through; tokens without the role pass
+// through; malformed/missing tokens pass through (the handler's
+// BearerToken extractor produces the 401 as before).
+// ---------------------------------------------------------------------------
+
+/// Build a JWT-shaped token whose payload is the given JSON value.
+/// Same shape as the existing fixture in `jwt_ops`'s test module —
+/// duplicated here because integration tests don't see `#[cfg(test)]`
+/// items in the crate under test.
+fn make_jwt(payload: &serde_json::Value) -> String {
+  use base64::prelude::*;
+  let header =
+    BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+  let body = BASE64_URL_SAFE_NO_PAD.encode(payload.to_string());
+  format!("{header}.{body}.sig")
+}
+
+/// Token whose `realm_access.roles` carries `"manta-read-only"`.
+fn read_only_token() -> String {
+  make_jwt(&serde_json::json!({
+    "realm_access": { "roles": ["manta-read-only"] }
+  }))
+}
+
+/// Token whose `realm_access.roles` is empty — no read-only role.
+fn plain_token() -> String {
+  make_jwt(&serde_json::json!({
+    "realm_access": { "roles": [] }
+  }))
+}
+
+#[allow(dead_code)]
+fn auth(req: axum::http::request::Builder, token: &str) -> Request<Body> {
+  req
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::empty())
+    .unwrap()
+}
+
+#[tokio::test]
+async fn post_with_read_only_token_is_refused_403() {
+  let token = read_only_token();
+  let req = Request::builder()
+    .method(Method::POST)
+    .uri("/api/v1/groups")
+    .header(header::CONTENT_TYPE, "application/json")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::from(r#"{"label":"x"}"#))
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+  let body = body_string(resp.into_body()).await;
+  assert!(
+    body.contains("manta-read-only"),
+    "403 body should name the role: {body}"
+  );
+}
+
+#[tokio::test]
+async fn get_with_read_only_token_passes_through() {
+  // The gate only refuses mutating methods. GET on a read endpoint
+  // with the role-bearing token reaches the handler (which then
+  // 400s for a missing required xname query — that's *not* 403).
+  let token = read_only_token();
+  let req = Request::builder()
+    .method(Method::GET)
+    .uri("/api/v1/nodes")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::empty())
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_ne!(
+    resp.status(),
+    StatusCode::FORBIDDEN,
+    "GET should not be refused by the read-only gate"
+  );
+}
+
+#[tokio::test]
+async fn post_with_plain_token_passes_through() {
+  // Token without the role behaves exactly as today: hits the
+  // handler chain, may 422 on body validation, but is NOT 403.
+  let token = plain_token();
+  let req = Request::builder()
+    .method(Method::POST)
+    .uri("/api/v1/groups")
+    .header(header::CONTENT_TYPE, "application/json")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::from(r#"{"label":"x"}"#))
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_ne!(
+    resp.status(),
+    StatusCode::FORBIDDEN,
+    "plain token without manta-read-only role must not be refused"
+  );
+}
+
+#[tokio::test]
+async fn post_without_auth_header_is_not_403() {
+  // Missing Authorization header → gate passes through → handler's
+  // BearerToken extractor returns 401. The gate is NOT the auth
+  // boundary; this test pins that.
+  let req = Request::builder()
+    .method(Method::POST)
+    .uri("/api/v1/groups")
+    .header(header::CONTENT_TYPE, "application/json")
+    .body(Body::from(r#"{"label":"x"}"#))
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_eq!(
+    resp.status(),
+    StatusCode::UNAUTHORIZED,
+    "no Authorization header should be 401 (gate's pass-through path)"
+  );
+}
+
+#[tokio::test]
+async fn delete_with_read_only_token_is_refused_403() {
+  // Pin DELETE in addition to POST so the method-set isn't silently
+  // narrowed to just POST in a future refactor.
+  let token = read_only_token();
+  let req = Request::builder()
+    .method(Method::DELETE)
+    .uri("/api/v1/nodes/x3000c0s1b0n0")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::empty())
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn put_with_read_only_token_is_refused_403() {
+  // Only two PUT endpoints exist; pinning that PUT is in the gate.
+  let token = read_only_token();
+  let req = Request::builder()
+    .method(Method::PUT)
+    .uri("/api/v1/boot-parameters")
+    .header(header::CONTENT_TYPE, "application/json")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::from(r#"{}"#))
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn auth_token_endpoint_is_not_affected_by_gate() {
+  // /api/v1/auth/token is on a separate sub-router with no gate.
+  // Even a POST with the read-only role-bearing token should reach
+  // the handler (which may then 422 / 401 — that's *not* 403).
+  // This pins the gate's scoping to /api/v1/* and not /api/v1/auth/*.
+  let token = read_only_token();
+  let req = Request::builder()
+    .method(Method::POST)
+    .uri("/api/v1/auth/token")
+    .header(header::CONTENT_TYPE, "application/json")
+    .header(header::AUTHORIZATION, format!("Bearer {token}"))
+    .body(Body::from(r#"{}"#))
+    .unwrap();
+  let resp = router().oneshot(req).await.unwrap();
+  assert_ne!(
+    resp.status(),
+    StatusCode::FORBIDDEN,
+    "auth sub-router must not be gated by read_only_guard"
+  );
+}

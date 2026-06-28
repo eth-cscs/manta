@@ -20,7 +20,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use super::ServerState;
 use super::api_doc::ApiDoc;
 use super::auth_middleware::{
-  AuthRateLimiter, rate_limit, strip_body_for_logs,
+  AuthRateLimiter, rate_limit, read_only_guard, strip_body_for_logs,
 };
 use super::handlers;
 
@@ -32,6 +32,12 @@ use super::handlers;
 ///   `TimeoutLayer`. `POST /power` now returns immediately with a
 ///   PCS transition id (the polling loop runs CLI-side), so it fits
 ///   well under the default timeout — no per-route override is needed.
+///   A second outer layer ([`read_only_guard`]) refuses
+///   mutating methods (POST/PUT/PATCH/DELETE) when the caller's
+///   JWT carries the [`READ_ONLY_ROLE`] role.
+///
+/// [`read_only_guard`]: super::auth_middleware::read_only_guard
+/// [`READ_ONLY_ROLE`]: super::common::jwt_ops::READ_ONLY_ROLE
 /// - `/api/v1/auth/*` — separate sub-router with two layered
 ///   defences: per-IP rate limit (see [`AuthRateLimiter`]) and body
 ///   redaction from any log span (see [`strip_body_for_logs`]). No
@@ -178,7 +184,11 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .layer(TimeoutLayer::with_status_code(
       StatusCode::REQUEST_TIMEOUT,
       state.request_timeout,
-    ));
+    ))
+    // Reject mutating requests when the caller's JWT carries the
+    // `manta-read-only` role. Only on `/api/v1/*` — `/api/v1/auth/*`
+    // (login) and `/docs` (Swagger) are unaffected.
+    .layer(middleware::from_fn(read_only_guard));
 
   // /api/v1/auth/* — credential-handling sub-router. No Bearer
   // extractor (chicken-and-egg). Two layered defences applied:
