@@ -51,68 +51,96 @@ pub async fn dispatch_plan(
   opts: &SatApplyOptions<'_>,
 ) -> anyhow::Result<Value> {
   let mut ref_lookup: HashMap<String, String> = HashMap::new();
-  let mut configurations: Vec<Value> = Vec::new();
   let mut images: Vec<Value> = Vec::new();
   let mut session_templates: Vec<Value> = Vec::new();
   let mut bos_sessions: Vec<Value> = Vec::new();
 
+  // Separate the plan into its three sections. plan.rs guarantees:
+  // all Configuration entries come first, all Image entries next
+  // (topologically sorted), all SessionTemplate entries last.
+  let mut config_bodies: Vec<Value> = Vec::new();
+  let mut image_elements: Vec<Value> = Vec::new();
+  let mut st_bodies: Vec<Value> = Vec::new();
   for element in plan {
     match element {
-      SatElement::Configuration(body) => {
-        let cfg = client
-          .openapi
-          .post_sat_configuration(
-            client.site_name(),
-            &PostSatConfigurationRequest {
-              configuration: body,
-              overwrite: Some(opts.overwrite),
-              dry_run: Some(opts.dry_run),
-            },
-          )
-          .await
-          .into_anyhow()?;
-        configurations.push(cfg);
-      }
-      SatElement::Image(body) => {
-        let label = image_label(&body);
-        let display_name = body
-          .get("name")
-          .and_then(Value::as_str)
-          .unwrap_or("<unnamed>")
-          .to_string();
+      SatElement::Configuration(body) => config_bodies.push(body),
+      SatElement::Image(body) => image_elements.push(body),
+      SatElement::SessionTemplate(body) => st_bodies.push(body),
+    }
+  }
 
-        let img = run_image_pipeline(ctx, client, &body, &ref_lookup, opts)
-          .await
-          .with_context(|| format!("building SAT image '{display_name}'"))?;
+  // Fan out all Configuration POSTs concurrently. Configurations have no
+  // inter-dependencies (plan.rs topo-sort covers only Image entries).
+  // Build request objects upfront so the &req borrows outlive the futures.
+  let config_reqs: Vec<PostSatConfigurationRequest> = config_bodies
+    .into_iter()
+    .map(|body| PostSatConfigurationRequest {
+      configuration: body,
+      overwrite: Some(opts.overwrite),
+      dry_run: Some(opts.dry_run),
+    })
+    .collect();
+  let configurations: Vec<Value> = futures::future::try_join_all(
+    config_reqs.iter().map(|req| async move {
+      client
+        .openapi
+        .post_sat_configuration(client.site_name(), req)
+        .await
+        .into_anyhow()
+    }),
+  )
+  .await?;
 
-        if let Some(lab) = label {
-          let id = resolve_image_id(&img, &lab);
-          ref_lookup.insert(lab, id);
-        }
+  // Images stay strictly sequential: each image's id must be recorded in
+  // ref_lookup before any downstream image or session_template that
+  // references it is dispatched.
+  for body in image_elements {
+    let label = image_label(&body);
+    let display_name = body
+      .get("name")
+      .and_then(Value::as_str)
+      .unwrap_or("<unnamed>")
+      .to_string();
 
-        images.push(img);
-      }
-      SatElement::SessionTemplate(body) => {
-        let resp = client
-          .openapi
-          .post_sat_session_template(
-            client.site_name(),
-            &PostSatSessionTemplateRequest {
-              session_template: body,
-              ref_lookup: ref_lookup.clone(),
-              create_bos_session: Some(opts.create_bos_session),
-              dry_run: Some(opts.dry_run),
-            },
-          )
-          .await
-          .into_anyhow()?;
-        session_templates.push(resp.template);
-        if let Some(s) = resp.session
-          && matches!(s, Value::Object(_))
-        {
-          bos_sessions.push(s);
-        }
-      }
+    let img = run_image_pipeline(ctx, client, &body, &ref_lookup, opts)
+      .await
+      .with_context(|| format!("building SAT image '{display_name}'"))?;
+
+    if let Some(lab) = label {
+      let id = resolve_image_id(&img, &lab);
+      ref_lookup.insert(lab, id);
+    }
+
+    images.push(img);
+  }
+
+  // Fan out all SessionTemplate POSTs concurrently. ref_lookup is fully
+  // populated at this point (all images complete); each session_template
+  // is independent. Build request objects upfront so &req borrows outlive
+  // the futures.
+  let st_reqs: Vec<PostSatSessionTemplateRequest> = st_bodies
+    .into_iter()
+    .map(|body| PostSatSessionTemplateRequest {
+      session_template: body,
+      ref_lookup: ref_lookup.clone(),
+      create_bos_session: Some(opts.create_bos_session),
+      dry_run: Some(opts.dry_run),
+    })
+    .collect();
+  let st_results = futures::future::try_join_all(st_reqs.iter().map(|req| async move {
+    client
+      .openapi
+      .post_sat_session_template(client.site_name(), req)
+      .await
+      .into_anyhow()
+  }))
+  .await?;
+  for resp in st_results {
+    session_templates.push(resp.template);
+    if let Some(s) = resp.session
+      && matches!(s, Value::Object(_))
+    {
+      bos_sessions.push(s);
     }
   }
 
