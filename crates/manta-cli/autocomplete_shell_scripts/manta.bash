@@ -1346,7 +1346,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__add__subcmd__nodes)
-            opts="-g -n -d -o -h --group --nodes --dry-run --output --site --help"
+            opts="-g -n -d -y -o -h --group --nodes --dry-run --assume-yes --output --site --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0
@@ -3632,7 +3632,7 @@ _manta() {
             return 0
             ;;
         manta__subcmd__delete__subcmd__nodes)
-            opts="-g -n -d -o -h --group --nodes --dry-run --output --site --help"
+            opts="-g -n -d -y -o -h --group --nodes --dry-run --assume-yes --output --site --help"
             if [[ ${cur} == -* || ${COMP_CWORD} -eq 3 ]] ; then
                 COMPREPLY=( $(compgen -W "${opts}" -- "${cur}") )
                 return 0

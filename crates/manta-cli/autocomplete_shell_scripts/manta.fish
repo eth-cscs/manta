@@ -227,6 +227,7 @@ complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcomm
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s d -l dry-run -d 'Simulate the operation without making changes'
+complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s y -l assume-yes -d 'Skip confirmation prompts'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from nodes" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s l -l label -d 'Group name' -r
 complete -c manta -n "__fish_manta_using_subcommand add; and __fish_seen_subcommand_from group" -s D -l description -d 'Group description' -r
@@ -467,6 +468,7 @@ complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subc
 json\t''"
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -s d -l dry-run -d 'Simulate the operation without making changes'
+complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -s y -l assume-yes -d 'Skip confirmation prompts'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from nodes" -s h -l help -d 'Print help (see more with \'--help\')'
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s n -l nodes -d 'Xnames, NIDs, or a hostlist expression. eg: \'x1003c1s7b0n0,x1003c1s7b0n1\', \'nid001313,nid001314\', \'x1003c1s7b0n[0-1],x1003c1s7b1n0\', \'nid00131[0-9]\'' -r
 complete -c manta -n "__fish_manta_using_subcommand delete; and __fish_seen_subcommand_from kernel-parameters" -s H -l group -l hsm-group -d 'Remove the listed kernel parameters from every node in this group' -r

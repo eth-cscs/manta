@@ -698,6 +698,8 @@ _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0
@@ -1423,6 +1425,8 @@ _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
+'-y[Skip confirmation prompts]' \
+'--assume-yes[Skip confirmation prompts]' \
 '-h[Print help (see more with '\''--help'\'')]' \
 '--help[Print help (see more with '\''--help'\'')]' \
 && ret=0

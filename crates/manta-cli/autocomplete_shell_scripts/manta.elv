@@ -468,6 +468,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
+            cand -y 'Skip confirmation prompts'
+            cand --assume-yes 'Skip confirmation prompts'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
@@ -1011,6 +1013,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --site 'Override the active site for this invocation'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
+            cand -y 'Skip confirmation prompts'
+            cand --assume-yes 'Skip confirmation prompts'
             cand -h 'Print help (see more with ''--help'')'
             cand --help 'Print help (see more with ''--help'')'
         }
