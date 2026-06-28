@@ -724,6 +724,28 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 `--dry-run` is read-only and **does not require `--assume-yes`** — confirmation prompts are skipped on dry-run. It is the safe way to verify a script before promoting it to a real run, to audit what `manta` would have done, or to capture the exact wire payload for a bug report.
 
+### Authentication for scripts
+
+Manta resolves the bearer token in a defined order; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full resolution lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
+
+*Flowchart: how `manta` resolves the bearer token in scripted use.*
+
+```mermaid
+flowchart TD
+    Start[manta subcommand] --> Env{MANTA_TOKEN env var set?}
+    Env -->|yes| Use[use env value<br/>no cache read, no prompt]
+    Env -->|no| Cache{cache file exists?<br/>config-dir/site_auth, mode 0600}
+    Cache -->|yes, not expired| ReadCache[load token from cache]
+    Cache -->|expired or missing| TTY{stdin is a TTY?}
+    TTY -->|no| Fail[exit non-zero<br/>no way to prompt non-interactively]
+    TTY -->|yes| Prompt[prompt user -> POST /auth/token<br/>write 0600 cache]
+    Use --> Run[run command with Bearer token]
+    ReadCache --> Run
+    Prompt --> Run
+```
+
+For scripts, set `MANTA_TOKEN` from a secret-fetch step before the `manta` invocation — that bypasses the cache and the prompt entirely.
+
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
 
 ---
