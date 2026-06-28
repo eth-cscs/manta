@@ -693,6 +693,41 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
 
+### Read-only operators (server-side enforcement)
+
+`manta-server` enforces a read-only policy derived from the caller's
+JWT itself. When a user's bearer token carries the realm role
+`manta-read-only`, every mutating endpoint (`POST`/`PUT`/`PATCH`/`DELETE`
+under `/api/v1/*`) is refused with `403 Forbidden`:
+
+```
+$ manta apply boot-config --boot-image abc x3000c0s1b0n0
+Error: 403 Forbidden — Token carries the `manta-read-only` role;
+       refusing mutating endpoint.
+```
+
+Read endpoints (`GET`) and the login flow (`/api/v1/auth/*`) are
+unaffected — read-only operators can still inspect cluster state,
+view configurations, list nodes, and refresh their token. WebSocket
+console upgrades (which are `GET` requests) also pass through.
+
+The role lives in Keycloak — provision it as a realm role and assign
+it to the users who should be locked to read-only access. No
+`server.toml` knob; the role string is `manta-read-only`, verbatim.
+
+This is **independent** of the CLI-side `read_only = true` setting in
+`cli.toml`. The two policies coexist as defence in depth:
+
+- **CLI flag** (`manta config set read-only`) refuses mutating verbs
+  inside the CLI process before any HTTP request is sent. Useful on
+  shared workstations where you want a local "training-wheels" mode
+  without touching the identity provider.
+- **JWT role** (`manta-read-only`) is enforced server-side and
+  travels with the token, so it applies regardless of which client
+  the operator uses — even `curl`.
+
+If you want both, set both.
+
 ---
 
 ## 13. Installation maintenance

@@ -235,6 +235,7 @@ Beyond the flags above, two settings are config-only:
 
 - `[server].migrate_backup_root` — absolute filesystem directory that confines `POST /migrate/{backup,restore}` paths. Required for those endpoints to function at all; when unset the server returns `400 BadRequest` even for admin callers. Set, then restart.
 - HSTS (`Strict-Transport-Security: max-age=31536000; includeSubDomains`) is emitted on every response unconditionally. Browsers ignore it over plain HTTP per RFC 6797, so it's a no-op under `allow_http = true` and active otherwise.
+- Read-only JWT role: callers whose bearer token's `realm_access.roles` claim contains `manta-read-only` are refused with `403 Forbidden` on every `POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`. Safe methods (`GET`/`HEAD`) and `/api/v1/auth/*` (login) pass through. Independent of the CLI-side `read_only = true` flag in `cli.toml`; the two policies coexist as defence in depth. Provision the role in Keycloak; no `server.toml` knob.
 
 > The CLI no longer ships a `manta serve` subcommand — invoke `manta-server` directly.
 

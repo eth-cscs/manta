@@ -59,6 +59,7 @@ All errors return JSON with an `error` field:
 |--------|---------|
 | `400` | Bad request — invalid parameters or body |
 | `401` | Missing or malformed `Authorization` header |
+| `403` | Token carries the `manta-read-only` realm role and the request method mutates state (`POST`/`PUT`/`PATCH`/`DELETE`). Safe methods (`GET`/`HEAD`/`OPTIONS`) and `/api/v1/auth/*` are unaffected. |
 | `404` | Resource not found |
 | `409` | Conflict — resource already exists |
 | `422` | Unprocessable entity — required field missing or wrong type |

@@ -288,6 +288,7 @@ This means manta-server is a **single point of compromise** for everyone using i
 | Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
 | Audit event per auth attempt | code | `manta_server::server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }` to the configured Kafka producer. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
+| Read-only JWT-role gate on `/api/v1/*` | code | `server::auth_middleware::read_only_guard` refuses `POST`/`PUT`/`PATCH`/`DELETE` with 403 when the token's `realm_access.roles` claim contains `manta-read-only` (constant in `server::common::jwt_ops::READ_ONLY_ROLE`). Independent of the CLI's `read_only = true` toggle in `cli.toml`. Provisioned in Keycloak; not a `server.toml` knob. |
 | TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence; manta-server's in-process limiter is belt-and-braces. |
 | Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
 | Network segmentation | **ops** | Treat manta-server as a privileged host. |
