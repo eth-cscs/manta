@@ -157,6 +157,26 @@ The `manta-server` crate is **both a library and a binary**. `crates/manta-serve
 
 `ServerState` (wrapped in `Arc`) owns all infrastructure: backend dispatcher, TLS certificates, optional Vault/k8s URLs.
 
+### Hardware-cluster pin/unpin algorithm
+
+The algorithm has a fixed phase shape: parse the requested hardware pattern, fetch the target + parent group inventory, score candidate nodes, move the winners, verify. Failures during the move phase trigger a best-effort rollback — see the implementation in `crates/manta-server/src/service/hw_cluster/pin_unpin.rs` for the exact retry / partial-failure handling, which is **not** transactional.
+
+*Flowchart: phase shape of `apply hw-cluster` from CLI to backend.*
+
+```mermaid
+flowchart TD
+    Req["POST /hardware-clusters/{target}/configuration"] --> Parse["parse_hw_pattern_usize<br/>e.g. a100:2"]
+    Parse --> Fetch["fetch_group_hw_inventory<br/>target + parent groups"]
+    Fetch --> Validate{validate_resource_sufficiency}
+    Validate -->|insufficient| Err422["422 InsufficientResources"]
+    Validate -->|sufficient| Score["calculate_hw_component_scarcity_scores<br/>+ per-node scoring"]
+    Score --> Pick["get_best_candidate_in_target_and_parent_hsm"]
+    Pick --> Move["apply_group_updates<br/>POST /groups/.../members"]
+    Move -->|partial failure| Rollback["best-effort revert moved nodes<br/>NOT transactional"]
+    Move -->|all succeeded| Done["200 OK"]
+    Rollback --> Err5xx["500 with details<br/>operator must inspect group state"]
+```
+
 ---
 
 ## Context objects
