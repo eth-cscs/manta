@@ -893,8 +893,7 @@ fn to_handler_error_uncategorized_variants_become_500() {
 /// items in the crate under test.
 fn make_jwt(payload: &serde_json::Value) -> String {
   use base64::prelude::*;
-  let header =
-    BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
+  let header = BASE64_URL_SAFE_NO_PAD.encode(r#"{"alg":"none","typ":"JWT"}"#);
   let body = BASE64_URL_SAFE_NO_PAD.encode(payload.to_string());
   format!("{header}.{body}.sig")
 }

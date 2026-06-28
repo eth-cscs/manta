@@ -138,8 +138,7 @@ pub const READ_ONLY_ROLE: &str = "manta-read-only";
 /// Used by [`is_user_admin`] and by
 /// [`crate::server::auth_middleware::read_only_guard`].
 pub fn has_role(token: &str, role: &str) -> bool {
-  get_roles(token)
-    .is_ok_and(|roles| roles.iter().any(|r| r == role))
+  get_roles(token).is_ok_and(|roles| roles.iter().any(|r| r == role))
 }
 
 /// Returns `true` when the token's `realm_access.roles` claim

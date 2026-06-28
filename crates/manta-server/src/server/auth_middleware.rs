@@ -171,7 +171,8 @@ pub async fn read_only_guard(request: Request, next: Next) -> Response {
     .get(header::AUTHORIZATION)
     .and_then(|v| v.to_str().ok())
     .and_then(|v| {
-      v.strip_prefix("Bearer ").or_else(|| v.strip_prefix("bearer "))
+      v.strip_prefix("Bearer ")
+        .or_else(|| v.strip_prefix("bearer "))
     });
 
   if let Some(token) = token_opt
