@@ -49,7 +49,9 @@ pub async fn exec(
       .get_available_groups(c.site_name())
       .await
       .into_anyhow()
-      .inspect_err(|e| tracing::warn!("Failed to fetch available HSM groups: {e}"))
+      .inspect_err(|e| {
+        tracing::warn!("Failed to fetch available HSM groups: {e}")
+      })
       .ok(),
     None => None,
   };
