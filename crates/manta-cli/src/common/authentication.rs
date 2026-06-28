@@ -40,7 +40,6 @@
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{AuthServerUnreachable, MantaClient, SiteNotFound};
-use crate::openapi_client::types::{AuthTokenRequest, ValidateTokenRequest};
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
@@ -52,11 +51,11 @@ use std::{
 };
 
 /// `true` if `err`'s typed-context chain contains
-/// [`AuthServerUnreachable`] — the marker we attach in
-/// [`map_auth_error`] whenever the auth-bearing send fails at the
-/// TCP / timeout layer. Used by every stage of `get_api_token`
-/// (env var, cached file, interactive prompt) to bail out instead
-/// of falling through or re-prompting.
+/// [`AuthServerUnreachable`] — the marker attached by
+/// [`MantaClient::validate_token`] / [`MantaClient::exchange_credentials`]
+/// whenever the auth call fails at the TCP / timeout layer. Used
+/// by [`cascade_abort_reason`] to decide whether to abort the auth
+/// cascade immediately instead of falling through or re-prompting.
 ///
 /// Uses `downcast_ref` rather than `chain().any(is::<...>())`
 /// because anyhow stores contexts behind an internal wrapper type;
@@ -67,13 +66,37 @@ fn is_auth_server_unreachable(err: &anyhow::Error) -> bool {
 }
 
 /// `true` if `err`'s typed-context chain contains [`SiteNotFound`] —
-/// the marker [`map_auth_error`] attaches on a `404` from `/auth/*`
+/// the marker attached by [`MantaClient::validate_token`] /
+/// [`MantaClient::exchange_credentials`] on a `404` from `/auth/*`
 /// (the server is reachable but doesn't serve the configured site).
-/// Used by every stage of `get_api_token` to bail out instead of
-/// falling through to the next credential source or re-prompting:
-/// no credentials can authenticate against a site that doesn't exist.
+/// Used by [`cascade_abort_reason`]; no credentials can authenticate
+/// against a site that doesn't exist.
 fn is_site_not_found(err: &anyhow::Error) -> bool {
   err.downcast_ref::<SiteNotFound>().is_some()
+}
+
+/// Which error variant causes the auth cascade to stop immediately
+/// instead of falling through to the next credential source or
+/// re-prompting. Returned by [`cascade_abort_reason`].
+enum CascadeAbort {
+  /// The manta server was unreachable (DNS / TCP / TLS failure).
+  ServerUnreachable,
+  /// The server is up but doesn't serve the configured site (404).
+  SiteNotFound,
+}
+
+/// Return the cascade-abort reason if `err` contains an
+/// [`AuthServerUnreachable`] or [`SiteNotFound`] typed marker;
+/// `None` for a plain credential rejection (wrong password, etc.)
+/// that should let the caller try the next source or re-prompt.
+fn cascade_abort_reason(err: &anyhow::Error) -> Option<CascadeAbort> {
+  if is_auth_server_unreachable(err) {
+    Some(CascadeAbort::ServerUnreachable)
+  } else if is_site_not_found(err) {
+    Some(CascadeAbort::SiteNotFound)
+  } else {
+    None
+  }
 }
 
 /// Environment variable name for the API authentication token.
@@ -84,56 +107,6 @@ const AUTH_CACHE_FILE_SUFFIX: &str = "_auth";
 
 /// Maximum number of interactive login attempts before giving up.
 const MAX_LOGIN_ATTEMPTS: u32 = 3;
-
-/// Wrap a progenitor `Error<E>` from an `/auth/*` call into an
-/// `anyhow::Error`, attaching a typed marker that lets the caller tell
-/// the "keep trying" failures apart from the "stop now" ones:
-///
-/// - [`SiteNotFound`] on a `404` — the server is reachable but doesn't
-///   serve `site`; no credential can fix that.
-/// - [`AuthServerUnreachable`] on a TCP / timeout-layer failure — the
-///   manta server itself is unreachable.
-///
-/// Anything else is wrapped plain (a genuine credential rejection,
-/// which *should* fall through to the next attempt / re-prompt).
-fn map_auth_error<E: std::fmt::Debug>(
-  err: progenitor_client::Error<E>,
-  url: &str,
-  site: &str,
-) -> anyhow::Error
-where
-  progenitor_client::Error<E>: std::fmt::Display,
-{
-  // A reachable server that doesn't serve this site answers 404 (see
-  // manta-server's `/auth/*` handlers). Documented 404s arrive as
-  // `ErrorResponse`; an undocumented one as `UnexpectedResponse` —
-  // tag either, so the cascade short-circuits.
-  let status = match &err {
-    progenitor_client::Error::ErrorResponse(rv) => Some(rv.status()),
-    progenitor_client::Error::UnexpectedResponse(resp) => Some(resp.status()),
-    _ => None,
-  };
-  if status == Some(reqwest::StatusCode::NOT_FOUND) {
-    return anyhow!("{err}").context(SiteNotFound {
-      site: site.to_string(),
-    });
-  }
-
-  let unreachable = match &err {
-    progenitor_client::Error::CommunicationError(e) => {
-      e.is_connect() || e.is_timeout()
-    }
-    _ => false,
-  };
-  let message = format!("{err}");
-  if unreachable {
-    anyhow!(message).context(AuthServerUnreachable {
-      url: url.to_string(),
-    })
-  } else {
-    anyhow!(message)
-  }
-}
 
 /// Obtain a valid API token, trying in order: env var
 /// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
@@ -172,17 +145,10 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
       return Ok(token);
     }
     Err(err) => {
-      // Short-circuit when the server is unreachable: validating the
-      // file token or prompting interactively would just hit the
-      // same dead endpoint. The user needs to fix the server or
-      // their config before any auth path can succeed.
-      if is_auth_server_unreachable(&err) {
-        return Err(err);
-      }
-      // Likewise short-circuit on an unknown site: no token in any
-      // source can authenticate against a site the server doesn't
-      // serve, so don't fall through to the file/prompt stages.
-      if is_site_not_found(&err) {
+      // Short-circuit: an unreachable server or unknown site means no
+      // other credential source could succeed either, so abort the
+      // cascade immediately instead of falling through to the next path.
+      if cascade_abort_reason(&err).is_some() {
         return Err(err);
       }
       tracing::warn!(
@@ -198,12 +164,9 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
       return Ok(token);
     }
     Err(err) => {
-      if is_auth_server_unreachable(&err) {
-        return Err(err);
-      }
-      // Unknown site: bail before prompting — the interactive login
-      // would 404 on every attempt.
-      if is_site_not_found(&err) {
+      // Unknown site or unreachable server: bail before prompting —
+      // interactive login would hit the same dead endpoint or 404.
+      if cascade_abort_reason(&err).is_some() {
         return Err(err);
       }
       let stdin = io::stdin();
@@ -246,52 +209,8 @@ async fn get_token_from_env(client: &MantaClient) -> Result<String> {
     auth_token_env_name
   );
 
-  validate_token(client, &shasta_token).await?;
+  client.validate_token(&shasta_token).await?;
   Ok(shasta_token)
-}
-
-/// `POST /api/v1/auth/validate` — check whether the backend still
-/// accepts `token`. Wraps the progenitor call so callers see a
-/// clean `anyhow::Result<()>` plus the `AuthServerUnreachable`
-/// marker on connect-level failures.
-async fn validate_token(
-  client: &MantaClient,
-  token: &str,
-) -> anyhow::Result<()> {
-  let url = client.base_url().trim_end_matches("/api/v1").to_string();
-  client
-    .openapi
-    .auth_validate(
-      client.site_name(),
-      &ValidateTokenRequest {
-        token: token.to_owned(),
-      },
-    )
-    .await
-    .map(|_| ())
-    .map_err(|e| map_auth_error(e, &url, client.site_name()))
-}
-
-/// `POST /api/v1/auth/token` — exchange Keycloak credentials for a CSM
-/// bearer token.
-async fn get_token(
-  client: &MantaClient,
-  username: &str,
-  password: &str,
-) -> anyhow::Result<String> {
-  let url = client.base_url().trim_end_matches("/api/v1").to_string();
-  let resp = client
-    .openapi
-    .auth_token(
-      client.site_name(),
-      &AuthTokenRequest {
-        username: username.to_owned(),
-        password: password.to_owned(),
-      },
-    )
-    .await
-    .map_err(|e| map_auth_error(e, &url, client.site_name()))?;
-  Ok(resp.into_inner().token)
 }
 
 async fn get_token_from_local_file(
@@ -321,7 +240,7 @@ async fn get_token_from_local_file(
     "Authentication token found in filesystem. Check if it is still valid",
   );
 
-  validate_token(client, &shasta_token).await?;
+  client.validate_token(&shasta_token).await?;
   Ok(shasta_token)
 }
 
@@ -352,65 +271,63 @@ fn store_token_in_local_file(
 }
 
 async fn get_token_interactively(client: &MantaClient) -> Result<String> {
-  println!("Please type your {}", "Keycloak credentials".green());
+  // Single attempt loop: prompt → try → return on success or cascade
+  // abort → log and continue on credential rejection.
+  //
+  // The do-while pattern (pre-loop prompt + identical prompt in the
+  // loop body) has been replaced by a plain for-loop so the prompt
+  // block appears exactly once. `attempt` is 0-indexed, so `attempt +
+  // 1` gives the correct 1-indexed attempt number in log messages
+  // without any off-by-one adjustment.
+  let mut last_err = anyhow!("no login attempt was made");
 
-  let username: String =
-    Input::new().with_prompt("username").interact_text()?;
-
-  let password = Password::new().with_prompt("password").interact()?;
-
-  let mut shasta_token_rslt = get_token(client, &username, &password).await;
-
-  let mut attempts = 0;
-
-  while shasta_token_rslt.is_err() && attempts < MAX_LOGIN_ATTEMPTS {
-    if let Err(ref err) = shasta_token_rslt {
-      // If the failure is "server unreachable" rather than "wrong
-      // credentials", re-prompting is pointless — the next attempt
-      // would hit the same dead endpoint. Bail out and let the
-      // operator see the meaningful message immediately.
-      if is_auth_server_unreachable(err) {
-        tracing::warn!(
-          error = %err,
-          "auth server unreachable; aborting interactive retries"
-        );
-        return shasta_token_rslt;
-      }
-      // An unknown site won't start existing on retry — stop after the
-      // first 404 instead of re-prompting for credentials.
-      if is_site_not_found(err) {
-        tracing::warn!(
-          error = %err,
-          "site not configured on server; aborting interactive retries"
-        );
-        return shasta_token_rslt;
-      }
-      tracing::warn!(
-        attempt = attempts + 1,
-        max_attempts = MAX_LOGIN_ATTEMPTS,
-        error = %err,
-        "Interactive authentication attempt failed"
-      );
-    }
-
+  for attempt in 0..MAX_LOGIN_ATTEMPTS {
     println!("Please type your {}", "Keycloak credentials".green());
     let username: String =
       Input::new().with_prompt("username").interact_text()?;
     let password = Password::new().with_prompt("password").interact()?;
 
-    shasta_token_rslt = get_token(client, &username, &password).await;
-
-    attempts += 1;
+    match client.exchange_credentials(&username, &password).await {
+      Ok(token) => {
+        if attempt > 0 {
+          tracing::info!(
+            attempt = attempt + 1,
+            "Interactive authentication succeeded after retries"
+          );
+        }
+        return Ok(token);
+      }
+      Err(err) => {
+        match cascade_abort_reason(&err) {
+          Some(CascadeAbort::ServerUnreachable) => {
+            tracing::warn!(
+              error = %err,
+              "auth server unreachable; aborting interactive retries"
+            );
+            return Err(err);
+          }
+          Some(CascadeAbort::SiteNotFound) => {
+            tracing::warn!(
+              error = %err,
+              "site not configured on server; aborting interactive retries"
+            );
+            return Err(err);
+          }
+          None => {
+            tracing::warn!(
+              attempt = attempt + 1,
+              max_attempts = MAX_LOGIN_ATTEMPTS,
+              error = %err,
+              "Interactive authentication attempt failed"
+            );
+            last_err = err;
+          }
+        }
+      }
+    }
   }
 
-  if shasta_token_rslt.is_ok() && attempts > 0 {
-    tracing::info!(
-      attempts = attempts + 1,
-      "Interactive authentication succeeded after retries"
-    );
-  }
-
-  shasta_token_rslt
+  Err(last_err)
 }
 
 #[cfg(test)]
@@ -498,9 +415,9 @@ mod tests {
 
   #[test]
   fn site_not_found_marker_is_detected_through_anyhow_context() {
-    // The cascade's three bail-out points rely on `is_site_not_found`
-    // seeing the marker through anyhow's context wrapper — the same
-    // shape `map_auth_error` produces on a 404.
+    // The cascade's bail-out points rely on `is_site_not_found` seeing
+    // the marker through anyhow's context wrapper — the same shape
+    // `MantaClient::map_auth_error` produces on a 404.
     let err = anyhow!("HTTP 404").context(SiteNotFound {
       site: "nonexistent".to_string(),
     });

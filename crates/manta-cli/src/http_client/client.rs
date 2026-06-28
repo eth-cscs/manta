@@ -19,6 +19,7 @@ use anyhow::Context;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
+use crate::openapi_client::types::{AuthTokenRequest, ValidateTokenRequest};
 
 /// Default per-request timeout applied to one-shot REST calls through
 /// the progenitor-generated `openapi` client when `cli.toml` does not
@@ -429,6 +430,104 @@ impl MantaClient {
   /// SSE paths to derive their own URLs.
   pub fn base_url(&self) -> &str {
     &self.base_url
+  }
+
+  /// Strip `/api/v1` from `base_url` to get the server root URL used
+  /// in auth-error messages. Both [`Self::validate_token`] and
+  /// [`Self::exchange_credentials`] perform the same trim — centralised
+  /// here instead of duplicated at each call site.
+  fn auth_base_url(&self) -> String {
+    self.base_url.trim_end_matches("/api/v1").to_string()
+  }
+
+  /// Wrap a progenitor `Error<E>` from an `/auth/*` call into an
+  /// `anyhow::Error`, attaching a typed marker that lets the caller
+  /// tell "keep trying" failures apart from "stop now" ones:
+  ///
+  /// - [`SiteNotFound`] on a `404` — server is reachable but doesn't
+  ///   serve this site; no credential can fix that.
+  /// - [`AuthServerUnreachable`] on a TCP / timeout-layer failure —
+  ///   the manta server itself is unreachable.
+  ///
+  /// Anything else is wrapped plain (a genuine credential rejection,
+  /// which *should* fall through to the next attempt / re-prompt).
+  fn map_auth_error<E: std::fmt::Debug>(
+    &self,
+    err: progenitor_client::Error<E>,
+  ) -> anyhow::Error
+  where
+    progenitor_client::Error<E>: std::fmt::Display,
+  {
+    // A reachable server that doesn't serve this site answers 404.
+    // Tag either ErrorResponse or UnexpectedResponse 404s so the
+    // cascade short-circuits.
+    let status = match &err {
+      progenitor_client::Error::ErrorResponse(rv) => Some(rv.status()),
+      progenitor_client::Error::UnexpectedResponse(resp) => Some(resp.status()),
+      _ => None,
+    };
+    if status == Some(reqwest::StatusCode::NOT_FOUND) {
+      return anyhow::anyhow!("{err}").context(SiteNotFound {
+        site: self.site_name.clone(),
+      });
+    }
+    let unreachable = matches!(
+      &err,
+      progenitor_client::Error::CommunicationError(e) if e.is_connect() || e.is_timeout()
+    );
+    let message = format!("{err}");
+    if unreachable {
+      anyhow::anyhow!(message).context(AuthServerUnreachable {
+        url: self.auth_base_url(),
+      })
+    } else {
+      anyhow::anyhow!(message)
+    }
+  }
+
+  /// `POST /api/v1/auth/validate` — check whether the backend still
+  /// accepts `token`. Returns `Ok(())` on success; on the "abort
+  /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
+  /// [`SiteNotFound`] context so callers can distinguish them from
+  /// a plain credential rejection.
+  pub(crate) async fn validate_token(
+    &self,
+    token: &str,
+  ) -> anyhow::Result<()> {
+    self
+      .openapi
+      .auth_validate(
+        self.site_name(),
+        &ValidateTokenRequest {
+          token: token.to_owned(),
+        },
+      )
+      .await
+      .map(|_| ())
+      .map_err(|e| self.map_auth_error(e))
+  }
+
+  /// `POST /api/v1/auth/token` — exchange Keycloak credentials for a
+  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`]
+  /// or [`SiteNotFound`] context on cascade-abort cases; plain `Err`
+  /// on a credential rejection (wrong username/password).
+  pub(crate) async fn exchange_credentials(
+    &self,
+    username: &str,
+    password: &str,
+  ) -> anyhow::Result<String> {
+    let resp = self
+      .openapi
+      .auth_token(
+        self.site_name(),
+        &AuthTokenRequest {
+          username: username.to_owned(),
+          password: password.to_owned(),
+        },
+      )
+      .await
+      .map_err(|e| self.map_auth_error(e))?;
+    Ok(resp.into_inner().token)
   }
 
   /// Emit a `curl` equivalent of `builder` at DEBUG level so an operator
