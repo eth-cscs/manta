@@ -108,13 +108,8 @@ pub async fn validate_image_deletion(
   // Check if any requested image is used to boot nodes
   let image_used_to_boot_nodes: Vec<String> = boot_parameter_vec
     .iter()
-    .map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
-    .collect::<Option<Vec<String>>>()
-    .ok_or_else(|| {
-      Error::MissingField(
-        "Could not get image ids used to boot nodes".to_string(),
-      )
-    })?;
+    .filter_map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
+    .collect();
 
   // `image_used_to_boot_nodes` is cluster-scale (one entry per BSS
   // record). Hash it once so the safety check across user-supplied
@@ -143,13 +138,7 @@ pub async fn validate_image_deletion(
 
   // Check restricted images
   let image_restricted_vec =
-    get_restricted_image_ids(&group_available_vec, &boot_parameter_vec)
-      .ok_or_else(|| {
-        Error::MissingField(
-          "Could not get restricted image ids used by boot parameters"
-            .to_string(),
-        )
-      })?;
+    get_restricted_image_ids(&group_available_vec, &boot_parameter_vec);
 
   if !image_restricted_vec.is_empty() {
     return Err(Error::BadRequest(format!(
@@ -205,10 +194,10 @@ pub async fn delete_images(
 fn get_restricted_image_ids(
   group_available_vec: &[Group],
   boot_parameter_vec: &[BootParameters],
-) -> Option<Vec<String>> {
+) -> Vec<String> {
   get_restricted_boot_parameters(group_available_vec, boot_parameter_vec)
     .iter()
-    .map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
+    .filter_map(manta_backend_dispatcher::types::bss::BootParameters::try_get_boot_image_id)
     .collect()
 }
 

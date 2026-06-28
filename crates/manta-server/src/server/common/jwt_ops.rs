@@ -110,7 +110,7 @@ pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
 /// as `header.payload.signature` Base64, or when the payload is not
 /// valid UTF-8 JSON.
 pub fn get_roles(token: &str) -> Result<Vec<String>, MantaError> {
-  // If JWT does not have `/realm_access/roles` claim, then we will assume, user is admin
+  // Absent claim → empty roles → not admin.
   Ok(
     get_claims_from_jwt_token(token)?
       .pointer("/realm_access/roles")

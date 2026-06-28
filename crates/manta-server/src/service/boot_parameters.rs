@@ -64,8 +64,6 @@ pub async fn get_boot_parameters(
   )
   .await?;
 
-  validate_user_group_members_access(infra, token, &xname_vec).await?;
-
   if xname_vec.is_empty() {
     return Err(Error::BadRequest(
       "The list of nodes to operate is empty. Nothing to do".to_string(),
