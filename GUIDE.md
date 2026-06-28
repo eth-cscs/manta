@@ -746,6 +746,36 @@ Error: 403 Forbidden — Token carries the `manta-read-only` role;
        refusing mutating endpoint.
 ```
 
+*Sequence: how a request is gated by the role check.*
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant G as read_only_guard
+    participant H as Handler
+
+    C->>G: HTTP request
+
+    alt method ∈ {GET, HEAD, OPTIONS}
+        G->>H: next.run(request)
+        H-->>C: 2xx / 4xx as usual
+    else method ∈ {POST, PUT, PATCH, DELETE}
+        G->>G: strip "Bearer " / "bearer " prefix
+        G->>G: jwt_ops::has_role(token, READ_ONLY_ROLE)
+        alt role present
+            G-->>C: 403 Forbidden — manta-read-only role
+            Note over G: tracing::warn! method + path
+        else role absent (or missing/malformed token)
+            G->>H: next.run(request)
+            H-->>C: 2xx / 4xx as usual
+        end
+    end
+```
+
+For the broader middleware pipeline this gate sits inside, see
+[ARCHITECTURE.md → Middleware layer stack](ARCHITECTURE.md#middleware-layer-stack).
+
 Read endpoints (`GET`) and the login flow (`/api/v1/auth/*`) pass
 through — read-only operators can still inspect cluster state,
 view configurations, list nodes, and refresh their token.
