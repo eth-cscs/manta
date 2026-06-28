@@ -239,10 +239,14 @@ pub async fn apply_kernel_params_changes(
   validate_user_group_members_access(infra, token, &changeset.xnames_to_reboot)
     .await?;
 
-  // Update boot parameters
-  for bp in &changeset.boot_params {
-    infra.backend.update_bootparameters(token, bp).await?;
-  }
+  // Fan out all BSS PUTs concurrently; propagate the first error
+  // (matches the original sequential loop's error semantics).
+  futures::future::try_join_all(
+    changeset.boot_params.iter().map(|bp| async move {
+      infra.backend.update_bootparameters(token, bp).await
+    }),
+  )
+  .await?;
 
   // Update images projected through SBPS
   for image in images_to_project.values() {

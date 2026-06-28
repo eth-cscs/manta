@@ -105,36 +105,30 @@ pub async fn apply_hw_configuration(
   .await?;
 
   let (
-    target_hsm_group_member_vec,
-    target_hsm_node_hw_component_count_vec,
-    target_hsm_hw_component_summary,
-  ) = scoring::fetch_group_hw_inventory(
-    infra,
-    shasta_token,
-    &user_defined_hw_component_vec,
-    target_group_name,
-    MEMORY_CAPACITY_LCM,
-  )
-  .await?;
+    (target_hsm_group_member_vec, target_hsm_node_hw_component_count_vec, target_hsm_hw_component_summary),
+    (parent_hsm_group_member_vec, parent_hsm_node_hw_component_count_vec, _parent_summary),
+  ) = tokio::try_join!(
+    scoring::fetch_group_hw_inventory(
+      infra,
+      shasta_token,
+      &user_defined_hw_component_vec,
+      target_group_name,
+      MEMORY_CAPACITY_LCM,
+    ),
+    scoring::fetch_group_hw_inventory(
+      infra,
+      shasta_token,
+      &user_defined_hw_component_vec,
+      parent_group_name,
+      MEMORY_CAPACITY_LCM,
+    ),
+  )?;
 
   tracing::info!(
     "HSM group '{}' hw component summary: {:?}",
     target_group_name,
     target_hsm_hw_component_summary
   );
-
-  let (
-    parent_hsm_group_member_vec,
-    parent_hsm_node_hw_component_count_vec,
-    _parent_summary,
-  ) = scoring::fetch_group_hw_inventory(
-    infra,
-    shasta_token,
-    &user_defined_hw_component_vec,
-    parent_group_name,
-    MEMORY_CAPACITY_LCM,
-  )
-  .await?;
 
   pin_unpin::validate_resource_sufficiency(
     &target_hsm_node_hw_component_count_vec,
@@ -369,17 +363,21 @@ pub async fn add_hw_component(
   target_hsm_node_vec.sort();
 
   if !dryrun {
-    for xname in &nodes_to_move {
+    futures::future::try_join_all(nodes_to_move.iter().map(|xname| async move {
+      // delete-then-add is sequential within each node to avoid
+      // transient dual-group membership; the outer fan-out is safe
+      // because each xname is independent.
       infra
         .backend
         .delete_member_from_group(shasta_token, parent_group_name, xname)
         .await?;
-
       infra
         .backend
         .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
         .await?;
-    }
+      Ok::<(), Error>(())
+    }))
+    .await?;
   }
 
   let parent_nodes: Vec<String> = parent_hsm_node_hw_component_count_vec
@@ -478,17 +476,21 @@ async fn apply_node_moves(
   target_will_be_empty: bool,
   delete_hsm_group: bool,
 ) -> Result<(), Error> {
-  for xname in nodes {
+  futures::future::try_join_all(nodes.iter().map(|xname| async move {
+    // delete-then-add is sequential within each node to avoid
+    // transient dual-group membership; the outer fan-out is safe
+    // because each xname is independent.
     infra
       .backend
       .delete_member_from_group(shasta_token, target_group, xname.as_str())
       .await?;
-
     infra
       .backend
       .add_members_to_group(shasta_token, parent_group, &[xname.as_str()])
       .await?;
-  }
+    Ok::<(), Error>(())
+  }))
+  .await?;
 
   if target_will_be_empty {
     if delete_hsm_group {
@@ -569,17 +571,24 @@ pub async fn delete_hw_component(
   ) = scoring::parse_hw_pattern(&pattern_element_vec)?;
 
   let (
-    target_hsm_group_member_vec,
-    mut target_hsm_node_hw_component_count_vec,
-    target_hsm_hw_component_summary,
-  ) = scoring::fetch_group_hw_inventory(
-    infra,
-    token,
-    &user_defined_delta_hw_component_vec,
-    target_name,
-    MEMORY_CAPACITY_LCM,
-  )
-  .await?;
+    (target_hsm_group_member_vec, mut target_hsm_node_hw_component_count_vec, target_hsm_hw_component_summary),
+    (parent_hsm_group_member_vec, parent_hsm_node_hw_component_count_vec, _parent_summary),
+  ) = tokio::try_join!(
+    scoring::fetch_group_hw_inventory(
+      infra,
+      token,
+      &user_defined_delta_hw_component_vec,
+      target_name,
+      MEMORY_CAPACITY_LCM,
+    ),
+    scoring::fetch_group_hw_inventory(
+      infra,
+      token,
+      &user_defined_delta_hw_component_vec,
+      parent_group_name,
+      MEMORY_CAPACITY_LCM,
+    ),
+  )?;
 
   if target_hsm_node_hw_component_count_vec.is_empty() {
     handle_empty_target(infra, token, target_name, dryrun, delete_group)
@@ -590,19 +599,6 @@ pub async fn delete_hw_component(
       parent_nodes: vec![],
     });
   }
-
-  let (
-    parent_hsm_group_member_vec,
-    parent_hsm_node_hw_component_count_vec,
-    _parent_summary,
-  ) = scoring::fetch_group_hw_inventory(
-    infra,
-    token,
-    &user_defined_delta_hw_component_vec,
-    parent_group_name,
-    MEMORY_CAPACITY_LCM,
-  )
-  .await?;
 
   let combined = [
     target_hsm_node_hw_component_count_vec.clone(),
