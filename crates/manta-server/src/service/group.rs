@@ -250,9 +250,13 @@ pub async fn delete_group_members(
   host_expression: &str,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let xname_vec =
-    node_ops::from_user_hosts_expression_to_xname_vec(infra, token, host_expression, false)
-      .await?;
+  let xname_vec = node_ops::from_user_hosts_expression_to_xname_vec(
+    infra,
+    token,
+    host_expression,
+    false,
+  )
+  .await?;
 
   validate_user_group_members_access(infra, token, &xname_vec).await?;
 

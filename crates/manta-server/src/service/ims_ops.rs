@@ -65,17 +65,22 @@ pub async fn get_image_vec_related_cfs_configuration_name(
     });
 
   // Deduplicate image ids across all matching sessions before fetching.
-  let image_ids: std::collections::HashSet<String> = cfs_session_image_succeeded_vec
-    .flat_map(|s| s.get_result_id_vec())
-    .collect();
+  let image_ids: std::collections::HashSet<String> =
+    cfs_session_image_succeeded_vec
+      .flat_map(|s| s.get_result_id_vec())
+      .collect();
 
-  let fetch_results = futures::future::join_all(image_ids.iter().map(|id| async move {
-    (
-      id.clone(),
-      infra.backend.get_images(shasta_token, Some(id.as_str())).await,
-    )
-  }))
-  .await;
+  let fetch_results =
+    futures::future::join_all(image_ids.iter().map(|id| async move {
+      (
+        id.clone(),
+        infra
+          .backend
+          .get_images(shasta_token, Some(id.as_str()))
+          .await,
+      )
+    }))
+    .await;
 
   let mut boot_image_id_vec = Vec::new();
   for (id, rslt) in fetch_results {

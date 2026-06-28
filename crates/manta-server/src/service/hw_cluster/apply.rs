@@ -105,8 +105,16 @@ pub async fn apply_hw_configuration(
   .await?;
 
   let (
-    (target_hsm_group_member_vec, target_hsm_node_hw_component_count_vec, target_hsm_hw_component_summary),
-    (parent_hsm_group_member_vec, parent_hsm_node_hw_component_count_vec, _parent_summary),
+    (
+      target_hsm_group_member_vec,
+      target_hsm_node_hw_component_count_vec,
+      target_hsm_hw_component_summary,
+    ),
+    (
+      parent_hsm_group_member_vec,
+      parent_hsm_node_hw_component_count_vec,
+      _parent_summary,
+    ),
   ) = tokio::try_join!(
     scoring::fetch_group_hw_inventory(
       infra,
@@ -363,20 +371,22 @@ pub async fn add_hw_component(
   target_hsm_node_vec.sort();
 
   if !dryrun {
-    futures::future::try_join_all(nodes_to_move.iter().map(|xname| async move {
-      // delete-then-add is sequential within each node to avoid
-      // transient dual-group membership; the outer fan-out is safe
-      // because each xname is independent.
-      infra
-        .backend
-        .delete_member_from_group(shasta_token, parent_group_name, xname)
-        .await?;
-      infra
-        .backend
-        .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
-        .await?;
-      Ok::<(), Error>(())
-    }))
+    futures::future::try_join_all(nodes_to_move.iter().map(
+      |xname| async move {
+        // delete-then-add is sequential within each node to avoid
+        // transient dual-group membership; the outer fan-out is safe
+        // because each xname is independent.
+        infra
+          .backend
+          .delete_member_from_group(shasta_token, parent_group_name, xname)
+          .await?;
+        infra
+          .backend
+          .add_members_to_group(shasta_token, target_name, &[xname.as_str()])
+          .await?;
+        Ok::<(), Error>(())
+      },
+    ))
     .await?;
   }
 
@@ -571,8 +581,16 @@ pub async fn delete_hw_component(
   ) = scoring::parse_hw_pattern(&pattern_element_vec)?;
 
   let (
-    (target_hsm_group_member_vec, mut target_hsm_node_hw_component_count_vec, target_hsm_hw_component_summary),
-    (parent_hsm_group_member_vec, parent_hsm_node_hw_component_count_vec, _parent_summary),
+    (
+      target_hsm_group_member_vec,
+      mut target_hsm_node_hw_component_count_vec,
+      target_hsm_hw_component_summary,
+    ),
+    (
+      parent_hsm_group_member_vec,
+      parent_hsm_node_hw_component_count_vec,
+      _parent_summary,
+    ),
   ) = tokio::try_join!(
     scoring::fetch_group_hw_inventory(
       infra,

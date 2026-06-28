@@ -44,13 +44,11 @@ pub async fn handle_migrate(
       // then re-checks each name in the resulting list.
       let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
-        None => {
-          client
-            .openapi
-            .get_available_groups(client.site_name())
-            .await
-            .into_anyhow()?
-        }
+        None => client
+          .openapi
+          .get_available_groups(client.site_name())
+          .await
+          .into_anyhow()?,
       };
       let to = vec![to.to_string()];
 

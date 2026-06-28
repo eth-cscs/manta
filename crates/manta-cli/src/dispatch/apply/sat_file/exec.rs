@@ -87,7 +87,6 @@ pub struct SatApplyOptions<'a> {
   pub output_opt: Option<&'a str>,
 }
 
-
 /// Process and apply a SAT file to the system.
 ///
 /// Top-level pipeline driver: render Jinja2 -> parse YAML -> filter +

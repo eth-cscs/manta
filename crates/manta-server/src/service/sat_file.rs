@@ -14,8 +14,9 @@ use std::collections::HashMap;
 
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_sat_file::{
-  ApplyConfigurationParams, ApplyImageCreateSessionParams, ApplyImageStampParams,
-  ApplySessionTemplateParams, SatTrait, ValidateSatFileParams,
+  ApplyConfigurationParams, ApplyImageCreateSessionParams,
+  ApplyImageStampParams, ApplySessionTemplateParams, SatTrait,
+  ValidateSatFileParams,
 };
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::bos::{

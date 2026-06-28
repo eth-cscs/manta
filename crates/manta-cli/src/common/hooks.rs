@@ -68,7 +68,10 @@ pub fn run_hook_if_present(
 ///
 /// Propagates any error from [`check_hook_perms`] when the path does
 /// not exist or is not executable.
-pub fn validate_hook(hook_opt: Option<&str>, label: &str) -> anyhow::Result<()> {
+pub fn validate_hook(
+  hook_opt: Option<&str>,
+  label: &str,
+) -> anyhow::Result<()> {
   if let Some(hook) = hook_opt {
     check_hook_perms(hook_opt)
       .with_context(|| format!("Hook script '{hook}'"))?;

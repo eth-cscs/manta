@@ -80,16 +80,15 @@ pub async fn dispatch_plan(
       dry_run: Some(opts.dry_run),
     })
     .collect();
-  let configurations: Vec<Value> = futures::future::try_join_all(
-    config_reqs.iter().map(|req| async move {
+  let configurations: Vec<Value> =
+    futures::future::try_join_all(config_reqs.iter().map(|req| async move {
       client
         .openapi
         .post_sat_configuration(client.site_name(), req)
         .await
         .into_anyhow()
-    }),
-  )
-  .await?;
+    }))
+    .await?;
 
   // Images stay strictly sequential: each image's id must be recorded in
   // ref_lookup before any downstream image or session_template that
@@ -127,14 +126,15 @@ pub async fn dispatch_plan(
       dry_run: Some(opts.dry_run),
     })
     .collect();
-  let st_results = futures::future::try_join_all(st_reqs.iter().map(|req| async move {
-    client
-      .openapi
-      .post_sat_session_template(client.site_name(), req)
-      .await
-      .into_anyhow()
-  }))
-  .await?;
+  let st_results =
+    futures::future::try_join_all(st_reqs.iter().map(|req| async move {
+      client
+        .openapi
+        .post_sat_session_template(client.site_name(), req)
+        .await
+        .into_anyhow()
+    }))
+    .await?;
   for resp in st_results {
     session_templates.push(resp.template);
     if let Some(s) = resp.session

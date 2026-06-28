@@ -297,33 +297,31 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
         }
         return Ok(token);
       }
-      Err(err) => {
-        match cascade_abort_reason(&err) {
-          Some(CascadeAbort::ServerUnreachable) => {
-            tracing::warn!(
-              error = %err,
-              "auth server unreachable; aborting interactive retries"
-            );
-            return Err(err);
-          }
-          Some(CascadeAbort::SiteNotFound) => {
-            tracing::warn!(
-              error = %err,
-              "site not configured on server; aborting interactive retries"
-            );
-            return Err(err);
-          }
-          None => {
-            tracing::warn!(
-              attempt = attempt + 1,
-              max_attempts = MAX_LOGIN_ATTEMPTS,
-              error = %err,
-              "Interactive authentication attempt failed"
-            );
-            last_err = err;
-          }
+      Err(err) => match cascade_abort_reason(&err) {
+        Some(CascadeAbort::ServerUnreachable) => {
+          tracing::warn!(
+            error = %err,
+            "auth server unreachable; aborting interactive retries"
+          );
+          return Err(err);
         }
-      }
+        Some(CascadeAbort::SiteNotFound) => {
+          tracing::warn!(
+            error = %err,
+            "site not configured on server; aborting interactive retries"
+          );
+          return Err(err);
+        }
+        None => {
+          tracing::warn!(
+            attempt = attempt + 1,
+            max_attempts = MAX_LOGIN_ATTEMPTS,
+            error = %err,
+            "Interactive authentication attempt failed"
+          );
+          last_err = err;
+        }
+      },
     }
   }
 

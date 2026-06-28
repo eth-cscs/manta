@@ -367,7 +367,13 @@ pub async fn stream_logs(
 ) -> Result<std::pin::Pin<Box<dyn futures::AsyncBufRead + Send>>, Error> {
   infra
     .backend
-    .get_session_logs_stream(token, infra.site_name, session_name, timestamps, k8s)
+    .get_session_logs_stream(
+      token,
+      infra.site_name,
+      session_name,
+      timestamps,
+      k8s,
+    )
     .await
 }
 

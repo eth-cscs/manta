@@ -141,7 +141,8 @@ pub async fn create_group(
   // existing ownership to validate against, so the only sensible
   // policy without a separate provisioning system is to require the
   // pa_admin role.
-  service::authorization::require_admin(&ctx.token).map_err(to_handler_error)?;
+  service::authorization::require_admin(&ctx.token)
+    .map_err(to_handler_error)?;
 
   service::group::create_group(&infra, &ctx.token, group)
     .await

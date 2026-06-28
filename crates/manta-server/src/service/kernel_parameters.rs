@@ -241,11 +241,9 @@ pub async fn apply_kernel_params_changes(
 
   // Fan out all BSS PUTs concurrently; propagate the first error
   // (matches the original sequential loop's error semantics).
-  futures::future::try_join_all(
-    changeset.boot_params.iter().map(|bp| async move {
-      infra.backend.update_bootparameters(token, bp).await
-    }),
-  )
+  futures::future::try_join_all(changeset.boot_params.iter().map(
+    |bp| async move { infra.backend.update_bootparameters(token, bp).await },
+  ))
   .await?;
 
   // Update images projected through SBPS

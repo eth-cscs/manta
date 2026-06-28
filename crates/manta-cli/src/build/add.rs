@@ -204,6 +204,9 @@ pub fn subcommand_add_nodes() -> Command {
     .arg(arg!(-g --group <NAME> "Group to add the nodes to").required(true))
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
     .arg(dry_run_flag())
-    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
+    .arg(
+      arg!(-y --"assume-yes" "Skip confirmation prompts")
+        .action(ArgAction::SetTrue),
+    )
     .arg(output_flag())
 }

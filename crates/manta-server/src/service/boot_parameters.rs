@@ -271,17 +271,19 @@ pub(crate) async fn persist_boot_config(
 
   // Fan out all BSS PUTs concurrently. The original loop swallowed
   // errors (only debug-logged them); join_all preserves that behaviour.
-  futures::future::join_all(changeset.boot_param_vec.iter().map(|boot_parameter| async move {
-    tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
-    let component_patch_rep = infra
-      .backend
-      .update_bootparameters(token, boot_parameter)
-      .await;
-    tracing::debug!(
-      "Component boot parameters resp:\n{:#?}",
-      component_patch_rep
-    );
-  }))
+  futures::future::join_all(changeset.boot_param_vec.iter().map(
+    |boot_parameter| async move {
+      tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
+      let component_patch_rep = infra
+        .backend
+        .update_bootparameters(token, boot_parameter)
+        .await;
+      tracing::debug!(
+        "Component boot parameters resp:\n{:#?}",
+        component_patch_rep
+      );
+    },
+  ))
   .await;
 
   if let Some(new_runtime_configuration_name) = new_runtime_configuration_opt {

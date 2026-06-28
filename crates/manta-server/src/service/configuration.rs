@@ -67,9 +67,12 @@ pub async fn get_configurations(
   params: &GetConfigurationParams,
 ) -> Result<Vec<CfsConfigurationResponse>, Error> {
   // Single backend round-trip: resolve accessible groups and validate access.
-  let (_groups, target_group_vec) =
-    group::resolve_target_and_available_groups(infra, token, params.group_name.as_deref())
-      .await?;
+  let (_groups, target_group_vec) = group::resolve_target_and_available_groups(
+    infra,
+    token,
+    params.group_name.as_deref(),
+  )
+  .await?;
 
   let limit_ref = params.limit.as_ref();
 

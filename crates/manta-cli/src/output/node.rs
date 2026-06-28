@@ -10,8 +10,8 @@
 
 use std::collections::HashMap;
 
-use anyhow::{bail, Context, Result};
 use crate::openapi_client::types::NodeDetails;
+use anyhow::{Context, Result, bail};
 use comfy_table::{Cell, ContentArrangement, Table};
 use manta_shared::types::cluster_status;
 use manta_shared::types::dto::NodeDetails as SharedNodeDetails;

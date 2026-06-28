@@ -490,10 +490,7 @@ impl MantaClient {
   /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
   /// [`SiteNotFound`] context so callers can distinguish them from
   /// a plain credential rejection.
-  pub(crate) async fn validate_token(
-    &self,
-    token: &str,
-  ) -> anyhow::Result<()> {
+  pub(crate) async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
     self
       .openapi
       .auth_validate(
