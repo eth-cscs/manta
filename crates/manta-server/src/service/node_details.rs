@@ -115,6 +115,12 @@ pub async fn get_node_details(
     .iter()
     .filter_map(|c| c.id.as_deref().map(|id| (id, c)))
     .collect();
+  // Pre-index boot params by xname so the per-node lookup below is O(1).
+  // boot_params_vec was the only backend result not yet indexed here.
+  let boot_by_xname: HashMap<&str, &_> = boot_params_vec
+    .iter()
+    .flat_map(|bp| bp.hosts.iter().map(move |h| (h.as_str(), bp)))
+    .collect();
 
   // Image id → CFS configuration name that produced it.
   let image_to_cfs_config: HashMap<String, String> = cfs_sessions
@@ -151,9 +157,7 @@ pub async fn get_node_details(
         .and_then(|c| c.error_count)
         .map_or_else(|| NOT_FOUND.to_string(), |n| n.to_string());
 
-      let boot_params = boot_params_vec
-        .iter()
-        .find(|bp| bp.hosts.iter().any(|h| h == xname));
+      let boot_params = boot_by_xname.get(xname.as_str()).copied();
       let (boot_image_id, kernel_params) = boot_params.map_or_else(
         || (NOT_FOUND.to_string(), NOT_FOUND.to_string()),
         |bp| {

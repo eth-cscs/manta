@@ -21,7 +21,7 @@ use manta_backend_dispatcher::{
     ims::Image,
   },
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
@@ -516,7 +516,10 @@ pub fn get_restricted_boot_parameters(
   group_available_vec: &[Group],
   boot_parameter_vec: &[BootParameters],
 ) -> Vec<BootParameters> {
-  let group_members: Vec<String> = group_available_vec
+  // Build a HashSet<String> once so the per-boot-param filter is O(H)
+  // rather than O(G×H) for G group members, H hosts per boot param.
+  // HashSet<String> supports contains(&str) via String: Borrow<str>.
+  let member_set: HashSet<String> = group_available_vec
     .iter()
     .flat_map(Group::get_members)
     .collect();
@@ -524,9 +527,7 @@ pub fn get_restricted_boot_parameters(
   boot_parameter_vec
     .iter()
     .filter(|boot_param| {
-      group_members
-        .iter()
-        .any(|gma| boot_param.hosts.contains(gma))
+      boot_param.hosts.iter().any(|h| member_set.contains(h.as_str()))
     })
     .cloned()
     .collect::<Vec<BootParameters>>()
