@@ -55,6 +55,7 @@ pub fn subcommand_delete_nodes() -> Command {
     )
     .arg(arg!(-n --nodes <NODES>).help(HOSTLIST_HELP).required(true))
     .arg(dry_run_flag())
+    .arg(arg!(-y --"assume-yes" "Skip confirmation prompts").action(ArgAction::SetTrue))
     .arg(output_flag())
 }
 

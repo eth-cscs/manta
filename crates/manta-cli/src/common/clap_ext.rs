@@ -49,6 +49,21 @@ pub trait ArgMatchesExt {
   fn limit_or_most_recent(&self) -> Option<u8>;
 }
 
+/// Resolve the target node expression: when `hsm_group` is `Some`, the
+/// node expression is suppressed (the server expands the group to its
+/// member xnames); otherwise the caller's `nodes` value is passed
+/// through.
+///
+/// Encodes the shared rule used by both `add kernel-parameters` and
+/// `delete kernel-parameters`: HSM-group targeting and direct xname
+/// targeting are mutually exclusive, and the group wins when set.
+pub fn resolve_node_target<'a>(
+  hsm_group: Option<&'a str>,
+  nodes: Option<&'a str>,
+) -> Option<&'a str> {
+  if hsm_group.is_none() { nodes } else { None }
+}
+
 impl ArgMatchesExt for ArgMatches {
   fn req_str(&self, name: &'static str) -> Result<&str> {
     self

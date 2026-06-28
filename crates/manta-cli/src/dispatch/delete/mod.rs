@@ -76,6 +76,7 @@ pub async fn handle_delete(
       let target_hsm_name = m.req_str("group")?;
       let hosts_expression = m.req_str("nodes")?;
       let dryrun = m.get_flag("dry-run");
+      let assume_yes = m.get_flag("assume-yes");
       let output_opt = m.opt_str("output");
       nodes::exec(
         ctx,
@@ -83,6 +84,7 @@ pub async fn handle_delete(
         target_hsm_name,
         hosts_expression,
         dryrun,
+        assume_yes,
         output_opt,
       )
       .await?;

@@ -7,6 +7,7 @@
 //! server-side workflow.
 
 use crate::common::app_context::AppContext;
+use crate::common::clap_ext::resolve_node_target;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::DeleteKernelParametersRequest;
 use crate::output::action_result;
@@ -32,7 +33,7 @@ pub async fn exec(
   token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let xnames_expression = if p.hsm_group.is_none() { p.nodes } else { None };
+  let xnames_expression = resolve_node_target(p.hsm_group, p.nodes);
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let result = client
     .openapi

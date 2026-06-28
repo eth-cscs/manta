@@ -1,14 +1,14 @@
 //! Implements the `manta add nodes` command.
 //!
 //! Assigns the xnames matching a host expression to an existing HSM
-//! group via `POST /api/v1/groups/{label}/members`. Always shows an
-//! interactive confirmation prompt (no `--assume-yes` plumbing on this
-//! leaf) before sending the request. `--dry-run` prints what *would*
-//! happen and returns without calling the server. Sibling of
-//! [`super::group`] (which can also seed initial members at
-//! creation time) and inverse of [`super::super::delete::nodes`].
+//! group via `POST /api/v1/groups/{label}/members`. Shows an
+//! interactive confirmation prompt unless `--assume-yes` is set.
+//! `--dry-run` prints what *would* happen and returns without calling
+//! the server. Sibling of [`super::group`] (which can also seed
+//! initial members at creation time) and inverse of
+//! [`super::super::delete::nodes`].
 
-use anyhow::{Error, bail};
+use anyhow::Error;
 
 use crate::common;
 use crate::common::app_context::AppContext;
@@ -20,24 +20,26 @@ use crate::output::action_result;
 ///
 /// # Errors
 ///
-/// Returns an error when the user declines the confirmation prompt,
-/// when the HTTP client cannot be built, or when the
-/// `add_nodes_to_group` call fails.
+/// Returns an error when the HTTP client cannot be built or when the
+/// `add_nodes_to_group` call fails. Declining the confirmation prompt
+/// is reported as a successful no-op rather than an error.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
   target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
+  assume_yes: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
   if !common::confirm::confirm(
     &format!(
       "Nodes matching '{hosts_expression}' will be added to HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),
-    false,
+    assume_yes,
   ) {
-    bail!("Operation cancelled by user");
+    action_result::print("Operation cancelled by user", output_opt)?;
+    return Ok(());
   }
 
   if dryrun {

@@ -1,13 +1,12 @@
 //! Implements the `manta delete nodes` command.
 //!
 //! Removes (unassigns) the xnames matching a host expression from an
-//! HSM group via `DELETE /api/v1/groups/{label}/members`. Always
-//! prompts for confirmation before sending the request (no
-//! `--assume-yes` plumbing on this leaf). `--dry-run` prints a summary
-//! and returns without contacting the server. Inverse of
+//! HSM group via `DELETE /api/v1/groups/{label}/members`. Prompts for
+//! confirmation unless `--assume-yes` is set. `--dry-run` prints a
+//! summary and returns without contacting the server. Inverse of
 //! [`super::super::add::nodes`].
 
-use anyhow::{Error, bail};
+use anyhow::Error;
 
 use crate::common;
 use crate::common::app_context::AppContext;
@@ -19,24 +18,26 @@ use crate::output::action_result;
 ///
 /// # Errors
 ///
-/// Returns an error when the user declines the confirmation prompt,
-/// when the HTTP client cannot be built, or when the
-/// `delete_group_members` call fails.
+/// Returns an error when the HTTP client cannot be built or when the
+/// `delete_group_members` call fails. Declining the confirmation prompt
+/// is reported as a successful no-op rather than an error.
 pub async fn exec(
   ctx: &AppContext<'_>,
   token: &str,
   target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
+  assume_yes: bool,
   output_opt: Option<&str>,
 ) -> Result<(), Error> {
   if !common::confirm::confirm(
     &format!(
       "Nodes matching '{hosts_expression}' will be removed from HSM group '{target_hsm_name}'. Do you want to proceed?"
     ),
-    false,
+    assume_yes,
   ) {
-    bail!("Operation cancelled by user");
+    action_result::print("Operation cancelled by user", output_opt)?;
+    return Ok(());
   }
 
   if dryrun {
