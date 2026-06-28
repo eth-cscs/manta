@@ -16,9 +16,9 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
-use crate::server::common::{app_context::InfraContext, jwt_ops};
+use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::{
-  validate_group_vec_access, validate_user_group_members_access,
+  is_admin, validate_group_vec_access, validate_user_group_members_access,
 };
 use crate::service::node_ops;
 pub use manta_shared::types::api::group::GetGroupParams;
@@ -58,7 +58,7 @@ pub async fn resolve_target_and_available_groups(
 
   let target_group_vec: Vec<String> = match settings_group_name_opt {
     Some(label) => {
-      if !jwt_ops::is_user_admin(token) {
+      if !is_admin(token) {
         let available_labels: Vec<String> = group_available_vec
           .iter()
           .map(|g| g.label.clone())

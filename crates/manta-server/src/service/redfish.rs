@@ -18,8 +18,8 @@ use manta_backend_dispatcher::types::hsm::inventory::{
 };
 
 use crate::{
-  server::common::{app_context::InfraContext, jwt_ops},
-  service::authorization::validate_user_group_members_access,
+  server::common::app_context::InfraContext,
+  service::authorization::{is_admin, validate_user_group_members_access},
 };
 pub use manta_shared::types::api::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
@@ -76,7 +76,7 @@ pub async fn get_redfish_endpoints(
 ) -> Result<RedfishEndpointArray, Error> {
   tracing::info!("Get Redfish endpoints");
 
-  if !jwt_ops::is_user_admin(token) {
+  if !is_admin(token) {
     let Some(xname) = params.id.as_deref() else {
       return Err(Error::BadRequest(
         "Non-admin callers must scope a Redfish-endpoints query by `id`."

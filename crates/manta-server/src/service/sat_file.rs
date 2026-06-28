@@ -18,7 +18,6 @@ use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ApplyImageStampParams, ApplySessionTemplateParams, SatTrait,
   ValidateSatFileParams,
 };
-use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::bos::{
   session::BosSession, session_template::BosSessionTemplate,
 };
@@ -26,8 +25,8 @@ use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigu
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
-use crate::server::common::{app_context::InfraContext, jwt_ops};
-use crate::service::authorization::validate_group_vec_access;
+use crate::server::common::app_context::InfraContext;
+use crate::service::authorization;
 
 /// Apply a single SAT `configurations[]` entry.
 ///
@@ -135,10 +134,7 @@ pub async fn apply_session_template(
   dry_run: bool,
 ) -> Result<(BosSessionTemplate, Option<BosSession>), Error> {
   let hsm_group_available_vec =
-    infra.backend.get_group_name_available(token).await?;
-  if !jwt_ops::is_user_admin(token) {
-    validate_group_vec_access(target_groups, &hsm_group_available_vec)?;
-  }
+    authorization::fetch_group_names_and_validate_access(infra, token, target_groups).await?;
   infra
     .backend
     .apply_session_template(ApplySessionTemplateParams {
@@ -168,10 +164,7 @@ pub async fn validate_sat_file(
   k8s_api_url: &str,
 ) -> Result<(), Error> {
   let hsm_group_available_vec =
-    infra.backend.get_group_name_available(token).await?;
-  if !jwt_ops::is_user_admin(token) {
-    validate_group_vec_access(target_groups, &hsm_group_available_vec)?;
-  }
+    authorization::fetch_group_names_and_validate_access(infra, token, target_groups).await?;
   infra
     .backend
     .validate_sat_file(ValidateSatFileParams {

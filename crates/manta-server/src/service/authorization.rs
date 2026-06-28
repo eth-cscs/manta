@@ -17,7 +17,7 @@
 //! validate so the response can't disclose more than the caller
 //! could have asked for directly.
 //!
-//! The short-circuit is centralised in the private `admin_bypass`
+//! The short-circuit is centralised in the `pub(crate)` `is_admin`
 //! helper so that a future change — e.g. adding audit logging for
 //! admin bypasses, or gating on JWKS verification before skipping
 //! group-scope checks — only needs to touch one place.
@@ -35,7 +35,12 @@ pub static PA_ADMIN: &str = "pa_admin";
 /// `realm_access.roles`). Admin tokens short-circuit every group-scope
 /// check in this module — see the module-level security note and the
 /// `jwt_ops.rs` module doc for the no-local-signature-verification posture.
-fn admin_bypass(token: &str) -> bool {
+///
+/// This is the canonical admin-detection entry point for the service layer.
+/// All callers that need to branch on admin status must use this function
+/// rather than calling `jwt_ops::is_user_admin` directly, so that a future
+/// policy change (e.g. a different role name, audit logging) touches one place.
+pub(crate) fn is_admin(token: &str) -> bool {
   jwt_ops::is_user_admin(token)
 }
 
@@ -46,7 +51,7 @@ fn admin_bypass(token: &str) -> bool {
 /// Centralises the check so a future policy change (e.g. a different
 /// admin-role name, or audit-logging on admin access) touches one place.
 pub fn require_admin(token: &str) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     Ok(())
   } else {
     Err(Error::BadRequest(
@@ -66,7 +71,7 @@ pub async fn validate_user_group_access(
   token: &str,
   group_name: &str,
 ) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     return Ok(());
   }
 
@@ -89,7 +94,7 @@ pub async fn validate_user_group_vec_access(
   token: &str,
   group_vec: &[String],
 ) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     return Ok(());
   }
 
@@ -131,6 +136,34 @@ pub fn validate_group_vec_access(
   }
 }
 
+/// Fetch the caller's accessible group list from the backend and, for
+/// non-admin callers, validate that every label in `target_groups` is
+/// in the accessible set.
+///
+/// Returns the full fetched list so the caller can forward it to the
+/// backend without a second round-trip. Admin tokens skip the
+/// validation step but still return the fetched list (some callers
+/// need it for other purposes regardless of admin status).
+///
+/// This is the canonical helper for functions that need *both*:
+/// 1. An admin-bypass guard around group-scope validation.
+/// 2. The fetched available-group list for a downstream backend call.
+///
+/// The classic anti-pattern was to call `get_group_name_available` →
+/// `is_admin` → `validate_group_vec_access` inline at each call site;
+/// this helper folds those three steps into one.
+pub(crate) async fn fetch_group_names_and_validate_access(
+  infra: &InfraContext<'_>,
+  token: &str,
+  target_groups: &[String],
+) -> Result<Vec<String>, Error> {
+  let available = infra.backend.get_group_name_available(token).await?;
+  if !is_admin(token) {
+    validate_group_vec_access(target_groups, &available)?;
+  }
+  Ok(available)
+}
+
 /// Validate every xname in a comma-separated `ansible_limit`-style
 /// string against the caller's accessible groups.
 ///
@@ -143,7 +176,7 @@ pub async fn validate_ansible_limit_membership_access(
   token: &str,
   ansible_limit: &str,
 ) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     return Ok(());
   }
 
@@ -166,7 +199,7 @@ pub async fn validate_user_group_members_access(
   token: &str,
   group_members_target_vec: &[String],
 ) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     return Ok(());
   }
 
@@ -194,7 +227,7 @@ pub async fn validate_group_members_access(
   group_members_target_vec: &[String],
   hsm_groups_user_has_access: &[String],
 ) -> Result<(), Error> {
-  if admin_bypass(token) {
+  if is_admin(token) {
     return Ok(());
   }
 
