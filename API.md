@@ -12,6 +12,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 - **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
+- **Read-only operators:** tokens carrying the `manta-read-only` Keycloak realm role are refused with `403 Forbidden` on every `POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`. `GET` and `/api/v1/auth/*` pass through. See [GUIDE.md §13](GUIDE.md#13-read-only-access).
 - **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
 - **Interactive exploration:** `https://<host>:8443/docs` (Swagger UI loads the spec from `/openapi.json`).
 

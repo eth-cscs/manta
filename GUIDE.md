@@ -26,7 +26,8 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 10. [Cleaning up old configurations and images](#10-cleaning-up-old-configurations-and-images)
 11. [Working with multiple sites](#11-working-with-multiple-sites)
 12. [Non-interactive and scripted use](#12-non-interactive-and-scripted-use)
-13. [Installation maintenance](#13-installation-maintenance)
+13. [Read-only access](#13-read-only-access)
+14. [Installation maintenance](#14-installation-maintenance)
 
 ---
 
@@ -693,12 +694,51 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
 
-### Read-only operators (server-side enforcement)
+---
 
-`manta-server` enforces a read-only policy derived from the caller's
+## 13. Read-only access
+
+Two independent policies let an operator (or a whole token's worth
+of operators) be restricted to read endpoints only:
+
+### 13.1 CLI-side: `read_only = true` in `cli.toml`
+
+Refuses mutating verbs **inside the CLI process** before any HTTP
+request is sent. Toggle it without editing the file by hand:
+
+```bash
+manta config set read-only      # enable
+manta config show               # confirm "Read-only: yes"
+manta config unset read-only    # disable
+```
+
+When set, mutating verbs (`add`, `apply`, `delete`, `migrate`,
+`power`, `run`, `restore`) refuse to execute:
+
+```
+$ manta delete configurations --configuration-name old-config
+Error: manta is in read-only mode (`read_only = true` in cli.toml).
+       This `manta delete …` invocation would change backend state
+       and has been refused.
+       Re-run with `--dry-run` to preview, or disable the policy
+       with `manta config unset read-only`.
+```
+
+`--dry-run` invocations bypass the gate (the server returns a
+preview without applying); read verbs (`get`, `console`, `log`,
+`backup`, `config`, `upgrade`) are unaffected.
+
+Useful for **shared workstations** where you want local training
+wheels without touching the identity provider. The cost is that
+it's per-`cli.toml` — bypassed by anyone with `curl` and a token.
+
+### 13.2 Server-side: `manta-read-only` JWT role
+
+`manta-server` enforces a stricter policy derived from the caller's
 JWT itself. When a user's bearer token carries the realm role
-`manta-read-only`, every mutating endpoint (`POST`/`PUT`/`PATCH`/`DELETE`
-under `/api/v1/*`) is refused with `403 Forbidden`:
+`manta-read-only`, every mutating endpoint
+(`POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`) is refused with
+`403 Forbidden`, regardless of which client made the call:
 
 ```
 $ manta apply boot-config --boot-image abc x3000c0s1b0n0
@@ -706,38 +746,42 @@ Error: 403 Forbidden — Token carries the `manta-read-only` role;
        refusing mutating endpoint.
 ```
 
-Read endpoints (`GET`) and the login flow (`/api/v1/auth/*`) are
-unaffected — read-only operators can still inspect cluster state,
-view configurations, list nodes, and refresh their token. WebSocket
-console upgrades (which are `GET` requests) also pass through.
+Read endpoints (`GET`) and the login flow (`/api/v1/auth/*`) pass
+through — read-only operators can still inspect cluster state,
+view configurations, list nodes, and refresh their token.
+WebSocket console upgrades (which are `GET` requests) also pass
+through.
 
-The role lives in Keycloak — provision it as a realm role and assign
-it to the users who should be locked to read-only access. No
-`server.toml` knob; the role string is `manta-read-only`, verbatim.
+The role lives in **Keycloak** — provision it as a realm role and
+assign it to the users who should be locked to read-only access.
+There is no `server.toml` knob; the role string is `manta-read-only`,
+verbatim. See [MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional)
+for the `kcadm.sh` recipe.
 
-This is **independent** of the CLI-side `read_only = true` setting in
-`cli.toml`. The two policies coexist as defence in depth:
+### 13.3 Choosing between them
 
-- **CLI flag** (`manta config set read-only`) refuses mutating verbs
-  inside the CLI process before any HTTP request is sent. Useful on
-  shared workstations where you want a local "training-wheels" mode
-  without touching the identity provider.
-- **JWT role** (`manta-read-only`) is enforced server-side and
-  travels with the token, so it applies regardless of which client
-  the operator uses — even `curl`.
+The two policies are **complementary**, not alternatives:
 
-If you want both, set both.
+| | CLI flag (`cli.toml`) | JWT role (Keycloak) |
+|--|---------------------|---------------------|
+| Where enforced | CLI process | manta-server (HTTP layer) |
+| Bypassable by `curl` + token | Yes | No |
+| Requires identity-provider changes | No | Yes — realm role |
+| Per-user | Per-workstation `cli.toml` | Per-token |
+| Affects `--dry-run` previews | No (bypassed) | No (those are reads at the server) |
+
+If you want both, set both — they OR together.
 
 ---
 
-## 13. Installation maintenance
+## 14. Installation maintenance
 
 The CLI ships three self-care commands for the install plumbing:
 shell completion, man pages, and self-update. All three are local
 operations — none talks to `manta-server`, so they work even
 without a running backend.
 
-### 13.1 Installing shell completion
+### 14.1 Installing shell completion
 
 `manta gen-autocomplete` installs the completion script into the
 shell's standard XDG user directory by default:
@@ -767,7 +811,7 @@ autoload -Uz compinit && compinit
 bash (with `bash-completion` loaded) and fish pick up the XDG
 paths automatically — no extra setup required.
 
-### 13.2 Installing man pages
+### 14.2 Installing man pages
 
 ```bash
 # Defaults to $XDG_DATA_HOME/man/man1 (== ~/.local/share/man/man1)
@@ -787,7 +831,7 @@ export MANPATH="$HOME/.local/share/man:$MANPATH"
 Pass `--path <DIR>` to install elsewhere (e.g. a system-wide
 `/usr/local/share/man/man1` for a shared host).
 
-### 13.3 Upgrading the binary
+### 14.3 Upgrading the binary
 
 ```bash
 manta upgrade --check       # see current vs. latest release
