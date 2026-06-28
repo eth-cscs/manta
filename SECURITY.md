@@ -74,6 +74,8 @@ sequenceDiagram
     participant B as CSM / OCHAMI
     participant Kf as Kafka (optional)
 
+    Note over MS: chokepoint — every CSM/OCHAMI call proxies through here
+
     Note over MS: /api/v1/auth/* sub-router<br/>rate_limit + body-redaction layers
 
     CLI->>MS: POST /api/v1/auth/token<br/>{username, password}
@@ -84,7 +86,7 @@ sequenceDiagram
 
     Note over MS: /api/v1/* sub-router<br/>read_only_guard + TimeoutLayer
 
-    CLI->>MS: <method> /api/v1/<resource><br/>Authorization: Bearer …
+    CLI->>MS: {method} /api/v1/{resource}<br/>Authorization: Bearer …
     MS->>B: proxied call with bearer
     B-->>MS: backend response (signature verified upstream)
     MS-->>CLI: 2xx / 4xx
