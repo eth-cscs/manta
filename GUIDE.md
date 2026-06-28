@@ -463,6 +463,38 @@ manta power reset nodes 'x3000c0s1b0n[0-3]' --graceful --dry-run
 
 ## 8. Console access
 
+`manta console` opens a WebSocket bridge to a node's serial console (or to the Ansible container of a running CFS session). The connection upgrades from HTTPS to a WebSocket, then carries three multiplexed message kinds: binary frames for the byte stream both ways, and a text-frame resize event from the CLI.
+
+*Sequence: WebSocket upgrade then bidirectional console bridge.*
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CLI as manta console
+    participant MS as manta-server
+    participant Node as Console (via backend)
+
+    CLI->>MS: GET /api/v1/nodes/{xname}/console<br/>Upgrade: websocket
+    MS-->>CLI: 101 Switching Protocols
+    Note over CLI,MS: WebSocket established
+
+    par stdin to node
+        CLI->>MS: WS Binary frame (keystrokes)
+        MS->>Node: forward bytes
+    and resize event
+        CLI->>MS: WS Text {type:resize,cols,rows}
+        MS->>Node: pty resize
+    and node to stdout
+        Node-->>MS: bytes
+        MS-->>CLI: WS Binary frame
+    end
+
+    Note over CLI,MS: inactivity_timeout reached OR either side closes
+    MS-->>CLI: WS Close
+```
+
+The `inactivity_timeout` comes from `[server].console_inactivity_timeout_secs` (default 1800).
+
 **Open an interactive serial console to a node:**
 
 ```bash
