@@ -293,6 +293,30 @@ This means manta-server is a **single point of compromise** for everyone using i
 | Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
 | Network segmentation | **ops** | Treat manta-server as a privileged host. |
 
+### Middleware layer stack
+
+Tower applies layers in **reverse-add order** — the last `.layer()` becomes the outermost middleware. The order below is what an inbound request crosses, top to bottom.
+
+*Flowchart: where each control sits on the two sub-routers.*
+
+```mermaid
+flowchart TD
+    Req[Inbound HTTPS request] --> HSTS[HSTS header injector<br/>add_hsts_header]
+    HSTS --> Split{nest path}
+
+    Split -->|/api/v1/*| ROG[read_only_guard<br/>refuses POST/PUT/PATCH/DELETE<br/>when JWT carries manta-read-only]
+    ROG --> Tmo[TimeoutLayer<br/>request_timeout_secs]
+    Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
+
+    Split -->|/api/v1/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
+    StripBody --> RL[rate_limit<br/>per-source-IP token bucket]
+    RL --> AuthH[auth_token / auth_validate handlers]
+
+    Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
+```
+
+The diagram captures three facts that trip up new contributors: the nest split between `/api/v1/*` and `/api/v1/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path. `read_only_guard` is on `/api/v1/*` only — visible here, pinned by [`tests/server_routes.rs::auth_token_endpoint_is_not_affected_by_gate`](https://github.com/eth-cscs/manta/blob/main/crates/manta-server/tests/server_routes.rs).
+
 **Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
 
 **On the `manta-read-only` JWT-role gate.** The role-based gate at `server::auth_middleware::read_only_guard` is *not* a signature-verification boundary — `jwt_ops::has_role` decodes the JWT body without verifying its signature (consistent with `is_user_admin`'s posture, documented inline in `jwt_ops.rs`). A forged token claiming the absence of `manta-read-only` would, in principle, slip past this gate and reach the handler; the handler then makes a backend call with that token, and the backend rejects the forged signature at the first round-trip. The gate is a **defence-in-depth control** that limits damage when a token's signature *does* verify but the user's permissions should still be reduced — it shifts the read-only policy from being a per-workstation `cli.toml` setting to being a property of the token itself, which is auditable in the identity provider. Local signature verification (per-site JWKS cache, `kid`-based rotation) is the long-term direction tracked in the `jwt_ops.rs` security caveat; this gate inherits that verification automatically when it lands.
