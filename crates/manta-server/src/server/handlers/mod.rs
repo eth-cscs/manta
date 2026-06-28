@@ -163,12 +163,12 @@ pub struct SiteHeader {
 // follows. Each handler shrinks by 3-4 lines.
 // ---------------------------------------------------------------------------
 
-/// Bundled extractor for `State<Arc<ServerState>>` + [`BearerToken`]
-/// + [`SiteName`]. Use it in handler signatures instead of the three
-/// individual extractors when all three are needed (the typical
-/// case). Extraction also validates that the `X-Manta-Site` value
-/// resolves to a configured [`super::SiteBackend`], so
-/// [`Self::infra`] inside the handler body is infallible.
+/// Bundled extractor for `State<Arc<ServerState>>`, [`BearerToken`],
+/// and [`SiteName`]. Use it in handler signatures instead of the three
+/// individual extractors when all three are needed (the typical case).
+/// Extraction also validates that the `X-Manta-Site` value resolves to
+/// a configured [`super::SiteBackend`], so [`Self::infra`] inside the
+/// handler body is infallible.
 ///
 /// The unauthenticated `/auth/*` handlers and the health endpoint
 /// still use explicit extractors — they don't need a Bearer token.
