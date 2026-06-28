@@ -27,7 +27,7 @@ use clap::ArgMatches;
 
 /// Top-level CLI verbs that change backend state.
 pub const MUTATING_VERBS: &[&str] = &[
-  "add", "apply", "delete", "migrate", "power", "run", "restore",
+  "add", "apply", "backup", "delete", "migrate", "power", "run", "restore",
 ];
 
 /// Top-level CLI verbs that do not change backend state. Held
@@ -40,7 +40,6 @@ const READ_ONLY_VERBS: &[&str] = &[
   "get",
   "console",
   "log",
-  "backup",
   "config",
   "upgrade",
   "gen-autocomplete",
@@ -128,7 +127,7 @@ mod tests {
   #[test]
   fn mutating_verbs_match_spec() {
     let expected = [
-      "add", "apply", "delete", "migrate", "power", "run", "restore",
+      "add", "apply", "backup", "delete", "migrate", "power", "run", "restore",
     ];
     for v in expected {
       assert!(MUTATING_VERBS.contains(&v), "missing mutating verb: {v}");
