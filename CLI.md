@@ -116,6 +116,14 @@ Set log verbosity. Values: `error`, `warn`, `info`, `debug`, `trace`.
 manta config set log debug
 ```
 
+### config set read-only
+
+Enable CLI-side read-only mode. Persists `read_only = true` in `cli.toml`. When set, the CLI refuses backend-mutating verbs (`add`, `apply`, `delete`, `migrate`, `power`, `run`, `restore`) before any HTTP request leaves the process. `--dry-run` invocations bypass the gate. Independent of the server-side `manta-read-only` JWT role; see [GUIDE.md §13](GUIDE.md#13-read-only-access) for the comparison.
+
+```
+manta config set read-only
+```
+
 ### config unset hsm
 
 Remove the default HSM group.
@@ -123,6 +131,14 @@ Remove the default HSM group.
 ### config unset auth
 
 Remove the stored authentication token.
+
+### config unset read-only
+
+Disable CLI-side read-only mode (writes `read_only = false` to `cli.toml`). The CLI resumes accepting mutating verbs.
+
+```
+manta config unset read-only
+```
 
 ---
 
