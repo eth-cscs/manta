@@ -60,15 +60,40 @@ lands.
 
 ## Security model — at a glance
 
-manta is a 3-tier system:
+manta is a 3-tier system. The sequence below shows the bootstrap
+auth call and a subsequent authenticated request:
 
+*Sequence: bootstrap (auth) then a subsequent authenticated request.*
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant CLI as User CLI
+    participant MS as manta-server
+    participant K as Keycloak / IdP
+    participant B as CSM / OCHAMI
+    participant Kf as Kafka (optional)
+
+    Note over MS: /api/v1/auth/* sub-router<br/>rate_limit + body-redaction layers
+
+    CLI->>MS: POST /api/v1/auth/token<br/>{username, password}
+    MS->>K: exchange credentials
+    K-->>MS: bearer token
+    MS-->>CLI: { token }
+    MS->>Kf: audit { outcome, username, source_ip, site }
+
+    Note over MS: /api/v1/* sub-router<br/>read_only_guard + TimeoutLayer
+
+    CLI->>MS: <method> /api/v1/<resource><br/>Authorization: Bearer …
+    MS->>B: proxied call with bearer
+    B-->>MS: backend response (signature verified upstream)
+    MS-->>CLI: 2xx / 4xx
 ```
-┌────────────┐ HTTPS ┌──────────────┐ HTTPS ┌────────────────┐
-│  manta CLI │ ────▶ │ manta-server │ ────▶ │ CSM / OCHAMI   │
-│            │       │              │       │ + Keycloak     │
-└────────────┘       └──────────────┘       └────────────────┘
-       client side          chokepoint              upstream
-```
+
+For the user-facing read-only flow specifically, see
+[GUIDE.md §13 — Read-only access](GUIDE.md#13-read-only-access).
+For where the middleware layers sit in the request pipeline, see
+[ARCHITECTURE.md → Middleware layer stack](ARCHITECTURE.md#middleware-layer-stack).
 
 - **CLI side** (`manta` binary): a thin client that runs on operator
   workstations. Holds the user's bearer token in a 0600 cache file
