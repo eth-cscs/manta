@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.61] - 2026-06-28
+
+### Features
+
+- Publish manta-server to crates.io
+
+### Miscellaneous Tasks
+
+- Regenerate man pages + shell completions [skip ci]
+
 ## [2.0.0-beta.60] - 2026-06-25
 
 ### Build
