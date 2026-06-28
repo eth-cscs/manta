@@ -68,31 +68,32 @@ pub fn get_default_config_path() -> Result<PathBuf, Error> {
   Ok(PathBuf::from(get_project_dirs()?.config_dir()))
 }
 
+/// Appends `filename` to the default config directory path.
+fn default_config_file(filename: &str) -> Result<PathBuf, Error> {
+  let mut path = get_default_config_path()?;
+  path.push(filename);
+  Ok(path)
+}
+
 /// Returns the path of the *legacy* unified config file
 /// (e.g. `~/.config/manta/config.toml`). Used only by
 /// `missing_config_message` to detect when a user is migrating from
 /// the pre-split layout — neither binary ever reads from this path
 /// at startup.
 pub fn get_default_manta_config_file_path() -> Result<PathBuf, Error> {
-  let mut path = get_default_config_path()?;
-  path.push("config.toml");
-  Ok(path)
+  default_config_file("config.toml")
 }
 
 /// Returns the default CLI config file path
 /// (e.g. `~/.config/manta/cli.toml`).
 pub fn get_default_manta_cli_config_file_path() -> Result<PathBuf, Error> {
-  let mut path = get_default_config_path()?;
-  path.push("cli.toml");
-  Ok(path)
+  default_config_file("cli.toml")
 }
 
 /// Returns the default server config file path
 /// (e.g. `~/.config/manta/server.toml`).
 pub fn get_default_manta_server_config_file_path() -> Result<PathBuf, Error> {
-  let mut path = get_default_config_path()?;
-  path.push("server.toml");
-  Ok(path)
+  default_config_file("server.toml")
 }
 
 /// Returns the default manta cache directory path
@@ -359,6 +360,38 @@ fn missing_config_message(
   msg
 }
 
+/// Shared TOML + env-var loading logic.
+///
+/// Checks that `path` exists, converts it to a UTF-8 string, then
+/// runs the standard `Config::builder` chain (file + `MANTA_*` env
+/// vars). `label` is used only in error messages ("CLI" or "Server").
+fn load_config(
+  label: &str,
+  path: PathBuf,
+  sample: &str,
+  migration: &str,
+) -> Result<Config, Error> {
+  if !path.exists() {
+    return Err(Error::NotFound(missing_config_message(
+      label, &path, sample, migration,
+    )));
+  }
+  let path_str = path.to_str().ok_or_else(|| {
+    Error::MissingField(format!(
+      "{label} configuration file path contains invalid UTF-8"
+    ))
+  })?;
+  ::config::Config::builder()
+    .add_source(::config::File::new(path_str, ::config::FileFormat::Toml))
+    .add_source(
+      ::config::Environment::with_prefix("MANTA")
+        .try_parsing(true)
+        .prefix_separator("_"),
+    )
+    .build()
+    .map_err(Error::ConfigError)
+}
+
 /// Load `cli.toml`. Fails loudly if the file is missing; the error
 /// message includes a minimal example and (when a legacy config.toml is
 /// detected) a field-by-field migration mapping.
@@ -381,29 +414,12 @@ fn missing_config_message(
 /// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
 /// [`MantaError::ConfigError`]: crate::common::error::MantaError::ConfigError
 pub fn get_cli_configuration() -> Result<Config, Error> {
-  let path = get_cli_config_file_path()?;
-  if !path.exists() {
-    return Err(Error::NotFound(missing_config_message(
-      "CLI",
-      &path,
-      CLI_CONFIG_SAMPLE,
-      CLI_CONFIG_MIGRATION,
-    )));
-  }
-  let path_str = path.to_str().ok_or_else(|| {
-    Error::MissingField(
-      "CLI configuration file path contains invalid UTF-8".to_string(),
-    )
-  })?;
-  ::config::Config::builder()
-    .add_source(::config::File::new(path_str, ::config::FileFormat::Toml))
-    .add_source(
-      ::config::Environment::with_prefix("MANTA")
-        .try_parsing(true)
-        .prefix_separator("_"),
-    )
-    .build()
-    .map_err(Error::ConfigError)
+  load_config(
+    "CLI",
+    get_cli_config_file_path()?,
+    CLI_CONFIG_SAMPLE,
+    CLI_CONFIG_MIGRATION,
+  )
 }
 
 /// Load `server.toml`. Fails loudly if the file is missing; the error
@@ -427,29 +443,12 @@ pub fn get_cli_configuration() -> Result<Config, Error> {
 /// [`MantaError::MissingField`]: crate::common::error::MantaError::MissingField
 /// [`MantaError::ConfigError`]: crate::common::error::MantaError::ConfigError
 pub fn get_server_configuration() -> Result<Config, Error> {
-  let path = get_server_config_file_path()?;
-  if !path.exists() {
-    return Err(Error::NotFound(missing_config_message(
-      "Server",
-      &path,
-      SERVER_CONFIG_SAMPLE,
-      SERVER_CONFIG_MIGRATION,
-    )));
-  }
-  let path_str = path.to_str().ok_or_else(|| {
-    Error::MissingField(
-      "Server configuration file path contains invalid UTF-8".to_string(),
-    )
-  })?;
-  ::config::Config::builder()
-    .add_source(::config::File::new(path_str, ::config::FileFormat::Toml))
-    .add_source(
-      ::config::Environment::with_prefix("MANTA")
-        .try_parsing(true)
-        .prefix_separator("_"),
-    )
-    .build()
-    .map_err(Error::ConfigError)
+  load_config(
+    "Server",
+    get_server_config_file_path()?,
+    SERVER_CONFIG_SAMPLE,
+    SERVER_CONFIG_MIGRATION,
+  )
 }
 
 #[cfg(test)]

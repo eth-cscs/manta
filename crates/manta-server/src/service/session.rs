@@ -267,6 +267,36 @@ pub async fn create_cfs_session(
     .await
 }
 
+/// Fetch a single CFS session by name.
+///
+/// Returns `NotFound` when no session with that name exists.
+async fn fetch_session_by_name(
+  infra: &InfraContext<'_>,
+  token: &str,
+  name: &str,
+) -> Result<CfsSessionGetResponse, Error> {
+  let sessions = infra
+    .backend
+    .get_and_filter_sessions(
+      token,
+      Vec::new(),
+      Vec::new(),
+      None,
+      None,
+      None,
+      None,
+      Some(&name.to_string()),
+      None,
+      None,
+    )
+    .await?;
+
+  sessions
+    .into_iter()
+    .next()
+    .ok_or_else(|| Error::NotFound(format!("CFS session '{name}'")))
+}
+
 /// Fetch a session by name and validate that the caller is allowed
 /// to act on it.
 ///
@@ -286,26 +316,7 @@ pub async fn validate_session_access(
   token: &str,
   session_name: &str,
 ) -> Result<CfsSessionGetResponse, Error> {
-  let sessions = infra
-    .backend
-    .get_and_filter_sessions(
-      token,
-      Vec::new(),
-      Vec::new(),
-      None,
-      None,
-      None,
-      None,
-      Some(&session_name.to_string()),
-      None,
-      None,
-    )
-    .await?;
-
-  let session = sessions
-    .into_iter()
-    .next()
-    .ok_or_else(|| Error::NotFound(format!("CFS session '{session_name}'")))?;
+  let session = fetch_session_by_name(infra, token, session_name).await?;
 
   let target_groups = session.get_target_hsm().unwrap_or_default();
   if !target_groups.is_empty() {
@@ -351,25 +362,7 @@ pub async fn validate_console_session(
   token: &str,
   name: &str,
 ) -> Result<(), Error> {
-  let sessions = infra
-    .backend
-    .get_and_filter_sessions(
-      token,
-      Vec::new(),
-      Vec::new(),
-      None,
-      None,
-      None,
-      None,
-      Some(&name.to_string()),
-      None,
-      None,
-    )
-    .await?;
-
-  let session = sessions
-    .first()
-    .ok_or_else(|| Error::NotFound(format!("CFS session '{name}'")))?;
+  let session = fetch_session_by_name(infra, token, name).await?;
 
   let target_def = session
     .target

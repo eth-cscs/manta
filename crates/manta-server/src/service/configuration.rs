@@ -26,9 +26,8 @@ use manta_backend_dispatcher::types::cfs::cfs_configuration_response::CfsConfigu
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::{
-  validate_user_group_access, validate_user_group_vec_access,
-};
+use crate::service::authorization::validate_user_group_access;
+use crate::service::group;
 pub use manta_shared::types::api::configuration::GetConfigurationParams;
 
 /// Data gathered for deletion review and execution.
@@ -67,21 +66,10 @@ pub async fn get_configurations(
   token: &str,
   params: &GetConfigurationParams,
 ) -> Result<Vec<CfsConfigurationResponse>, Error> {
-  // Get list of target groups the user is asking for
-  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
-    vec![group.clone()]
-  } else {
-    infra
-      .backend
-      .get_group_available(token)
-      .await?
-      .iter()
-      .map(|group| group.label.clone())
-      .collect()
-  };
-
-  // Validate groups and get list of groups available
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+  // Single backend round-trip: resolve accessible groups and validate access.
+  let (_groups, target_group_vec) =
+    group::resolve_target_and_available_groups(infra, token, params.group_name.as_deref())
+      .await?;
 
   let limit_ref = params.limit.as_ref();
 

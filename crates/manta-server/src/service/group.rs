@@ -13,16 +13,14 @@
 //! caller-supplied expression may name nodes outside their reach.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::hsm::{
-  component::ComponentTrait, group::GroupTrait,
-};
+use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::types::Group;
 
 use crate::server::common::{app_context::InfraContext, jwt_ops};
 use crate::service::authorization::{
   validate_group_vec_access, validate_user_group_members_access,
 };
-use crate::service::node_ops::{self, from_hosts_expression_to_xname_vec};
+use crate::service::node_ops;
 pub use manta_shared::types::api::group::GetGroupParams;
 
 /// Resolve the caller's accessible groups (`Vec<Group>`) and the
@@ -238,30 +236,10 @@ pub async fn delete_group_members(
   host_expression: &str,
   dry_run: bool,
 ) -> Result<(), Error> {
-  let node_metadata_available_vec =
-    infra.backend.get_node_metadata_available(token).await?;
+  let xname_vec =
+    node_ops::from_user_hosts_expression_to_xname_vec(infra, token, host_expression, false)
+      .await?;
 
-  let xname_vec = from_hosts_expression_to_xname_vec(
-    host_expression,
-    false,
-    &node_metadata_available_vec,
-  )?;
-
-  validate_user_group_members_access(infra, token, &xname_vec).await?;
-
-  if xname_vec.is_empty() {
-    return Err(Error::BadRequest(
-      "The list of nodes to operate is empty. Nothing to do".to_string(),
-    ));
-  }
-
-  // Defence in depth: callers can only remove nodes from groups they
-  // have access to (handler already gates on `group_name`), but a
-  // hosts_expression resolved over the full cluster could name xnames
-  // outside the caller's reach. The downstream backend call would
-  // already no-op on non-members, but rejecting here gives the user
-  // an explicit error and keeps `add_nodes_to_group` / this function
-  // symmetric.
   validate_user_group_members_access(infra, token, &xname_vec).await?;
 
   for xname in &xname_vec {

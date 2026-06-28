@@ -64,42 +64,24 @@ pub async fn get_image_vec_related_cfs_configuration_name(
         && cfs_session.get_first_result_id().is_some()
     });
 
+  // Deduplicate image ids across all matching sessions before fetching.
+  let image_ids: std::collections::HashSet<String> = cfs_session_image_succeeded_vec
+    .flat_map(|s| s.get_result_id_vec())
+    .collect();
+
+  let fetch_results = futures::future::join_all(image_ids.iter().map(|id| async move {
+    (
+      id.clone(),
+      infra.backend.get_images(shasta_token, Some(id.as_str())).await,
+    )
+  }))
+  .await;
+
   let mut boot_image_id_vec = Vec::new();
-
-  for cfs_session in cfs_session_image_succeeded_vec {
-    let cfs_session_name = cfs_session.name.clone();
-
-    for image_id in cfs_session.get_result_id_vec() {
-      tracing::info!(
-        "Checking if result_id {} in CFS session {} exists",
-        image_id,
-        cfs_session_name
-      );
-
-      let image_vec_rslt = infra
-        .backend
-        .get_images(shasta_token, Some(&image_id))
-        .await;
-
-      match image_vec_rslt {
-        Ok(mut image_vec) => {
-          tracing::info!(
-            "Found the image ID '{}' related to CFS sesison '{}'",
-            image_id,
-            cfs_session_name,
-          );
-
-          boot_image_id_vec.append(&mut image_vec);
-        }
-        Err(e) => {
-          tracing::warn!(
-            "Failed to fetch image '{}' for CFS session '{}': {}",
-            image_id,
-            cfs_session_name,
-            e
-          );
-        }
-      }
+  for (id, rslt) in fetch_results {
+    match rslt {
+      Ok(mut images) => boot_image_id_vec.append(&mut images),
+      Err(e) => tracing::warn!("Failed to fetch image '{}': {}", id, e),
     }
   }
 
