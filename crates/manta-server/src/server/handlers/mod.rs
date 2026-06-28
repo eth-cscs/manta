@@ -360,24 +360,24 @@ pub(super) fn serialize_or_500<T: Serialize>(
 pub(super) fn require_vault(
   url: Option<&str>,
 ) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
-  url.ok_or_else(|| {
-    (
-      StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: "vault_base_url not configured on this server".into(),
-      }),
-    )
-  })
+  require_url(url, "vault_base_url")
 }
 
 pub(super) fn require_k8s_url(
   url: Option<&str>,
 ) -> Result<&str, (StatusCode, Json<ErrorResponse>)> {
+  require_url(url, "k8s_api_url")
+}
+
+fn require_url<'a>(
+  url: Option<&'a str>,
+  field: &str,
+) -> Result<&'a str, (StatusCode, Json<ErrorResponse>)> {
   url.ok_or_else(|| {
     (
       StatusCode::NOT_IMPLEMENTED,
       Json(ErrorResponse {
-        error: "k8s_api_url not configured on this server".into(),
+        error: format!("{field} not configured on this server"),
       }),
     )
   })

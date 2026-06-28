@@ -6,7 +6,7 @@
 //! perms are validated up-front so a misconfigured hook never blocks
 //! mid-backup. Inverse of [`super::super::restore::vcluster`].
 
-use anyhow::{Context, Error, bail};
+use anyhow::{Context, Error};
 
 use crate::common::app_context::AppContext;
 use crate::http_client::{MantaClient, OpenApiResultExt};
@@ -54,26 +54,8 @@ pub async fn exec(
     output_opt,
   )?;
 
-  if let Some(prehook_path) = prehook {
-    match crate::common::hooks::check_hook_perms(Some(prehook_path)) {
-      Ok(_r) => {
-        tracing::debug!("Pre-hook script exists and is executable.");
-      }
-      Err(e) => {
-        bail!("{e}. File: {prehook_path}");
-      }
-    }
-  }
-  if let Some(posthook_path) = posthook {
-    match crate::common::hooks::check_hook_perms(Some(posthook_path)) {
-      Ok(()) => {
-        tracing::debug!("Post-hook script exists and is executable.");
-      }
-      Err(e) => {
-        bail!("{e}. File: {posthook_path}");
-      }
-    }
-  }
+  crate::common::hooks::validate_hook(prehook, "pre")?;
+  crate::common::hooks::validate_hook(posthook, "post")?;
 
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 

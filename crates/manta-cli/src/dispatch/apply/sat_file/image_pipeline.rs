@@ -134,7 +134,7 @@ pub async fn run_image_pipeline(
   // `.get_first_result_id()` (helpers on the dto type) stay
   // available without rebuilding them on the generated client.
   let session: CfsSessionGetResponse =
-    serde_json::from_value(session_value.clone())
+    serde_json::from_value(session_value)
       .context("deserialise CFS session response")?;
 
   let session_name = session.name.clone();

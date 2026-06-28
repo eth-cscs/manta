@@ -306,12 +306,6 @@ pub async fn add_nodes_to_group(
 
   validate_user_group_members_access(infra, token, &xname_to_move_vec).await?;
 
-  if xname_to_move_vec.is_empty() {
-    return Err(Error::BadRequest(
-      "The list of nodes to move is empty. Nothing to do".to_string(),
-    ));
-  }
-
   if infra
     .backend
     .get_group(token, target_hsm_name)

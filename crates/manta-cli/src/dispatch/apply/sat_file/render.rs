@@ -196,9 +196,6 @@ pub fn render_jinja2_sat_file_yaml(
       Error::TemplateError(format!("Failed to render SAT file template: {e}"))
     })?;
 
-  // Disable debug
-  env.set_debug(false);
-
   Ok(sat_file_rendered)
 }
 

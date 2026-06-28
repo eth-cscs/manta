@@ -87,15 +87,6 @@ pub struct SatApplyOptions<'a> {
   pub output_opt: Option<&'a str>,
 }
 
-/// Validate that a hook script exists and is executable.
-fn validate_hook(hook_opt: Option<&str>, label: &str) -> Result<(), Error> {
-  if let Some(hook) = hook_opt {
-    crate::common::hooks::check_hook_perms(hook_opt)
-      .with_context(|| format!("Hook script '{hook}'"))?;
-    println!("{label}-hook script '{hook}' exists and is executable.");
-  }
-  Ok(())
-}
 
 /// Process and apply a SAT file to the system.
 ///
@@ -117,8 +108,8 @@ pub async fn exec(
   token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
-  validate_hook(opts.prehook_opt, "Pre")?;
-  validate_hook(opts.posthook_opt, "Post")?;
+  common::hooks::validate_hook(opts.prehook_opt, "Pre")?;
+  common::hooks::validate_hook(opts.posthook_opt, "Post")?;
 
   // 1. Render Jinja2 (text-in / text-out).
   tracing::info!("Render SAT template file");

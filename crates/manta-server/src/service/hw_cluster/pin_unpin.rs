@@ -110,24 +110,6 @@ pub fn calculate_target_group_pin(
       hw_component_scarcity_scores_hashmap,
     );
 
-  let mut group_target_hsm_node_by_score_hashmap: HashMap<usize, Vec<String>> =
-    HashMap::new();
-  for (node, score) in &target_hsm_node_score_tuple_vec {
-    group_target_hsm_node_by_score_hashmap
-      .entry(*score as usize)
-      .and_modify(|node_vec| node_vec.push(node.clone()))
-      .or_insert(vec![node.clone()]);
-  }
-
-  let mut group_parent_hsm_node_by_score_hashmap: HashMap<usize, Vec<String>> =
-    HashMap::new();
-  for (node, score) in &parent_hsm_node_score_tuple_vec {
-    group_parent_hsm_node_by_score_hashmap
-      .entry(*score as usize)
-      .and_modify(|node_vec| node_vec.push(node.clone()))
-      .or_insert(vec![node.clone()]);
-  }
-
   let mut nodes_migrated_from_combination_target_parent_hsm: Vec<(
     String,
     HashMap<String, usize>,
@@ -224,28 +206,6 @@ pub fn calculate_target_group_pin(
         user_defined_hsm_hw_components_count_hashmap,
         hw_component_scarcity_scores_hashmap,
       );
-
-    let mut group_target_hsm_node_by_score_hashmap: HashMap<
-      usize,
-      Vec<String>,
-    > = HashMap::new();
-    for (node, score) in &target_hsm_node_score_tuple_vec {
-      group_target_hsm_node_by_score_hashmap
-        .entry(*score as usize)
-        .and_modify(|node_vec| node_vec.push(node.clone()))
-        .or_insert(vec![node.clone()]);
-    }
-
-    let mut group_parent_hsm_node_by_score_hashmap: HashMap<
-      usize,
-      Vec<String>,
-    > = HashMap::new();
-    for (node, score) in &parent_hsm_node_score_tuple_vec {
-      group_parent_hsm_node_by_score_hashmap
-        .entry(*score as usize)
-        .and_modify(|node_vec| node_vec.push(node.clone()))
-        .or_insert(vec![node.clone()]);
-    }
 
     (best_candidate, best_candidate_counters) =
       scoring::get_best_candidate_in_target_and_parent_hsm(

@@ -5,7 +5,7 @@
 
 use std::path::Path;
 
-use anyhow::{Error, anyhow, bail};
+use anyhow::{Context, Error, anyhow, bail};
 use execute::{Execute, shell};
 use is_executable::IsExecutable;
 
@@ -54,6 +54,25 @@ pub fn run_hook_if_present(
     println!("Running the {label}-hook '{hook}'");
     let code = run_hook(hook_opt)?;
     tracing::debug!("{label}-hook script completed ok. RT={code}");
+  }
+  Ok(())
+}
+
+/// Validate that a hook script exists and is executable.
+///
+/// If `hook_opt` is `None`, returns `Ok(())` immediately (no-op).
+/// If `hook_opt` is `Some(hook)`, verifies the executable bit via
+/// [`check_hook_perms`], then prints a confirmation to stdout.
+///
+/// # Errors
+///
+/// Propagates any error from [`check_hook_perms`] when the path does
+/// not exist or is not executable.
+pub fn validate_hook(hook_opt: Option<&str>, label: &str) -> anyhow::Result<()> {
+  if let Some(hook) = hook_opt {
+    check_hook_perms(hook_opt)
+      .with_context(|| format!("Hook script '{hook}'"))?;
+    println!("{label}-hook script '{hook}' exists and is executable.");
   }
   Ok(())
 }

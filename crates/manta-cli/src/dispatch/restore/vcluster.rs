@@ -60,16 +60,8 @@ pub async fn exec(
   let ims_file_value = ims_file.context("IMS file is required")?;
   let hsm_file_value = hsm_file.context("HSM file is required")?;
 
-  if let Some(prehook_path) = prehook {
-    crate::common::hooks::check_hook_perms(Some(prehook_path))
-      .map_err(|e| anyhow::anyhow!("{e}. File: {prehook_path}"))?;
-    tracing::debug!("Pre-hook script exists and is executable.");
-  }
-  if let Some(posthook_path) = posthook {
-    crate::common::hooks::check_hook_perms(Some(posthook_path))
-      .map_err(|e| anyhow::anyhow!("{e}. File: {posthook_path}"))?;
-    tracing::debug!("Post-hook script exists and is executable.");
-  }
+  crate::common::hooks::validate_hook(prehook, "pre")?;
+  crate::common::hooks::validate_hook(posthook, "post")?;
 
   let req = MigrateRestoreRequest {
     bos_file: bos_file.map(str::to_string),
