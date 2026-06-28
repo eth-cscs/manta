@@ -15,6 +15,7 @@
 
 use std::collections::HashMap;
 
+use futures::future::join_all;
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 use manta_backend_dispatcher::interfaces::migrate_backup::MigrateBackupTrait;
@@ -108,8 +109,19 @@ pub async fn migrate_nodes(
 
   let mut results = Vec::new();
 
-  for target_name in target_group_name_vec {
-    if infra.backend.get_group(token, target_name).await.is_ok() {
+  // Pre-fetch target-group existence in parallel — these are
+  // independent reads with no side effects on the backend.
+  let existence: Vec<bool> = join_all(
+    target_group_name_vec
+      .iter()
+      .map(|n| async { infra.backend.get_group(token, n).await.is_ok() }),
+  )
+  .await;
+
+  for (target_name, exists) in
+    target_group_name_vec.iter().zip(existence.iter())
+  {
+    if *exists {
       tracing::debug!("The group '{target_name}' exists, good.");
     } else if create_group {
       tracing::info!(

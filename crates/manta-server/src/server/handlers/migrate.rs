@@ -137,17 +137,19 @@ pub async fn migrate_nodes(
   let infra = ctx.infra();
 
   // Authorization: every named group on both sides must be accessible.
-  for name in body
+  // Collect all names into one Vec and validate in a single backend
+  // round-trip instead of N+M serial calls.
+  let all_groups: Vec<String> = body
     .target_hsm_names
     .iter()
     .chain(body.parent_hsm_names.iter())
-  {
-    service::authorization::validate_user_group_access(
-      &infra, &ctx.token, name,
-    )
-    .await
-    .map_err(to_handler_error)?;
-  }
+    .cloned()
+    .collect();
+  service::authorization::validate_user_group_vec_access(
+    &infra, &ctx.token, &all_groups,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   let (xnames, results) = service::migrate::migrate_nodes(
     &infra,
