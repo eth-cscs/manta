@@ -51,10 +51,7 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
   let summary_status = cli_args.get_flag("summary-status");
 
-  let hsm = params
-    .group_name
-    .as_deref()
-    .or(params.settings_group_name.as_deref());
+  let hsm = params.effective_group();
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let node_details_list = client

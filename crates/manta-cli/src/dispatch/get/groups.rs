@@ -50,7 +50,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let groups = client
     .openapi
-    .get_groups(params.group_name.as_deref(), client.site_name())
+    .get_groups(params.effective_group(), client.site_name())
     .await
     .into_anyhow()?;
 
