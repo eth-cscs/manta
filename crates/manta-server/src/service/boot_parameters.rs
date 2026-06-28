@@ -18,14 +18,16 @@ use manta_backend_dispatcher::{
   types::{
     Group,
     bss::BootParameters,
-    ims::{Image, PatchImage},
+    ims::Image,
   },
 };
 use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
-use crate::service::ims_ops::get_image_vec_related_cfs_configuration_name;
+use crate::service::ims_ops::{
+  apply_image_patches, get_image_vec_related_cfs_configuration_name,
+};
 use crate::service::node_ops;
 pub use manta_shared::types::api::boot_parameters::{
   GetBootParametersParams, UpdateBootParametersParams,
@@ -301,16 +303,7 @@ pub(crate) async fn persist_boot_config(
       )
       .await?;
 
-    for image in changeset.image_vec.values() {
-      let image_id = image.id.clone().ok_or_else(|| {
-        Error::MissingField("Image id is missing".to_string())
-      })?;
-      let patch_image: PatchImage = image.clone().into();
-      infra
-        .backend
-        .update_image(token, &image_id, &patch_image)
-        .await?;
-    }
+    apply_image_patches(infra, token, &changeset.image_vec).await?;
   } else {
     tracing::info!("Runtime configuration does not change.");
   }

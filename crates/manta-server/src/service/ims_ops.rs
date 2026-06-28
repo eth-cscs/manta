@@ -2,6 +2,8 @@
 //! cross-reference images by CFS configuration name (e.g. boot-config
 //! application, SAT-file rendering).
 
+use std::collections::HashMap;
+
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{cfs::CfsTrait, ims::ImsTrait},
@@ -9,6 +11,37 @@ use manta_backend_dispatcher::{
 };
 
 use crate::server::common::app_context::InfraContext;
+
+/// Fan out IMS PATCH calls for every image in `images` concurrently.
+///
+/// Extracts the image id from each [`Image`] value and calls
+/// `backend.update_image`. Uses [`futures::future::try_join_all`] so
+/// all per-image PATCH requests are in flight simultaneously; the first
+/// error encountered is returned to the caller (same semantics as the
+/// sequential loops this helper replaces).
+///
+/// # Errors
+///
+/// - [`Error::MissingField`] when an image has no `id`.
+/// - [`Error::NetError`] / [`Error::CsmError`] from the backend
+///   `update_image` call.
+pub(crate) async fn apply_image_patches(
+  infra: &InfraContext<'_>,
+  token: &str,
+  images: &HashMap<String, Image>,
+) -> Result<(), Error> {
+  futures::future::try_join_all(images.values().map(|image| async move {
+    let image_id = image.id.as_deref().ok_or_else(|| {
+      Error::MissingField("Image id is missing".to_string())
+    })?;
+    infra
+      .backend
+      .update_image(token, image_id, &image.clone().into())
+      .await
+  }))
+  .await
+  .map(|_| ())
+}
 
 /// Return the IMS images produced by succeeded image-build CFS
 /// sessions that referenced `cfs_configuration_name`.

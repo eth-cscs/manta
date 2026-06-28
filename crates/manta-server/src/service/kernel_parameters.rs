@@ -28,6 +28,7 @@ use std::collections::HashMap;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::authorization::validate_user_group_members_access;
+use crate::service::ims_ops::apply_image_patches;
 use crate::service::node_ops;
 pub use manta_shared::types::api::kernel_parameters::GetKernelParametersParams;
 
@@ -219,8 +220,9 @@ pub(crate) async fn prepare_kernel_params_changes(
 /// [`build_images_to_project`]; pass an empty map (as the delete path
 /// does) to skip SBPS projection entirely.
 ///
-/// Writes are sequential (not transactional): a failure mid-loop can
-/// leave a subset of records updated.
+/// BSS PUTs and IMS PATCHes are each fanned out concurrently via
+/// [`futures::future::try_join_all`]; the first error from either
+/// phase is propagated to the caller.
 ///
 /// # Errors
 ///
@@ -247,20 +249,7 @@ pub async fn apply_kernel_params_changes(
   .await?;
 
   // Update images projected through SBPS
-  for image in images_to_project.values() {
-    infra
-      .backend
-      .update_image(
-        token,
-        image
-          .id
-          .clone()
-          .ok_or_else(|| Error::MissingField("Image has no id".to_string()))?
-          .as_str(),
-        &image.clone().into(),
-      )
-      .await?;
-  }
+  apply_image_patches(infra, token, images_to_project).await?;
 
   Ok(())
 }
