@@ -48,10 +48,7 @@ pub async fn exec(
     .get_one::<String>("output")
     .map_or("summary", String::as_str);
 
-  let hsm = params
-    .group_name
-    .as_deref()
-    .or(params.settings_hsm_group_name.as_deref());
+  let hsm = params.effective_group();
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let json = client

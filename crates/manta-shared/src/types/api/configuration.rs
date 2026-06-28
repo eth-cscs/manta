@@ -23,3 +23,15 @@ pub struct GetConfigurationParams {
   /// Cap on the number of configurations returned (most recent first).
   pub limit: Option<u8>,
 }
+
+impl GetConfigurationParams {
+  /// Returns the effective group name, preferring the explicit
+  /// `--group` flag and falling back to the operator default from
+  /// `cli.toml`.
+  pub fn effective_group(&self) -> Option<&str> {
+    self
+      .group_name
+      .as_deref()
+      .or(self.settings_hsm_group_name.as_deref())
+  }
+}

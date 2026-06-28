@@ -77,6 +77,18 @@ pub struct GetTemplateParams {
   pub limit: Option<u8>,
 }
 
+impl GetTemplateParams {
+  /// Returns the effective group name, preferring the explicit
+  /// `--group` flag and falling back to the operator default from
+  /// `cli.toml`.
+  pub fn effective_group(&self) -> Option<&str> {
+    self
+      .group_name
+      .as_deref()
+      .or(self.settings_group_name.as_deref())
+  }
+}
+
 /// Parameters for applying a BOS session template.
 pub struct ApplyTemplateParams {
   /// Optional explicit name for the created BOS session;

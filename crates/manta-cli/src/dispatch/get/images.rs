@@ -25,11 +25,7 @@ use manta_shared::types::dto::Image;
 /// `--most-recent` forces `limit = Some(1)`, overriding any explicit
 /// `--limit` value.
 fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {
-  let limit = if let Some(true) = cli_args.get_one("most-recent") {
-    Some(1u8)
-  } else {
-    cli_args.get_one::<u8>("limit").copied()
-  };
+  let limit = cli_args.limit_or_most_recent();
 
   GetImagesParams {
     id: cli_args.opt_string("id"),

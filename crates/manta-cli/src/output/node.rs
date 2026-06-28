@@ -10,8 +10,11 @@
 
 use std::collections::HashMap;
 
+use anyhow::{bail, Context, Result};
 use crate::openapi_client::types::NodeDetails;
 use comfy_table::{Cell, ContentArrangement, Table};
+use manta_shared::types::cluster_status;
+use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
 
 use crate::common::multi_line::string_vec_to_multi_line_string;
 
@@ -184,6 +187,85 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
     "Num nodes",
     &runtime_configuration_counters,
   );
+}
+
+/// Render a node-details list according to the flags passed by the CLI.
+///
+/// Called by both `dispatch/get/nodes::exec` and
+/// `dispatch/get/group_nodes::exec`; the only behavioural difference
+/// between the two callers is the `xnames_only` flag (`false` for
+/// `nodes`, true when `--xnames-only-one-line` is passed for
+/// `group-nodes`).
+///
+/// # Errors
+///
+/// Returns an error if JSON serialisation fails or `output_opt` holds
+/// an unrecognised value.
+pub fn render_node_details(
+  list: Vec<NodeDetails>,
+  nids_only: bool,
+  xnames_only: bool,
+  summary_status: bool,
+  output_opt: Option<&str>,
+) -> Result<()> {
+  if summary_status {
+    // cluster_status helpers live in manta-shared and consume the
+    // shared NodeDetails type. Both types are wire-identical, so
+    // round-tripping through JSON is the lightest conversion.
+    let shared: Vec<SharedNodeDetails> =
+      serde_json::from_value(serde_json::to_value(&list)?)?;
+    println!("{}", cluster_status::compute_summary_status(&shared));
+  } else if nids_only {
+    let node_nid_list: Vec<String> =
+      list.iter().map(|nd| nd.nid.clone()).collect();
+
+    if output_opt == Some("json") {
+      println!(
+        "{}",
+        serde_json::to_string(&node_nid_list)
+          .context("Failed to serialize node NID list")?
+      );
+    } else {
+      println!("{}", node_nid_list.join(","));
+    }
+  } else if xnames_only {
+    let node_xname_list: Vec<String> =
+      list.iter().map(|nd| nd.xname.clone()).collect();
+
+    if output_opt == Some("json") {
+      println!(
+        "{}",
+        serde_json::to_string(&node_xname_list)
+          .context("Failed to serialize node xname list")?
+      );
+    } else {
+      println!("{}", node_xname_list.join(","));
+    }
+  } else {
+    match output_opt {
+      Some("json") => {
+        println!(
+          "{}",
+          serde_json::to_string_pretty(&list)
+            .context("Failed to serialize node details")?
+        );
+      }
+      Some("summary") => {
+        print_summary(list);
+      }
+      Some("table-wide") => {
+        print_table(list, true);
+      }
+      Some("table") => {
+        print_table(list, false);
+      }
+      _ => {
+        bail!("Output value not recognized or missing");
+      }
+    }
+  }
+
+  Ok(())
 }
 
 #[cfg(test)]

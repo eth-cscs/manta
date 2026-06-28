@@ -21,11 +21,7 @@ use manta_shared::types::dto::CfsSessionGetResponse;
 /// `--limit` value. `--type runtime` is rewritten to `dynamic` so the
 /// value matches CFS's internal session-type vocabulary.
 fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
-  let limit = if let Some(true) = cli_args.get_one("most-recent") {
-    Some(1u8)
-  } else {
-    cli_args.get_one::<u8>("limit").copied()
-  };
+  let limit = cli_args.limit_or_most_recent();
 
   let mut session_type = cli_args.opt_string("type");
   if session_type.as_deref() == Some("runtime") {

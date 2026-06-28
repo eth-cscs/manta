@@ -5,9 +5,10 @@
 //! single group; absent it lists every group. Output is either a
 //! [`crate::output::group`] table or a pretty-printed JSON document.
 
-use anyhow::{Context, Error, bail};
+use anyhow::Error;
 
 use crate::common::app_context::AppContext;
+use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::api::group::GetGroupParams;
@@ -53,24 +54,8 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  let output: &String = cli_args
-    .get_one("output")
-    .context("The 'output' argument is mandatory")?;
-
-  match output.as_str() {
-    "table" => output::group::print_table(&groups),
-    "json" => println!(
-      "{}",
-      serde_json::to_string_pretty(
-        &serde_json::to_value(&groups)
-          .context("Failed to convert groups to JSON value")?
-      )
-      .context("Failed to serialize groups to JSON")?
-    ),
-    _ => {
-      bail!("Output format not valid");
-    }
-  }
+  let output_opt = cli_args.opt_str("output");
+  output::group::print(&groups, output_opt)?;
 
   Ok(())
 }

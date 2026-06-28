@@ -6,6 +6,7 @@
 //! [`nodeset::NodeSet`] so a long group prints as a compact range
 //! expression.
 
+use anyhow::{Context, Result};
 use comfy_table::{ContentArrangement, Table};
 use nodeset::NodeSet;
 
@@ -46,6 +47,27 @@ pub fn print_table(group_vec: &[Group]) {
   table.column_mut(3).map(|c| c.set_delimiter(','));
 
   println!("{table}");
+}
+
+/// Print HSM groups in the requested format.
+///
+/// Supports `"json"` for pretty-printed JSON or the default table
+/// (any other value, including `None`).
+///
+/// # Errors
+///
+/// Returns `Err` if JSON serialisation fails (JSON path only).
+pub fn print(groups: &[Group], output_opt: Option<&str>) -> Result<()> {
+  if output_opt.is_some_and(|o| o == "json") {
+    println!(
+      "{}",
+      serde_json::to_string_pretty(groups)
+        .context("Failed to serialize groups to JSON")?
+    );
+  } else {
+    print_table(groups);
+  }
+  Ok(())
 }
 
 #[cfg(test)]

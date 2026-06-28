@@ -11,6 +11,18 @@ pub struct GetHardwareClusterParams {
   pub settings_hsm_group_name: Option<String>,
 }
 
+impl GetHardwareClusterParams {
+  /// Returns the effective group name, preferring the explicit
+  /// positional argument and falling back to the operator default
+  /// from `cli.toml`.
+  pub fn effective_group(&self) -> Option<&str> {
+    self
+      .group_name
+      .as_deref()
+      .or(self.settings_hsm_group_name.as_deref())
+  }
+}
+
 /// Typed parameters for fetching hardware inventory for a list of nodes.
 #[derive(Debug)]
 pub struct GetHardwareNodesListParams {

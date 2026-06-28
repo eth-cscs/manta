@@ -6,15 +6,13 @@
 //! [`crate::output::node`] table. See [`super::nodes`] for the
 //! host-expression variant.
 
-use anyhow::{Context, Error, bail};
+use anyhow::Error;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::output;
 use manta_shared::types::api::cluster::GetClusterParams;
-use manta_shared::types::cluster_status;
-use manta_shared::types::dto::NodeDetails as SharedNodeDetails;
 
 /// Parse CLI arguments into typed [`GetClusterParams`].
 ///
@@ -65,66 +63,13 @@ pub async fn exec(
     .await
     .into_anyhow()?;
 
-  if summary_status {
-    // cluster_status helpers live in manta-shared and consume the
-    // shared NodeDetails type. Both types are wire-identical, so
-    // round-tripping through JSON is the lightest conversion.
-    let shared: Vec<SharedNodeDetails> =
-      serde_json::from_value(serde_json::to_value(&node_details_list)?)?;
-    println!("{}", cluster_status::compute_summary_status(&shared));
-  } else if nids_only {
-    let node_nid_list: Vec<String> =
-      node_details_list.iter().map(|nd| nd.nid.clone()).collect();
-
-    if output_opt == Some("json") {
-      println!(
-        "{}",
-        serde_json::to_string(&node_nid_list)
-          .context("Failed to serialize node NID list")?
-      );
-    } else {
-      println!("{}", node_nid_list.join(","));
-    }
-  } else if xnames_only {
-    let node_xname_list: Vec<String> = node_details_list
-      .iter()
-      .map(|nd| nd.xname.clone())
-      .collect();
-
-    if output_opt == Some("json") {
-      println!(
-        "{}",
-        serde_json::to_string(&node_xname_list)
-          .context("Failed to serialize node xname list")?
-      );
-    } else {
-      println!("{}", node_xname_list.join(","));
-    }
-  } else {
-    match output_opt {
-      Some("json") => {
-        println!(
-          "{}",
-          serde_json::to_string_pretty(&node_details_list)
-            .context("Failed to serialize node details")?
-        );
-      }
-      Some("summary") => {
-        output::node::print_summary(node_details_list);
-      }
-      Some("table-wide") => {
-        output::node::print_table(node_details_list, true);
-      }
-      Some("table") => {
-        output::node::print_table(node_details_list, false);
-      }
-      _ => {
-        bail!("Output value not recognized or missing");
-      }
-    }
-  }
-
-  Ok(())
+  output::node::render_node_details(
+    node_details_list,
+    nids_only,
+    xnames_only,
+    summary_status,
+    output_opt,
+  )
 }
 
 #[cfg(test)]

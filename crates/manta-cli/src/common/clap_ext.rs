@@ -42,6 +42,11 @@ pub trait ArgMatchesExt {
   /// `get_one::<String>(name).cloned()`. Use when the value must
   /// outlive the matches (e.g. it's moved into a struct field).
   fn opt_string(&self, name: &'static str) -> Option<String>;
+
+  /// Resolve the result-set size cap from `--most-recent` /
+  /// `--limit`. When `--most-recent` is set it takes precedence and
+  /// returns `Some(1)`; otherwise `--limit` (if set) is returned.
+  fn limit_or_most_recent(&self) -> Option<u8>;
 }
 
 impl ArgMatchesExt for ArgMatches {
@@ -58,6 +63,14 @@ impl ArgMatchesExt for ArgMatches {
 
   fn opt_string(&self, name: &'static str) -> Option<String> {
     self.get_one::<String>(name).cloned()
+  }
+
+  fn limit_or_most_recent(&self) -> Option<u8> {
+    if let Some(true) = self.get_one("most-recent") {
+      Some(1u8)
+    } else {
+      self.get_one::<u8>("limit").copied()
+    }
   }
 }
 

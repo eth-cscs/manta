@@ -25,11 +25,7 @@ fn parse_configuration_params(
   cli_args: &clap::ArgMatches,
   settings_hsm_group_name_opt: Option<&str>,
 ) -> GetConfigurationParams {
-  let limit = if let Some(true) = cli_args.get_one("most-recent") {
-    Some(1u8)
-  } else {
-    cli_args.get_one::<u8>("limit").copied()
-  };
+  let limit = cli_args.limit_or_most_recent();
 
   GetConfigurationParams {
     name: cli_args.opt_string("name"),
@@ -64,10 +60,7 @@ pub async fn exec(
   let params =
     parse_configuration_params(cli_args, ctx.settings_group_name_opt);
 
-  let group_name = params
-    .group_name
-    .as_deref()
-    .or(params.settings_hsm_group_name.as_deref());
+  let group_name = params.effective_group();
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let raw = client

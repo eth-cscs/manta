@@ -50,10 +50,7 @@ pub async fn exec(
   let params =
     parse_kernel_parameters_params(cli_args, ctx.settings_group_name_opt);
 
-  let group_name = params
-    .group_name
-    .as_deref()
-    .or(params.settings_group_name.as_deref());
+  let group_name = params.effective_group();
 
   let client = MantaClient::from_app_ctx(ctx, Some(token))?;
   let boot_parameters = client

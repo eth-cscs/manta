@@ -118,3 +118,15 @@ pub struct GetKernelParametersParams {
   /// when neither `group_name` nor `nodes` is supplied.
   pub settings_group_name: Option<String>,
 }
+
+impl GetKernelParametersParams {
+  /// Returns the effective group name, preferring the explicit
+  /// `--group` flag and falling back to the operator default from
+  /// `cli.toml`.
+  pub fn effective_group(&self) -> Option<&str> {
+    self
+      .group_name
+      .as_deref()
+      .or(self.settings_group_name.as_deref())
+  }
+}
