@@ -764,8 +764,9 @@ both manta-server and manta-cli refuse mutating verbs.
 manta-cli decodes the bearer token at the start of every
 authenticated command. If `realm_access.roles` contains
 `manta-read-only`, any of `add`, `apply`, `backup`, `delete`,
-`migrate`, `power`, `run`, `restore` is refused before an HTTP
-request leaves the process:
+`migrate`, `power`, `run`, `restore` is refused without the
+`GET /groups/available` round-trip that would normally populate
+the session — the refusal is local and immediate:
 
 ```text
 Error: manta is in read-only mode (the bearer token carries the
@@ -803,7 +804,20 @@ sequenceDiagram
     end
 ```
 
-### 13.3 Provisioning the role
+### 13.3 Checking your read-only status
+
+Run `manta config show` to see how the CLI interpreted your token:
+
+```text
+Username (from token):       alice
+Admin (from token):          no
+Read-only (from token):      yes
+Accessible groups (from token+server): compute, gpu-cluster
+```
+
+`Read-only (from token): yes` confirms the role is in your JWT and the gate is armed. The JSON shape (`-o json`) reports it as `session.is_read_only`.
+
+### 13.4 Provisioning the role
 
 The role string is `manta-read-only` verbatim. To assign it to a
 user, add it to the user's Keycloak realm roles — see

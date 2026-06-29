@@ -369,7 +369,7 @@ token the user obtains. The role string is `manta-read-only`,
 verbatim; it is not configurable. The JWT-role gate applies
 server-side regardless of which client (CLI, `curl`, script) sent
 the request. The CLI-side `read_only = true` flag in `cli.toml`
-has been removed — see §2.8.
+has been removed — see [§2.8](#28-removal-of-clitoml-read_only-flag-and-config-setunset-read-only-commands-breaking).
 
 **Troubleshooting.** If the role doesn't appear to take effect:
 
@@ -411,6 +411,20 @@ has been removed — see §2.8.
 
    Grep `journalctl -u manta-server` (or your configured tracing sink)
    for `manta-read-only` to confirm the gate fired.
+
+5. CLI-side, the same user invoking a mutating verb sees the refusal
+   immediately, without the request ever reaching the server:
+
+   ```
+   $ manta apply boot-image --boot-image foo x1000c0s0b0n0
+   Error: manta is in read-only mode (the bearer token carries the
+   `manta-read-only` role).
+   ```
+
+   If this CLI-side refusal does NOT fire but the server still
+   returns 403, the local token cache may pre-date the role
+   assignment — clear it with `manta config unset auth` and
+   re-authenticate.
 
 ### 2.8 Removal of cli.toml `read_only` flag and `config set/unset read-only` commands (BREAKING)
 

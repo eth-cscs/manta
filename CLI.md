@@ -86,11 +86,30 @@ Manage the local manta configuration file (`~/.config/manta/cli.toml`).
 
 ### config show
 
-Print current configuration values.
+Print current configuration values, including a `session` block populated from the bearer token (`username`, `name`, `is_admin`, `is_read_only`, `accessible_groups`). Use this to inspect what the token grants the current user.
 
 ```
 manta config show
 ```
+
+JSON output (`-o json`) renders the session as a sub-object:
+
+```
+{
+  "config_file": "...",
+  "current_site": "alps",
+  "session": {
+    "username": "alice",
+    "name": "Alice Smith",
+    "is_admin": false,
+    "is_read_only": false,
+    "accessible_groups": ["compute", "uan"]
+  },
+  ...
+}
+```
+
+The session block is `null` when no site is selected (no token resolved).
 
 ### config set hsm \<HSM_GROUP_NAME\>
 
