@@ -20,6 +20,15 @@ The guide is organised by audience:
 If you skim only one section, make it
 [§4 Step-by-step playbook](#4-step-by-step-playbook).
 
+**Conventions in this document.** Section headings tagged `(BREAKING)`
+mark changes that require operator action before upgrading — config
+keys removed, subcommands removed, wire-format changes. Untagged
+sections describe additions or behaviour refinements that don't break
+existing setups. Section numbering is by audience (§1/§2/§3), then
+by topic within each — not chronological across releases. For
+between-release deltas once you are on v2, see
+[CHANGELOG.md](CHANGELOG.md) instead.
+
 ---
 
 ## What changed at a high level
