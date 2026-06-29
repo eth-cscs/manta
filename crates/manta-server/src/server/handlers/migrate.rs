@@ -146,7 +146,9 @@ pub async fn migrate_nodes(
     .cloned()
     .collect();
   service::authorization::validate_user_group_vec_access(
-    &infra, &ctx.token, &all_groups,
+    &infra,
+    &ctx.token,
+    &all_groups,
   )
   .await
   .map_err(to_handler_error)?;

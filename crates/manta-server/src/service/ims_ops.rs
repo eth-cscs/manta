@@ -31,9 +31,10 @@ pub(crate) async fn apply_image_patches(
   images: &HashMap<String, Image>,
 ) -> Result<(), Error> {
   futures::future::try_join_all(images.values().map(|image| async move {
-    let image_id = image.id.as_deref().ok_or_else(|| {
-      Error::MissingField("Image id is missing".to_string())
-    })?;
+    let image_id = image
+      .id
+      .as_deref()
+      .ok_or_else(|| Error::MissingField("Image id is missing".to_string()))?;
     infra
       .backend
       .update_image(token, image_id, &image.clone().into())

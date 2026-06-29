@@ -134,7 +134,12 @@ pub async fn apply_session_template(
   dry_run: bool,
 ) -> Result<(BosSessionTemplate, Option<BosSession>), Error> {
   let hsm_group_available_vec =
-    authorization::fetch_group_names_and_validate_access(infra, token, target_groups).await?;
+    authorization::fetch_group_names_and_validate_access(
+      infra,
+      token,
+      target_groups,
+    )
+    .await?;
   infra
     .backend
     .apply_session_template(ApplySessionTemplateParams {
@@ -164,7 +169,12 @@ pub async fn validate_sat_file(
   k8s_api_url: &str,
 ) -> Result<(), Error> {
   let hsm_group_available_vec =
-    authorization::fetch_group_names_and_validate_access(infra, token, target_groups).await?;
+    authorization::fetch_group_names_and_validate_access(
+      infra,
+      token,
+      target_groups,
+    )
+    .await?;
   infra
     .backend
     .validate_sat_file(ValidateSatFileParams {

@@ -15,11 +15,7 @@
 use manta_backend_dispatcher::{
   error::Error,
   interfaces::{bss::BootParametersTrait, cfs::CfsTrait, ims::ImsTrait},
-  types::{
-    Group,
-    bss::BootParameters,
-    ims::Image,
-  },
+  types::{Group, bss::BootParameters, ims::Image},
 };
 use std::collections::{HashMap, HashSet};
 
@@ -527,7 +523,10 @@ pub fn get_restricted_boot_parameters(
   boot_parameter_vec
     .iter()
     .filter(|boot_param| {
-      boot_param.hosts.iter().any(|h| member_set.contains(h.as_str()))
+      boot_param
+        .hosts
+        .iter()
+        .any(|h| member_set.contains(h.as_str()))
     })
     .cloned()
     .collect::<Vec<BootParameters>>()
