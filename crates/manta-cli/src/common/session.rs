@@ -4,9 +4,9 @@
 //!
 //! Built once at the top of `crate::dispatch::process::process_cli`
 //! for every command that authenticates, then attached to
-//! `crate::common::app_context::AppContext::session` (added in Task 3)
-//! so handlers and the read-only gate can read JWT-derived state
-//! without re-decoding the token or re-fetching the groups list.
+//! [`crate::common::app_context::AppContext::session`] so handlers
+//! and the read-only gate can read JWT-derived state without
+//! re-decoding the token or re-fetching the groups list.
 
 use anyhow::Context;
 use manta_shared::common::jwt_ops;
@@ -18,7 +18,6 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 /// once per CLI invocation right after the auth cascade resolves a
 /// valid token.
 #[derive(Debug, Clone)]
-#[allow(dead_code)] // wired into AppContext in Task 3
 pub struct SessionContext {
   /// `preferred_username` claim — usually the operator's login name.
   pub username: String,
@@ -39,7 +38,6 @@ pub struct SessionContext {
   pub accessible_groups: Vec<String>,
 }
 
-#[allow(dead_code)] // wired into AppContext in Task 3
 impl SessionContext {
   /// Pure constructor — no I/O. Split out from [`SessionContext::build`]
   /// so tests can exercise the JWT-decode path without HTTP stubbing.

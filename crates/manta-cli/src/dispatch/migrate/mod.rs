@@ -5,7 +5,7 @@ pub mod nodes;
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::{MantaClient, OpenApiResultExt};
+use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -44,11 +44,14 @@ pub async fn handle_migrate(
       // then re-checks each name in the resulting list.
       let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
-        None => client
-          .openapi
-          .get_available_groups(client.site_name())
-          .await
-          .into_anyhow()?,
+        // Fall back to the accessible-group list cached on the
+        // session. SessionContext is guaranteed Some here: migrate
+        // requires a site, so process_cli built a session.
+        None => ctx
+          .session
+          .as_ref()
+          .map(|s| s.accessible_groups.clone())
+          .unwrap_or_default(),
       };
       let to = vec![to.to_string()];
 

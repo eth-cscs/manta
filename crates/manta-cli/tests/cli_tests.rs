@@ -119,7 +119,7 @@ fn config_show_works_without_a_site() {
     .success()
     .stdout(predicate::str::contains("Current site: (unset)"))
     .stdout(predicate::str::contains(
-      "Groups available: (no site selected)",
+      "Session: (no site selected, token not resolved)",
     ));
 }
 

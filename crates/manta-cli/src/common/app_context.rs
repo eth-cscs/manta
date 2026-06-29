@@ -17,6 +17,8 @@
 
 use config::Config;
 
+use crate::common::session::SessionContext;
+
 /// Top-level CLI context, passed as `&AppContext` through CLI
 /// handlers and commands.
 ///
@@ -83,10 +85,21 @@ pub struct AppContext<'a> {
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
   pub settings: &'a Config,
-  /// Mirror of `CliConfiguration.read_only`. The chokepoint in
-  /// `crate::dispatch::process::process_cli` consults this before
-  /// allowing any mutating verb to dispatch.
-  pub read_only: bool,
+  /// Bearer token resolved at the top of
+  /// [`crate::dispatch::process::process_cli`] for every command that
+  /// authenticates. Handlers that call
+  /// [`crate::common::authentication::get_api_token`] read this first
+  /// via the short-circuit added in step 4 — that's how we avoid the
+  /// second auth cascade per command. `None` for purely-local verbs.
+  pub token: Option<String>,
+  /// JWT-derived per-invocation facts, populated at the top of
+  /// [`crate::dispatch::process::process_cli`] for every command that
+  /// authenticates AND passes the read-only gate. `None` for
+  /// purely-local verbs (`gen-autocomplete`, `gen-man`, `upgrade`,
+  /// `config set site/log`, `config unset hsm/auth`) and for any
+  /// command that was refused by the gate before the session's HTTP
+  /// fetch ran.
+  pub session: Option<SessionContext>,
 }
 
 impl<'a> AppContext<'a> {
@@ -128,7 +141,8 @@ mod tests {
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
       settings,
-      read_only: false,
+      token: None,
+      session: None,
     }
   }
 

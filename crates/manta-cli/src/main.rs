@@ -135,11 +135,12 @@ async fn run_cli(
     sat_file_not_visible_budget_secs: configuration
       .sat_file_not_visible_budget_secs,
     settings: &settings,
-    read_only: configuration.read_only,
+    token: None,
+    session: None,
   };
 
   let cli_result =
-    crate::dispatch::process::process_cli(&cli_matches, &app_context).await;
+    crate::dispatch::process::process_cli(&cli_matches, app_context).await;
 
   cli_result.map_err(Into::into)
 }

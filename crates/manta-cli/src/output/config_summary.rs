@@ -1,22 +1,30 @@
 //! Renderer for [`ConfigSummary`].
 //!
 //! Called by `manta config show`. Supported output formats:
-//! **text** (default — multi-line human-readable block in the legacy
-//! field order) and **JSON** (`-o json` — a single structured object
-//! suitable for `jq`).
+//! **text** (default — multi-line human-readable block) and **JSON**
+//! (`-o json` — a single structured object suitable for `jq`).
 //!
 //! The struct is built by [`crate::dispatch::config::show`] from a
-//! mix of the parsed CLI config file and a live call to the server
-//! for the list of HSM groups the token can access.
+//! mix of the parsed CLI config file and the per-invocation
+//! [`crate::common::session::SessionContext`] attached to `AppContext`.
 
 use anyhow::{Context, Result};
 use serde::Serialize;
 
+/// JWT-derived per-invocation facts surfaced by `manta config show`.
+/// Mirrors [`crate::common::session::SessionContext`]; the renderer
+/// keeps its own copy so the output module doesn't have to depend on
+/// the AppContext type.
+#[derive(Debug, Serialize)]
+pub struct SessionSummary {
+  pub username: String,
+  pub name: String,
+  pub is_admin: bool,
+  pub is_read_only: bool,
+  pub accessible_groups: Vec<String>,
+}
+
 /// All the values surfaced by `manta config show`.
-///
-/// Built by [`crate::dispatch::config::show`] from a mix of the
-/// parsed CLI config file and a live call to the server for the list
-/// of HSM groups the token can access.
 #[derive(Debug, Serialize)]
 pub struct ConfigSummary {
   /// Resolved path of the loaded `cli.toml`.
@@ -25,25 +33,18 @@ pub struct ConfigSummary {
   pub log_level: String,
   /// The resolved active site for this invocation: the `--site`
   /// override when given, otherwise `site = "..."` from `cli.toml`.
-  /// `None` when neither is set — `config show` still works without a
-  /// site, it just can't report one (serializes to `null` in JSON).
+  /// `None` when neither is set (`null` in JSON).
   pub current_site: Option<String>,
-  /// Mirror of `CliConfiguration.read_only`. When `true`, the
-  /// chokepoint in `dispatch::process::process_cli` refuses
-  /// backend-mutating verbs. See `crate::common::read_only`.
-  pub read_only: bool,
-  /// HSM groups the bearer token is permitted to access; `None` when
-  /// the server lookup failed.
-  pub groups_available: Option<Vec<String>>,
+  /// JWT-derived per-invocation facts. `None` when the command ran
+  /// without a token — typically because no site is configured.
+  pub session: Option<SessionSummary>,
   /// Active default group from `hsm_group = "..."`. `None` when the
-  /// key is absent or empty — like `current_site`, it then renders as
-  /// `(unset)` in text and `null` in JSON.
+  /// key is absent or empty.
   pub current_group: Option<String>,
 }
 
 /// Render `summary` to stdout. Plain text by default (one line per
-/// field, in the historical order); structured JSON when
-/// `output_opt` is `Some("json")`.
+/// field); structured JSON when `output_opt` is `Some("json")`.
 ///
 /// # Errors
 ///
@@ -62,18 +63,29 @@ pub fn print(summary: &ConfigSummary, output_opt: Option<&str>) -> Result<()> {
       "Current site: {}",
       summary.current_site.as_deref().unwrap_or("(unset)")
     );
-    println!(
-      "Read-only: {}",
-      if summary.read_only { "yes" } else { "no" }
-    );
-    let groups = match (&summary.groups_available, &summary.current_site) {
-      (Some(v), _) => v.join(", "),
-      // No site selected, so there was nothing to query — distinguish
-      // this from a genuine lookup failure against a selected site.
-      (None, None) => "(no site selected)".to_string(),
-      (None, Some(_)) => "Could not get list of groups available".to_string(),
-    };
-    println!("Groups available: {groups}");
+    match &summary.session {
+      Some(s) => {
+        println!("Username (from token): {}", s.username);
+        println!("Name (from token): {}", s.name);
+        println!(
+          "Admin (from token): {}",
+          if s.is_admin { "yes" } else { "no" }
+        );
+        println!(
+          "Read-only (from token): {}",
+          if s.is_read_only { "yes" } else { "no" }
+        );
+        let groups = if s.accessible_groups.is_empty() {
+          "(none)".to_string()
+        } else {
+          s.accessible_groups.join(", ")
+        };
+        println!("Accessible groups (from token+server): {groups}");
+      }
+      None => {
+        println!("Session: (no site selected, token not resolved)");
+      }
+    }
     println!(
       "Current group: {}",
       summary.current_group.as_deref().unwrap_or("(unset)")
@@ -92,65 +104,55 @@ mod tests {
       config_file: "/home/u/.config/manta/cli.toml".to_string(),
       log_level: "info".to_string(),
       current_site: Some("alps".to_string()),
-      read_only: false,
-      groups_available: Some(vec!["compute".to_string(), "uan".to_string()]),
+      session: Some(SessionSummary {
+        username: "alice".to_string(),
+        name: "Alice Smith".to_string(),
+        is_admin: false,
+        is_read_only: false,
+        accessible_groups: vec!["compute".to_string(), "uan".to_string()],
+      }),
       current_group: Some("compute".to_string()),
     }
   }
 
-  /// The text-mode renderer should reproduce the legacy line ordering
-  /// so anyone scraping `manta config show` keeps working.
   #[test]
-  fn text_mode_writes_lines_in_legacy_order() {
-    // The renderer prints to stdout, so we just verify the JSON shape
-    // (rendered via serde) is also serializable end-to-end.
+  fn text_mode_renders_without_panicking() {
     print(&sample(), None).unwrap();
     print(&sample(), Some("table")).unwrap();
   }
 
   #[test]
-  fn json_mode_emits_one_object_with_expected_fields() {
+  fn json_mode_emits_session_subobject() {
     let s = sample();
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
     assert_eq!(v["config_file"], "/home/u/.config/manta/cli.toml");
     assert_eq!(v["log_level"], "info");
     assert_eq!(v["current_site"], "alps");
-    assert_eq!(v["read_only"], false);
-    assert_eq!(v["groups_available"][0], "compute");
+    assert_eq!(v["session"]["username"], "alice");
+    assert_eq!(v["session"]["is_admin"], false);
+    assert_eq!(v["session"]["is_read_only"], false);
+    assert_eq!(v["session"]["accessible_groups"][0], "compute");
     assert_eq!(v["current_group"], "compute");
+    // The old top-level `read_only` and `groups_available` keys are gone.
+    assert!(v.get("read_only").is_none(), "no top-level read_only");
+    assert!(
+      v.get("groups_available").is_none(),
+      "no top-level groups_available"
+    );
   }
 
   #[test]
-  fn groups_available_none_renders_as_null_in_json() {
+  fn session_none_serialises_as_null() {
     let mut s = sample();
-    s.groups_available = None;
+    s.session = None;
     let json = serde_json::to_string(&s).unwrap();
     let v: Value = serde_json::from_str(&json).unwrap();
-    assert!(v["groups_available"].is_null());
+    assert!(v["session"].is_null());
   }
 
   #[test]
-  fn current_site_none_renders_as_null_in_json() {
-    let mut s = sample();
-    s.current_site = None;
-    let json = serde_json::to_string(&s).unwrap();
-    let v: Value = serde_json::from_str(&json).unwrap();
-    assert!(v["current_site"].is_null());
-  }
-
-  #[test]
-  fn current_group_none_renders_as_null_in_json() {
-    let mut s = sample();
-    s.current_group = None;
-    let json = serde_json::to_string(&s).unwrap();
-    let v: Value = serde_json::from_str(&json).unwrap();
-    assert!(v["current_group"].is_null());
-  }
-
-  /// Text mode must not panic when no site is set; it prints a sentinel.
-  #[test]
-  fn text_mode_renders_with_no_site() {
+  fn current_site_none_renders_without_panic() {
     let mut s = sample();
     s.current_site = None;
     print(&s, None).unwrap();

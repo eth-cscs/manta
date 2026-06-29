@@ -43,22 +43,24 @@ pub async fn handle_config(
   match cli_config.subcommand() {
     Some(("show", m)) => {
       let output_opt = m.opt_str("output");
-      // `config show` is mostly local config, so it works without a
-      // site. Only when one is selected do we authenticate and build a
-      // client to fetch the per-site list of available groups.
-      let client = if ctx.site_name.is_some() {
-        let token = get_api_token(ctx).await?;
-        Some(MantaClient::from_app_ctx(ctx, Some(&token))?)
-      } else {
-        None
-      };
-      show::exec(client.as_ref(), ctx.settings, output_opt).await?;
+      // SessionContext (built at the top of process_cli) carries
+      // everything the renderer needs — no per-call auth or client
+      // construction here.
+      show::exec(ctx, output_opt).await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
         let token = get_api_token(ctx).await?;
         let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
-        set_hsm::exec(m, &client, &token).await?;
+        // SessionContext is guaranteed Some here: this arm only runs
+        // for verbs that don't skip the session build in process_cli
+        // (set_hsm requires a site, so a session was built).
+        let accessible_groups = ctx
+          .session
+          .as_ref()
+          .map(|s| s.accessible_groups.as_slice())
+          .unwrap_or_default();
+        set_hsm::exec(m, &client, &token, accessible_groups).await?;
       }
       Some(("site", m)) => set_site::exec(m)?,
       Some(("log", m)) => set_log::exec(m)?,

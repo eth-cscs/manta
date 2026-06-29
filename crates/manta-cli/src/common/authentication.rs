@@ -135,6 +135,16 @@ const MAX_LOGIN_ATTEMPTS: u32 = 3;
 /// - File I/O for the cache write fails after a successful login.
 #[tracing::instrument(skip_all, fields(site = ctx.site_name.unwrap_or("<unset>")))]
 pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
+  // process_cli pre-resolves the token at the top of every
+  // authenticated command and stashes it on AppContext. Handlers
+  // continue to call this function unchanged; we just hand back the
+  // already-resolved token instead of re-walking the cache+env+IDP
+  // cascade. Verbs in process_cli's `verb_skips_session` list (no
+  // pre-resolved token) fall through to the full cascade below.
+  if let Some(t) = &ctx.token {
+    return Ok(t.clone());
+  }
+
   // Auth endpoints are the ones that *obtain* or *check* the token,
   // so we pass `None` as the bearer here; no default `Authorization`
   // header gets attached.
