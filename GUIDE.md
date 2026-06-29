@@ -14,7 +14,12 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 
 ## Table of contents
 
+**[Part I: Getting started](#part-i-getting-started)**
+
 1. [Checking cluster status](#1-checking-cluster-status)
+
+**[Part II: Workflow how-tos](#part-ii-workflow-how-tos)**
+
 2. [Groups](#2-groups)
 3. [Deploying with a SAT file](#3-deploying-with-a-sat-file)
 4. [Running a CFS session from a local repo](#4-running-a-cfs-session-from-a-local-repo)
@@ -24,12 +29,21 @@ For the per-flag reference of every command, see [CLI.md](CLI.md). To call the H
 8. [Console access](#8-console-access)
 9. [Moving nodes between groups](#9-moving-nodes-between-groups)
 10. [Cleaning up old configurations and images](#10-cleaning-up-old-configurations-and-images)
+
+**[Part III: Reference and operations](#part-iii-reference-and-operations)**
+
 11. [Working with multiple sites](#11-working-with-multiple-sites)
 12. [Non-interactive and scripted use](#12-non-interactive-and-scripted-use)
 13. [Read-only access](#13-read-only-access)
 14. [Installation maintenance](#14-installation-maintenance)
 
 ---
+
+## Part I: Getting started
+
+Start here if manta is freshly installed and you want to verify the
+setup is working. §1 covers the read-only queries you'd use to
+introspect a configured cluster without changing any state.
 
 ## 1. Checking cluster status
 
@@ -75,6 +89,17 @@ manta log
 ```
 
 ---
+
+---
+
+## Part II: Workflow how-tos
+
+Task-oriented walkthroughs for common cluster-management operations:
+managing groups, deploying images via SAT files, running CFS sessions,
+applying boot/kernel parameters, powering nodes, attaching consoles,
+moving nodes between groups, and cleaning up old artifacts. Sections
+are self-contained — jump straight to the one matching what you need
+to do.
 
 ## 2. Groups
 
@@ -628,6 +653,16 @@ manta get analysis configuration --only-safe-to-delete -o json | jq -r '.[].name
 Image deletion has its own verb (`manta delete images <IMAGE_LIST>`), currently marked WIP — see [CLI.md → delete images](CLI.md#delete-images-image_list-wip). Until that's hardened, the safest path to drop an unused image is to delete its source CFS configuration; the cascade above handles the IMS cleanup.
 
 ---
+
+---
+
+## Part III: Reference and operations
+
+Cross-cutting reference material for advanced usage and ongoing
+operations: addressing multiple sites from one CLI install, automating
+manta from scripts (with the `--dry-run` preview path and the bearer-
+token resolution order), the JWT-derived read-only mode, and keeping
+the CLI binary itself current. Read once or skip until you need them.
 
 ## 11. Working with multiple sites
 
