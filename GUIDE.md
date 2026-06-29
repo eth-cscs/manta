@@ -724,6 +724,8 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 `--dry-run` is read-only and **does not require `--assume-yes`** — confirmation prompts are skipped on dry-run. It is the safe way to verify a script before promoting it to a real run, to audit what `manta` would have done, or to capture the exact wire payload for a bug report.
 
+`--dry-run` also bypasses the [read-only gate](#13-read-only-access): operators whose bearer token carries the `manta-read-only` realm role can still preview a mutating command with `--dry-run` without contacting the server.
+
 ### Authentication for scripts
 
 Manta resolves the bearer token in a defined order; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full resolution lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
@@ -816,6 +818,8 @@ Accessible groups (from token+server): compute, gpu-cluster
 ```
 
 `Read-only (from token): yes` confirms the role is in your JWT and the gate is armed. The JSON shape (`-o json`) reports it as `session.is_read_only`.
+
+When the gate fires, [`--dry-run`](#preview-before-mutating-with---dry-run) is the safe way to preview what the command would have done without contacting the server — operators with the role can still audit a script's intended payload before asking an admin to run it.
 
 ### 13.4 Provisioning the role
 
