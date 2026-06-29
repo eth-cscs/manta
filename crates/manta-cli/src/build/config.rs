@@ -2,7 +2,7 @@
 //!
 //! Builds the `manta config show|set|unset` subtree, which reads and
 //! mutates the CLI's local configuration file (active site, default
-//! node group, log level, read-only guard, cached auth token).
+//! node group, log level, cached auth token).
 //! Execution dispatched in `crate::dispatch::config`. The
 //! configuration file format and loader live in
 //! `manta_shared::common::config`.
@@ -26,9 +26,6 @@ pub fn subcommand_config() -> Command {
         .value_parser(["error", "warn", "info", "debug", "trace"]),
     );
 
-  let subcommand_config_set_read_only = Command::new("read-only")
-    .about("Refuse every backend-mutating command until unset");
-
   let subcommand_config_set_site = Command::new("site")
     .about("Set the active site")
     .arg(arg!(<SITE_NAME> "Site name"));
@@ -38,9 +35,6 @@ pub fn subcommand_config() -> Command {
 
   let subcommand_config_unset_hsm =
     Command::new("hsm").about("Clear the active node group");
-
-  let subcommand_config_unset_read_only =
-    Command::new("read-only").about("Allow backend-mutating commands again");
 
   Command::new("config")
     .arg_required_else_help(true)
@@ -56,7 +50,6 @@ pub fn subcommand_config() -> Command {
         .about("Set a configuration value")
         .subcommand(subcommand_config_set_hsm)
         .subcommand(subcommand_config_set_log)
-        .subcommand(subcommand_config_set_read_only)
         .subcommand(subcommand_config_set_site),
     )
     .subcommand(
@@ -64,7 +57,6 @@ pub fn subcommand_config() -> Command {
         .arg_required_else_help(true)
         .about("Clear a configuration value")
         .subcommand(subcommand_config_unset_auth)
-        .subcommand(subcommand_config_unset_hsm)
-        .subcommand(subcommand_config_unset_read_only),
+        .subcommand(subcommand_config_unset_hsm),
     )
 }
