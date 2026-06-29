@@ -24,9 +24,7 @@ use manta_backend_dispatcher::types::NodeSummary;
 use tokio::sync::Semaphore;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::{
-  validate_user_group_members_access, validate_user_group_vec_access,
-};
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops::from_hosts_expression_to_xname_vec;
 pub use manta_shared::types::api::hardware::{
   GetHardwareClusterParams, GetHardwareNodesListParams,
@@ -142,21 +140,20 @@ pub async fn get_hardware_cluster(
   token: &str,
   params: &GetHardwareClusterParams,
 ) -> Result<HardwareClusterResult, Error> {
-  // Get list of target groups the user is asking for
-  let target_group_vec: Vec<String> = if let Some(group) = &params.group_name {
-    vec![group.clone()]
-  } else {
-    infra
-      .backend
-      .get_group_available(token)
-      .await?
-      .iter()
-      .map(|group| group.label.clone())
-      .collect()
-  };
-
-  // Validate groups and get list of groups available
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
+  // One `get_group_available` call plus in-memory access validation
+  // replaces the prior two round-trips:
+  //   1. `get_group_available` to derive labels, then
+  //   2. `validate_user_group_vec_access` which internally called
+  //      `get_group_name_available` again for non-admin callers.
+  // The subsequent `backend.get_group()` call below is untouched —
+  // it fetches member lists for the chosen group, which is separate.
+  let (_, target_group_vec) =
+    crate::service::group::resolve_target_and_available_groups(
+      infra,
+      token,
+      params.group_name.as_deref(),
+    )
+    .await?;
 
   let hsm_group_name = target_group_vec
     .first()

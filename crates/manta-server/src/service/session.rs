@@ -26,9 +26,7 @@ use manta_backend_dispatcher::types::cfs::component::Component;
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 
 use crate::server::common::app_context::InfraContext;
-use crate::service::authorization::{
-  validate_user_group_members_access, validate_user_group_vec_access,
-};
+use crate::service::authorization::validate_user_group_members_access;
 use crate::service::node_ops;
 pub use manta_shared::types::api::session::GetSessionParams;
 
@@ -51,23 +49,25 @@ pub async fn get_sessions(
 
   // The backend rejects requests that pass both group names and
   // xnames, so an explicit xname filter wins and skips the group
-  // expansion. Otherwise, use the requested group or fall back to the
-  // caller's accessible groups.
+  // expansion entirely — no group validation needed in that branch.
+  // Otherwise, one `get_group_available` call plus in-memory access
+  // validation replaces the prior two round-trips:
+  //   1. `get_group_available` to derive labels, then
+  //   2. `validate_user_group_vec_access` which internally called
+  //      `get_group_name_available` again for non-admin callers.
   let target_group_vec: Vec<String> = if !params.xnames.is_empty() {
     Vec::new()
-  } else if let Some(group) = &params.group {
-    vec![group.clone()]
   } else {
-    infra
-      .backend
-      .get_group_available(token)
-      .await?
-      .iter()
-      .map(|group| group.label.clone())
-      .collect()
+    let (_, labels) =
+      crate::service::group::resolve_target_and_available_groups(
+        infra,
+        token,
+        params.group.as_deref(),
+      )
+      .await?;
+    labels
   };
 
-  validate_user_group_vec_access(infra, token, &target_group_vec).await?;
   validate_user_group_members_access(infra, token, &params.xnames).await?;
 
   infra
