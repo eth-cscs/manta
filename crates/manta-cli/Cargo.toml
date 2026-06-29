@@ -115,6 +115,7 @@ progenitor-client = "0.14"
 
 [dev-dependencies]
 assert_cmd = "2"
+base64 = "0.22"
 predicates = "3"
 tempfile = "3"
 toml = "0.9"

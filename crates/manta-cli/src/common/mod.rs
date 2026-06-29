@@ -14,6 +14,8 @@
 //! - [`multi_line`] — terminal-friendly multi-line input helper.
 //! - [`read_only`] — guard that blocks mutating verbs when the CLI is
 //!   configured in read-only mode.
+//! - [`session`] — per-invocation JWT-derived facts (username, name,
+//!   is_admin, is_read_only, accessible_groups).
 
 pub mod app_context;
 pub mod authentication;
@@ -23,3 +25,4 @@ pub mod confirm;
 pub mod hooks;
 pub mod multi_line;
 pub mod read_only;
+pub mod session;
