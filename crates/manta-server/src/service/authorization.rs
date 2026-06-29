@@ -27,9 +27,11 @@ use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
 use crate::server::common::{app_context::InfraContext, jwt_ops};
 
-/// Keycloak role name that grants full admin access (bypasses HSM-group
-/// scoping checks).
-pub static PA_ADMIN: &str = "pa_admin";
+/// Keycloak role name that grants full admin access. The canonical
+/// definition lives in [`manta_shared::common::jwt_ops::PA_ADMIN`];
+/// this re-export keeps `service::authorization::PA_ADMIN` callers
+/// compiling after the relocation.
+pub use crate::server::common::jwt_ops::PA_ADMIN;
 
 /// Returns `true` when the caller is admin (carries `PA_ADMIN` in
 /// `realm_access.roles`). Admin tokens short-circuit every group-scope

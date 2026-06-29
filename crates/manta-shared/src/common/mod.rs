@@ -18,4 +18,5 @@ pub const DATETIME_FORMAT: &str = "%d/%m/%Y %H:%M:%S";
 
 pub mod config;
 pub mod error;
+pub mod jwt_ops;
 pub mod log_ops;
