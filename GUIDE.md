@@ -754,109 +754,61 @@ For scripts, set `MANTA_CSM_TOKEN` from a secret-fetch step before the `manta` i
 
 ## 13. Read-only access
 
-Two independent policies let an operator (or a whole token's worth
-of operators) be restricted to read endpoints only:
+Operators who should only inspect cluster state — not change it —
+get the `manta-read-only` realm role on their Keycloak account.
+Once the role is present in the token's `realm_access.roles` claim,
+both manta-server and manta-cli refuse mutating verbs.
 
-### 13.1 CLI-side: `read_only = true` in `cli.toml`
+### 13.1 CLI-side enforcement (local fast feedback)
 
-Refuses mutating verbs **inside the CLI process** before any HTTP
-request is sent. Toggle it without editing the file by hand:
+manta-cli decodes the bearer token at the start of every
+authenticated command. If `realm_access.roles` contains
+`manta-read-only`, any of `add`, `apply`, `backup`, `delete`,
+`migrate`, `power`, `run`, `restore` is refused before an HTTP
+request leaves the process:
 
-```bash
-manta config set read-only      # enable
-manta config show               # confirm "Read-only: yes"
-manta config unset read-only    # disable
+```text
+Error: manta is in read-only mode (the bearer token carries the
+`manta-read-only` role).
+This `manta apply …` invocation would change backend state and has
+been refused.
+Re-run with `--dry-run` to preview, or ask your Keycloak admin to
+remove the role from your account.
 ```
 
-When set, mutating verbs (`add`, `apply`, `delete`, `migrate`,
-`power`, `run`, `restore`) refuse to execute:
+`--dry-run` invocations bypass the gate; read verbs (`get`, `log`,
+`console`, `config`, `upgrade`, `gen-*`) are never blocked.
 
-```
-$ manta delete configurations --configuration-name old-config
-Error: manta is in read-only mode (`read_only = true` in cli.toml).
-       This `manta delete …` invocation would change backend state
-       and has been refused.
-       Re-run with `--dry-run` to preview, or disable the policy
-       with `manta config unset read-only`.
-```
+### 13.2 Server-side enforcement (the security boundary)
 
-`--dry-run` invocations bypass the gate (the server returns a
-preview without applying); read verbs (`get`, `console`, `log`,
-`backup`, `config`, `upgrade`) are unaffected.
-
-Useful for **shared workstations** where you want local training
-wheels without touching the identity provider. The cost is that
-it's per-`cli.toml` — bypassed by anyone with `curl` and a token.
-
-### 13.2 Server-side: `manta-read-only` JWT role
-
-`manta-server` enforces a stricter policy derived from the caller's
-JWT itself. When a user's bearer token carries the realm role
-`manta-read-only`, every mutating endpoint
-(`POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`) is refused with
-`403 Forbidden`, regardless of which client made the call:
-
-```
-$ manta apply boot-config --boot-image abc x3000c0s1b0n0
-Error: 403 Forbidden — Token carries the `manta-read-only` role;
-       refusing mutating endpoint.
-```
-
-*Sequence: how a request is gated by the role check.*
+manta-server's `/api/v1/*` router carries a `read_only_guard` middleware
+that rejects `POST`/`PUT`/`PATCH`/`DELETE` with `403 Forbidden` when
+the JWT carries `manta-read-only`. This is the authoritative gate —
+the CLI-side check above is just fast local feedback.
 
 ```mermaid
 sequenceDiagram
-    autonumber
-    participant C as Client
+    participant C as CLI
+    participant M as manta-server
     participant G as read_only_guard
-    participant H as Handler
+    participant B as backend
 
-    C->>G: HTTP request
-
-    alt method ∈ {GET, HEAD, OPTIONS}
-        G->>H: next.run(request)
-        H-->>C: 2xx / 4xx as usual
-    else method ∈ {POST, PUT, PATCH, DELETE}
-        G->>G: strip "Bearer " / "bearer " prefix
-        G->>G: jwt_ops::has_role(token, READ_ONLY_ROLE)
-        alt role present
-            G-->>C: 403 Forbidden — manta-read-only role
-            Note over G: tracing::warn! method + path
-        else role absent (or missing/malformed token)
-            G->>H: next.run(request)
-            H-->>C: 2xx / 4xx as usual
-        end
+    C->>M: POST /api/v1/groups (JWT with manta-read-only)
+    M->>G: Inspect realm_access.roles
+    alt has manta-read-only
+        G-->>C: 403 Forbidden — manta-read-only role
+    else
+        G->>B: forward request
+        B-->>C: 2xx
     end
 ```
 
-For the broader middleware pipeline this gate sits inside, see
-[ARCHITECTURE.md → Middleware layer stack](ARCHITECTURE.md#middleware-layer-stack).
+### 13.3 Provisioning the role
 
-Read endpoints (`GET`) and the login flow (`/api/v1/auth/*`) pass
-through — read-only operators can still inspect cluster state,
-view configurations, list nodes, and refresh their token.
-WebSocket console upgrades (which are `GET` requests) also pass
-through.
-
-The role lives in **Keycloak** — provision it as a realm role and
-assign it to the users who should be locked to read-only access.
-There is no `server.toml` knob; the role string is `manta-read-only`,
-verbatim. See [MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional)
+The role string is `manta-read-only` verbatim. To assign it to a
+user, add it to the user's Keycloak realm roles — see
+[MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional)
 for the `kcadm.sh` recipe.
-
-### 13.3 Choosing between them
-
-The two policies are **complementary**, not alternatives:
-
-| | CLI flag (`cli.toml`) | JWT role (Keycloak) |
-|--|---------------------|---------------------|
-| Where enforced | CLI process | manta-server (HTTP layer) |
-| Bypassable by `curl` + token | Yes | No |
-| Requires identity-provider changes | No | Yes — realm role |
-| Per-user | Per-workstation `cli.toml` | Per-token |
-| Affects `--dry-run` previews | No (bypassed) | No (those are reads at the server) |
-
-If you want both, set both — they OR together.
 
 ---
 

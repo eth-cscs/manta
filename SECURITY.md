@@ -7,9 +7,11 @@ found a potential vulnerability.
 For deeper technical detail on each control, see
 [ARCHITECTURE.md §Security model](ARCHITECTURE.md#security-model). For
 the operator-facing rollout of the JWT-role read-only gate, see
-[MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional). For the
-user-facing description of both read-only policies (CLI flag + JWT
-role), see [GUIDE.md §13](GUIDE.md#13-read-only-access).
+[MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional) and
+the deprecation note in
+[MIGRATING.md §2.8](MIGRATING.md#28-removal-of-clitoml-read_only-flag-and-config-setunset-read-only-commands-breaking).
+For the user-facing description, see
+[GUIDE.md §13](GUIDE.md#13-read-only-access).
 
 ## Reporting a vulnerability
 
@@ -127,7 +129,7 @@ accordingly.
 | Audit event per auth attempt | `manta-server` | When `[auditor.kafka]` is configured, `server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }`. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | `manta-server` | `server::auth_middleware::strip_body_for_logs`. |
 | **JWT-role read-only gate on `/api/v1/*`** | `manta-server` | `server::auth_middleware::read_only_guard` refuses `POST`/`PUT`/`PATCH`/`DELETE` with `403` when the token's `realm_access.roles` claim contains `manta-read-only`. Defence in depth, **not** a signature-verification boundary — see Known limitations below. |
-| CLI-side read-only toggle | `manta-cli` | `read_only = true` in `cli.toml` (or `manta config set read-only`) refuses mutating verbs before any HTTP request leaves the process. Independent of the JWT-role gate. |
+| CLI-side read-only fast-feedback | `manta-cli` | Reads the same `manta-read-only` realm role from the JWT (locally decoded) and refuses mutating verbs before any HTTP request leaves the process. Fast feedback; not the security boundary — the server-side `read_only_guard` is. |
 | 0600 mode on cached tokens | `manta-cli` | Token cache file written with `0600` perms under the platform config dir; never logged. |
 
 ### In ops (your deployment)

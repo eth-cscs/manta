@@ -84,13 +84,6 @@ _arguments "${_arguments_options[@]}" : \
 ':LOG_LEVEL -- Log verbosity level:(error warn info debug trace)' \
 && ret=0
 ;;
-(read-only)
-_arguments "${_arguments_options[@]}" : \
-'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
@@ -116,10 +109,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (log)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -168,13 +157,6 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
-(read-only)
-_arguments "${_arguments_options[@]}" : \
-'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-h[Print help]' \
-'--help[Print help]' \
-&& ret=0
-;;
 (help)
 _arguments "${_arguments_options[@]}" : \
 ":: :_manta__subcmd__config__subcmd__unset__subcmd__help_commands" \
@@ -192,10 +174,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -247,10 +225,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(read-only)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -276,10 +250,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2404,10 +2374,6 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
-(read-only)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2433,10 +2399,6 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
-_arguments "${_arguments_options[@]}" : \
-&& ret=0
-;;
-(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -3320,7 +3282,6 @@ _manta__subcmd__config__subcmd__help__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
-'read-only:Refuse every backend-mutating command until unset' \
 'site:Set the active site' \
     )
     _describe -t commands 'manta config help set commands' commands "$@"
@@ -3334,11 +3295,6 @@ _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help set log commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config help set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands() {
@@ -3355,7 +3311,6 @@ _manta__subcmd__config__subcmd__help__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
-'read-only:Allow backend-mutating commands again' \
     )
     _describe -t commands 'manta config help unset commands' commands "$@"
 }
@@ -3369,17 +3324,11 @@ _manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help unset hsm commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config help unset read-only commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__set_commands] )) ||
 _manta__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
-'read-only:Refuse every backend-mutating command until unset' \
 'site:Set the active site' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3390,7 +3339,6 @@ _manta__subcmd__config__subcmd__set__subcmd__help_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
-'read-only:Refuse every backend-mutating command until unset' \
 'site:Set the active site' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3411,11 +3359,6 @@ _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set help log commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config set help read-only commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands() {
     local commands; commands=()
@@ -3430,11 +3373,6 @@ _manta__subcmd__config__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set log commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__set__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__site_commands() {
@@ -3451,7 +3389,6 @@ _manta__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
-'read-only:Allow backend-mutating commands again' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config unset commands' commands "$@"
@@ -3466,7 +3403,6 @@ _manta__subcmd__config__subcmd__unset__subcmd__help_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
-'read-only:Allow backend-mutating commands again' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config unset help commands' commands "$@"
@@ -3486,20 +3422,10 @@ _manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset help hsm commands' commands "$@"
 }
-(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config unset help read-only commands' commands "$@"
-}
 (( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__hsm_commands] )) ||
 _manta__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset hsm commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__read-only_commands] )) ||
-_manta__subcmd__config__subcmd__unset__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta config unset read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__console_commands] )) ||
 _manta__subcmd__console_commands() {
@@ -4066,7 +3992,6 @@ _manta__subcmd__help__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
-'read-only:Refuse every backend-mutating command until unset' \
 'site:Set the active site' \
     )
     _describe -t commands 'manta help config set commands' commands "$@"
@@ -4080,11 +4005,6 @@ _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config set log commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__read-only_commands] )) ||
-_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help config set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands() {
@@ -4101,7 +4021,6 @@ _manta__subcmd__help__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
-'read-only:Allow backend-mutating commands again' \
     )
     _describe -t commands 'manta help config unset commands' commands "$@"
 }
@@ -4114,11 +4033,6 @@ _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__auth_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config unset hsm commands' commands "$@"
-}
-(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__read-only_commands] )) ||
-_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__read-only_commands() {
-    local commands; commands=()
-    _describe -t commands 'manta help config unset read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__console_commands] )) ||
 _manta__subcmd__help__subcmd__console_commands() {

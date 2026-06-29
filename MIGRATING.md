@@ -366,11 +366,10 @@ kcadm.sh add-roles -r <realm> --uusername alice \
 
 No server restart is needed — the role takes effect on the next
 token the user obtains. The role string is `manta-read-only`,
-verbatim; it is not configurable. If your operators are also
-familiar with the CLI-side `read_only = true` flag in `cli.toml`,
-note that the two policies are independent: the JWT-role gate
-applies server-side regardless of which client (CLI, `curl`,
-script) sent the request.
+verbatim; it is not configurable. The JWT-role gate applies
+server-side regardless of which client (CLI, `curl`, script) sent
+the request. The CLI-side `read_only = true` flag in `cli.toml`
+has been removed — see §2.8.
 
 **Troubleshooting.** If the role doesn't appear to take effect:
 
@@ -413,7 +412,67 @@ script) sent the request.
    Grep `journalctl -u manta-server` (or your configured tracing sink)
    for `manta-read-only` to confirm the gate fired.
 
-### 2.8 Verify
+### 2.8 Removal of cli.toml `read_only` flag and `config set/unset read-only` commands (BREAKING)
+
+The CLI-side `read_only = true` flag in `cli.toml` was a duplicate
+authority that could silently disagree with the server-side
+`manta-read-only` JWT role. As of this release the flag is removed
+from `CliConfiguration` (serde silently ignores it; the line has no
+effect) and the two subcommands that toggled it —
+`manta config set read-only` and `manta config unset read-only` —
+no longer exist.
+
+**What to do**
+
+1. Delete the `read_only = …` line from `cli.toml` if present.
+   Leaving it is harmless (serde ignores unknown keys) but it has
+   no effect.
+2. If your site relied on the local flag to lock down operators,
+   provision the `manta-read-only` realm role in Keycloak instead
+   — see §2.7. The JWT-role gate is enforced both by the CLI
+   (locally, for fast feedback) and by manta-server (at the HTTP
+   boundary, as the security boundary).
+
+**`manta config show` failure-mode change**
+
+Before this release, `manta config show` was best-effort on the
+groups-fetch step: if the server was unreachable or the token was
+expired, the renderer logged a warning and printed the local config
+without the per-site fields. After this release, `config show`
+builds a `SessionContext` at the top of the dispatcher, and a
+failure there (server down, expired token, network unreachable)
+aborts the command with an error. Operators who used `config show`
+to verify their local config offline must now run it against a
+reachable server. The local-only fallback is intentionally gone —
+the spec accepts this trade for a single, predictable error path.
+
+**JSON consumers**
+
+`manta config show -o json` no longer emits the top-level
+`read_only` and `groups_available` keys. The same data now lives
+under a `session` sub-object:
+
+```json
+{
+  "config_file": "...",
+  "log_level": "...",
+  "current_site": "alps",
+  "session": {
+    "username": "alice",
+    "name": "Alice Smith",
+    "is_admin": false,
+    "is_read_only": false,
+    "accessible_groups": ["compute", "uan"]
+  },
+  "current_group": "compute"
+}
+```
+
+Scripts that read `.read_only` should now read `.session.is_read_only`;
+scripts that read `.groups_available` should read
+`.session.accessible_groups`.
+
+### 2.9 Verify
 
 ```bash
 # Health check (no auth)
