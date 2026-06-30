@@ -40,6 +40,13 @@ pub async fn exec(
     .get_string("hsm_group")
     .ok()
     .filter(|s| !s.is_empty());
+  // The raw `site` from cli.toml — kept alongside the resolved
+  // `current_site` so the renderer can flag `--site` overrides.
+  let settings_site = ctx
+    .settings
+    .get_string("site")
+    .ok()
+    .filter(|s| !s.is_empty());
 
   let session = ctx.session.as_ref().map(|s| SessionSummary {
     username: s.username.clone(),
@@ -56,6 +63,7 @@ pub async fn exec(
     ),
     log_level,
     current_site: ctx.site_name.map(str::to_string),
+    configured_site: settings_site,
     session,
     current_group: settings_hsm_group,
   };

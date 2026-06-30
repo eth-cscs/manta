@@ -107,7 +107,8 @@ fn config_set_site_works_without_a_site_configured() {
 }
 
 /// `config show` is mostly local config, so it works with no site —
-/// the site is reported as unset rather than erroring.
+/// the site is reported as unset rather than erroring, and both the
+/// JWT and server sections render the "unavailable" marker.
 #[test]
 fn config_show_works_without_a_site() {
   let (_dir, path) = site_less_config();
@@ -117,10 +118,11 @@ fn config_show_works_without_a_site() {
     .args(["config", "show"])
     .assert()
     .success()
-    .stdout(predicate::str::contains("Current site: (unset)"))
-    .stdout(predicate::str::contains(
-      "Session: (no site selected, token not resolved)",
-    ));
+    .stdout(predicate::str::contains("Current site:"))
+    .stdout(predicate::str::contains("(unset)"))
+    .stdout(predicate::str::contains("From JWT token:"))
+    .stdout(predicate::str::contains("From server API:"))
+    .stdout(predicate::str::contains("(unavailable — no site selected)"));
 }
 
 /// In JSON mode an unset site serializes to `null`, not an empty string.
