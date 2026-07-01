@@ -1118,7 +1118,6 @@
           "groups"
         ],
         "summary": "GET /groups/available — list HSM group names the token can access.",
-        "description": "Backs CLI authorization helpers that used to call\n`backend.get_group_name_available` directly.",
         "operationId": "get_available_groups",
         "parameters": [
           {
