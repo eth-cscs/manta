@@ -19,6 +19,14 @@ manta_server_url = "https://manta-server.example.com:8443"
 # concern and lives in server.toml.
 # socks5_proxy = "socks5h://127.0.0.1:1080"
 
+# CLI-local read-only guard. When true, every backend-mutating command
+# (add / apply / backup / delete / migrate / power / restore / run) is
+# refused before any HTTP request leaves the process. Toggle with
+# `manta config set read-only` / `manta config unset read-only`.
+# Server enforcement is independent (via the `manta-read-only` realm
+# role on the bearer token); this flag is fast local feedback.
+read_only = false
+
 
 # Timeout knobs. Values shown are the built-in defaults — delete a
 # line to fall back to the default, or change the value to override.

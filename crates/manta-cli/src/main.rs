@@ -134,6 +134,7 @@ async fn run_cli(
     sat_file_poll_budget_secs: configuration.sat_file_poll_budget_secs,
     sat_file_not_visible_budget_secs: configuration
       .sat_file_not_visible_budget_secs,
+    read_only: configuration.read_only,
     settings: &settings,
     token: None,
     session: None,

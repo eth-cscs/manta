@@ -1,27 +1,29 @@
-//! CLI-local read-only mode: refuses backend-mutating verbs when the
-//! bearer token carries the `manta-read-only` realm role.
+//! CLI-local read-only mode: refuses backend-mutating verbs when
+//! `cli.toml` has `read_only = true`.
 //!
-//! Pure policy module — no I/O, no JWT parsing. The chokepoint in
+//! Pure policy module — no I/O, no config parsing. The chokepoint in
 //! `crate::dispatch::process::process_cli` is a single call to
-//! [`read_only_gate`]; the boolean it receives comes from
-//! [`crate::common::session::SessionContext::is_read_only`], built
-//! once per invocation from the JWT's `realm_access.roles`.
+//! [`read_only_gate`]; the boolean it receives is
+//! `AppContext::read_only`, populated from the parsed `cli.toml` at
+//! CLI startup. Toggled by
+//! `manta config set read-only` / `manta config unset read-only`.
 //!
 //! ## Triggers and bypasses
 //!
 //! [`read_only_gate`] short-circuits to `Ok(())` when *any* of:
 //!
 //! - No subcommand was parsed (top-level `--help` / `--version`).
-//! - `read_only` is `false` (the token doesn't carry the role).
+//! - `read_only` is `false`.
 //! - The parsed verb is not in [`MUTATING_VERBS`].
 //! - `--dry-run` is set on the leaf subcommand (every entry in
 //!   [`MUTATING_VERBS`] now plumbs it through).
 //!
 //! Otherwise the gate returns the [`ensure_can_mutate`] error.
 //! The server-side gate in `manta-server`'s
-//! `server::auth_middleware::read_only_guard` enforces the same role
-//! at the HTTP boundary; this CLI gate is fast local feedback, not the
-//! security boundary.
+//! `server::auth_middleware::read_only_guard` enforces read-only
+//! independently, via the `manta-read-only` realm role on the bearer
+//! token; the two flags can disagree. This CLI gate is fast local
+//! feedback, not the security boundary.
 
 use clap::ArgMatches;
 
@@ -68,9 +70,10 @@ pub fn dry_run_set(verb_matches: &ArgMatches) -> bool {
 /// otherwise.
 ///
 /// The error message names the verb and points the user at both
-/// escape hatches: `--dry-run` to preview, or asking the Keycloak
-/// admin to remove the role. Every entry in [`MUTATING_VERBS`] has a
-/// `--dry-run` flag on its leaf subcommands.
+/// escape hatches: `--dry-run` to preview, or
+/// `manta config unset read-only` to disable the local guard. Every
+/// entry in [`MUTATING_VERBS`] has a `--dry-run` flag on its leaf
+/// subcommands.
 ///
 /// # Errors
 ///
@@ -80,9 +83,9 @@ pub fn ensure_can_mutate(read_only: bool, verb: &str) -> anyhow::Result<()> {
     return Ok(());
   }
   Err(anyhow::anyhow!(
-    "manta is in read-only mode (the bearer token carries the `manta-read-only` role).\n\
+    "manta is in read-only mode (cli.toml has `read_only = true`).\n\
      This `manta {verb} \u{2026}` invocation would change backend state and has been refused.\n\
-     Re-run with `--dry-run` to preview, or ask your Keycloak admin to remove the role from your account."
+     Re-run with `--dry-run` to preview, or run `manta config unset read-only` to disable the local guard."
   ))
 }
 
@@ -234,8 +237,12 @@ mod tests {
       "msg should mention --dry-run: {msg}"
     );
     assert!(
-      msg.contains("manta-read-only"),
-      "msg should name the role: {msg}"
+      msg.contains("cli.toml"),
+      "msg should name the cli.toml source: {msg}"
+    );
+    assert!(
+      msg.contains("manta config unset read-only"),
+      "msg should point at the escape hatch: {msg}"
     );
   }
 
@@ -304,8 +311,12 @@ mod tests {
         "msg should suggest --dry-run for {verb}: {msg}"
       );
       assert!(
-        msg.contains("manta-read-only"),
-        "msg should name the manta-read-only role for {verb}: {msg}"
+        msg.contains("cli.toml"),
+        "msg should name the cli.toml source for {verb}: {msg}"
+      );
+      assert!(
+        msg.contains("manta config unset read-only"),
+        "msg should point at `manta config unset read-only` for {verb}: {msg}"
       );
     }
   }

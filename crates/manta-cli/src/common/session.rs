@@ -26,12 +26,6 @@ pub struct SessionContext {
   /// `true` when `realm_access.roles` carries
   /// [`manta_shared::common::jwt_ops::PA_ADMIN`].
   pub is_admin: bool,
-  /// `true` when `realm_access.roles` carries
-  /// [`manta_shared::common::jwt_ops::READ_ONLY_ROLE`]. Consumed by
-  /// the dispatch chokepoint in
-  /// [`crate::dispatch::process::process_cli`] to refuse mutating
-  /// verbs before any HTTP request leaves the process.
-  pub is_read_only: bool,
   /// Groups visible to the token. For non-admin tokens the server
   /// filters by realm role; for admin tokens it returns the full
   /// group universe.
@@ -47,18 +41,14 @@ impl SessionContext {
   ) -> anyhow::Result<Self> {
     let username = jwt_ops::get_preferred_username(token)
       .context("decode preferred_username from token")?;
-    let name = jwt_ops::get_name(token)
-      .context("decode name from token")?;
+    let name = jwt_ops::get_name(token).context("decode name from token")?;
     let roles = jwt_ops::get_roles(token)
       .context("decode realm_access.roles from token")?;
     let is_admin = roles.iter().any(|r| r == jwt_ops::PA_ADMIN);
-    let is_read_only =
-      roles.iter().any(|r| r == jwt_ops::READ_ONLY_ROLE);
     Ok(Self {
       username,
       name,
       is_admin,
-      is_read_only,
       accessible_groups,
     })
   }
@@ -124,7 +114,6 @@ mod tests {
     assert_eq!(session.username, "alice");
     assert_eq!(session.name, "Alice Smith");
     assert!(session.is_admin);
-    assert!(!session.is_read_only);
     assert_eq!(
       session.accessible_groups,
       vec!["alps".to_string(), "compute".to_string()]
@@ -132,18 +121,9 @@ mod tests {
   }
 
   #[test]
-  fn from_parts_marks_read_only_when_role_present() {
-    let token = jwt("Bob", "bob", &["manta-read-only", "compute"]);
-    let session = SessionContext::from_parts(&token, vec![]).unwrap();
-    assert!(session.is_read_only);
-    assert!(!session.is_admin);
-  }
-
-  #[test]
-  fn from_parts_marks_non_admin_non_read_only_for_plain_user() {
+  fn from_parts_marks_non_admin_for_plain_user() {
     let token = jwt("Carol", "carol", &["compute"]);
     let session = SessionContext::from_parts(&token, vec![]).unwrap();
-    assert!(!session.is_read_only);
     assert!(!session.is_admin);
   }
 

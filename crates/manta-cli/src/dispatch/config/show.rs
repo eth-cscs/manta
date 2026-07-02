@@ -2,9 +2,10 @@
 //!
 //! Builds a [`ConfigSummary`] from the merged local settings and,
 //! when a session is available, the per-invocation JWT-derived facts
-//! (`username`, `is_admin`, `is_read_only`, `accessible_groups`)
-//! attached to [`crate::common::app_context::AppContext::session`].
-//! Rendering is delegated to [`crate::output::config_summary`].
+//! (`username`, `name`, `is_admin`, `accessible_groups`) attached to
+//! [`crate::common::app_context::AppContext::session`]. The
+//! `read_only` flag is sourced from `AppContext::read_only`, not the
+//! JWT. Rendering is delegated to [`crate::output::config_summary`].
 
 use anyhow::Error;
 
@@ -52,7 +53,6 @@ pub async fn exec(
     username: s.username.clone(),
     name: s.name.clone(),
     is_admin: s.is_admin,
-    is_read_only: s.is_read_only,
     accessible_groups: s.accessible_groups.clone(),
   });
 
@@ -64,6 +64,7 @@ pub async fn exec(
     log_level,
     current_site: ctx.site_name.map(str::to_string),
     configured_site: settings_site,
+    read_only: ctx.read_only,
     session,
     current_group: settings_hsm_group,
   };

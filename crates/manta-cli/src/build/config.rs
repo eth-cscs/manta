@@ -2,7 +2,7 @@
 //!
 //! Builds the `manta config show|set|unset` subtree, which reads and
 //! mutates the CLI's local configuration file (active site, default
-//! node group, log level, cached auth token).
+//! node group, log level, read-only guard, cached auth token).
 //! Execution dispatched in `crate::dispatch::config`. The
 //! configuration file format and loader live in
 //! `manta_shared::common::config`.
@@ -30,15 +30,22 @@ pub fn subcommand_config() -> Command {
     .about("Set the active site")
     .arg(arg!(<SITE_NAME> "Site name"));
 
+  let subcommand_config_set_read_only = Command::new("read-only").about(
+    "Refuse every backend-mutating command (writes read_only = true to cli.toml)",
+  );
+
   let subcommand_config_unset_auth =
     Command::new("auth").about("Clear the cached authentication token");
 
   let subcommand_config_unset_hsm =
     Command::new("hsm").about("Clear the active node group");
 
+  let subcommand_config_unset_read_only =
+    Command::new("read-only").about("Allow backend-mutating commands again");
+
   Command::new("config")
     .arg_required_else_help(true)
-    .about("Show or change CLI-side settings (active site, default node group, log level)")
+    .about("Show or change CLI-side settings (active site, default node group, log level, read-only guard)")
     .subcommand(
       Command::new("show")
         .about("Show current configuration values")
@@ -50,6 +57,7 @@ pub fn subcommand_config() -> Command {
         .about("Set a configuration value")
         .subcommand(subcommand_config_set_hsm)
         .subcommand(subcommand_config_set_log)
+        .subcommand(subcommand_config_set_read_only)
         .subcommand(subcommand_config_set_site),
     )
     .subcommand(
@@ -57,6 +65,7 @@ pub fn subcommand_config() -> Command {
         .arg_required_else_help(true)
         .about("Clear a configuration value")
         .subcommand(subcommand_config_unset_auth)
-        .subcommand(subcommand_config_unset_hsm),
+        .subcommand(subcommand_config_unset_hsm)
+        .subcommand(subcommand_config_unset_read_only),
     )
 }

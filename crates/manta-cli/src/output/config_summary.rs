@@ -20,7 +20,6 @@ pub struct SessionSummary {
   pub username: String,
   pub name: String,
   pub is_admin: bool,
-  pub is_read_only: bool,
   pub accessible_groups: Vec<String>,
 }
 
@@ -39,6 +38,12 @@ pub struct ConfigSummary {
   /// separately from `current_site` so the renderer can flag
   /// `--site` overrides. `None` when the key is absent or empty.
   pub configured_site: Option<String>,
+  /// CLI-local read-only flag from `cli.toml`'s `read_only`. `true`
+  /// means the local gate refuses every backend-mutating verb before
+  /// any HTTP request leaves the process; server enforcement (via the
+  /// `manta-read-only` realm role on the bearer token) is
+  /// independent.
+  pub read_only: bool,
   /// JWT-derived per-invocation facts. `None` when the command ran
   /// without a token — typically because no site is configured.
   pub session: Option<SessionSummary>,
@@ -75,10 +80,12 @@ fn push_local_section(out: &mut String, summary: &ConfigSummary) {
     .current_group
     .clone()
     .unwrap_or_else(|| "(unset)".to_string());
+  let read_only_value = if summary.read_only { "yes" } else { "no" };
   let rows = [
     ("Log level", summary.log_level.as_str()),
     ("Current site", site_value.as_str()),
     ("Current group", group_value.as_str()),
+    ("Read-only", read_only_value),
   ];
   push_aligned_rows(out, &rows);
 }
@@ -89,12 +96,10 @@ fn push_jwt_section(out: &mut String, session: Option<&SessionSummary>) {
     None => out.push_str("  (unavailable — no site selected)\n"),
     Some(s) => {
       let admin = if s.is_admin { "yes" } else { "no" };
-      let read_only = if s.is_read_only { "yes" } else { "no" };
       let rows = [
         ("Username", s.username.as_str()),
         ("Name", s.name.as_str()),
         ("Admin", admin),
-        ("Read-only", read_only),
       ];
       push_aligned_rows(out, &rows);
     }
@@ -160,11 +165,11 @@ mod tests {
       log_level: "info".to_string(),
       current_site: Some("alps".to_string()),
       configured_site: Some("alps".to_string()),
+      read_only: false,
       session: Some(SessionSummary {
         username: "alice".to_string(),
         name: "Alice Smith".to_string(),
         is_admin: false,
-        is_read_only: false,
         accessible_groups: vec!["compute".to_string(), "uan".to_string()],
       }),
       current_group: Some("compute".to_string()),
@@ -201,11 +206,17 @@ mod tests {
     assert_eq!(v["current_site"], "alps");
     assert_eq!(v["session"]["username"], "alice");
     assert_eq!(v["session"]["is_admin"], false);
-    assert_eq!(v["session"]["is_read_only"], false);
+    // is_read_only is no longer on `session` — it's a top-level key
+    // sourced from cli.toml.
+    assert!(
+      v["session"].get("is_read_only").is_none(),
+      "is_read_only should not be on `session`"
+    );
     assert_eq!(v["session"]["accessible_groups"][0], "compute");
     assert_eq!(v["current_group"], "compute");
-    // The old top-level `read_only` and `groups_available` keys are gone.
-    assert!(v.get("read_only").is_none(), "no top-level read_only");
+    // Top-level `read_only` is present and reflects cli.toml.
+    assert_eq!(v["read_only"], false);
+    // The old top-level `groups_available` key is still gone.
     assert!(
       v.get("groups_available").is_none(),
       "no top-level groups_available"
@@ -270,6 +281,32 @@ mod tests {
     assert!(
       out.contains("From server API:"),
       "missing server section:\n{out}"
+    );
+  }
+
+  #[test]
+  fn text_mode_read_only_yes_appears_in_local_section() {
+    let mut s = sample();
+    s.read_only = true;
+    let out = render_text(&s);
+    // Read-only row lives under the local section, not the JWT
+    // section. Assert the row is present, ends with `yes`, and sits
+    // before the JWT section header.
+    let jwt_pos = out
+      .find("From JWT token:")
+      .expect("jwt section header present");
+    let read_only_line = out
+      .lines()
+      .find(|l| l.contains("Read-only:"))
+      .expect("read-only row present");
+    assert!(
+      read_only_line.trim_end().ends_with("yes"),
+      "read-only row should end with `yes`, got: {read_only_line:?}"
+    );
+    let read_only_pos = out.find("Read-only:").expect("read-only row present");
+    assert!(
+      read_only_pos < jwt_pos,
+      "read-only row must appear before the JWT section header, got:\n{out}"
     );
   }
 

@@ -15,7 +15,7 @@
 //! - [`read_only`] — guard that blocks mutating verbs when the CLI is
 //!   configured in read-only mode.
 //! - [`session`] — per-invocation JWT-derived facts (username, name,
-//!   is_admin, is_read_only, accessible_groups).
+//!   is_admin, accessible_groups).
 
 pub mod app_context;
 pub mod authentication;

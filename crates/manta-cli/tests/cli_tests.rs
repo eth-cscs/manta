@@ -138,6 +138,76 @@ fn config_show_json_without_a_site_has_null_current_site() {
     .stdout(predicate::str::contains("\"current_site\":null"));
 }
 
+/// `config set read-only` writes `read_only = true` into cli.toml —
+/// works with no site configured, no server round-trip.
+#[test]
+fn config_set_read_only_writes_true_to_cli_toml() {
+  let (_dir, path) = site_less_config();
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["config", "set", "read-only"])
+    .assert()
+    .success();
+  let written = fs::read_to_string(&path).unwrap();
+  assert!(
+    written.contains("read_only = true"),
+    "config file should now carry read_only = true, got:\n{written}"
+  );
+}
+
+/// `config unset read-only` removes the key from cli.toml — inverse
+/// of `config set read-only`.
+#[test]
+fn config_unset_read_only_removes_the_key() {
+  let dir = tempfile::tempdir().unwrap();
+  let path = dir.path().join("cli.toml");
+  fs::write(
+    &path,
+    "log = \"info\"\n\
+     manta_server_url = \"https://manta-server.example.com:8443\"\n\
+     read_only = true\n",
+  )
+  .unwrap();
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["config", "unset", "read-only"])
+    .assert()
+    .success();
+  let written = fs::read_to_string(&path).unwrap();
+  assert!(
+    !written.contains("read_only"),
+    "read_only key should be gone, got:\n{written}"
+  );
+}
+
+/// With `read_only = true` in cli.toml, a mutating verb is refused
+/// locally — before any HTTP request. Message points at
+/// `manta config unset read-only`, not the JWT role.
+#[test]
+fn read_only_gate_refuses_mutating_verb_locally() {
+  let dir = tempfile::tempdir().unwrap();
+  let path = dir.path().join("cli.toml");
+  fs::write(
+    &path,
+    "log = \"info\"\n\
+     site = \"alps\"\n\
+     manta_server_url = \"https://manta-server.example.com:8443\"\n\
+     read_only = true\n",
+  )
+  .unwrap();
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["delete", "session", "any-session-id"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("read-only mode"))
+    .stderr(predicate::str::contains("manta config unset read-only"))
+    .stderr(predicate::str::contains("manta-read-only").not());
+}
+
 /// A command that reaches the backend must fail fast with a clear
 /// message when no site is selected — before any HTTP request.
 #[test]

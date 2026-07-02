@@ -81,6 +81,13 @@ pub struct AppContext<'a> {
   /// Override (seconds) for the SAT-file "session not yet visible"
   /// cap. `None` keeps the dispatcher's compiled default.
   pub sat_file_not_visible_budget_secs: Option<u64>,
+  /// CLI-local read-only flag from `cli.toml`'s `read_only`. Fed into
+  /// [`crate::common::read_only::read_only_gate`] at the top of
+  /// [`crate::dispatch::process::process_cli`] to refuse
+  /// backend-mutating verbs before any HTTP request leaves the
+  /// process. `false` by default. Server enforcement is independent
+  /// (via the `manta-read-only` realm role on the bearer token).
+  pub read_only: bool,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
@@ -140,6 +147,7 @@ mod tests {
       sat_file_poll_interval_secs: None,
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
+      read_only: false,
       settings,
       token: None,
       session: None,

@@ -36,6 +36,16 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
+  /// When `true`, the CLI refuses every backend-mutating verb before
+  /// any HTTP request leaves the process (see
+  /// [`crate::common::read_only::read_only_gate`] and
+  /// [`crate::common::read_only::MUTATING_VERBS`]). Toggled with
+  /// `manta config set read-only` / `manta config unset read-only`.
+  /// Server enforcement is independent and driven by the
+  /// `manta-read-only` realm role on the bearer token; this local
+  /// flag is fast local feedback, not the security boundary.
+  #[serde(default)]
+  pub read_only: bool,
   /// Optional per-request HTTP timeout, in seconds, for calls reaching
   /// `manta_server_url`. Two clients live behind this knob:
   ///
@@ -91,6 +101,7 @@ mod tests {
       site: Some("alps".to_string()),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
+      read_only: false,
       request_timeout_secs: None,
       power_poll_interval_secs: None,
       power_max_poll_attempts: None,
@@ -140,4 +151,38 @@ mod tests {
     assert!(result.is_err());
   }
 
+  #[test]
+  fn read_only_defaults_to_false_when_absent() {
+    let toml_str = r#"
+      log = "info"
+      site = "alps"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(!cfg.read_only);
+  }
+
+  #[test]
+  fn read_only_parses_true_when_present() {
+    let toml_str = r#"
+      log = "info"
+      site = "alps"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+      read_only = true
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(cfg.read_only);
+  }
+
+  #[test]
+  fn read_only_parses_false_when_explicitly_false() {
+    let toml_str = r#"
+      log = "info"
+      site = "alps"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+      read_only = false
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(!cfg.read_only);
+  }
 }
