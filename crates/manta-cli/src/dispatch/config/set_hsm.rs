@@ -52,8 +52,7 @@ async fn set_hsm_config_value(
   // Accessible groups are already filtered server-side and cached
   // on ctx.session; the function takes them as a parameter so it
   // doesn't need an AppContext reference.
-  let settings_group_available_vec: Vec<String> =
-    accessible_groups.to_vec();
+  let settings_group_available_vec: Vec<String> = accessible_groups.to_vec();
 
   validate_group_in_available(new_hsm, &settings_group_available_vec)?;
 
