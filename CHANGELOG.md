@@ -2,6 +2,102 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.62] - 2026-07-12
+
+### Bug Fixes
+
+- Return 404 for unknown site on /auth/*
+- Tier-1 correctness from /simplify sweep
+- Reclassify `backup` as a mutating verb in read_only gate
+- Unbreak rustdoc intra-doc links from /simplify Round 2
+- Use effective_group() in `get groups` + `get group-nodes`
+- Return 404 for unknown site on /auth/*  (#102) (#104)
+- Drop stale socks5_proxy arg to ShastaClient::new
+
+### Build
+
+- Regenerate openapi.json after /sat-file/validate removal
+
+### Documentation
+
+- Comprehensive doc sweep across workspace + small CLI cleanups
+- Rephrase RequestCtx intro to avoid clippy doc_lazy_continuation
+- Document the manta-read-only JWT-role gate
+- Add §2.7 operator-rollout for the manta-read-only role
+- Promote Read-only access to top-level §13
+- Document read-only access in cli.toml + server.toml
+- Document `config set read-only` and `config unset read-only`
+- Expand JWT-role read-only coverage in MIGRATING + ARCHITECTURE
+- Per-endpoint Response 403 for every /api/v1/* mutating route
+- Add SECURITY.md vulnerability-reporting + model summary
+- Add mermaid sequence diagram for the read-only gate
+- Replace ASCII tier diagram with mermaid sequence
+- Add mermaid flowchart for the middleware stack
+- Polish mermaid auth-flow diagram
+- Add mermaid flowchart for hw-cluster pin/unpin
+- Add mermaid sequence diagram for WS console upgrade
+- Add mermaid flowchart for CLI token-cache resolution
+- Fix factual errors in batch-2 diagrams
+- Reframe CLI read-only as JWT-derived
+- Tighten read-only doc gaps from JWT SessionContext review
+- Add universal --dry-run note to CLI.md preamble
+- Explain (BREAKING) tag convention and numbering scheme
+- Cross-link --dry-run and read-only sections
+- Organise sections into 3 tiers (Getting started / How-tos / Reference)
+
+### Features
+
+- Add has_role helper + READ_ONLY_ROLE const
+- Reject mutating requests for JWT manta-read-only role
+- Add SessionContext module
+- [**breaking**] Replace cli.toml read_only with JWT-derived SessionContext
+- [**breaking**] Remove `config set/unset read-only` subcommands
+- [**breaking**] Group `manta config show` text output by value provenance
+- [**breaking**] Source read-only from cli.toml, not JWT
+- [**breaking**] Remove POST /sat-file/validate endpoint chain
+
+### Miscellaneous Tasks
+
+- Regenerate man pages + shell completions [skip ci]
+- Regenerate man pages + shell completions [skip ci]
+- Gate checked-in openapi.json against the live server spec (#105)
+- Regenerate OpenAPI spec + man pages + shell completions [skip ci]
+
+### Performance
+
+- Parallelize independent SAT-file POSTs
+- Hw_cluster + BSS update parallelism from /simplify
+- Efficiency + simplification polish batch from /simplify
+- Extract apply_image_patches helper, parallelise IMS PATCH loops
+- Fan out sequential backend calls in migrate path
+- Hash-index two hot-path loops in service/
+
+### Refactor
+
+- Extract admin_bypass helper in service/authorization.rs
+- Reuse + simplification batch from /simplify
+- Reuse + DRY batch from /simplify
+- Enforce handler→service→backend boundary
+- Small mechanical cleanups from /simplify deferred batch
+- Consolidate transport + cascade in MantaClient
+- Node-target helper + confirm consistency fixes
+- Promote admin_bypass to authorization::is_admin
+- Use resolve_target_and_available_groups in session+hardware
+- Relocate jwt_ops from manta-server to manta-shared
+- [**breaking**] Revert ConsoleTrait impl on StaticBackendDispatcher
+- [**breaking**] Dispatcher wraps Csm, drops socks5_proxy from new()
+- [**breaking**] Remove pre-flight POST /sat-file/validate call
+- [**breaking**] Revert console.rs to (cols, rows) + tuple return
+- [**breaking**] Handlers/console.rs — drop resize forwarding
+
+### Styling
+
+- Apply rustfmt [skip ci]
+- Apply rustfmt [skip ci]
+- Apply rustfmt [skip ci]
+- Apply rustfmt [skip ci]
+- Cargo fmt sweep after Phase 4 revert
+
 ## [2.0.0-beta.61] - 2026-06-28
 
 ### Features
