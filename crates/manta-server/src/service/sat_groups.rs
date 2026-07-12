@@ -137,5 +137,4 @@ mod tests {
     });
     assert_eq!(extract_session_template_groups(&template), vec!["compute"]);
   }
-
 }

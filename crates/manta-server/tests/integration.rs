@@ -111,12 +111,9 @@ impl TestFixture {
   async fn setup() -> Self {
     let mock_server = MockServer::start().await;
 
-    let backend = StaticBackendDispatcher::new(
-      "csm",
-      &mock_server.uri(),
-      TEST_ROOT_CERT,
-    )
-    .unwrap();
+    let backend =
+      StaticBackendDispatcher::new("csm", &mock_server.uri(), TEST_ROOT_CERT)
+        .unwrap();
 
     let mut sites = std::collections::HashMap::new();
     sites.insert(

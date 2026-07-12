@@ -56,13 +56,11 @@ pub async fn exec(
 
   tracing::info!("Looking for user '{}' public SSH key", user_public_key_name);
 
-  let shasta = ShastaClient::new(
-    infra.shasta_base_url,
-    infra.shasta_root_cert.to_vec(),
-  )
-  .map_err(|e| {
-    Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
-  })?;
+  let shasta =
+    ShastaClient::new(infra.shasta_base_url, infra.shasta_root_cert.to_vec())
+      .map_err(|e| {
+      Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
+    })?;
 
   let user_public_ssh_id = if let Ok(Some(user_public_ssh_key)) = shasta
     .ims_public_keys_v3_get_single(token, &user_public_key_name)

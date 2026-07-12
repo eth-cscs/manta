@@ -95,13 +95,7 @@ pub async fn console_node_ws(
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for node {xname}");
     match service::console::attach_to_node_console(
-      &backend,
-      &token,
-      &site_name,
-      &xname,
-      q.cols,
-      q.rows,
-      &k8s,
+      &backend, &token, &site_name, &xname, q.cols, q.rows, &k8s,
     )
     .await
     {
@@ -177,13 +171,7 @@ pub async fn console_session_ws(
   Ok(ws.on_upgrade(move |socket| async move {
     tracing::info!("WebSocket console opened for session {name}");
     match service::console::attach_to_session_console(
-      &backend,
-      &token,
-      &site_name,
-      &name,
-      q.cols,
-      q.rows,
-      &k8s,
+      &backend, &token, &site_name, &name, q.cols, q.rows, &k8s,
     )
     .await
     {
