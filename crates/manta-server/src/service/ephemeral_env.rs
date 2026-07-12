@@ -59,7 +59,6 @@ pub async fn exec(
   let shasta = ShastaClient::new(
     infra.shasta_base_url,
     infra.shasta_root_cert.to_vec(),
-    infra.socks5_proxy.map(|s| s.to_string()),
   )
   .map_err(|e| {
     Error::BadRequest(format!("Could not build Shasta HTTP client: {e}"))
