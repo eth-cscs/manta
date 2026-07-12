@@ -17,10 +17,9 @@
 //! handler BEFORE the backend is cloned and the closure is spawned.
 
 use manta_backend_dispatcher::error::Error;
-use manta_backend_dispatcher::interfaces::console::{
-  ConsoleAttachment, ConsoleTrait, TermSize,
-};
+use manta_backend_dispatcher::interfaces::console::ConsoleTrait;
 use manta_backend_dispatcher::types::K8sDetails;
+use tokio::io::{AsyncRead, AsyncWrite};
 
 use crate::dispatcher::StaticBackendDispatcher;
 
@@ -34,11 +33,18 @@ pub async fn attach_to_node_console(
   token: &str,
   site_name: &str,
   xname: &str,
-  term_size: TermSize,
+  cols: u16,
+  rows: u16,
   k8s: &K8sDetails,
-) -> Result<ConsoleAttachment, Error> {
+) -> Result<
+  (
+    Box<dyn AsyncWrite + Unpin + Send>,
+    Box<dyn AsyncRead + Unpin + Send>,
+  ),
+  Error,
+> {
   backend
-    .attach_to_node_console(token, site_name, xname, term_size, k8s)
+    .attach_to_node_console(token, site_name, xname, cols, rows, k8s)
     .await
 }
 
@@ -52,10 +58,17 @@ pub async fn attach_to_session_console(
   token: &str,
   site_name: &str,
   session_name: &str,
-  term_size: TermSize,
+  cols: u16,
+  rows: u16,
   k8s: &K8sDetails,
-) -> Result<ConsoleAttachment, Error> {
+) -> Result<
+  (
+    Box<dyn AsyncWrite + Unpin + Send>,
+    Box<dyn AsyncRead + Unpin + Send>,
+  ),
+  Error,
+> {
   backend
-    .attach_to_session_console(token, site_name, session_name, term_size, k8s)
+    .attach_to_session_console(token, site_name, session_name, cols, rows, k8s)
     .await
 }
