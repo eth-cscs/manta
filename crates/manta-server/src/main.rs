@@ -412,7 +412,6 @@ async fn run_server(
       site.backend.as_str(),
       &api_url,
       &root_cert,
-      site.socks5_proxy.as_deref(),
     )?;
     sites.insert(
       name.clone(),

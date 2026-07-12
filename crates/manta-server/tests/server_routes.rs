@@ -33,7 +33,7 @@ use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 /// either fail at auth or at Axum's request extraction layer first.
 fn router() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"")
       .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
@@ -64,7 +64,7 @@ fn router() -> axum::Router {
 /// reach the "requires vault/k8s" code paths.
 fn router_with_vault() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"", None)
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"")
       .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(

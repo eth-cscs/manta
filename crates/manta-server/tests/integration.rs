@@ -115,7 +115,6 @@ impl TestFixture {
       "csm",
       &mock_server.uri(),
       TEST_ROOT_CERT,
-      None,
     )
     .unwrap();
 

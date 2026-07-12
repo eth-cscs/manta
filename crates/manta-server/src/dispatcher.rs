@@ -10,7 +10,7 @@
 //! impls in [`crate::backend_dispatcher`] route the call to the active
 //! variant.
 
-use csm_rs::ShastaClient;
+use csm_rs::backend_connector::Csm;
 use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
@@ -31,8 +31,9 @@ use ochami_rs::backend_connector::Ochami;
 #[allow(clippy::upper_case_acronyms)]
 pub enum StaticBackendDispatcher {
   /// HPE Cray System Management (CSM) backend, used by Alps-style
-  /// deployments. Wraps a `csm-rs` HTTP client (`ShastaClient`).
-  CSM(ShastaClient),
+  /// deployments. Wraps a `csm-rs` `Csm` (which itself wraps a
+  /// `ShastaClient` HTTP client).
+  CSM(Csm),
   /// OpenCHAMI backend, used by sites running the open-source CSM
   /// alternative. Wraps an `ochami-rs` HTTP client.
   OCHAMI(Ochami),
@@ -54,8 +55,7 @@ impl StaticBackendDispatcher {
   /// [`crate::config::BackendTechnology::as_str`]); any other value
   /// returns [`Error::UnsupportedBackend`]. `root_cert` is the PEM
   /// bytes of the backend's root CA — used to verify TLS to
-  /// `base_url`. `socks5_proxy` is an optional SOCKS5 URL applied to
-  /// every outbound request.
+  /// `base_url`.
   ///
   /// Called once per configured site during server startup.
   ///
@@ -63,23 +63,16 @@ impl StaticBackendDispatcher {
   ///
   /// - [`Error::UnsupportedBackend`] when `backend_type` is not
   ///   `"csm"` or `"ochami"`.
-  /// - Any error surfaced by `ShastaClient::new` (CSM variant) when
-  ///   the supplied cert or proxy URL is unusable.
+  /// - Any error surfaced by `Csm::new` (CSM variant) when
+  ///   the supplied cert is unusable.
   pub fn new(
     backend_type: &str,
     base_url: &str,
     root_cert: &[u8],
-    socks5_proxy: Option<&str>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(ShastaClient::new(
-        base_url,
-        root_cert,
-        socks5_proxy.map(str::to_string),
-      )?)),
-      "ochami" => {
-        Ok(Self::OCHAMI(Ochami::new(base_url, root_cert, socks5_proxy)))
-      }
+      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert)?)),
+      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
       _ => Err(Error::UnsupportedBackend(format!(
         "Backend '{backend_type}' not supported"
       ))),
