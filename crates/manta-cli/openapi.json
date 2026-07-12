@@ -3755,87 +3755,6 @@
         ]
       }
     },
-    "/sat-file/validate": {
-      "post": {
-        "tags": [
-          "sat-file"
-        ],
-        "summary": "`POST /api/v1/sat-file/validate` — validate a SAT file against\nlive CSM state without mutating anything. Used by\n`manta apply sat-file` as a pre-flight check.",
-        "description": "**Scope:** validates the `configurations`, `images`, and\n`session_templates` sections (cross-references resolved against\nCFS / IMS / `cray-product-catalog`). The `hardware` section is\n**not** validated here — invalid `hardware[]` entries will pass\nthis endpoint with 204 and only surface as failures during apply.\nThis matches the underlying csm-rs validator's scope; broadening\nit is tracked as a follow-up.",
-        "operationId": "post_sat_validate",
-        "parameters": [
-          {
-            "name": "X-Manta-Site",
-            "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PostSatValidateRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "SAT file is valid (configurations, images, session_templates sections — `hardware` is not validated)"
-          },
-          "400": {
-            "description": "SAT validation failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Caller cannot target referenced HSM groups",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "501": {
-            "description": "Vault or k8s not configured",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
     "/sessions": {
       "get": {
         "tags": [
@@ -5572,18 +5491,6 @@
           },
           "template": {
             "description": "The created (or mock, in dry-run) BOS session template."
-          }
-        }
-      },
-      "PostSatValidateRequest": {
-        "type": "object",
-        "description": "Body for `POST /api/v1/sat-file/validate`.\n\nThe CLI parses the SAT YAML once into a `serde_json::Value` and\nforwards it verbatim; the server hands it through to csm-rs's\nvalidator without re-parsing.",
-        "required": [
-          "sat_file"
-        ],
-        "properties": {
-          "sat_file": {
-            "description": "Parsed SAT file content — the **whole** SAT document, not a\nsingle entry. Sketch:\n\n```text\n{\n  \"configurations\":    [ {...}, ... ],   // entries of PostSatConfigurationRequest::configuration shape\n  \"images\":            [ {...}, ... ],   // entries of CreateImageCfsSessionRequest::image shape\n  \"session_templates\": [ {...}, ... ],   // entries of PostSatSessionTemplateRequest::session_template shape\n  \"hardware\":          [ {...}, ... ]\n}\n```"
           }
         }
       },
