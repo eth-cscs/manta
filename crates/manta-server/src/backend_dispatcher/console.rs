@@ -7,53 +7,50 @@
 //! branch return [`Error::Message`] ("Attach to … console command
 //! not implemented for this backend").
 
-use manta_backend_dispatcher::interfaces::console::{
-  ConsoleAttachment, TermSize,
-};
-
 use super::*;
 
 impl ConsoleTrait for StaticBackendDispatcher {
-  /// Attach to `xname`'s console. Returns the
-  /// stdin/stdout/resize handle; the caller drives the lifetime by
-  /// dropping the channels.
+  type T = Box<dyn AsyncWrite + Unpin + Send>;
+  type U = Box<dyn AsyncRead + Unpin + Send>;
+
   async fn attach_to_node_console(
     &self,
     token: &str,
     site_name: &str,
     xname: &str,
-    initial_size: TermSize,
+    width: u16,
+    height: u16,
     k8s: &K8sDetails,
-  ) -> Result<ConsoleAttachment, Error> {
+  ) -> Result<(Self::T, Self::U), Error> {
     dispatch!(
       self,
       attach_to_node_console,
       token,
       site_name,
       xname,
-      initial_size,
+      width,
+      height,
       k8s
     )
   }
 
-  /// Attach to the Ansible-container console of a running CFS
-  /// session, identified by `session_name`. Same handle shape as
-  /// [`attach_to_node_console`](Self::attach_to_node_console).
   async fn attach_to_session_console(
     &self,
     token: &str,
     site_name: &str,
     session_name: &str,
-    initial_size: TermSize,
+    width: u16,
+    height: u16,
     k8s: &K8sDetails,
-  ) -> Result<ConsoleAttachment, Error> {
+  ) -> Result<(Self::T, Self::U), Error> {
     dispatch!(
       self,
       attach_to_session_console,
       token,
       site_name,
       session_name,
-      initial_size,
+      width,
+      height,
       k8s
     )
   }
