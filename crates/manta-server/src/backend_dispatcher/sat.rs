@@ -31,16 +31,6 @@ impl SatTrait for StaticBackendDispatcher {
     dispatch!(self, apply_sat_file, params)
   }
 
-  /// Pre-flight check: validate `params` against live backend state
-  /// without mutating anything. Returns `Ok(())` if the SAT file
-  /// would apply cleanly, fail-fast on the first detected mismatch.
-  async fn validate_sat_file(
-    &self,
-    params: ValidateSatFileParams<'_>,
-  ) -> Result<(), Error> {
-    dispatch!(self, validate_sat_file, params)
-  }
-
   /// Apply a single SAT `configurations[]` entry — resolve any
   /// `product:`/`git:` layers, POST the resulting
   /// `CfsConfigurationRequest` to CFS, return the persisted

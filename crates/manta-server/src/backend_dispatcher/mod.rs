@@ -40,7 +40,7 @@ use manta_backend_dispatcher::interfaces::apply_hw_cluster_pin::ApplyHwClusterPi
 use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ApplyConfigurationParams, ApplyImageCreateSessionParams, ApplyImageParams,
   ApplyImageStampParams, ApplySatFileParams, ApplySessionTemplateParams,
-  SatTrait, ValidateSatFileParams,
+  SatTrait,
 };
 use manta_backend_dispatcher::interfaces::apply_session::ApplySessionTrait;
 use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait;

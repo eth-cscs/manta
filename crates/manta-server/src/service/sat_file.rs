@@ -3,9 +3,9 @@
 //! Thin forwarders from the HTTP handlers to the backend dispatcher,
 //! enforcing the CLAUDE.md boundary rule (handlers → service → backend).
 //!
-//! [`apply_session_template`] and [`validate_sat_file`] also consolidate
-//! the duplicate `get_group_name_available` fetch that the handlers
-//! previously performed twice (once inside `validate_user_group_vec_access`,
+//! [`apply_session_template`] also consolidates the duplicate
+//! `get_group_name_available` fetch that the handlers previously
+//! performed twice (once inside `validate_user_group_vec_access`,
 //! once to build the `hsm_group_available_vec` argument): the service
 //! function fetches the group list once, validates it in-memory, and
 //! forwards it to the backend.
@@ -16,7 +16,6 @@ use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::apply_sat_file::{
   ApplyConfigurationParams, ApplyImageCreateSessionParams,
   ApplyImageStampParams, ApplySessionTemplateParams, SatTrait,
-  ValidateSatFileParams,
 };
 use manta_backend_dispatcher::types::bos::{
   session::BosSession, session_template::BosSessionTemplate,
@@ -149,41 +148,6 @@ pub async fn apply_session_template(
       hsm_group_available_vec: &hsm_group_available_vec,
       reboot,
       dry_run,
-    })
-    .await
-}
-
-/// Pre-flight validate a SAT file against live CSM state without mutating
-/// anything.
-///
-/// Fetches the caller's accessible group list once; for non-admin callers
-/// validates that every group in `target_groups` is accessible, then
-/// passes the full list to the backend. Same single-fetch consolidation
-/// as [`apply_session_template`].
-pub async fn validate_sat_file(
-  infra: &InfraContext<'_>,
-  token: &str,
-  sat_file: serde_json::Value,
-  target_groups: &[String],
-  vault_base_url: &str,
-  k8s_api_url: &str,
-) -> Result<(), Error> {
-  let hsm_group_available_vec =
-    authorization::fetch_group_names_and_validate_access(
-      infra,
-      token,
-      target_groups,
-    )
-    .await?;
-  infra
-    .backend
-    .validate_sat_file(ValidateSatFileParams {
-      shasta_token: token,
-      vault_base_url,
-      site_name: infra.site_name,
-      k8s_api_url,
-      sat_file,
-      hsm_group_available_vec: &hsm_group_available_vec,
     })
     .await
 }

@@ -63,7 +63,7 @@ use super::{
 pub use manta_shared::types::api::sat_file::{
   CreateImageCfsSessionRequest, PostSatConfigurationRequest,
   PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
-  PostSatValidateRequest, StampImageFromSessionRequest,
+  StampImageFromSessionRequest,
 };
 
 #[utoipa::path(post, path = "/sat-file/configurations", tag = "sat-file",
@@ -355,68 +355,6 @@ fn mock_bos_session_for_template(
   }
 }
 
-// ---------------------------------------------------------------------------
-// POST /api/v1/sat-file/validate — Pre-flight validation of a whole SAT file
-//   against live CSM state. Returns 204 on success, 400 on validation
-//   failure. Read-only; safe to call before any state-changing apply work.
-// ---------------------------------------------------------------------------
-
-#[utoipa::path(post, path = "/sat-file/validate", tag = "sat-file",
-  params(SiteHeader),
-  request_body = PostSatValidateRequest,
-  security(("bearerAuth" = [])),
-  responses(
-    (status = 204, description = "SAT file is valid (configurations, images, session_templates sections — `hardware` is not validated)"),
-    (status = 400, description = "SAT validation failed",       body = ErrorResponse),
-    (status = 401, description = "Unauthorized",                body = ErrorResponse),
-    (status = 403, description = "Caller cannot target referenced HSM groups", body = ErrorResponse),
-    (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
-  )
-)]
-/// `POST /api/v1/sat-file/validate` — validate a SAT file against
-/// live CSM state without mutating anything. Used by
-/// `manta apply sat-file` as a pre-flight check.
-///
-/// **Scope:** validates the `configurations`, `images`, and
-/// `session_templates` sections (cross-references resolved against
-/// CFS / IMS / `cray-product-catalog`). The `hardware` section is
-/// **not** validated here — invalid `hardware[]` entries will pass
-/// this endpoint with 204 and only surface as failures during apply.
-/// This matches the underlying csm-rs validator's scope; broadening
-/// it is tracked as a follow-up.
-#[tracing::instrument(skip_all)]
-pub async fn post_sat_validate(
-  ctx: RequestCtx,
-  Json(body): Json<PostSatValidateRequest>,
-) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
-  tracing::info!("post_sat_validate");
-  let infra = ctx.infra();
-
-  let vault_base_url = require_vault(infra.vault_base_url)?;
-  let k8s_api_url = require_k8s_url(infra.k8s_api_url)?;
-
-  let target_groups =
-    crate::service::sat_groups::extract_all_target_groups(&body.sat_file);
-
-  // Group access validation and the backend call are consolidated in
-  // the service function: it fetches the available-group list once,
-  // validates inline (non-admin callers), and forwards the list to the
-  // backend — eliminating the duplicate get_group_name_available fetch
-  // that previously appeared here.
-  crate::service::sat_file::validate_sat_file(
-    &infra,
-    &ctx.token,
-    body.sat_file,
-    &target_groups,
-    vault_base_url,
-    k8s_api_url,
-  )
-  .await
-  .map_err(to_handler_error)?;
-
-  Ok(StatusCode::NO_CONTENT)
-}
-
 #[cfg(test)]
 mod tests {
   //! Locks the JSON wire format of the per-element request/response
@@ -427,7 +365,7 @@ mod tests {
   use super::{
     CreateImageCfsSessionRequest, PostSatConfigurationRequest,
     PostSatSessionTemplateRequest, PostSatSessionTemplateResponse,
-    PostSatValidateRequest, StampImageFromSessionRequest,
+    StampImageFromSessionRequest,
   };
 
   /// Lock the shape of the CLI's POST /sat-file/configurations body.
@@ -596,20 +534,5 @@ mod tests {
     let session = super::mock_bos_session_for_template(&template);
     assert_eq!(session.template_name, "<unnamed>");
     assert_eq!(session.name.as_deref(), Some("dry-run-<unnamed>"));
-  }
-
-  /// Lock the shape of the CLI's POST /sat-file/validate body.
-  /// Catches renames on either side of the wire.
-  #[test]
-  fn cli_validate_body_deserialises() {
-    let cli_body = serde_json::json!({
-      "sat_file": {
-        "configurations": [{ "name": "cfg-v1" }],
-        "images": [],
-        "session_templates": [],
-      }
-    });
-    let req: PostSatValidateRequest = serde_json::from_value(cli_body).unwrap();
-    assert!(req.sat_file.get("configurations").is_some());
   }
 }
