@@ -336,12 +336,19 @@ async fn mock_bss_bootparameters(srv: &MockServer) {
   .await;
 }
 
+// Three images, deliberately returned oldest-first so the newest is
+// *last* in backend order. IMS itself guarantees no ordering, and the
+// service is what sorts — a single-image mock (as this had) cannot
+// tell a working sort from a missing one, which is how the
+// cap-before-sort bug survived.
 async fn mock_ims_images(srv: &MockServer) {
   mock_get(
     srv,
     "/ims/v3/images",
     json!([
-      { "id": "abc123", "name": "compute-my-image", "created": "2024-01-01T00:00:00" }
+      { "id": "old123", "name": "compute-old-image",    "created": "2024-01-01T00:00:00" },
+      { "id": "mid123", "name": "compute-middle-image", "created": "2024-06-01T00:00:00" },
+      { "id": "abc123", "name": "compute-my-image",     "created": "2024-12-01T00:00:00" }
     ]),
   )
   .await;
@@ -525,8 +532,8 @@ async fn get_templates_happy_path() {
 
 // GET /api/v1/images
 //
-// Handler returns a plain Vec<Image> sorted by creation time. Each
-// entry mirrors the IMS image shape: { id, name, created, link?, arch?, metadata? }.
+// Handler returns a plain Vec<Image>, most-recent first. Each entry
+// mirrors the IMS image shape: { id, name, created, link?, arch?, metadata? }.
 //
 // Call chain:
 //   service::image::get_images
@@ -541,9 +548,36 @@ async fn get_images_happy_path() {
 
   let body = TestFixture::body_json(resp).await;
   let arr = body.as_array().expect("expected JSON array");
-  assert!(!arr.is_empty());
+  assert_eq!(arr.len(), 3);
   assert_eq!(arr[0]["id"], "abc123");
   assert_eq!(arr[0]["name"], "compute-my-image");
+
+  // The mock returns these oldest-first; the response must be the
+  // reverse, per the documented most-recent-first contract.
+  let ids: Vec<&str> = arr.iter().map(|i| i["id"].as_str().unwrap()).collect();
+  assert_eq!(ids, ["abc123", "mid123", "old123"]);
+}
+
+// GET /api/v1/images?limit=1
+//
+// Guards the ordering/cap interaction end to end: `limit` must slice
+// the *sorted* list, so limit=1 is the newest image — not whichever
+// one IMS happened to list first (here, the oldest).
+#[tokio::test]
+async fn get_images_limit_returns_the_newest() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx.send(fx.auth_get("/api/v1/images?limit=1")).await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let arr = body.as_array().expect("expected JSON array");
+  assert_eq!(arr.len(), 1);
+  assert_eq!(
+    arr[0]["id"], "abc123",
+    "limit must apply after sorting, yielding the newest image"
+  );
 }
 
 // GET /api/v1/boot-parameters?hsm_group=compute

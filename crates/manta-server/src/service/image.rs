@@ -13,21 +13,26 @@
 //! Read-only listing ([`get_images`]) only validates the requested
 //! `pattern` glob and applies the `limit` cap.
 
+use std::cmp::Ordering;
+
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
 use manta_backend_dispatcher::types::Group;
 use manta_backend_dispatcher::types::bss::BootParameters;
 use manta_backend_dispatcher::types::ims::Image;
+use manta_shared::common::parse_ims_timestamp;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
 pub use manta_shared::types::api::image::GetImagesParams;
 
-/// Fetch IMS images from the backend, sorted by creation time.
+/// Fetch IMS images from the backend, most-recent first.
 ///
 /// Filters server-side by `params.pattern` (glob syntax, matched
-/// against `image.name`) and caps the result at `params.limit`.
+/// against `image.name`), then orders by creation time descending and
+/// caps the result at `params.limit`. The cap is applied **after**
+/// ordering, so `limit = 1` yields the newest image.
 ///
 /// An invalid glob (unbalanced bracket, malformed range, …) returns
 /// [`Error::BadRequest`] with the parser's message; the caller's
@@ -44,13 +49,50 @@ pub async fn get_images(
 
   image_vec = apply_pattern_filter(image_vec, params.pattern.as_deref())?;
 
-  if let Some(limit) = params.limit {
+  Ok(sort_and_cap(image_vec, params.limit))
+}
+
+/// Order by creation time (newest first) and only then apply `limit`.
+///
+/// The two steps live together because their order is the whole
+/// contract: capping first would leave `limit` slicing the backend's
+/// arbitrary ordering, so `limit = 1` would return an arbitrary image
+/// rather than the newest one. Keeping them in one pure function makes
+/// that invariant testable without standing up a backend mock — which
+/// is why the bug this replaced went unnoticed.
+fn sort_and_cap(mut image_vec: Vec<Image>, limit: Option<u8>) -> Vec<Image> {
+  image_vec.sort_by(compare_by_created_desc);
+
+  if let Some(limit) = limit {
     image_vec.truncate(limit as usize);
   }
 
-  image_vec.sort_by_key(|image| image.created.clone());
+  image_vec
+}
 
-  Ok(image_vec)
+/// Order two images by creation time, newest first.
+///
+/// `created` arrives as an `Option<String>` in a format CSM does not
+/// guarantee, so compare the *parsed* timestamps
+/// ([`parse_ims_timestamp`]) rather than the raw strings — a
+/// lexicographic comparison only agrees with chronology when every
+/// timestamp shares one shape, which mixed zoned/naive values break.
+///
+/// Images whose `created` is absent or unparseable sort last: they
+/// cannot be placed on the timeline, and burying them below the known
+/// dates keeps the useful rows at the top. Ties are `Equal` and
+/// [`slice::sort_by`] is stable, so equal-or-unknown images keep the
+/// backend's own order.
+fn compare_by_created_desc(a: &Image, b: &Image) -> Ordering {
+  let a_created = a.created.as_deref().and_then(parse_ims_timestamp);
+  let b_created = b.created.as_deref().and_then(parse_ims_timestamp);
+
+  match (a_created, b_created) {
+    (Some(a_ts), Some(b_ts)) => b_ts.cmp(&a_ts),
+    (Some(_), None) => Ordering::Less,
+    (None, Some(_)) => Ordering::Greater,
+    (None, None) => Ordering::Equal,
+  }
 }
 
 /// Pure helper that retains only images whose `name` matches `pattern`
@@ -203,18 +245,30 @@ fn get_restricted_image_ids(
 
 #[cfg(test)]
 mod tests {
-  //! Unit tests for the pure `apply_pattern_filter` helper. The
-  //! async wrapper `get_images` adds no logic beyond glue, so testing
-  //! the helper covers the behaviour: pattern compilation, name
-  //! matching, and the BadRequest path on invalid globs.
+  //! Unit tests for the pure helpers behind `get_images`:
+  //! `apply_pattern_filter` (pattern compilation, name matching, and
+  //! the BadRequest path on invalid globs) and `sort_and_cap`
+  //! (most-recent-first ordering, and the cap applying only after it).
+  //!
+  //! These call the same functions `get_images` calls, so the
+  //! order-of-operations contract is genuinely covered here rather
+  //! than restated.
 
-  use super::apply_pattern_filter;
+  use super::{apply_pattern_filter, sort_and_cap};
   use manta_backend_dispatcher::error::Error;
   use manta_backend_dispatcher::types::ims::Image;
 
   fn image(name: &str) -> Image {
     Image {
       name: name.to_string(),
+      ..Default::default()
+    }
+  }
+
+  fn image_created(name: &str, created: Option<&str>) -> Image {
+    Image {
+      name: name.to_string(),
+      created: created.map(str::to_string),
       ..Default::default()
     }
   }
@@ -305,5 +359,76 @@ mod tests {
       apply_pattern_filter(input, Some("compute-[abc]")).expect("class valid");
     assert_eq!(out.len(), 3);
     assert!(!out.iter().any(|i| i.name == "compute-d"));
+  }
+
+  #[test]
+  fn images_are_ordered_most_recent_first() {
+    let input = vec![
+      image_created("middle", Some("2026-03-01T00:00:00")),
+      image_created("oldest", Some("2026-01-01T00:00:00")),
+      image_created("newest", Some("2026-06-01T00:00:00")),
+    ];
+    let out = sort_and_cap(input, None);
+    let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(
+      names,
+      ["newest", "middle", "oldest"],
+      "documented contract is most-recent first"
+    );
+  }
+
+  #[test]
+  fn limit_one_keeps_the_newest_not_the_first() {
+    // Regression: the cap used to be applied *before* the sort, so
+    // `--most-recent` returned whatever the backend happened to list
+    // first. "newest" is deliberately last in backend order.
+    let input = vec![
+      image_created("oldest", Some("2026-01-01T00:00:00")),
+      image_created("middle", Some("2026-03-01T00:00:00")),
+      image_created("newest", Some("2026-06-01T00:00:00")),
+    ];
+    let out = sort_and_cap(input, Some(1));
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0].name, "newest");
+  }
+
+  #[test]
+  fn zoned_timestamps_take_part_in_the_ordering() {
+    // A zoned `created` must be parsed and placed on the timeline, not
+    // written off as unparseable. The months-wide gaps keep this
+    // independent of the runner's timezone: `parse_ims_timestamp`
+    // normalises to local naive time, so a zoned value shifts by at
+    // most ±14h — nowhere near enough to escape the surrounding pair.
+    let input = vec![
+      image_created("zoned", Some("2026-06-04T12:30:00+00:00")),
+      image_created("newest", Some("2026-12-01T00:00:00")),
+      image_created("oldest", Some("2026-01-01T00:00:00")),
+    ];
+    let out = sort_and_cap(input, None);
+    let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(names, ["newest", "zoned", "oldest"]);
+  }
+
+  #[test]
+  fn images_without_a_parseable_date_sort_last() {
+    // Also pins that ordering is by *parsed* value, not raw string:
+    // "not-a-real-date" starts with 'n', so a descending string sort
+    // would rank it above every "2026-..." timestamp. It must sink.
+    let input = vec![
+      image_created("no-date", None),
+      image_created("bad-date", Some("not-a-real-date")),
+      image_created("dated", Some("2026-01-01T00:00:00")),
+    ];
+    let out = sort_and_cap(input, None);
+    assert_eq!(
+      out[0].name, "dated",
+      "known dates come before unplaceable ones"
+    );
+    let tail: Vec<&str> = out[1..].iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(
+      tail,
+      ["no-date", "bad-date"],
+      "unplaceable images keep backend order (stable sort)"
+    );
   }
 }
