@@ -84,6 +84,13 @@ _arguments "${_arguments_options[@]}" : \
 ':LOG_LEVEL -- Log verbosity level:(error warn info debug trace)' \
 && ret=0
 ;;
+(read-only)
+_arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
@@ -109,6 +116,10 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (log)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -157,6 +168,13 @@ _arguments "${_arguments_options[@]}" : \
 '--help[Print help]' \
 && ret=0
 ;;
+(read-only)
+_arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+&& ret=0
+;;
 (help)
 _arguments "${_arguments_options[@]}" : \
 ":: :_manta__subcmd__config__subcmd__unset__subcmd__help_commands" \
@@ -174,6 +192,10 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -225,6 +247,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(read-only)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -250,6 +276,10 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -475,6 +505,10 @@ _arguments "${_arguments_options[@]}" : \
 '--id=[Show only the image with this exact ID]:IMAGE_ID:_default' \
 '-p+[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
 '--pattern=[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
+'-s+[Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
+'--since=[Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
+'-u+[Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
+'--until=[Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
 '-l+[Return only the <VALUE> most recent images]:VALUE:_default' \
 '--limit=[Return only the <VALUE> most recent images]:VALUE:_default' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
@@ -2374,6 +2408,10 @@ _arguments "${_arguments_options[@]}" : \
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
+(read-only)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
 (site)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -2399,6 +2437,10 @@ _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
 (hsm)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(read-only)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
 ;;
@@ -2898,7 +2940,7 @@ esac
 (( $+functions[_manta_commands] )) ||
 _manta_commands() {
     local commands; commands=(
-'config:Show or change CLI-side settings (active site, default node group, log level)' \
+'config:Show or change CLI-side settings (active site, default node group, log level, read-only guard)' \
 'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters' \
 'add:Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints' \
 'apply:Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling' \
@@ -3282,6 +3324,7 @@ _manta__subcmd__config__subcmd__help__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
+'read-only:Refuse every backend-mutating command (writes read_only = true to cli.toml)' \
 'site:Set the active site' \
     )
     _describe -t commands 'manta config help set commands' commands "$@"
@@ -3295,6 +3338,11 @@ _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__help__subcmd__set__subcmd__site_commands() {
@@ -3311,6 +3359,7 @@ _manta__subcmd__config__subcmd__help__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
+'read-only:Allow backend-mutating commands again' \
     )
     _describe -t commands 'manta config help unset commands' commands "$@"
 }
@@ -3324,11 +3373,17 @@ _manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config help unset hsm commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__help__subcmd__unset__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config help unset read-only commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__config__subcmd__set_commands] )) ||
 _manta__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
+'read-only:Refuse every backend-mutating command (writes read_only = true to cli.toml)' \
 'site:Set the active site' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3339,6 +3394,7 @@ _manta__subcmd__config__subcmd__set__subcmd__help_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
+'read-only:Refuse every backend-mutating command (writes read_only = true to cli.toml)' \
 'site:Set the active site' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
@@ -3359,6 +3415,11 @@ _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set help log commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set help read-only commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__help__subcmd__site_commands() {
     local commands; commands=()
@@ -3373,6 +3434,11 @@ _manta__subcmd__config__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta config set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__set__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__set__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__config__subcmd__set__subcmd__site_commands() {
@@ -3389,6 +3455,7 @@ _manta__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
+'read-only:Allow backend-mutating commands again' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config unset commands' commands "$@"
@@ -3403,6 +3470,7 @@ _manta__subcmd__config__subcmd__unset__subcmd__help_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
+'read-only:Allow backend-mutating commands again' \
 'help:Print this message or the help of the given subcommand(s)' \
     )
     _describe -t commands 'manta config unset help commands' commands "$@"
@@ -3422,10 +3490,20 @@ _manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset help hsm commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__help__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset help read-only commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__hsm_commands] )) ||
 _manta__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta config unset hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__config__subcmd__unset__subcmd__read-only_commands] )) ||
+_manta__subcmd__config__subcmd__unset__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta config unset read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__console_commands] )) ||
 _manta__subcmd__console_commands() {
@@ -3630,7 +3708,7 @@ _manta__subcmd__get_commands() {
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -3711,7 +3789,7 @@ _manta__subcmd__get__subcmd__help_commands() {
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \
@@ -3825,7 +3903,7 @@ _manta__subcmd__get__subcmd__templates_commands() {
 (( $+functions[_manta__subcmd__help_commands] )) ||
 _manta__subcmd__help_commands() {
     local commands; commands=(
-'config:Show or change CLI-side settings (active site, default node group, log level)' \
+'config:Show or change CLI-side settings (active site, default node group, log level, read-only guard)' \
 'get:Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters' \
 'add:Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints' \
 'apply:Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling' \
@@ -3992,6 +4070,7 @@ _manta__subcmd__help__subcmd__config__subcmd__set_commands() {
     local commands; commands=(
 'hsm:Set the active node group' \
 'log:Set the log verbosity level' \
+'read-only:Refuse every backend-mutating command (writes read_only = true to cli.toml)' \
 'site:Set the active site' \
     )
     _describe -t commands 'manta help config set commands' commands "$@"
@@ -4005,6 +4084,11 @@ _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__hsm_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__log_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config set log commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__read-only_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config set read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands] )) ||
 _manta__subcmd__help__subcmd__config__subcmd__set__subcmd__site_commands() {
@@ -4021,6 +4105,7 @@ _manta__subcmd__help__subcmd__config__subcmd__unset_commands() {
     local commands; commands=(
 'auth:Clear the cached authentication token' \
 'hsm:Clear the active node group' \
+'read-only:Allow backend-mutating commands again' \
     )
     _describe -t commands 'manta help config unset commands' commands "$@"
 }
@@ -4033,6 +4118,11 @@ _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__auth_commands() {
 _manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__hsm_commands() {
     local commands; commands=()
     _describe -t commands 'manta help config unset hsm commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__read-only_commands] )) ||
+_manta__subcmd__help__subcmd__config__subcmd__unset__subcmd__read-only_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help config unset read-only commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__console_commands] )) ||
 _manta__subcmd__help__subcmd__console_commands() {
@@ -4138,7 +4228,7 @@ _manta__subcmd__help__subcmd__get_commands() {
 'templates:List BOS session templates (filter by name, group, or recency)' \
 'group-nodes:Show node details and status for a group' \
 'nodes:Show node details and status' \
-'images:List IMS images (filter by id, name glob, or recency; sorted most-recent first)' \
+'images:List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)' \
 'boot-parameters:Show the BSS boot parameters (kernel, initrd, params) for nodes or a group' \
 'kernel-parameters:Show kernel parameters for nodes or a group' \
 'redfish-endpoints:List the BMCs / controllers the hardware state manager has registered as Redfish endpoints' \

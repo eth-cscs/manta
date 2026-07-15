@@ -27,6 +27,11 @@ path = "src/main.rs"
 clap                      = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete             = "4.5.66"
 clap_mangen               = "0.3.0"
+# build.rs compiles the clap surface (`#[path = "src/build/mod.rs"]`) to
+# emit man pages + completions, so every crate that surface names must
+# also be a build-dependency. `get images --since/--until` use a chrono
+# value_parser to validate dates at parse time.
+chrono                    = { version = "0.4.41", default-features = false }
 # OpenAPI client codegen — reads crates/manta-cli/openapi.json
 # (regenerated via `cargo run -p manta-server -- --emit-openapi`)
 # and emits a typed reqwest client at build time into OUT_DIR.

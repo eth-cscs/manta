@@ -14,6 +14,7 @@
 //! - `subcommand_get_hardware_nodes` is `pub` because the dispatch
 //!   layer's unit tests reuse the production builder.
 
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 
 use super::HOSTLIST_HELP;
@@ -228,13 +229,41 @@ pub fn subcommand_get_node_details() -> Command {
     .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP))
 }
 
+/// Accept either a bare date or a full timestamp for `--since` /
+/// `--until`.
+///
+/// `YYYY-MM-DD` is expanded to midnight, so `--since 2026-01-01`
+/// covers the whole of January 1st. Used as a clap `value_parser` so a
+/// malformed date fails at parse time with both accepted shapes named,
+/// rather than surfacing as a server-side 400.
+fn parse_filter_date(raw: &str) -> Result<NaiveDateTime, String> {
+  if let Ok(v) = NaiveDateTime::parse_from_str(raw, "%Y-%m-%dT%H:%M:%S") {
+    return Ok(v);
+  }
+  NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+    .map(|d| d.and_time(NaiveTime::MIN))
+    .map_err(|_| {
+      format!(
+        "invalid date '{raw}': expected YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+      )
+    })
+}
+
 /// `manta get images` — list IMS images. Handler:
 /// `crate::dispatch::get::image`.
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
-    .about("List IMS images (filter by id, name glob, or recency; sorted most-recent first)")
+    .about("List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)")
     .arg(arg!(-i --id <IMAGE_ID> "Show only the image with this exact ID"))
     .arg(arg!(-p --pattern <PATTERN> "Glob matched against image name (e.g. 'compute-*'); applied server-side. Invalid glob returns 400."))
+    .arg(
+      arg!(-s --since <DATE> "Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
+        .value_parser(parse_filter_date),
+    )
+    .arg(
+      arg!(-u --until <DATE> "Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)")
+        .value_parser(parse_filter_date),
+    )
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")

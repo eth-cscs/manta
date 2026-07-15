@@ -88,9 +88,15 @@ pub async fn get_image_analysis(
 ) -> Result<Vec<BackendSummary>, Error> {
   tracing::info!("Building image analysis");
 
+  // Deliberately unfiltered: the analysis is a whole-site
+  // image_id -> safe_to_delete map that callers join their own
+  // (possibly filtered) listing against. Narrowing it here would leave
+  // rows outside the filter with an unknown verdict.
   let images_params = crate::service::image::GetImagesParams {
     id: None,
     pattern: None,
+    since: None,
+    until: None,
     limit: None,
   };
 

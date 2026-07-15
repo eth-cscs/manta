@@ -143,6 +143,12 @@ pub struct ImageQuery {
   /// Glob pattern matched against image name; applied server-side
   /// (`service::image::get_images`). Invalid glob returns 400.
   pub pattern: Option<String>,
+  /// ISO-8601 lower bound — only images created at or after this
+  /// point. Applied server-side; IMS cannot filter by date itself.
+  pub since: Option<String>,
+  /// ISO-8601 upper bound — only images created at or before this
+  /// point. Applied server-side; IMS cannot filter by date itself.
+  pub until: Option<String>,
   /// Cap on the number of images returned (most recent first).
   pub limit: Option<u8>,
 }

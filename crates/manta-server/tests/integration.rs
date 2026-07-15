@@ -580,6 +580,83 @@ async fn get_images_limit_returns_the_newest() {
   );
 }
 
+// GET /api/v1/images?since=...&until=...
+//
+// IMS accepts no query parameters, so the date bounds are applied by
+// service::image::get_images after the fetch.
+#[tokio::test]
+async fn get_images_filters_by_creation_date() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  // Window around the middle image only (mock spans 2024-01 .. 2024-12).
+  let resp = fx
+    .send(fx.auth_get(
+      "/api/v1/images?since=2024-03-01T00:00:00&until=2024-09-01T00:00:00",
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let arr = body.as_array().expect("expected JSON array");
+  assert_eq!(arr.len(), 1);
+  assert_eq!(arr[0]["id"], "mid123");
+}
+
+// GET /api/v1/images?since=... — lower bound only.
+#[tokio::test]
+async fn get_images_since_bound_is_inclusive() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  // Exactly the middle image's own timestamp: it must be kept.
+  let resp = fx
+    .send(fx.auth_get("/api/v1/images?since=2024-06-01T00:00:00"))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let ids: Vec<&str> = body
+    .as_array()
+    .expect("expected JSON array")
+    .iter()
+    .map(|i| i["id"].as_str().unwrap())
+    .collect();
+  assert_eq!(ids, ["abc123", "mid123"]);
+}
+
+// GET /api/v1/images?since=<malformed> → 400 via parse_iso_datetime.
+#[tokio::test]
+async fn get_images_malformed_since_is_rejected() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx.send(fx.auth_get("/api/v1/images?since=notadate")).await;
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+  let body = TestFixture::body_json(resp).await;
+  let err = body["error"].as_str().unwrap_or_default();
+  assert!(
+    err.contains("since"),
+    "error should name the offending field; got: {err}"
+  );
+}
+
+// GET /api/v1/images?since=X&until=Y where X > Y → 400 via
+// service::configuration::validate_date_range.
+#[tokio::test]
+async fn get_images_inverted_range_is_rejected() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx
+    .send(fx.auth_get(
+      "/api/v1/images?since=2024-12-01T00:00:00&until=2024-01-01T00:00:00",
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+}
+
 // GET /api/v1/boot-parameters?hsm_group=compute
 //
 // Call chain:

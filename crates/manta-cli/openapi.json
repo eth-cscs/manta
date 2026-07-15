@@ -1944,7 +1944,7 @@
         "tags": [
           "images"
         ],
-        "summary": "GET /images — list IMS images sorted by creation time.",
+        "summary": "GET /images — list IMS images, most-recent first.",
         "operationId": "get_images",
         "parameters": [
           {
@@ -1963,6 +1963,30 @@
             "name": "pattern",
             "in": "query",
             "description": "Glob pattern matched against image name; applied server-side\n(`service::image::get_images`). Invalid glob returns 400.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "since",
+            "in": "query",
+            "description": "ISO-8601 lower bound — only images created at or after this\npoint. Applied server-side; IMS cannot filter by date itself.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "ISO-8601 upper bound — only images created at or before this\npoint. Applied server-side; IMS cannot filter by date itself.",
             "required": false,
             "schema": {
               "type": [
@@ -2003,6 +2027,16 @@
                 "schema": {
                   "type": "array",
                   "items": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed since/until, or since after until",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

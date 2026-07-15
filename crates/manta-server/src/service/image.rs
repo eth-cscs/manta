@@ -10,11 +10,14 @@
 //!    accessible groups would let users indirectly remove resources
 //!    they don't own.
 //!
-//! Read-only listing ([`get_images`]) only validates the requested
-//! `pattern` glob and applies the `limit` cap.
+//! Read-only listing ([`get_images`]) validates the requested
+//! `pattern` glob and `since`/`until` range, filters on both, then
+//! orders most-recent-first and applies the `limit` cap. IMS takes no
+//! query parameters of its own, so every filter runs here.
 
 use std::cmp::Ordering;
 
+use chrono::NaiveDateTime;
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::bss::BootParametersTrait;
 use manta_backend_dispatcher::interfaces::ims::ImsTrait;
@@ -25,31 +28,77 @@ use manta_shared::common::parse_ims_timestamp;
 
 use crate::server::common::app_context::InfraContext;
 use crate::service::boot_parameters::get_restricted_boot_parameters;
+use crate::service::configuration::validate_date_range;
 pub use manta_shared::types::api::image::GetImagesParams;
 
 /// Fetch IMS images from the backend, most-recent first.
 ///
 /// Filters server-side by `params.pattern` (glob syntax, matched
-/// against `image.name`), then orders by creation time descending and
+/// against `image.name`) and by the `params.since` / `params.until`
+/// creation-date bounds, then orders by creation time descending and
 /// caps the result at `params.limit`. The cap is applied **after**
 /// ordering, so `limit = 1` yields the newest image.
 ///
-/// An invalid glob (unbalanced bracket, malformed range, …) returns
-/// [`Error::BadRequest`] with the parser's message; the caller's
-/// handler layer maps that to HTTP 400.
+/// Both filters run here rather than at the backend because IMS
+/// accepts no query parameters at all — `ImsTrait::get_images` takes
+/// only an optional image id.
+///
+/// An invalid glob (unbalanced bracket, malformed range, …) or a
+/// `since` later than `until` returns [`Error::BadRequest`]; the
+/// caller's handler layer maps that to HTTP 400.
 pub async fn get_images(
   infra: &InfraContext<'_>,
   token: &str,
   params: &GetImagesParams,
 ) -> Result<Vec<Image>, Error> {
+  validate_date_range(params.since, params.until)?;
+
   let mut image_vec = infra
     .backend
     .get_images(token, params.id.as_deref())
     .await?;
 
   image_vec = apply_pattern_filter(image_vec, params.pattern.as_deref())?;
+  image_vec = apply_date_filter(image_vec, params.since, params.until);
 
   Ok(sort_and_cap(image_vec, params.limit))
+}
+
+/// Pure helper retaining only images created within `[since, until]`.
+///
+/// Both bounds are inclusive and independently optional; `None` for
+/// both is a no-op pass-through.
+///
+/// An image whose `created` is absent or unparseable is **dropped**
+/// whenever either bound is set: it cannot be shown to satisfy
+/// "created after X", so including it would misreport the filter the
+/// caller asked for. This matches how `manta get images` already
+/// treats an unknown `safe_to_delete` verdict under
+/// `--only-safe-to-delete`.
+///
+/// A zoned `created` is compared as local naive time (see
+/// [`parse_ims_timestamp`]), which is exactly how the CLI renders the
+/// Creation time column — so the filter agrees with what the operator
+/// sees in the table.
+fn apply_date_filter(
+  image_vec: Vec<Image>,
+  since: Option<NaiveDateTime>,
+  until: Option<NaiveDateTime>,
+) -> Vec<Image> {
+  if since.is_none() && until.is_none() {
+    return image_vec;
+  }
+
+  image_vec
+    .into_iter()
+    .filter(|img| {
+      let Some(created) = img.created.as_deref().and_then(parse_ims_timestamp)
+      else {
+        return false;
+      };
+      since.is_none_or(|s| created >= s) && until.is_none_or(|u| created <= u)
+    })
+    .collect()
 }
 
 /// Order by creation time (newest first) and only then apply `limit`.
@@ -247,14 +296,17 @@ fn get_restricted_image_ids(
 mod tests {
   //! Unit tests for the pure helpers behind `get_images`:
   //! `apply_pattern_filter` (pattern compilation, name matching, and
-  //! the BadRequest path on invalid globs) and `sort_and_cap`
-  //! (most-recent-first ordering, and the cap applying only after it).
+  //! the BadRequest path on invalid globs), `apply_date_filter`
+  //! (inclusive since/until bounds and unusable dates), and
+  //! `sort_and_cap` (most-recent-first ordering, and the cap applying
+  //! only after it).
   //!
   //! These call the same functions `get_images` calls, so the
   //! order-of-operations contract is genuinely covered here rather
   //! than restated.
 
-  use super::{apply_pattern_filter, sort_and_cap};
+  use super::{apply_date_filter, apply_pattern_filter, sort_and_cap};
+  use chrono::NaiveDateTime;
   use manta_backend_dispatcher::error::Error;
   use manta_backend_dispatcher::types::ims::Image;
 
@@ -407,6 +459,85 @@ mod tests {
     let out = sort_and_cap(input, None);
     let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
     assert_eq!(names, ["newest", "zoned", "oldest"]);
+  }
+
+  fn ts(raw: &str) -> NaiveDateTime {
+    raw.parse().expect("test timestamp is well-formed")
+  }
+
+  fn dated_fixture() -> Vec<Image> {
+    vec![
+      image_created("jan", Some("2026-01-15T00:00:00")),
+      image_created("mar", Some("2026-03-15T00:00:00")),
+      image_created("jun", Some("2026-06-15T00:00:00")),
+    ]
+  }
+
+  fn names(image_vec: &[Image]) -> Vec<&str> {
+    image_vec.iter().map(|i| i.name.as_str()).collect()
+  }
+
+  #[test]
+  fn no_bounds_is_a_no_op() {
+    let out = apply_date_filter(dated_fixture(), None, None);
+    assert_eq!(names(&out), ["jan", "mar", "jun"]);
+  }
+
+  #[test]
+  fn since_keeps_only_images_at_or_after_the_bound() {
+    let out =
+      apply_date_filter(dated_fixture(), Some(ts("2026-03-01T00:00:00")), None);
+    assert_eq!(names(&out), ["mar", "jun"]);
+  }
+
+  #[test]
+  fn until_keeps_only_images_at_or_before_the_bound() {
+    let out =
+      apply_date_filter(dated_fixture(), None, Some(ts("2026-03-31T00:00:00")));
+    assert_eq!(names(&out), ["jan", "mar"]);
+  }
+
+  #[test]
+  fn both_bounds_select_the_window() {
+    let out = apply_date_filter(
+      dated_fixture(),
+      Some(ts("2026-02-01T00:00:00")),
+      Some(ts("2026-04-01T00:00:00")),
+    );
+    assert_eq!(names(&out), ["mar"]);
+  }
+
+  #[test]
+  fn bounds_are_inclusive_on_both_ends() {
+    // An image created exactly on the bound is kept — `--since X
+    // --until X` must not return an empty list for an image at X.
+    let exact = ts("2026-03-15T00:00:00");
+    let out = apply_date_filter(dated_fixture(), Some(exact), Some(exact));
+    assert_eq!(names(&out), ["mar"]);
+  }
+
+  #[test]
+  fn images_with_unusable_dates_are_dropped_when_filtering() {
+    let input = vec![
+      image_created("dated", Some("2026-03-15T00:00:00")),
+      image_created("no-date", None),
+      image_created("bad-date", Some("not-a-real-date")),
+    ];
+    let out = apply_date_filter(input, Some(ts("2026-01-01T00:00:00")), None);
+    assert_eq!(
+      names(&out),
+      ["dated"],
+      "an image with no usable creation date cannot satisfy a date bound"
+    );
+  }
+
+  #[test]
+  fn images_with_unusable_dates_survive_when_not_filtering() {
+    // The drop above is a consequence of filtering, not a general
+    // rule: an unfiltered listing must still show them.
+    let input = vec![image_created("no-date", None)];
+    let out = apply_date_filter(input, None, None);
+    assert_eq!(names(&out), ["no-date"]);
   }
 
   #[test]

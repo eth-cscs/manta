@@ -300,18 +300,30 @@ manta get nodes nid001313,nid001314 -o json
 
 ### get images
 
-List IMS images, sorted by creation time. Each row carries a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise; `?` only on the rare race where an image appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/images` and computed identically to `manta get analysis image`.
+List IMS images, most recent first. Each row carries a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise; `?` only on the rare race where an image appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/images` and computed identically to `manta get analysis image`.
 
 | Flag | Type | Description |
 |------|------|-------------|
 | `-i/--id` | string | Specific image ID |
 | `-p/--pattern` | string | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). Uses [globset](https://docs.rs/globset/) syntax — `*` matches any run of non-`/` characters, `?` a single character, `[abc]` a character class. Anchored to the full name. |
+| `-s/--since` | date | Show only images created at or after this point. Accepts `YYYY-MM-DD` (midnight) or `YYYY-MM-DDTHH:MM:SS`. Inclusive. |
+| `-u/--until` | date | Show only images created at or before this point. Same formats as `--since`. Inclusive. |
 | `-m/--most-recent` | flag | Show most recent only |
-| `-l/--limit` | u8 | Return last N images |
+| `-l/--limit` | u8 | Return the N most recent images |
 | `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Images whose safety verdict is unknown are excluded. |
 | `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (image is the boot image for at least one node). |
 
 > `--only-safe-to-delete` and `--only-unsafe-to-delete` are mutually exclusive.
+
+> `--since`/`--until` filter on the `Creation time` column. IMS does not support date queries, so the filtering happens in `manta-server` after fetching the listing. A `--since` later than `--until` is rejected with a 400. Images whose creation date is missing or unreadable are omitted while either bound is set — they cannot be shown to satisfy the range.
+
+```bash
+# Images built this year, newest first
+manta get images --since 2026-01-01
+
+# Images built in a window, narrowed to compute nodes
+manta get images --since 2026-01-01 --until 2026-03-01 --pattern 'compute-*'
+```
 
 > Images built by `manta apply sat-file` carry CFS provenance under their `metadata` map: `manta.image_session.base` (source image id), `manta.image_session.groups` (JSON-encoded HSM group names), `manta.image_session.configuration` (CFS configuration name). See GUIDE.md §3.
 
