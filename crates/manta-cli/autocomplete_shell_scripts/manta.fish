@@ -160,8 +160,8 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from nodes" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s i -l id -d 'Show only the image with this exact ID' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s p -l pattern -d 'Glob matched against image name (e.g. \'compute-*\'); applied server-side. Invalid glob returns 400.' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s s -l since -d 'Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s u -l until -d 'Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)' -r
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s s -l since -d 'Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH:MM:SS is exact' -r
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s u -l until -d 'Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH:MM:SS is exact' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s l -l limit -d 'Return only the <VALUE> most recent images' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -l site -d 'Override the active site for this invocation' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from images" -s m -l most-recent -d 'Return only the most recent (equivalent to --limit 1)'

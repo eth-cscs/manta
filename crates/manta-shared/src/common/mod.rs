@@ -23,6 +23,13 @@ pub const DATETIME_FORMAT: &str = "%d/%m/%Y %H:%M:%S";
 /// normalising a zoned timestamp to local naive time. Returns `None`
 /// when neither parses.
 ///
+/// A zoned timestamp is converted into **this process's** local
+/// timezone, so the same input yields a different naive value on hosts
+/// in different zones. Callers that compare across the client/server
+/// boundary (the CLI renderer vs. the server's date filter) agree on
+/// which strings parse, not necessarily on the wall-clock value of a
+/// zoned one.
+///
 /// Lives here rather than in either binary because the server filters
 /// on this value (`service::image::get_images`) while the CLI renders
 /// it (`output::image`). If the two disagreed on what parses, a row
@@ -31,8 +38,11 @@ pub const DATETIME_FORMAT: &str = "%d/%m/%Y %H:%M:%S";
 /// ```
 /// use manta_shared::common::parse_ims_timestamp;
 ///
+/// // Naive, offset, and the `Z`/fractional-second shapes IMS emits.
 /// assert!(parse_ims_timestamp("2026-06-04T12:30:00").is_some());
 /// assert!(parse_ims_timestamp("2026-06-04T12:30:00+00:00").is_some());
+/// assert!(parse_ims_timestamp("2026-06-04T12:30:00Z").is_some());
+/// assert!(parse_ims_timestamp("2026-06-04T12:30:00.643891Z").is_some());
 /// assert!(parse_ims_timestamp("not-a-real-date").is_none());
 /// ```
 #[must_use]

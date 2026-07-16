@@ -167,26 +167,45 @@ mod tests {
   }
 
   #[test]
-  fn parse_bare_date_expands_to_midnight() {
+  fn parse_bare_since_starts_at_midnight() {
     let matches =
       images_cmd().get_matches_from(["images", "--since", "2026-01-01"]);
     let params = parse_images_params(&matches);
     assert_eq!(
       params.since,
       Some("2026-01-01T00:00:00".parse().unwrap()),
-      "a bare date covers the whole day from midnight"
+      "a bare --since covers the whole day from midnight"
     );
     assert!(params.until.is_none());
   }
 
   #[test]
-  fn parse_full_timestamp() {
+  fn parse_bare_until_covers_end_of_day() {
+    // The whole point of finding #1: a bare --until must include the
+    // named day, not stop at its first instant.
+    let matches =
+      images_cmd().get_matches_from(["images", "--until", "2026-01-01"]);
+    let params = parse_images_params(&matches);
+    assert_eq!(
+      params.until,
+      Some("2026-01-01T23:59:59".parse().unwrap()),
+      "a bare --until covers the whole day through 23:59:59"
+    );
+  }
+
+  #[test]
+  fn parse_full_timestamp_is_exact_on_both_bounds() {
+    // A full timestamp is honoured verbatim — no day expansion — so an
+    // operator can pin an exact upper bound below end-of-day.
     let matches = images_cmd().get_matches_from([
       "images",
+      "--since",
+      "2026-03-04T09:00:00",
       "--until",
       "2026-03-04T15:30:00",
     ]);
     let params = parse_images_params(&matches);
+    assert_eq!(params.since, Some("2026-03-04T09:00:00".parse().unwrap()));
     assert_eq!(params.until, Some("2026-03-04T15:30:00".parse().unwrap()));
   }
 

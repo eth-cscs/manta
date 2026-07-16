@@ -15,7 +15,7 @@
 //! orders most-recent-first and applies the `limit` cap. IMS takes no
 //! query parameters of its own, so every filter runs here.
 
-use std::cmp::Ordering;
+use std::cmp::Reverse;
 
 use chrono::NaiveDateTime;
 use manta_backend_dispatcher::error::Error;
@@ -76,10 +76,14 @@ pub async fn get_images(
 /// treats an unknown `safe_to_delete` verdict under
 /// `--only-safe-to-delete`.
 ///
-/// A zoned `created` is compared as local naive time (see
-/// [`parse_ims_timestamp`]), which is exactly how the CLI renders the
-/// Creation time column — so the filter agrees with what the operator
-/// sees in the table.
+/// A zoned `created` is normalised to naive local time (see
+/// [`parse_ims_timestamp`]) before comparison, using **this process's**
+/// timezone — i.e. the server's. The CLI renders the Creation time
+/// column the same way but in the *client's* timezone, so for an
+/// offset-bearing `created` a displayed time can differ from the value
+/// filtered against when client and server timezones disagree. The
+/// server-side comparison is authoritative; the two agree on which
+/// timestamps are readable, not necessarily on their wall-clock value.
 fn apply_date_filter(
   image_vec: Vec<Image>,
   since: Option<NaiveDateTime>,
@@ -109,39 +113,25 @@ fn apply_date_filter(
 /// rather than the newest one. Keeping them in one pure function makes
 /// that invariant testable without standing up a backend mock — which
 /// is why the bug this replaced went unnoticed.
+///
+/// The key is the *parsed* timestamp ([`parse_ims_timestamp`]), not the
+/// raw string: `created` arrives in a shape CSM does not guarantee, and
+/// a lexicographic order only matches chronology when every value
+/// shares one shape (mixed zoned/naive break it). `Reverse` gives the
+/// newest-first order and sends absent/unparseable dates (`None`) to
+/// the end. `sort_by_cached_key` parses each `created` once — not
+/// `O(n log n)` times as a comparator would — and is stable, so equal
+/// or unplaceable images keep the backend's order.
 fn sort_and_cap(mut image_vec: Vec<Image>, limit: Option<u8>) -> Vec<Image> {
-  image_vec.sort_by(compare_by_created_desc);
+  image_vec.sort_by_cached_key(|image| {
+    Reverse(image.created.as_deref().and_then(parse_ims_timestamp))
+  });
 
   if let Some(limit) = limit {
     image_vec.truncate(limit as usize);
   }
 
   image_vec
-}
-
-/// Order two images by creation time, newest first.
-///
-/// `created` arrives as an `Option<String>` in a format CSM does not
-/// guarantee, so compare the *parsed* timestamps
-/// ([`parse_ims_timestamp`]) rather than the raw strings — a
-/// lexicographic comparison only agrees with chronology when every
-/// timestamp shares one shape, which mixed zoned/naive values break.
-///
-/// Images whose `created` is absent or unparseable sort last: they
-/// cannot be placed on the timeline, and burying them below the known
-/// dates keeps the useful rows at the top. Ties are `Equal` and
-/// [`slice::sort_by`] is stable, so equal-or-unknown images keep the
-/// backend's own order.
-fn compare_by_created_desc(a: &Image, b: &Image) -> Ordering {
-  let a_created = a.created.as_deref().and_then(parse_ims_timestamp);
-  let b_created = b.created.as_deref().and_then(parse_ims_timestamp);
-
-  match (a_created, b_created) {
-    (Some(a_ts), Some(b_ts)) => b_ts.cmp(&a_ts),
-    (Some(_), None) => Ordering::Less,
-    (None, Some(_)) => Ordering::Greater,
-    (None, None) => Ordering::Equal,
-  }
 }
 
 /// Pure helper that retains only images whose `name` matches `pattern`

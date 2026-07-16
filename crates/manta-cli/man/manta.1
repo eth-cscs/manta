@@ -356,10 +356,10 @@ Show only the image with this exact ID
 Glob matched against image name (e.g. \*(Aqcompute\-*\*(Aq); applied server\-side. Invalid glob returns 400.
 .TP
 [\fB\-s\fR, \fB\-\-since\fR] \fI<DATE>\fR
-Show only images created at or after this date (YYYY\-MM\-DD or YYYY\-MM\-DDTHH:MM:SS)
+Show only images created at or after this date. A bare YYYY\-MM\-DD starts at midnight; a full YYYY\-MM\-DDTHH:MM:SS is exact
 .TP
 [\fB\-u\fR, \fB\-\-until\fR] \fI<DATE>\fR
-Show only images created at or before this date (YYYY\-MM\-DD or YYYY\-MM\-DDTHH:MM:SS)
+Show only images created at or before this date. A bare YYYY\-MM\-DD covers the whole day; a full YYYY\-MM\-DDTHH:MM:SS is exact
 .TP
 [\fB\-m\fR, \fB\-\-most\-recent\fR]
 Return only the most recent (equivalent to \-\-limit 1)

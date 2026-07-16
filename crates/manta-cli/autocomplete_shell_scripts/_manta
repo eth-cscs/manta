@@ -505,10 +505,10 @@ _arguments "${_arguments_options[@]}" : \
 '--id=[Show only the image with this exact ID]:IMAGE_ID:_default' \
 '-p+[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
 '--pattern=[Glob matched against image name (e.g. '\''compute-*'\''); applied server-side. Invalid glob returns 400.]:PATTERN:_default' \
-'-s+[Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
-'--since=[Show only images created at or after this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
-'-u+[Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
-'--until=[Show only images created at or before this date (YYYY-MM-DD or YYYY-MM-DDTHH\:MM\:SS)]:DATE:_default' \
+'-s+[Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH\:MM\:SS is exact]:DATE:_default' \
+'--since=[Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH\:MM\:SS is exact]:DATE:_default' \
+'-u+[Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH\:MM\:SS is exact]:DATE:_default' \
+'--until=[Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH\:MM\:SS is exact]:DATE:_default' \
 '-l+[Return only the <VALUE> most recent images]:VALUE:_default' \
 '--limit=[Return only the <VALUE> most recent images]:VALUE:_default' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
