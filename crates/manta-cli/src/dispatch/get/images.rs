@@ -25,8 +25,8 @@ use manta_shared::types::dto::Image;
 ///
 /// `--most-recent` forces `limit = Some(1)`, overriding any explicit
 /// `--limit` value. `--since` / `--until` arrive already typed: the
-/// `parse_filter_date` value parser in `crate::build::get` rejects a
-/// malformed date at parse time.
+/// `parse_since` / `parse_until` value parsers in `crate::build::get`
+/// reject a malformed date at parse time.
 fn parse_images_params(cli_args: &clap::ArgMatches) -> GetImagesParams {
   let limit = cli_args.limit_or_most_recent();
 

@@ -307,7 +307,7 @@ List IMS images, most recent first. Each row carries a `Safe to delete` verdict 
 | `-i/--id` | string | Specific image ID |
 | `-p/--pattern` | string | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). Uses [globset](https://docs.rs/globset/) syntax — `*` matches any run of non-`/` characters, `?` a single character, `[abc]` a character class. Anchored to the full name. |
 | `-s/--since` | date | Show only images created at or after this point. A bare `YYYY-MM-DD` starts at midnight; a full `YYYY-MM-DDTHH:MM:SS` is exact. Inclusive. |
-| `-u/--until` | date | Show only images created at or before this point. A bare `YYYY-MM-DD` covers the **whole day** (through `23:59:59`), so `--until 2026-03-01` includes all of March 1st; a full `YYYY-MM-DDTHH:MM:SS` is exact. Inclusive. |
+| `-u/--until` | date | Show only images created at or before this point. A bare `YYYY-MM-DD` extends to `23:59:59` that day, so `--until 2026-03-01` covers March 1st through `23:59:59` (an image built in the final sub-second is excluded); a full `YYYY-MM-DDTHH:MM:SS` is exact. Inclusive. |
 | `-m/--most-recent` | flag | Show most recent only |
 | `-l/--limit` | u8 | Return the N most recent images |
 | `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Images whose safety verdict is unknown are excluded. |
