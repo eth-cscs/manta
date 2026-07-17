@@ -40,7 +40,8 @@ pub async fn exec(
     .openapi
     .get_groups(Some(p.hsm_group_name), client.site_name())
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   let group = groups
     .into_iter()
     .next()
@@ -66,7 +67,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

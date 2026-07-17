@@ -43,7 +43,8 @@ pub async fn exec(
     .openapi
     .delete_boot_parameters(client.site_name(), &req)
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   action_result::print("Boot parameters deleted successfully", output_opt)?;
   Ok(())
 }

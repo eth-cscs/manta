@@ -81,7 +81,8 @@ pub async fn exec(
     .openapi
     .add_redfish_endpoint(client.site_name(), &req)
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
 
   action_result::print(
     &format!("Redfish endpoint for node '{}' added", p.id),

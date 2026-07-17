@@ -33,7 +33,8 @@ pub async fn exec(
     .openapi
     .delete_node(id, client.site_name())
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   action_result::print(&format!("Node deleted '{id}'"), output_opt)?;
   Ok(())
 }

@@ -98,13 +98,26 @@ impl std::error::Error for SiteNotFound {}
 /// Implementation: on `Err`, format the progenitor error in a
 /// user-friendly way:
 ///
-/// - `ErrorResponse(rv)`: the server returned a typed error body. We
-///   serialise it to JSON, pull the `error` string out, and surface
-///   `HTTP <status>: <message>`. This avoids dumping the full
-///   `Error Response: status=…; headers={…}; value: ErrorResponse {…}`
-///   envelope that progenitor's `Display` impl produces.
+/// - `ErrorResponse(rv)`: the server returned a typed error body.
+///   Rendered by [`format_server_error`] as
+///   `HTTP <status> [MANTA_*]: <message>`. This avoids dumping the
+///   full `Error Response: status=…; headers={…}; value: …` envelope
+///   that progenitor's `Display` impl produces.
+/// - `UnexpectedResponse(r)`: the server answered with a status the
+///   endpoint doesn't declare in `openapi.json` (spec drift — see
+///   `FOLLOWUP-error-status-and-openapi-audit.md`). The body is
+///   still manta-server's standard error JSON, so read it (this is
+///   why the method is `async`) and render it through the same
+///   [`format_server_error`] path instead of losing the message and
+///   code to progenitor's raw `Debug` envelope.
 /// - All other variants: format via `Display` (transport errors,
 ///   payload-decode errors, etc.) — the inner detail is still useful.
+//
+// `async fn` in a public trait normally warns because callers can't
+// add `Send` bounds on the returned future; this trait is only
+// consumed inside this crate's single-runtime dispatch code, so the
+// flexibility loss is irrelevant.
+#[allow(async_fn_in_trait)]
 pub trait OpenApiResultExt<T> {
   /// Convert the progenitor result into `anyhow::Result<T>`. See the
   /// trait doc for the error-shaping rules.
@@ -114,7 +127,7 @@ pub trait OpenApiResultExt<T> {
   /// Returns `Err` whenever the wrapped `Result` is `Err`. The
   /// concrete message depends on the progenitor variant — see the
   /// trait-level doc.
-  fn into_anyhow(self) -> anyhow::Result<T>;
+  async fn into_anyhow(self) -> anyhow::Result<T>;
 }
 
 impl<T, E> OpenApiResultExt<T>
@@ -122,38 +135,52 @@ impl<T, E> OpenApiResultExt<T>
 where
   E: std::fmt::Debug + serde::Serialize,
 {
-  fn into_anyhow(self) -> anyhow::Result<T> {
+  async fn into_anyhow(self) -> anyhow::Result<T> {
     match self {
       Ok(rv) => Ok(rv.into_inner()),
       Err(progenitor_client::Error::ErrorResponse(rv)) => {
-        let status = rv.status();
+        let status = rv.status().as_u16();
         let inner = rv.into_inner();
-        let body = serde_json::to_value(&inner).ok();
-        let raw_msg = body
-          .as_ref()
-          .and_then(|v| {
-            v.get("error").and_then(|e| e.as_str()).map(String::from)
-          })
-          .unwrap_or_else(|| format!("{inner:?}"));
-        // Stable `MANTA_*` code the server pairs with the message
-        // (`ERRORS.md`); absent when talking to a pre-code server.
-        let code = body
-          .as_ref()
-          .and_then(|v| v.get("code").and_then(|c| c.as_str()))
-          .map(String::from);
-        let msg = categorise_server_error(status.as_u16(), &raw_msg);
-        Err(match code {
-          Some(code) => {
-            anyhow::anyhow!("HTTP {} [{code}]: {msg}", status.as_u16())
-          }
-          None => anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()),
-        })
+        let body = serde_json::to_value(&inner)
+          .unwrap_or_else(|_| serde_json::Value::String(format!("{inner:?}")));
+        Err(anyhow::anyhow!("{}", format_server_error(status, &body)))
+      }
+      Err(progenitor_client::Error::UnexpectedResponse(r)) => {
+        let status = r.status().as_u16();
+        let raw = r.text().await.unwrap_or_default();
+        let body = serde_json::from_str::<serde_json::Value>(&raw)
+          .unwrap_or(serde_json::Value::String(raw));
+        Err(anyhow::anyhow!("{}", format_server_error(status, &body)))
       }
       Err(progenitor_client::Error::CommunicationError(rqe)) => {
         Err(anyhow::anyhow!("{}", categorise_transport_error(&rqe)))
       }
       Err(e) => Err(anyhow::anyhow!("{}", e)),
     }
+  }
+}
+
+/// Render a server error body as `HTTP <status> [MANTA_*]: <message>`
+/// (code omitted when the body carries none — e.g. a pre-error-code
+/// server, axum's built-in 405, or a reverse proxy's page). `body` is
+/// the parsed JSON error body, or a `Value::String` fallback carrying
+/// the raw text when the body wasn't JSON.
+fn format_server_error(status: u16, body: &serde_json::Value) -> String {
+  let raw_msg = body
+    .get("error")
+    .and_then(|e| e.as_str())
+    .map(String::from)
+    .unwrap_or_else(|| match body {
+      serde_json::Value::String(s) => s.clone(),
+      other => other.to_string(),
+    });
+  // Stable `MANTA_*` code the server pairs with the message
+  // (`ERRORS.md`); absent when talking to a pre-code server.
+  let code = body.get("code").and_then(|c| c.as_str());
+  let msg = categorise_server_error(status, &raw_msg);
+  match code {
+    Some(code) => format!("HTTP {status} [{code}]: {msg}"),
+    None => format!("HTTP {status}: {msg}"),
   }
 }
 
@@ -296,12 +323,12 @@ mod into_anyhow_tests {
 ///   .openapi
 ///   .get_groups(None, client.site_name())
 ///   .await
-///   .into_anyhow()?;
+///   .into_anyhow().await?;
 /// ```
 #[derive(Debug)]
 pub struct MantaClient {
   /// Generated typed API client. Dispatch handlers call
-  /// `client.openapi.<method>(...).await.into_anyhow()?`.
+  /// `client.openapi.<method>(...).await.into_anyhow().await?`.
   pub openapi: crate::openapi_client::Client,
   /// `X-Manta-Site` header value the server uses to pick the backend
   /// config. Threaded explicitly to every `openapi.*` call.

@@ -52,7 +52,8 @@ pub async fn exec(
     .openapi
     .get_groups(params.effective_group(), client.site_name())
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
 
   let output_opt = cli_args.opt_str("output");
   output::group::print(&groups, output_opt)?;

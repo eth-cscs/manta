@@ -55,7 +55,8 @@ pub async fn exec(
     .openapi
     .get_groups_hardware(hsm, client.site_name())
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
 
   output::hardware::print_cluster(&json, output)?;
   Ok(())

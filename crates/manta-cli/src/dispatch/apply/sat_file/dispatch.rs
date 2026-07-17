@@ -87,6 +87,7 @@ pub async fn dispatch_plan(
         .post_sat_configuration(client.site_name(), req)
         .await
         .into_anyhow()
+        .await
     }))
     .await?;
 
@@ -133,6 +134,7 @@ pub async fn dispatch_plan(
         .post_sat_session_template(client.site_name(), req)
         .await
         .into_anyhow()
+        .await
     }))
     .await?;
   for resp in st_results {
