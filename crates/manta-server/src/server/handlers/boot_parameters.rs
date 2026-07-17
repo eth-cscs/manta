@@ -11,6 +11,7 @@
 //! changeset without persisting.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
+use manta_shared::common::error_code::ErrorCode;
 use serde::Deserialize;
 use utoipa::ToSchema;
 
@@ -87,9 +88,10 @@ pub async fn delete_boot_parameters(
   if body.hosts.is_empty() {
     return Err((
       StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: "hosts list must not be empty".to_string(),
-      }),
+      Json(ErrorResponse::new(
+        ErrorCode::BadRequest,
+        "hosts list must not be empty",
+      )),
     ));
   }
   tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);

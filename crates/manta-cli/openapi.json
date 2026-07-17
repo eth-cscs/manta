@@ -5208,9 +5208,16 @@
           "error"
         ],
         "properties": {
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Stable machine-readable `MANTA_*` code identifying the failure\nclass (see `ERRORS.md`). Optional on the wire so clients and\nservers from before/after its introduction interoperate; this\nserver always sends it."
+          },
           "error": {
             "type": "string",
-            "description": "Human-readable explanation of the failure. Never includes\nstack traces, credentials, or internal type names."
+            "description": "Human-readable explanation of the failure. Never includes\nstack traces, credentials, or internal type names. Not a stable\ninterface — wording may change between releases."
           }
         }
       },

@@ -882,6 +882,60 @@ fn to_handler_error_uncategorized_variants_become_500() {
   }
 }
 
+#[test]
+fn to_handler_error_body_carries_stable_code() {
+  // The wire body pairs every message with its stable `MANTA_*` code
+  // (issue #64, `ERRORS.md`). Spot-check one representative per code
+  // family; the full variant→code map is pinned in `wire_conv`'s
+  // unit tests.
+  use manta_backend_dispatcher::error::Error;
+  use manta_server::server::handlers::to_handler_error;
+
+  let cases: [(Error, &str); 5] = [
+    (Error::NotFound("img".into()), "MANTA_NOT_FOUND"),
+    (Error::SessionNotFound, "MANTA_SESSION_NOT_FOUND"),
+    (
+      Error::CsmError {
+        status: 503,
+        detail: "down".into(),
+        body: None,
+      },
+      "MANTA_BACKEND_HTTP_ERROR",
+    ),
+    (Error::InvalidPattern("p".into()), "MANTA_INVALID_PATTERN"),
+    (Error::Message("oops".into()), "MANTA_INTERNAL"),
+  ];
+  for (err, expected_code) in cases {
+    let label = format!("{err:?}");
+    let (_, axum::Json(body)) = to_handler_error(err);
+    assert_eq!(
+      body.code.as_deref(),
+      Some(expected_code),
+      "wrong code for {label}"
+    );
+    assert!(!body.error.is_empty(), "empty message for {label}");
+  }
+}
+
+#[test]
+fn error_response_wire_field_names_are_pinned() {
+  // Clients (including the progenitor-generated CLI client) key on
+  // the literal JSON field names `error` and `code`. A serde rename
+  // would be a silent wire break — pin the serialised shape.
+  use manta_backend_dispatcher::error::Error;
+  use manta_server::server::handlers::to_handler_error;
+
+  let (_, axum::Json(body)) =
+    to_handler_error(Error::SessionNotFound);
+  let json = serde_json::to_value(&body).expect("serializable");
+  assert_eq!(
+    json["code"].as_str(),
+    Some("MANTA_SESSION_NOT_FOUND"),
+    "body: {json}"
+  );
+  assert!(json["error"].is_string(), "body: {json}");
+}
+
 // ---------------------------------------------------------------------------
 // JWT-role read-only gate
 //

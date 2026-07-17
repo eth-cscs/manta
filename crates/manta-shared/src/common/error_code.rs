@@ -103,6 +103,14 @@ error_code_catalog! {
   /// The JWT was structurally invalid (wrong number of dots,
   /// undecodable claims, non-UTF-8 payload).
   JwtMalformed => "MANTA_JWT_MALFORMED";
+  /// Username/password rejected during the `/auth/token` exchange
+  /// (the detail intentionally stays server-side).
+  InvalidCredentials => "MANTA_INVALID_CREDENTIALS";
+  /// The token is valid but carries a role that forbids the operation
+  /// (e.g. the read-only role on a mutating endpoint; HTTP 403).
+  Forbidden => "MANTA_FORBIDDEN";
+  /// Too many authentication attempts from this source (HTTP 429).
+  RateLimited => "MANTA_RATE_LIMITED";
 
   // --- Resource state (typically HTTP 404 / 409 / 422) -------------
   /// Generic resource lookup failed; the message names the resource.
@@ -224,6 +232,9 @@ mod tests {
       "MANTA_UNSUPPORTED_BACKEND",
       "MANTA_AUTH_TOKEN_NOT_FOUND",
       "MANTA_JWT_MALFORMED",
+      "MANTA_INVALID_CREDENTIALS",
+      "MANTA_FORBIDDEN",
+      "MANTA_RATE_LIMITED",
       "MANTA_NOT_FOUND",
       "MANTA_SESSION_NOT_FOUND",
       "MANTA_CONFIGURATION_NOT_FOUND",

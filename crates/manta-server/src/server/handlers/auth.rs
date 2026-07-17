@@ -39,6 +39,8 @@ use manta_shared::types::auth::{
   AuthTokenRequest, AuthTokenResponse, ValidateTokenRequest,
 };
 
+use manta_shared::common::error_code::ErrorCode;
+
 use super::{ErrorResponse, ServerState, SiteHeader, SiteName};
 use crate::service;
 
@@ -47,9 +49,10 @@ use crate::service;
 fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
   (
     StatusCode::UNAUTHORIZED,
-    Json(ErrorResponse {
-      error: "invalid credentials".to_string(),
-    }),
+    Json(ErrorResponse::new(
+      ErrorCode::InvalidCredentials,
+      "invalid credentials",
+    )),
   )
 }
 
@@ -63,9 +66,10 @@ fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
 fn site_not_found(site: &str) -> (StatusCode, Json<ErrorResponse>) {
   (
     StatusCode::NOT_FOUND,
-    Json(ErrorResponse {
-      error: format!("site '{site}' not found"),
-    }),
+    Json(ErrorResponse::new(
+      ErrorCode::SiteNotFound,
+      format!("site '{site}' not found"),
+    )),
   )
 }
 

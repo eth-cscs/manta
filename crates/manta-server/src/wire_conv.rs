@@ -30,6 +30,7 @@
 
 use manta_backend_dispatcher::error::Error as BackendError;
 use manta_shared::common::error::MantaError;
+use manta_shared::common::error_code::ErrorCode;
 
 /// Map a `MantaError` (returned by manta-shared's pure helpers) onto
 /// the structured `BackendError` that the server's service layer uses.
@@ -56,6 +57,72 @@ pub fn to_backend(e: MantaError) -> BackendError {
     MantaError::InvalidPattern(s) => BackendError::InvalidPattern(s),
     MantaError::TemplateError(s) => BackendError::TemplateError(s),
     MantaError::Other(s) => BackendError::Message(s),
+  }
+}
+
+/// Classify a [`BackendError`] into its stable [`ErrorCode`]
+/// (see `ERRORS.md` and the catalog in
+/// `manta_shared::common::error_code`).
+///
+/// `BackendError` is a foreign, pinned crate, so codes cannot live on
+/// the type itself; this function is the single place the mapping
+/// exists. The match is deliberately **exhaustive** (no wildcard):
+/// when a dependency bump adds a variant, compilation fails here and
+/// forces a classification instead of silently falling into a
+/// catch-all.
+///
+/// `NetError` is split by shape the same way `to_handler_error`
+/// splits its status: timeout → [`ErrorCode::BackendTimeout`],
+/// connect failure → [`ErrorCode::BackendConnectFailed`], anything
+/// else → [`ErrorCode::NetworkError`].
+#[must_use]
+pub fn backend_error_code(e: &BackendError) -> ErrorCode {
+  match e {
+    BackendError::Message(_) => ErrorCode::Internal,
+    BackendError::IoError(_) => ErrorCode::IoError,
+    BackendError::SerdeError(_) => ErrorCode::SerdeError,
+    BackendError::NetError(rqe) if rqe.is_timeout() => {
+      ErrorCode::BackendTimeout
+    }
+    BackendError::NetError(rqe) if rqe.is_connect() => {
+      ErrorCode::BackendConnectFailed
+    }
+    BackendError::NetError(_) => ErrorCode::NetworkError,
+    BackendError::RequestError { .. } => ErrorCode::NetworkError,
+    BackendError::CsmError { .. } => ErrorCode::BackendHttpError,
+    BackendError::ConsoleError(_) => ErrorCode::ConsoleError,
+    BackendError::ConfigurationAlreadyExistsError(_) => {
+      ErrorCode::ConfigurationAlreadyExists
+    }
+    BackendError::ConfigurationNotFound => ErrorCode::ConfigurationNotFound,
+    BackendError::SessionNotFound => ErrorCode::SessionNotFound,
+    BackendError::AuthenticationTokenNotFound(_) => {
+      ErrorCode::AuthTokenNotFound
+    }
+    BackendError::NotFound(_) => ErrorCode::NotFound,
+    BackendError::BadRequest(_) => ErrorCode::BadRequest,
+    BackendError::Conflict(_) => ErrorCode::Conflict,
+    BackendError::TomlEditError(_) | BackendError::TomlSerError(_) => {
+      ErrorCode::TomlError
+    }
+    BackendError::ConfigError(_) => ErrorCode::ConfigError,
+    // Interactive-prompt failures make no sense server-side; if one
+    // ever surfaces here it is an internal fault, not a user error.
+    BackendError::DialoguerError(_) => ErrorCode::Internal,
+    BackendError::K8sError(_) => ErrorCode::K8sError,
+    BackendError::YamlError(_) => ErrorCode::YamlError,
+    BackendError::TemplateError(_) => ErrorCode::TemplateError,
+    BackendError::JwtMalformed(_) => ErrorCode::JwtMalformed,
+    BackendError::InvalidPattern(_) => ErrorCode::InvalidPattern,
+    BackendError::InsufficientResources(_) => {
+      ErrorCode::InsufficientResources
+    }
+    BackendError::MissingField(_) => ErrorCode::MissingField,
+    BackendError::UnsupportedBackend(_) => ErrorCode::UnsupportedBackend,
+    BackendError::InvalidNodeId(_) => ErrorCode::InvalidNodeId,
+    BackendError::KafkaError(_) => ErrorCode::KafkaError,
+    BackendError::HookError(_) => ErrorCode::HookError,
+    BackendError::LocalGitError(_) => ErrorCode::GitError,
   }
 }
 
@@ -152,5 +219,52 @@ mod tests {
       serde_yaml::from_str::<serde_yaml::Value>("\t:bad").unwrap_err();
     let mapped = to_backend(MantaError::YamlError(inner));
     assert!(matches!(mapped, BackendError::YamlError(_)));
+  }
+
+  // Spot-pins for `backend_error_code`. Exhaustiveness is already
+  // compile-time enforced (no wildcard arm); these lock the arms
+  // where the code name differs from the variant name or where a
+  // mix-up would be silent (e.g. Message → Internal, LocalGitError →
+  // GitError, CsmError → BackendHttpError).
+  #[test]
+  fn backend_error_code_pins_renamed_arms() {
+    let cases: &[(BackendError, ErrorCode)] = &[
+      (BackendError::Message("m".into()), ErrorCode::Internal),
+      (
+        BackendError::CsmError {
+          status: 404,
+          detail: "d".into(),
+          body: None,
+        },
+        ErrorCode::BackendHttpError,
+      ),
+      (
+        BackendError::AuthenticationTokenNotFound("f".into()),
+        ErrorCode::AuthTokenNotFound,
+      ),
+      (
+        BackendError::ConfigurationAlreadyExistsError("c".into()),
+        ErrorCode::ConfigurationAlreadyExists,
+      ),
+      (BackendError::LocalGitError("g".into()), ErrorCode::GitError),
+      (BackendError::NotFound("n".into()), ErrorCode::NotFound),
+      (
+        BackendError::InvalidPattern("p".into()),
+        ErrorCode::InvalidPattern,
+      ),
+    ];
+    for (input, expected) in cases {
+      assert_eq!(
+        backend_error_code(input),
+        *expected,
+        "wrong code for {input:?}"
+      );
+    }
+  }
+
+  #[test]
+  fn backend_error_code_io_error_maps_to_io_code() {
+    let e = BackendError::IoError(std::io::Error::other("disk on fire"));
+    assert_eq!(backend_error_code(&e), ErrorCode::IoError);
   }
 }

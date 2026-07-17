@@ -22,6 +22,7 @@ use axum::{
   response::IntoResponse,
 };
 use manta_backend_dispatcher::error::Error as BackendError;
+use manta_shared::common::error_code::ErrorCode;
 use serde::Serialize;
 use utoipa::{IntoParams, ToSchema};
 
@@ -89,9 +90,10 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
       .ok_or_else(|| {
         (
           StatusCode::UNAUTHORIZED,
-          Json(ErrorResponse {
-            error: "Missing Authorization header".to_string(),
-          }),
+          Json(ErrorResponse::new(
+            ErrorCode::AuthTokenNotFound,
+            "Missing Authorization header",
+          )),
         )
       })?;
 
@@ -101,9 +103,10 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
       .ok_or_else(|| {
         (
           StatusCode::UNAUTHORIZED,
-          Json(ErrorResponse {
-            error: "Authorization header must use Bearer scheme".to_string(),
-          }),
+          Json(ErrorResponse::new(
+            ErrorCode::AuthTokenNotFound,
+            "Authorization header must use Bearer scheme",
+          )),
         )
       })?;
 
@@ -131,9 +134,10 @@ impl<S: Send + Sync> FromRequestParts<S> for SiteName {
       .ok_or_else(|| {
         (
           StatusCode::BAD_REQUEST,
-          Json(ErrorResponse {
-            error: "Missing X-Manta-Site header".to_string(),
-          }),
+          Json(ErrorResponse::new(
+            ErrorCode::BadRequest,
+            "Missing X-Manta-Site header",
+          )),
         )
       })?;
     Ok(SiteName(site.to_string()))
@@ -253,6 +257,10 @@ fn format_with_causes(e: &(dyn std::error::Error + 'static)) -> String {
 /// every handler. The canonical call shape is
 /// `.map_err(to_handler_error)?` at the end of each service call.
 ///
+/// Besides the status, the body (and the log line) carry the stable
+/// `MANTA_*` code from `crate::wire_conv::backend_error_code` — see
+/// `ERRORS.md`.
+///
 /// Status mapping (most-specific first):
 /// - `NotFound`, `SessionNotFound`, `ConfigurationNotFound` → 404
 /// - `Conflict`, `ConfigurationAlreadyExistsError` → 409
@@ -308,14 +316,15 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     }
     _ => StatusCode::INTERNAL_SERVER_ERROR,
   };
+  let code = crate::wire_conv::backend_error_code(&e);
   let chain = format_with_causes(&e);
   if status == StatusCode::INTERNAL_SERVER_ERROR {
-    tracing::error!("Internal error: {}", chain);
+    tracing::error!("Internal error [{}]: {}", code, chain);
   } else {
-    tracing::debug!("Service error {}: {}", status, chain);
+    tracing::debug!("Service error {} [{}]: {}", status, code, chain);
   }
   let error_body = categorise_backend_error_body(&e);
-  (status, Json(ErrorResponse { error: error_body }))
+  (status, Json(ErrorResponse::new(code, error_body)))
 }
 
 /// Rewrite the error body when the underlying `BackendError` is a
@@ -350,9 +359,10 @@ pub(super) fn serialize_or_500<T: Serialize>(
     tracing::error!("Failed to serialize: {}", chain);
     (
       StatusCode::INTERNAL_SERVER_ERROR,
-      Json(ErrorResponse {
-        error: format!("Failed to serialize: {e}"),
-      }),
+      Json(ErrorResponse::new(
+        ErrorCode::SerdeError,
+        format!("Failed to serialize: {e}"),
+      )),
     )
   })
 }
@@ -376,9 +386,10 @@ fn require_url<'a>(
   url.ok_or_else(|| {
     (
       StatusCode::NOT_IMPLEMENTED,
-      Json(ErrorResponse {
-        error: format!("{field} not configured on this server"),
-      }),
+      Json(ErrorResponse::new(
+        ErrorCode::NotConfigured,
+        format!("{field} not configured on this server"),
+      )),
     )
   })
 }
@@ -390,13 +401,14 @@ pub(super) fn validate_repo_list_lengths(
   if repo_names.len() != repo_last_commit_ids.len() {
     return Err((
       StatusCode::BAD_REQUEST,
-      Json(ErrorResponse {
-        error: format!(
+      Json(ErrorResponse::new(
+        ErrorCode::BadRequest,
+        format!(
           "repo_names ({}) and repo_last_commit_ids ({}) must have the same length",
           repo_names.len(),
           repo_last_commit_ids.len()
         ),
-      }),
+      )),
     ));
   }
   Ok(())
@@ -410,9 +422,10 @@ pub(super) fn parse_iso_datetime(
     |e| {
       (
         StatusCode::BAD_REQUEST,
-        Json(ErrorResponse {
-          error: format!("Invalid '{field}' datetime '{value}': {e}"),
-        }),
+        Json(ErrorResponse::new(
+          ErrorCode::InvalidDatetime,
+          format!("Invalid '{field}' datetime '{value}': {e}"),
+        )),
       )
     },
   )
@@ -426,8 +439,26 @@ pub(super) fn parse_iso_datetime(
 #[derive(Serialize, ToSchema)]
 pub struct ErrorResponse {
   /// Human-readable explanation of the failure. Never includes
-  /// stack traces, credentials, or internal type names.
+  /// stack traces, credentials, or internal type names. Not a stable
+  /// interface — wording may change between releases.
   pub error: String,
+  /// Stable machine-readable `MANTA_*` code identifying the failure
+  /// class (see `ERRORS.md`). Optional on the wire so clients and
+  /// servers from before/after its introduction interoperate; this
+  /// server always sends it.
+  pub code: Option<String>,
+}
+
+impl ErrorResponse {
+  /// Build the body from a catalog [`ErrorCode`] and a message. The
+  /// only intended constructor — using it keeps `code` populated at
+  /// every error site.
+  pub fn new(code: ErrorCode, error: impl Into<String>) -> Self {
+    Self {
+      error: error.into(),
+      code: Some(code.as_str().to_string()),
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -479,10 +510,10 @@ async fn resolve_xnames_from_request(
   }
   Err((
     StatusCode::BAD_REQUEST,
-    Json(ErrorResponse {
-      error: "At least one of 'xnames' or 'hsm_group' must be provided"
-        .to_string(),
-    }),
+    Json(ErrorResponse::new(
+      ErrorCode::BadRequest,
+      "At least one of 'xnames' or 'hsm_group' must be provided",
+    )),
   ))
 }
 
