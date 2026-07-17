@@ -15,6 +15,8 @@
 
 use thiserror::Error;
 
+use crate::common::error_code::ErrorCode;
+
 /// Errors returned by `manta-shared`'s pure helpers.
 ///
 /// Most helpers return `Result<T, MantaError>`. The server-side code
@@ -94,4 +96,38 @@ pub enum MantaError {
   /// adding new failure modes.
   #[error("{0}")]
   Other(String),
+}
+
+impl MantaError {
+  /// The stable [`ErrorCode`] for this error's failure class, shown
+  /// next to the message wherever the error is reported (wire body,
+  /// server logs, CLI output). Exhaustive on purpose: adding a
+  /// variant without classifying it breaks the build.
+  ///
+  /// ```
+  /// use manta_shared::common::error::MantaError;
+  /// use manta_shared::common::error_code::ErrorCode;
+  ///
+  /// let e = MantaError::NotFound("thing 42".into());
+  /// assert_eq!(e.error_code(), ErrorCode::NotFound);
+  /// assert_eq!(e.error_code().as_str(), "MANTA_NOT_FOUND");
+  /// ```
+  #[must_use]
+  pub const fn error_code(&self) -> ErrorCode {
+    match self {
+      MantaError::IoError(_) => ErrorCode::IoError,
+      MantaError::ConfigError(_) => ErrorCode::ConfigError,
+      MantaError::TomlEditError(_) => ErrorCode::TomlError,
+      MantaError::SerdeError(_) => ErrorCode::SerdeError,
+      MantaError::NetError(_) => ErrorCode::NetworkError,
+      MantaError::YamlError(_) => ErrorCode::YamlError,
+      MantaError::NotFound(_) => ErrorCode::NotFound,
+      MantaError::MissingField(_) => ErrorCode::MissingField,
+      MantaError::JwtMalformed(_) => ErrorCode::JwtMalformed,
+      MantaError::KafkaError(_) => ErrorCode::KafkaError,
+      MantaError::InvalidPattern(_) => ErrorCode::InvalidPattern,
+      MantaError::TemplateError(_) => ErrorCode::TemplateError,
+      MantaError::Other(_) => ErrorCode::Internal,
+    }
+  }
 }
