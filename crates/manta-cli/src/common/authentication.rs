@@ -51,6 +51,7 @@ use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
 use manta_shared::common::config::get_default_cache_path;
+use manta_shared::common::error_code::ErrorCode;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
@@ -218,7 +219,10 @@ async fn get_token_from_env(client: &MantaClient) -> Result<String> {
   );
 
   let shasta_token = std::env::var(auth_token_env_name).map_err(|_| {
-    anyhow!("authentication token not found in env var '{auth_token_env_name}'")
+    anyhow!(
+      "[{}] authentication token not found in env var '{auth_token_env_name}'",
+      ErrorCode::AuthTokenNotFound
+    )
   })?;
 
   tracing::info!(
@@ -249,7 +253,11 @@ async fn get_token_from_local_file(
       tracing::debug!("Could not open token file '{}': {}", path.display(), e);
     })
     .map_err(|_| {
-      anyhow!("authentication token not found at '{}'", path.display())
+      anyhow!(
+        "[{}] authentication token not found at '{}'",
+        ErrorCode::AuthTokenNotFound,
+        path.display()
+      )
     })?
     .read_to_string(&mut shasta_token)?;
 

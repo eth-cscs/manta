@@ -114,9 +114,7 @@ pub fn backend_error_code(e: &BackendError) -> ErrorCode {
     BackendError::TemplateError(_) => ErrorCode::TemplateError,
     BackendError::JwtMalformed(_) => ErrorCode::JwtMalformed,
     BackendError::InvalidPattern(_) => ErrorCode::InvalidPattern,
-    BackendError::InsufficientResources(_) => {
-      ErrorCode::InsufficientResources
-    }
+    BackendError::InsufficientResources(_) => ErrorCode::InsufficientResources,
     BackendError::MissingField(_) => ErrorCode::MissingField,
     BackendError::UnsupportedBackend(_) => ErrorCode::UnsupportedBackend,
     BackendError::InvalidNodeId(_) => ErrorCode::InvalidNodeId,

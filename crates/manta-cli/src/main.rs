@@ -62,8 +62,8 @@ fn main() {
 fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::build::build_cli().get_matches();
 
-  let settings =
-    manta_shared::common::config::get_cli_configuration().map_err(|e| {
+  let settings = manta_shared::common::config::get_cli_configuration()
+    .map_err(|e| {
       format!(
         "[{}] Could not read CLI configuration file: {e}",
         e.error_code()

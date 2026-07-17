@@ -925,8 +925,7 @@ fn error_response_wire_field_names_are_pinned() {
   use manta_backend_dispatcher::error::Error;
   use manta_server::server::handlers::to_handler_error;
 
-  let (_, axum::Json(body)) =
-    to_handler_error(Error::SessionNotFound);
+  let (_, axum::Json(body)) = to_handler_error(Error::SessionNotFound);
   let json = serde_json::to_value(&body).expect("serializable");
   assert_eq!(
     json["code"].as_str(),

@@ -209,10 +209,17 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     let SiteName(site_name) =
       SiteName::from_request_parts(parts, state).await?;
     // Validate the site resolves to a configured backend NOW, so the
-    // per-handler `ctx.infra()` call below cannot fail. Returning the
-    // 404-mapped error from extraction is the same shape the handler
-    // would have produced.
-    state.infra_context(&site_name).map_err(to_handler_error)?;
+    // per-handler `ctx.infra()` call below cannot fail. Same 404 the
+    // handler would have produced, but coded MANTA_SITE_NOT_FOUND
+    // rather than the generic MANTA_NOT_FOUND `to_handler_error`
+    // would assign — extraction is the one place that knows this
+    // lookup is specifically a site lookup.
+    state.infra_context(&site_name).map_err(|e| {
+      (
+        StatusCode::NOT_FOUND,
+        Json(ErrorResponse::new(ErrorCode::SiteNotFound, e.to_string())),
+      )
+    })?;
     Ok(Self {
       state: Arc::clone(state),
       token,
