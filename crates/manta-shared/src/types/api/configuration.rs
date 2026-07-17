@@ -20,7 +20,8 @@ pub struct GetConfigurationParams {
   /// Upper-bound timestamp (configurations last updated at or before
   /// this point).
   pub until: Option<NaiveDateTime>,
-  /// Cap on the number of configurations returned (most recent first).
+  /// Cap on the number of configurations returned (the newest N; listed
+  /// oldest first, newest last).
   pub limit: Option<u8>,
 }
 

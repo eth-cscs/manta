@@ -1,8 +1,9 @@
 //! IMS image handlers.
 //!
 //! - `GET    /api/v1/images` → [`get_images`] —
-//!   wraps `service::image::get_images`. Orders most-recent-first and
-//!   filters by name glob and `since`/`until` creation-date bounds.
+//!   wraps `service::image::get_images`. Orders oldest-first (newest
+//!   last) and filters by name glob and `since`/`until` creation-date
+//!   bounds.
 //! - `DELETE /api/v1/images` → [`delete_images`] —
 //!   wraps `service::image::delete_images`; with `?dry_run=true`
 //!   returns the validation result without deleting.
@@ -20,7 +21,7 @@ use crate::service;
 
 pub use manta_shared::types::api::queries::{DeleteImagesQuery, ImageQuery};
 
-/// GET /images — list IMS images, most-recent first.
+/// GET /images — list IMS images, oldest-first (newest last).
 #[utoipa::path(get, path = "/images", tag = "images",
   params(ImageQuery, SiteHeader),
   security(("bearerAuth" = [])),

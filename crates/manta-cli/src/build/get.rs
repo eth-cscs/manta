@@ -145,11 +145,13 @@ pub fn subcommand_get_cfs_session() -> Command {
 /// `crate::dispatch::get::template`.
 pub fn subcommand_get_bos_template() -> Command {
   Command::new("templates")
-    .about("List BOS session templates (filter by name, group, or recency)")
+    .about("List BOS session templates (filter by name or group; sorted by name)")
     .arg(arg!(-n --name <NAME> "Show only the template with this exact name"))
-    .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
+    // BOS templates have no timestamp, so these cap the count but do not
+    // select by recency (unlike the same flags on images/configs/sessions).
+    .arg(arg!(-m --"most-recent" "Return only a single template (equivalent to --limit 1)"))
     .arg(
-      arg!(-l --limit <VALUE> "Return only the <VALUE> most recent templates")
+      arg!(-l --limit <VALUE> "Return at most <VALUE> templates")
         .value_parser(value_parser!(u8).range(1..)),
     )
     .arg(
@@ -276,7 +278,7 @@ fn parse_until(raw: &str) -> Result<NaiveDateTime, String> {
 /// `crate::dispatch::get::image`.
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
-    .about("List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)")
+    .about("List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)")
     .arg(arg!(-i --id <IMAGE_ID> "Show only the image with this exact ID"))
     .arg(arg!(-p --pattern <PATTERN> "Glob matched against image name (e.g. 'compute-*'); applied server-side. Invalid glob returns 400."))
     .arg(

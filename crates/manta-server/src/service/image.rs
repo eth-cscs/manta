@@ -11,9 +11,10 @@
 //!    they don't own.
 //!
 //! Read-only listing ([`get_images`]) validates the requested
-//! `pattern` glob and `since`/`until` range, filters on both, then
-//! orders most-recent-first and applies the `limit` cap. IMS takes no
-//! query parameters of its own, so every filter runs here.
+//! `pattern` glob and `since`/`until` range, filters on both, selects
+//! the newest `limit` images, and returns them oldest-first (newest
+//! last). IMS takes no query parameters of its own, so every filter
+//! runs here.
 
 use std::cmp::Reverse;
 
@@ -31,13 +32,14 @@ use crate::service::boot_parameters::get_restricted_boot_parameters;
 use crate::service::configuration::validate_date_range;
 pub use manta_shared::types::api::image::GetImagesParams;
 
-/// Fetch IMS images from the backend, most-recent first.
+/// Fetch IMS images from the backend, oldest-first (newest last).
 ///
 /// Filters server-side by `params.pattern` (glob syntax, matched
 /// against `image.name`) and by the `params.since` / `params.until`
-/// creation-date bounds, then orders by creation time descending and
-/// caps the result at `params.limit`. The cap is applied **after**
-/// ordering, so `limit = 1` yields the newest image.
+/// creation-date bounds, then selects the newest `params.limit` images
+/// and returns them oldest-first for display. Selection happens before
+/// the display flip, so `limit = 1` yields the single newest image (see
+/// `sort_and_cap`).
 ///
 /// Both filters run here rather than at the backend because IMS
 /// accepts no query parameters at all — `ImsTrait::get_images` takes
@@ -105,23 +107,34 @@ fn apply_date_filter(
     .collect()
 }
 
-/// Order by creation time (newest first) and only then apply `limit`.
+/// Select the newest `limit` images and return them oldest-first
+/// (newest last).
 ///
-/// The two steps live together because their order is the whole
-/// contract: capping first would leave `limit` slicing the backend's
-/// arbitrary ordering, so `limit = 1` would return an arbitrary image
-/// rather than the newest one. Keeping them in one pure function makes
-/// that invariant testable without standing up a backend mock — which
-/// is why the bug this replaced went unnoticed.
+/// Three steps whose order is the whole contract:
+/// 1. sort newest-first, so
+/// 2. `truncate(limit)` keeps the newest N — capping the backend's
+///    arbitrary order instead would make `limit = 1` return an
+///    arbitrary image rather than the most recent one; then
+/// 3. `reverse()` flips the kept images to oldest-first for display, so
+///    the newest lands at the bottom of the listing.
 ///
-/// The key is the *parsed* timestamp ([`parse_ims_timestamp`]), not the
-/// raw string: `created` arrives in a shape CSM does not guarantee, and
-/// a lexicographic order only matches chronology when every value
-/// shares one shape (mixed zoned/naive break it). `Reverse` gives the
-/// newest-first order and sends absent/unparseable dates (`None`) to
-/// the end. `sort_by_cached_key` parses each `created` once — not
-/// `O(n log n)` times as a comparator would — and is stable, so equal
-/// or unplaceable images keep the backend's order.
+/// Selection (newest N) and display order (oldest-first) are decoupled
+/// on purpose: `--limit` / `--most-recent` still pick the most recent
+/// images, they're just printed with the newest at the end — matching
+/// `get configurations` / `get sessions`, whose csm-rs listings are
+/// already ascending. Keeping all three steps in one pure function
+/// makes the contract testable without standing up a backend mock.
+///
+/// The sort key is the *parsed* timestamp ([`parse_ims_timestamp`]),
+/// not the raw string: `created` arrives in a shape CSM does not
+/// guarantee, and a lexicographic order only matches chronology when
+/// every value shares one shape (mixed zoned/naive break it). `Reverse`
+/// gives the newest-first working order and sends absent/unparseable
+/// dates (`None`) to the end — so after the final `reverse` they sit at
+/// the *top*, treated as oldest, as `get sessions` treats undated rows.
+/// `sort_by_cached_key` parses each `created` once — not `O(n log n)`
+/// times as a comparator would — and is stable, so equal or unplaceable
+/// images keep the backend's order.
 fn sort_and_cap(mut image_vec: Vec<Image>, limit: Option<u8>) -> Vec<Image> {
   image_vec.sort_by_cached_key(|image| {
     Reverse(image.created.as_deref().and_then(parse_ims_timestamp))
@@ -130,6 +143,8 @@ fn sort_and_cap(mut image_vec: Vec<Image>, limit: Option<u8>) -> Vec<Image> {
   if let Some(limit) = limit {
     image_vec.truncate(limit as usize);
   }
+
+  image_vec.reverse();
 
   image_vec
 }
@@ -404,7 +419,7 @@ mod tests {
   }
 
   #[test]
-  fn images_are_ordered_most_recent_first() {
+  fn images_are_ordered_oldest_first() {
     let input = vec![
       image_created("middle", Some("2026-03-01T00:00:00")),
       image_created("oldest", Some("2026-01-01T00:00:00")),
@@ -414,8 +429,8 @@ mod tests {
     let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
     assert_eq!(
       names,
-      ["newest", "middle", "oldest"],
-      "documented contract is most-recent first"
+      ["oldest", "middle", "newest"],
+      "listing is oldest-first so the newest image lands at the bottom"
     );
   }
 
@@ -423,15 +438,32 @@ mod tests {
   fn limit_one_keeps_the_newest_not_the_first() {
     // Regression: the cap used to be applied *before* the sort, so
     // `--most-recent` returned whatever the backend happened to list
-    // first. "newest" is deliberately last in backend order.
+    // first. Selection is still "newest N" even though display is now
+    // oldest-first — with limit 1 the single row must be the newest.
+    // "newest" is deliberately first in backend order to catch a naive
+    // "take the front" cap.
     let input = vec![
-      image_created("oldest", Some("2026-01-01T00:00:00")),
-      image_created("middle", Some("2026-03-01T00:00:00")),
       image_created("newest", Some("2026-06-01T00:00:00")),
+      image_created("middle", Some("2026-03-01T00:00:00")),
+      image_created("oldest", Some("2026-01-01T00:00:00")),
     ];
     let out = sort_and_cap(input, Some(1));
     assert_eq!(out.len(), 1);
     assert_eq!(out[0].name, "newest");
+  }
+
+  #[test]
+  fn limit_keeps_the_newest_n_shown_oldest_first() {
+    // `--limit 2` selects the two newest, then displays them
+    // oldest-first: "middle" above "newest", and "oldest" dropped.
+    let input = vec![
+      image_created("oldest", Some("2026-01-01T00:00:00")),
+      image_created("newest", Some("2026-06-01T00:00:00")),
+      image_created("middle", Some("2026-03-01T00:00:00")),
+    ];
+    let out = sort_and_cap(input, Some(2));
+    let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(names, ["middle", "newest"]);
   }
 
   #[test]
@@ -448,7 +480,7 @@ mod tests {
     ];
     let out = sort_and_cap(input, None);
     let names: Vec<&str> = out.iter().map(|i| i.name.as_str()).collect();
-    assert_eq!(names, ["newest", "zoned", "oldest"]);
+    assert_eq!(names, ["oldest", "zoned", "newest"]);
   }
 
   fn ts(raw: &str) -> NaiveDateTime {
@@ -531,10 +563,13 @@ mod tests {
   }
 
   #[test]
-  fn images_without_a_parseable_date_sort_last() {
+  fn images_without_a_parseable_date_sort_first() {
+    // Unplaceable images (missing or unparseable `created`) are treated
+    // as oldest, so in the oldest-first listing they sit at the top,
+    // above every real date — the newest-last row stays at the bottom.
     // Also pins that ordering is by *parsed* value, not raw string:
-    // "not-a-real-date" starts with 'n', so a descending string sort
-    // would rank it above every "2026-..." timestamp. It must sink.
+    // "not-a-real-date" starts with 'n', so a naive string sort could
+    // misplace it relative to the "2026-..." timestamp.
     let input = vec![
       image_created("no-date", None),
       image_created("bad-date", Some("not-a-real-date")),
@@ -542,14 +577,15 @@ mod tests {
     ];
     let out = sort_and_cap(input, None);
     assert_eq!(
-      out[0].name, "dated",
-      "known dates come before unplaceable ones"
+      out.last().unwrap().name,
+      "dated",
+      "the only real date is the newest, so it lands at the bottom"
     );
-    let tail: Vec<&str> = out[1..].iter().map(|i| i.name.as_str()).collect();
-    assert_eq!(
-      tail,
-      ["no-date", "bad-date"],
-      "unplaceable images keep backend order (stable sort)"
-    );
+    // The two undated rows lead. `sort_by_cached_key` is stable, so
+    // before the display flip they held backend order (no-date,
+    // bad-date); the final `reverse` flips the whole list, undated rows
+    // included, so they appear reversed here.
+    let head: Vec<&str> = out[..2].iter().map(|i| i.name.as_str()).collect();
+    assert_eq!(head, ["bad-date", "no-date"]);
   }
 }

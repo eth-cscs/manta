@@ -76,10 +76,10 @@ complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_sub
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "hardware" -d 'Inspect hardware components'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "sessions" -d 'List configuration sessions'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "configurations" -d 'List CFS configurations (filter by name, glob, group, or recency)'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "templates" -d 'List BOS session templates (filter by name, group, or recency)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "templates" -d 'List BOS session templates (filter by name or group; sorted by name)'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "group-nodes" -d 'Show node details and status for a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "nodes" -d 'Show node details and status'
-complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)'
+complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and not __fish_seen_subcommand_from groups hardware sessions configurations templates group-nodes nodes images boot-parameters kernel-parameters redfish-endpoints help" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -119,12 +119,12 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -l only-unsafe-to-delete -d 'Show only configurations that are NOT safe to delete (in use)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from configurations" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s n -l name -d 'Show only the template with this exact name' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s l -l limit -d 'Return only the <VALUE> most recent templates' -r
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s l -l limit -d 'Return at most <VALUE> templates' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s H -l group -l hsm-group -d 'Show only templates whose boot sets target this group' -r
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s o -l output -d 'Output format' -r -f -a "json\t''
 table\t''"
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -l site -d 'Override the active site for this invocation' -r
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s m -l most-recent -d 'Return only the most recent (equivalent to --limit 1)'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s m -l most-recent -d 'Return only a single template (equivalent to --limit 1)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from templates" -s h -l help -d 'Print help'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from group-nodes" -s s -l status -d 'Filter nodes by status' -r -f -a "OFF\t''
 ON\t''
@@ -192,10 +192,10 @@ complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcomm
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "hardware" -d 'Inspect hardware components'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "sessions" -d 'List configuration sessions'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "configurations" -d 'List CFS configurations (filter by name, glob, group, or recency)'
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "templates" -d 'List BOS session templates (filter by name, group, or recency)'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "templates" -d 'List BOS session templates (filter by name or group; sorted by name)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "group-nodes" -d 'Show node details and status for a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "nodes" -d 'Show node details and status'
-complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)'
+complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand get; and __fish_seen_subcommand_from help" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -690,10 +690,10 @@ complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcom
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "hardware" -d 'Inspect hardware components'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "sessions" -d 'List configuration sessions'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "configurations" -d 'List CFS configurations (filter by name, glob, group, or recency)'
-complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "templates" -d 'List BOS session templates (filter by name, group, or recency)'
+complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "templates" -d 'List BOS session templates (filter by name or group; sorted by name)'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "group-nodes" -d 'Show node details and status for a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "nodes" -d 'Show node details and status'
-complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; sorted most-recent first)'
+complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "images" -d 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "boot-parameters" -d 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "kernel-parameters" -d 'Show kernel parameters for nodes or a group'
 complete -c manta -n "__fish_manta_using_subcommand help; and __fish_seen_subcommand_from get" -f -a "redfish-endpoints" -d 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'

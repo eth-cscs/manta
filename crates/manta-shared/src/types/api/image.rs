@@ -15,6 +15,7 @@ pub struct GetImagesParams {
   /// Upper-bound timestamp (images created at or before this point).
   /// Inclusive.
   pub until: Option<NaiveDateTime>,
-  /// Cap on the number of images returned (most recent first).
+  /// Cap on the number of images returned (the newest N; listed oldest
+  /// first, newest last).
   pub limit: Option<u8>,
 }

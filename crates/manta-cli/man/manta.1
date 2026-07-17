@@ -258,16 +258,16 @@ Override the active site for this invocation
 [\fB\-h\fR, \fB\-\-help\fR]
 Print help
 .SS "manta get templates"
-List BOS session templates (filter by name, group, or recency)
+List BOS session templates (filter by name or group; sorted by name)
 .TP
 [\fB\-n\fR, \fB\-\-name\fR] \fI<NAME>\fR
 Show only the template with this exact name
 .TP
 [\fB\-m\fR, \fB\-\-most\-recent\fR]
-Return only the most recent (equivalent to \-\-limit 1)
+Return only a single template (equivalent to \-\-limit 1)
 .TP
 [\fB\-l\fR, \fB\-\-limit\fR] \fI<VALUE>\fR
-Return only the <VALUE> most recent templates
+Return at most <VALUE> templates
 .TP
 [\fB\-H\fR, \fB\-\-group\fR] \fI<GROUP_NAME>\fR
 Show only templates whose boot sets target this group
@@ -347,7 +347,7 @@ Xnames, NIDs, or a hostlist expression.
 eg: \*(Aqx1003c1s7b0n0,x1003c1s7b0n1\*(Aq, \*(Aqnid001313,nid001314\*(Aq,
 \*(Aqx1003c1s7b0n[0\-1],x1003c1s7b1n0\*(Aq, \*(Aqnid00131[0\-9]\*(Aq
 .SS "manta get images"
-List IMS images (filter by id, name glob, creation date, or recency; sorted most\-recent first)
+List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)
 .TP
 [\fB\-i\fR, \fB\-\-id\fR] \fI<IMAGE_ID>\fR
 Show only the image with this exact ID

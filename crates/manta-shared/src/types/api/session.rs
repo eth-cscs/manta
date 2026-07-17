@@ -55,6 +55,7 @@ pub struct GetSessionParams {
   pub status: Option<String>,
   /// Exact session name.
   pub name: Option<String>,
-  /// Cap on the number of sessions returned (most recent first).
+  /// Cap on the number of sessions returned (the newest N; listed
+  /// oldest first, newest last).
   pub limit: Option<u8>,
 }

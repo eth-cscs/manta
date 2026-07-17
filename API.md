@@ -588,9 +588,9 @@ List IMS images.
 | `pattern` | string | no | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). [globset](https://docs.rs/globset/) syntax, anchored to the full name. |
 | `since` | string | no | ISO-8601 timestamp (`YYYY-MM-DDTHH:MM:SS`). Only images created at or after this point. Inclusive. |
 | `until` | string | no | ISO-8601 timestamp (`YYYY-MM-DDTHH:MM:SS`). Only images created at or before this point. Inclusive. |
-| `limit` | u8 | no | Maximum number of results, applied after ordering — so `limit=1` is the newest image |
+| `limit` | u8 | no | Selects the newest N (selection happens before the display flip), so `limit=1` is the newest image |
 
-**Response `200`** — array of IMS `Image` objects, most recent first:
+**Response `200`** — array of IMS `Image` objects, oldest first (newest last):
 
 ```json
 [

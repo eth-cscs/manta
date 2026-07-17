@@ -202,7 +202,7 @@ manta get hardware nodes x3000c0s1b0n0,x3000c0s1b0n1 -o json
 
 ### get sessions
 
-List CFS sessions with optional filters.
+List CFS sessions with optional filters. Listed oldest first (newest last).
 
 | Flag | Type | Description |
 |------|------|-------------|
@@ -212,7 +212,7 @@ List CFS sessions with optional filters.
 | `-t/--type` | string | `image` or `runtime` |
 | `-s/--status` | string | `pending`, `running`, `complete` |
 | `-m/--most-recent` | flag | Return only the most recent session |
-| `-l/--limit` | u8 | Return the last N sessions |
+| `-l/--limit` | u8 | Return the N most recent sessions (shown oldest first) |
 | `-x/--xnames` | string | Comma-separated xnames to filter by |
 | `-H/--group` | string | HSM group name to filter by |
 | `-o/--output` | string | Output format: `json` |
@@ -227,14 +227,14 @@ manta get sessions --most-recent -o json
 
 ### get configurations
 
-List CFS configurations. Each row carries a `Safe to delete` verdict (`yes` when no CFS component lists the configuration as `desired_config` and no BSS-referenced image was built from it; `no` otherwise; `?` when the server-side analysis fan-out failed and the verdict couldn't be computed for that row). The verdict is computed server-side using the same logic as `manta get analysis configuration` and arrives on a single `/configurations` response — no client-side fan-out. Safety enrichment is best-effort: if the analysis fan-out fails, the listing still returns with `?` in the safety column instead of erroring.
+List CFS configurations, oldest first (newest last). Each row carries a `Safe to delete` verdict (`yes` when no CFS component lists the configuration as `desired_config` and no BSS-referenced image was built from it; `no` otherwise; `?` when the server-side analysis fan-out failed and the verdict couldn't be computed for that row). The verdict is computed server-side using the same logic as `manta get analysis configuration` and arrives on a single `/configurations` response — no client-side fan-out. Safety enrichment is best-effort: if the analysis fan-out fails, the listing still returns with `?` in the safety column instead of erroring.
 
 | Flag | Type | Description |
 |------|------|-------------|
 | `-n/--name` | string | Exact configuration name |
 | `-p/--pattern` | string | Glob pattern for configuration name |
 | `-m/--most-recent` | flag | Show only the most recent |
-| `-l/--limit` | u8 | Return the last N configurations |
+| `-l/--limit` | u8 | Return the N most recent configurations (shown oldest first) |
 | `-H/--group` | string | HSM group to filter by |
 | `-o/--output` | string | Output format: `json` (table is the default). The JSON output gains a `safe_to_delete` bool per row. |
 | `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Configurations whose safety verdict is unknown are excluded. |
@@ -252,13 +252,13 @@ manta get configurations --only-unsafe-to-delete -o json | jq '.[].name'
 
 ### get templates
 
-List BOS session templates.
+List BOS session templates, sorted by name. BOS templates have no timestamp, so there is no recency order — `--most-recent`/`--limit` only cap the count.
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `-n/--name` | string | — | Template name |
-| `-m/--most-recent` | flag | — | Show most recent only |
-| `-l/--limit` | u8 | — | Return last N templates |
+| `-m/--most-recent` | flag | — | Return a single template (equivalent to `--limit 1`; not recency-based) |
+| `-l/--limit` | u8 | — | Return at most N templates |
 | `-H/--group` | string | — | HSM group name |
 | `-o/--output` | string | `table` | Output format: `table`, `json` |
 
@@ -300,7 +300,7 @@ manta get nodes nid001313,nid001314 -o json
 
 ### get images
 
-List IMS images, most recent first. Each row carries a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise; `?` only on the rare race where an image appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/images` and computed identically to `manta get analysis image`.
+List IMS images, oldest first (newest last). Each row carries a `Safe to delete` verdict (`yes` when no BSS boot-parameter record references the image as its boot image; `no` otherwise; `?` only on the rare race where an image appears in the listing but not in the deletion-safety analysis). The verdict is sourced from `/analysis/images` and computed identically to `manta get analysis image`.
 
 | Flag | Type | Description |
 |------|------|-------------|
@@ -309,7 +309,7 @@ List IMS images, most recent first. Each row carries a `Safe to delete` verdict 
 | `-s/--since` | date | Show only images created at or after this point. A bare `YYYY-MM-DD` starts at midnight; a full `YYYY-MM-DDTHH:MM:SS` is exact. Inclusive. |
 | `-u/--until` | date | Show only images created at or before this point. A bare `YYYY-MM-DD` extends to `23:59:59` that day, so `--until 2026-03-01` covers March 1st through `23:59:59` (an image built in the final sub-second is excluded); a full `YYYY-MM-DDTHH:MM:SS` is exact. Inclusive. |
 | `-m/--most-recent` | flag | Show most recent only |
-| `-l/--limit` | u8 | Return the N most recent images |
+| `-l/--limit` | u8 | Return the N most recent images (shown oldest first) |
 | `--only-safe-to-delete` | flag | Show only rows where `safe_to_delete == true`. Mutually exclusive with `--only-unsafe-to-delete`. Images whose safety verdict is unknown are excluded. |
 | `--only-unsafe-to-delete` | flag | Show only rows where `safe_to_delete == false` (image is the boot image for at least one node). |
 
@@ -318,7 +318,7 @@ List IMS images, most recent first. Each row carries a `Safe to delete` verdict 
 > `--since`/`--until` filter on the `Creation time` column. IMS does not support date queries, so the filtering happens in `manta-server` after fetching the listing. A `--since` later than `--until` is rejected with a 400. Images whose creation date is missing or unreadable are omitted while either bound is set — they cannot be shown to satisfy the range.
 
 ```bash
-# Images built this year, newest first
+# Images built this year, newest last
 manta get images --since 2026-01-01
 
 # Images built in a window, narrowed to compute nodes
