@@ -16,6 +16,7 @@
 //! or *validate* the token in the first place).
 
 use anyhow::Context;
+use manta_shared::common::error_code::ErrorCode;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
@@ -48,9 +49,10 @@ impl std::fmt::Display for AuthServerUnreachable {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "cannot reach manta server at {} for authentication. \
+      "[{}] cannot reach manta server at {} for authentication. \
        Is the server running, and is `manta_server_url` in your \
        config correct?",
+      ErrorCode::ServerUnreachable,
       self.url,
     )
   }
@@ -75,8 +77,9 @@ impl std::fmt::Display for SiteNotFound {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "site '{}' is not configured on the manta server. \
+      "[{}] site '{}' is not configured on the manta server. \
        Check the `site` value in your `cli.toml`.",
+      ErrorCode::SiteNotFound,
       self.site,
     )
   }
@@ -125,14 +128,26 @@ where
       Err(progenitor_client::Error::ErrorResponse(rv)) => {
         let status = rv.status();
         let inner = rv.into_inner();
-        let raw_msg = serde_json::to_value(&inner)
-          .ok()
+        let body = serde_json::to_value(&inner).ok();
+        let raw_msg = body
+          .as_ref()
           .and_then(|v| {
             v.get("error").and_then(|e| e.as_str()).map(String::from)
           })
           .unwrap_or_else(|| format!("{inner:?}"));
+        // Stable `MANTA_*` code the server pairs with the message
+        // (`ERRORS.md`); absent when talking to a pre-code server.
+        let code = body
+          .as_ref()
+          .and_then(|v| v.get("code").and_then(|c| c.as_str()))
+          .map(String::from);
         let msg = categorise_server_error(status.as_u16(), &raw_msg);
-        Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
+        Err(match code {
+          Some(code) => {
+            anyhow::anyhow!("HTTP {} [{code}]: {msg}", status.as_u16())
+          }
+          None => anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()),
+        })
       }
       Err(progenitor_client::Error::CommunicationError(rqe)) => {
         Err(anyhow::anyhow!("{}", categorise_transport_error(&rqe)))
@@ -151,30 +166,36 @@ fn categorise_transport_error(rqe: &reqwest::Error) -> String {
   if rqe.is_timeout() {
     if rqe.is_connect() {
       format!(
-        "CLI -> manta-server connect timed out. \
+        "[{}] CLI -> manta-server connect timed out. \
          The CLI gave up before the TCP/TLS handshake completed. \
          Likely causes: manta-server unreachable, wrong `manta_server_url` \
          in `cli.toml`, or a firewall dropping the SYN. \
-         Underlying: {rqe}"
+         Underlying: {rqe}",
+        ErrorCode::ServerUnreachable,
       )
     } else {
       format!(
-        "CLI -> manta-server request timed out. \
+        "[{}] CLI -> manta-server request timed out. \
          The CLI gave up before manta-server sent response headers. \
          This is the CLI-side `request_timeout_secs` in `cli.toml` \
          (default 300 s). manta-server may still be working on the \
          request — bump that value if you're hitting it on a heavy \
-         call against a busy site. Underlying: {rqe}"
+         call against a busy site. Underlying: {rqe}",
+        ErrorCode::ServerTimeout,
       )
     }
   } else if rqe.is_connect() {
     format!(
-      "CLI could not connect to manta-server. \
+      "[{}] CLI could not connect to manta-server. \
        Check `manta_server_url` in `cli.toml` and confirm the server \
-       is reachable from this host. Underlying: {rqe}"
+       is reachable from this host. Underlying: {rqe}",
+      ErrorCode::ServerUnreachable,
     )
   } else {
-    format!("CLI transport error talking to manta-server: {rqe}")
+    format!(
+      "[{}] CLI transport error talking to manta-server: {rqe}",
+      ErrorCode::TransportError,
+    )
   }
 }
 
@@ -558,8 +579,9 @@ impl MantaClient {
   pub(super) fn unreachable_server_msg(&self) -> String {
     let server_url = self.base_url.trim_end_matches("/api/v1");
     format!(
-      "cannot reach manta server at {server_url}. Is the server \
-       running, and is `manta_server_url` in your config correct?"
+      "[{}] cannot reach manta server at {server_url}. Is the server \
+       running, and is `manta_server_url` in your config correct?",
+      ErrorCode::ServerUnreachable,
     )
   }
 }
@@ -575,9 +597,15 @@ pub(super) fn unwrap_error_body(body: &str) -> String {
   #[derive(serde::Deserialize)]
   struct ServerErrorBody {
     error: String,
+    // Stable `MANTA_*` code (`ERRORS.md`); absent from pre-code
+    // servers and non-manta bodies.
+    code: Option<String>,
   }
   serde_json::from_str::<ServerErrorBody>(body)
-    .map(|e| e.error)
+    .map(|e| match e.code {
+      Some(code) => format!("[{code}] {}", e.error),
+      None => e.error,
+    })
     .unwrap_or_else(|_| body.to_string())
 }
 
@@ -592,6 +620,23 @@ mod tests {
       unwrap_error_body(body),
       "Can't access HSM group 'compute-2'."
     );
+  }
+
+  #[test]
+  fn unwrap_error_body_prefixes_the_manta_code_when_present() {
+    let body =
+      r#"{"error":"session foo not found","code":"MANTA_SESSION_NOT_FOUND"}"#;
+    assert_eq!(
+      unwrap_error_body(body),
+      "[MANTA_SESSION_NOT_FOUND] session foo not found"
+    );
+  }
+
+  #[test]
+  fn unwrap_error_body_handles_explicit_null_code() {
+    // A body from a server that serialises `code: None` as JSON null.
+    let body = r#"{"error":"boom","code":null}"#;
+    assert_eq!(unwrap_error_body(body), "boom");
   }
 
   #[test]

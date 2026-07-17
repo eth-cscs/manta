@@ -62,12 +62,20 @@ fn main() {
 fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::build::build_cli().get_matches();
 
-  let settings = manta_shared::common::config::get_cli_configuration()
-    .map_err(|e| format!("Could not read CLI configuration file: {e}"))?;
-  let configuration: CliConfiguration = settings
-    .clone()
-    .try_deserialize()
-    .map_err(|e| format!("CLI configuration file is not valid: {e}"))?;
+  let settings =
+    manta_shared::common::config::get_cli_configuration().map_err(|e| {
+      format!(
+        "[{}] Could not read CLI configuration file: {e}",
+        e.error_code()
+      )
+    })?;
+  let configuration: CliConfiguration =
+    settings.clone().try_deserialize().map_err(|e| {
+      format!(
+        "[{}] CLI configuration file is not valid: {e}",
+        manta_shared::common::error_code::ErrorCode::ConfigError
+      )
+    })?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
