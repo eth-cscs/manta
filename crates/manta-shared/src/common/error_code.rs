@@ -209,9 +209,8 @@ mod tests {
       let s = code.as_str();
       assert!(s.starts_with("MANTA_"), "{s}: missing MANTA_ prefix");
       assert!(
-        s.chars().all(|c| c.is_ascii_uppercase()
-          || c.is_ascii_digit()
-          || c == '_'),
+        s.chars()
+          .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_'),
         "{s}: not SCREAMING_SNAKE_CASE"
       );
     }
@@ -264,8 +263,7 @@ mod tests {
       "MANTA_SERVER_TIMEOUT",
       "MANTA_TRANSPORT_ERROR",
     ];
-    let actual: Vec<&str> =
-      ErrorCode::ALL.iter().map(|c| c.as_str()).collect();
+    let actual: Vec<&str> = ErrorCode::ALL.iter().map(|c| c.as_str()).collect();
     assert_eq!(actual, expected);
   }
 
@@ -275,5 +273,52 @@ mod tests {
       ErrorCode::BackendTimeout.to_string(),
       "MANTA_BACKEND_TIMEOUT"
     );
+  }
+
+  // Two-way sync between the catalog and the user-facing reference.
+  // Forward: every code has a row in ERRORS.md. Reverse: every
+  // `MANTA_*` token in ERRORS.md is a real catalog code, so the doc
+  // can't keep a stale row for a code that no longer exists (which
+  // the append-only policy forbids anyway) or a typo'd one.
+  #[test]
+  fn every_code_is_documented() {
+    let doc = std::fs::read_to_string(concat!(
+      env!("CARGO_MANIFEST_DIR"),
+      "/../../ERRORS.md"
+    ))
+    .expect("ERRORS.md must exist at the repo root");
+
+    for code in ErrorCode::ALL {
+      assert!(
+        doc.contains(&format!("`{}`", code.as_str())),
+        "{} is in the catalog but has no row in ERRORS.md",
+        code.as_str()
+      );
+    }
+
+    let catalog: std::collections::HashSet<&str> =
+      ErrorCode::ALL.iter().map(|c| c.as_str()).collect();
+    let bytes = doc.as_bytes();
+    let mut i = 0;
+    while let Some(pos) = doc[i..].find("MANTA_") {
+      let start = i + pos;
+      let mut end = start;
+      while end < bytes.len()
+        && (bytes[end].is_ascii_uppercase()
+          || bytes[end].is_ascii_digit()
+          || bytes[end] == b'_')
+      {
+        end += 1;
+      }
+      let token = &doc[start..end];
+      // Bare "MANTA_" (as in the prose "MANTA_* code") is not a code.
+      if token != "MANTA_" {
+        assert!(
+          catalog.contains(token),
+          "ERRORS.md mentions {token}, which is not in the catalog"
+        );
+      }
+      i = end;
+    }
   }
 }

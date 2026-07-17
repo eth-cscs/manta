@@ -249,7 +249,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 | Entry point | `cli::process::process_cli` | `server::start_server` |
 | Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /api/v1/auth/token`) | `Authorization: Bearer` header, per request |
 | Context type | `AppContext` (flat 10-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
-| Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
+| Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "...", "code": "MANTA_..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
 | Streaming | stdout | SSE (`/sessions/{name}/logs`) or WebSocket (`/nodes/{xname}/console`) |
 | Error type | `anyhow::Error` | `manta_backend_dispatcher::error::Error` |
@@ -267,6 +267,8 @@ Three error types, partitioned by layer (the backend-dispatcher rule is enforced
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.
 
 When a handler error reaches `to_handler_error` or `serialize_or_500`, the log line walks the `std::error::Error::source()` chain (`format_with_causes`) and emits each level prefixed with `caused by:`. `thiserror`'s `Display` only renders the top-level `#[error("…")]` string, so without this walk `#[from]`-wrapped inner errors (`reqwest::Error`, `serde_json::Error`, etc.) would be lost. The HTTP response body still carries only the top-level message to avoid leaking internals to clients.
+
+**Error codes.** Every reported failure also carries a stable, symbolic `MANTA_*` code (`ERRORS.md` is the user-facing catalog; design rationale in `ERROR-CODES-DESIGN.md`). The catalog is `manta_shared::common::error_code::ErrorCode` — append-only, explicit wire strings, pin-tested. Codes are assigned at the chokepoints, not at raise sites: `MantaError::error_code()` for the shared type, `crates/manta-server/src/wire_conv.rs::backend_error_code` for the foreign `BackendError` (an exhaustive match, so a dependency bump that adds a variant fails compilation until classified), and `ErrorResponse::new(code, msg)` — the only intended constructor — for handler-level errors. The wire body is `{ "error": "...", "code": "MANTA_..." }` with `code` optional for version skew; the CLI renders it as `HTTP <status> [MANTA_...]: <message>` and prefixes its own transport/config failures with codes from the same catalog.
 
 ---
 
