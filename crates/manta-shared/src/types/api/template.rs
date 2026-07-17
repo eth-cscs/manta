@@ -73,7 +73,9 @@ pub struct GetTemplateParams {
   /// Operator default from `cli.toml`'s `hsm_group`, used
   /// as a fallback for `group_name`.
   pub settings_group_name: Option<String>,
-  /// Cap on the number of templates returned (most recent first).
+  /// Cap on the number of templates returned. BOS templates have no
+  /// timestamp, so this caps the count of the name-sorted list; it does
+  /// not select by recency.
   pub limit: Option<u8>,
 }
 

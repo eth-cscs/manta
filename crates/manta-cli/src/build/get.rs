@@ -14,6 +14,7 @@
 //! - `subcommand_get_hardware_nodes` is `pub` because the dispatch
 //!   layer's unit tests reuse the production builder.
 
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use clap::{ArgAction, ArgGroup, Command, arg, value_parser};
 
 use super::HOSTLIST_HELP;
@@ -144,11 +145,13 @@ pub fn subcommand_get_cfs_session() -> Command {
 /// `crate::dispatch::get::template`.
 pub fn subcommand_get_bos_template() -> Command {
   Command::new("templates")
-    .about("List BOS session templates (filter by name, group, or recency)")
+    .about("List BOS session templates (filter by name or group; sorted by name)")
     .arg(arg!(-n --name <NAME> "Show only the template with this exact name"))
-    .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
+    // BOS templates have no timestamp, so these cap the count but do not
+    // select by recency (unlike the same flags on images/configs/sessions).
+    .arg(arg!(-m --"most-recent" "Return only a single template (equivalent to --limit 1)"))
     .arg(
-      arg!(-l --limit <VALUE> "Return only the <VALUE> most recent templates")
+      arg!(-l --limit <VALUE> "Return at most <VALUE> templates")
         .value_parser(value_parser!(u8).range(1..)),
     )
     .arg(
@@ -228,13 +231,64 @@ pub fn subcommand_get_node_details() -> Command {
     .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP))
 }
 
+/// Parse a `--since` / `--until` bound: a full `YYYY-MM-DDTHH:MM:SS`
+/// timestamp is taken as-is; a bare `YYYY-MM-DD` date is completed with
+/// `bare_time` so the named day is covered as the user intends.
+///
+/// Used behind [`parse_since`] / [`parse_until`] as clap
+/// `value_parser`s, so a malformed date fails at parse time with both
+/// accepted shapes named rather than surfacing as a server-side 400.
+fn parse_filter_date(
+  raw: &str,
+  bare_time: NaiveTime,
+) -> Result<NaiveDateTime, String> {
+  if let Ok(v) = NaiveDateTime::parse_from_str(raw, "%Y-%m-%dT%H:%M:%S") {
+    return Ok(v);
+  }
+  NaiveDate::parse_from_str(raw, "%Y-%m-%d")
+    .map(|d| d.and_time(bare_time))
+    .map_err(|_| {
+      format!(
+        "invalid date '{raw}': expected YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS"
+      )
+    })
+}
+
+/// `--since` value parser: a bare date starts at midnight, so
+/// `--since 2026-01-01` includes all of January 1st.
+fn parse_since(raw: &str) -> Result<NaiveDateTime, String> {
+  parse_filter_date(raw, NaiveTime::MIN)
+}
+
+/// `--until` value parser: a bare date covers the whole named day, so
+/// it completes to `23:59:59` rather than midnight. Otherwise
+/// `--until 2026-01-01` (an inclusive `created <= bound` filter) would
+/// exclude everything created after `00:00:00` that day.
+///
+/// Second precision, not sub-second: the wire carries
+/// `%Y-%m-%dT%H:%M:%S` and the server parses the same, so any fraction
+/// would be truncated in transit anyway.
+fn parse_until(raw: &str) -> Result<NaiveDateTime, String> {
+  let end_of_day =
+    NaiveTime::from_hms_opt(23, 59, 59).expect("23:59:59 is a valid time");
+  parse_filter_date(raw, end_of_day)
+}
+
 /// `manta get images` — list IMS images. Handler:
 /// `crate::dispatch::get::image`.
 pub fn subcommand_get_images() -> Command {
   Command::new("images")
-    .about("List IMS images (filter by id, name glob, or recency; sorted most-recent first)")
+    .about("List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)")
     .arg(arg!(-i --id <IMAGE_ID> "Show only the image with this exact ID"))
     .arg(arg!(-p --pattern <PATTERN> "Glob matched against image name (e.g. 'compute-*'); applied server-side. Invalid glob returns 400."))
+    .arg(
+      arg!(-s --since <DATE> "Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH:MM:SS is exact")
+        .value_parser(parse_since),
+    )
+    .arg(
+      arg!(-u --until <DATE> "Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH:MM:SS is exact")
+        .value_parser(parse_until),
+    )
     .arg(arg!(-m --"most-recent" "Return only the most recent (equivalent to --limit 1)"))
     .arg(
       arg!(-l --limit <VALUE> "Return only the <VALUE> most recent images")

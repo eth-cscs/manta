@@ -23,7 +23,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
             cand -V 'Print version'
             cand --version 'Print version'
-            cand config 'Show or change CLI-side settings (active site, default node group, log level)'
+            cand config 'Show or change CLI-side settings (active site, default node group, log level, read-only guard)'
             cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
@@ -62,6 +62,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
             cand hsm 'Set the active node group'
             cand log 'Set the log verbosity level'
+            cand read-only 'Refuse every backend-mutating command (writes read_only = true to cli.toml)'
             cand site 'Set the active site'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
@@ -75,6 +76,11 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'manta;config;set;read-only'= {
+            cand --site 'Override the active site for this invocation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'manta;config;set;site'= {
             cand --site 'Override the active site for this invocation'
             cand -h 'Print help'
@@ -83,12 +89,15 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;config;set;help'= {
             cand hsm 'Set the active node group'
             cand log 'Set the log verbosity level'
+            cand read-only 'Refuse every backend-mutating command (writes read_only = true to cli.toml)'
             cand site 'Set the active site'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;set;help;hsm'= {
         }
         &'manta;config;set;help;log'= {
+        }
+        &'manta;config;set;help;read-only'= {
         }
         &'manta;config;set;help;site'= {
         }
@@ -100,6 +109,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
             cand auth 'Clear the cached authentication token'
             cand hsm 'Clear the active node group'
+            cand read-only 'Allow backend-mutating commands again'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;unset;auth'= {
@@ -112,14 +122,22 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand -h 'Print help'
             cand --help 'Print help'
         }
+        &'manta;config;unset;read-only'= {
+            cand --site 'Override the active site for this invocation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+        }
         &'manta;config;unset;help'= {
             cand auth 'Clear the cached authentication token'
             cand hsm 'Clear the active node group'
+            cand read-only 'Allow backend-mutating commands again'
             cand help 'Print this message or the help of the given subcommand(s)'
         }
         &'manta;config;unset;help;auth'= {
         }
         &'manta;config;unset;help;hsm'= {
+        }
+        &'manta;config;unset;help;read-only'= {
         }
         &'manta;config;unset;help;help'= {
         }
@@ -134,21 +152,27 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;config;help;set'= {
             cand hsm 'Set the active node group'
             cand log 'Set the log verbosity level'
+            cand read-only 'Refuse every backend-mutating command (writes read_only = true to cli.toml)'
             cand site 'Set the active site'
         }
         &'manta;config;help;set;hsm'= {
         }
         &'manta;config;help;set;log'= {
         }
+        &'manta;config;help;set;read-only'= {
+        }
         &'manta;config;help;set;site'= {
         }
         &'manta;config;help;unset'= {
             cand auth 'Clear the cached authentication token'
             cand hsm 'Clear the active node group'
+            cand read-only 'Allow backend-mutating commands again'
         }
         &'manta;config;help;unset;auth'= {
         }
         &'manta;config;help;unset;hsm'= {
+        }
+        &'manta;config;help;unset;read-only'= {
         }
         &'manta;config;help;help'= {
         }
@@ -160,10 +184,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand hardware 'Inspect hardware components'
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
-            cand templates 'List BOS session templates (filter by name, group, or recency)'
+            cand templates 'List BOS session templates (filter by name or group; sorted by name)'
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -258,16 +282,16 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;get;templates'= {
             cand -n 'Show only the template with this exact name'
             cand --name 'Show only the template with this exact name'
-            cand -l 'Return only the <VALUE> most recent templates'
-            cand --limit 'Return only the <VALUE> most recent templates'
+            cand -l 'Return at most <VALUE> templates'
+            cand --limit 'Return at most <VALUE> templates'
             cand -H 'Show only templates whose boot sets target this group'
             cand --group 'Show only templates whose boot sets target this group'
             cand --hsm-group 'Show only templates whose boot sets target this group'
             cand -o 'Output format'
             cand --output 'Output format'
             cand --site 'Override the active site for this invocation'
-            cand -m 'Return only the most recent (equivalent to --limit 1)'
-            cand --most-recent 'Return only the most recent (equivalent to --limit 1)'
+            cand -m 'Return only a single template (equivalent to --limit 1)'
+            cand --most-recent 'Return only a single template (equivalent to --limit 1)'
             cand -h 'Print help'
             cand --help 'Print help'
         }
@@ -306,6 +330,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --id 'Show only the image with this exact ID'
             cand -p 'Glob matched against image name (e.g. ''compute-*''); applied server-side. Invalid glob returns 400.'
             cand --pattern 'Glob matched against image name (e.g. ''compute-*''); applied server-side. Invalid glob returns 400.'
+            cand -s 'Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH:MM:SS is exact'
+            cand --since 'Show only images created at or after this date. A bare YYYY-MM-DD starts at midnight; a full YYYY-MM-DDTHH:MM:SS is exact'
+            cand -u 'Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH:MM:SS is exact'
+            cand --until 'Show only images created at or before this date. A bare YYYY-MM-DD covers the whole day; a full YYYY-MM-DDTHH:MM:SS is exact'
             cand -l 'Return only the <VALUE> most recent images'
             cand --limit 'Return only the <VALUE> most recent images'
             cand --site 'Override the active site for this invocation'
@@ -362,10 +390,10 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand hardware 'Inspect hardware components'
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
-            cand templates 'List BOS session templates (filter by name, group, or recency)'
+            cand templates 'List BOS session templates (filter by name or group; sorted by name)'
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'
@@ -1526,7 +1554,7 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help (see more with ''--help'')'
         }
         &'manta;help'= {
-            cand config 'Show or change CLI-side settings (active site, default node group, log level)'
+            cand config 'Show or change CLI-side settings (active site, default node group, log level, read-only guard)'
             cand get 'Inspect groups, nodes, hardware, images, configurations, sessions, templates, and boot/kernel parameters'
             cand add 'Register new nodes, groups, boot/kernel parameters, hardware components, or Redfish endpoints'
             cand apply 'Roll out configurations, images, session templates, boot/kernel parameters, and hardware rescaling'
@@ -1553,31 +1581,37 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;config;set'= {
             cand hsm 'Set the active node group'
             cand log 'Set the log verbosity level'
+            cand read-only 'Refuse every backend-mutating command (writes read_only = true to cli.toml)'
             cand site 'Set the active site'
         }
         &'manta;help;config;set;hsm'= {
         }
         &'manta;help;config;set;log'= {
         }
+        &'manta;help;config;set;read-only'= {
+        }
         &'manta;help;config;set;site'= {
         }
         &'manta;help;config;unset'= {
             cand auth 'Clear the cached authentication token'
             cand hsm 'Clear the active node group'
+            cand read-only 'Allow backend-mutating commands again'
         }
         &'manta;help;config;unset;auth'= {
         }
         &'manta;help;config;unset;hsm'= {
+        }
+        &'manta;help;config;unset;read-only'= {
         }
         &'manta;help;get'= {
             cand groups 'List node groups visible to your token (or look up one by name)'
             cand hardware 'Inspect hardware components'
             cand sessions 'List configuration sessions'
             cand configurations 'List CFS configurations (filter by name, glob, group, or recency)'
-            cand templates 'List BOS session templates (filter by name, group, or recency)'
+            cand templates 'List BOS session templates (filter by name or group; sorted by name)'
             cand group-nodes 'Show node details and status for a group'
             cand nodes 'Show node details and status'
-            cand images 'List IMS images (filter by id, name glob, or recency; sorted most-recent first)'
+            cand images 'List IMS images (filter by id, name glob, creation date, or recency; oldest first, newest last)'
             cand boot-parameters 'Show the BSS boot parameters (kernel, initrd, params) for nodes or a group'
             cand kernel-parameters 'Show kernel parameters for nodes or a group'
             cand redfish-endpoints 'List the BMCs / controllers the hardware state manager has registered as Redfish endpoints'

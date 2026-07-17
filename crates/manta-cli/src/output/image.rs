@@ -3,15 +3,13 @@
 //! Called by `manta get images`. Supported output formats:
 //! **table only** in this module — JSON is emitted directly off
 //! the wire type by the dispatcher. CSM returns the `created`
-//! timestamp in several shapes, so the renderer tries
-//! `NaiveDateTime` first, then `DateTime<Local>`, then falls back to
-//! the raw string.
+//! timestamp in several shapes, so the renderer defers to
+//! [`parse_ims_timestamp`] and falls back to the raw string.
 
 use std::collections::HashMap;
 
-use chrono::{DateTime, Local, NaiveDateTime};
 use comfy_table::{ContentArrangement, Table};
-use manta_shared::common::DATETIME_FORMAT;
+use manta_shared::common::{DATETIME_FORMAT, parse_ims_timestamp};
 use manta_shared::types::dto::Image;
 
 /// Print image details as a formatted table.
@@ -38,15 +36,14 @@ pub fn print(image_detail_vec: &[Image], safety: &HashMap<String, bool>) {
     let unknown = String::from("unknown");
     let creation_date = image_details.created.as_ref().unwrap_or(&unknown);
 
-    // NOTE: CSM can have different date formats, so we need to try to parse it in different
-    // ways
-    let creation_date = if let Ok(v) = creation_date.parse::<NaiveDateTime>() {
-      v.format(DATETIME_FORMAT).to_string()
-    } else if let Ok(v) = creation_date.parse::<DateTime<Local>>() {
-      v.naive_local().format(DATETIME_FORMAT).to_string()
-    } else {
-      creation_date.clone()
-    };
+    // CSM returns `created` in several shapes; fall back to the raw
+    // string when none parses. Shares `parse_ims_timestamp` with the
+    // server's --since/--until filter so the column and the filter
+    // always agree on which dates are readable.
+    let creation_date = parse_ims_timestamp(creation_date).map_or_else(
+      || creation_date.clone(),
+      |v| v.format(DATETIME_FORMAT).to_string(),
+    );
     let configuration_name =
       image_details.configuration.as_ref().unwrap_or(&unknown);
     let base = image_details.base.as_ref().unwrap_or(&unknown);

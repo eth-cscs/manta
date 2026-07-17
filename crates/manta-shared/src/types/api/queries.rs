@@ -31,7 +31,8 @@ pub struct SessionQuery {
   pub status: Option<String>,
   /// Exact session name.
   pub name: Option<String>,
-  /// Cap on the number of sessions returned (most recent first).
+  /// Cap on the number of sessions returned (the newest N; listed
+  /// oldest first, newest last).
   pub limit: Option<u8>,
 }
 
@@ -61,7 +62,8 @@ pub struct ConfigurationQuery {
   pub pattern: Option<String>,
   /// HSM group whose associated configurations should be returned.
   pub hsm_group: Option<String>,
-  /// Cap on the number of configurations returned (most recent first).
+  /// Cap on the number of configurations returned (the newest N; listed
+  /// oldest first, newest last).
   pub limit: Option<u8>,
 }
 
@@ -131,7 +133,9 @@ pub struct TemplateQuery {
   pub name: Option<String>,
   /// HSM group whose associated templates should be returned.
   pub hsm_group: Option<String>,
-  /// Cap on the number of templates returned (most recent first).
+  /// Cap on the number of templates returned. BOS templates have no
+  /// timestamp, so this caps the count of the name-sorted list; it does
+  /// not select by recency.
   pub limit: Option<u8>,
 }
 
@@ -143,7 +147,14 @@ pub struct ImageQuery {
   /// Glob pattern matched against image name; applied server-side
   /// (`service::image::get_images`). Invalid glob returns 400.
   pub pattern: Option<String>,
-  /// Cap on the number of images returned (most recent first).
+  /// ISO-8601 lower bound — only images created at or after this
+  /// point. Applied server-side; IMS cannot filter by date itself.
+  pub since: Option<String>,
+  /// ISO-8601 upper bound — only images created at or before this
+  /// point. Applied server-side; IMS cannot filter by date itself.
+  pub until: Option<String>,
+  /// Cap on the number of images returned (the newest N; listed oldest
+  /// first, newest last).
   pub limit: Option<u8>,
 }
 

@@ -1,14 +1,18 @@
 //! IMS image handlers.
 //!
 //! - `GET    /api/v1/images` → [`get_images`] —
-//!   wraps `service::image::get_images`. Sorts by creation time.
+//!   wraps `service::image::get_images`. Orders oldest-first (newest
+//!   last) and filters by name glob and `since`/`until` creation-date
+//!   bounds.
 //! - `DELETE /api/v1/images` → [`delete_images`] —
 //!   wraps `service::image::delete_images`; with `?dry_run=true`
 //!   returns the validation result without deleting.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, RequestCtx, SiteHeader, parse_iso_datetime, to_handler_error,
+};
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -17,12 +21,13 @@ use crate::service;
 
 pub use manta_shared::types::api::queries::{DeleteImagesQuery, ImageQuery};
 
-/// GET /images — list IMS images sorted by creation time.
+/// GET /images — list IMS images, oldest-first (newest last).
 #[utoipa::path(get, path = "/images", tag = "images",
   params(ImageQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "List of images", body = Vec<serde_json::Value>),
+    (status = 400, description = "Malformed since/until, or since after until", body = ErrorResponse),
     (status = 401, description = "Unauthorized",   body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
   )
@@ -34,9 +39,22 @@ pub async fn get_images(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let infra = ctx.infra();
 
+  let since = q
+    .since
+    .as_deref()
+    .map(|s| parse_iso_datetime("since", s))
+    .transpose()?;
+  let until = q
+    .until
+    .as_deref()
+    .map(|s| parse_iso_datetime("until", s))
+    .transpose()?;
+
   let params = service::image::GetImagesParams {
     id: q.id,
     pattern: q.pattern,
+    since,
+    until,
     limit: q.limit,
   };
 

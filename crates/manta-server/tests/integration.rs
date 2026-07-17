@@ -336,12 +336,19 @@ async fn mock_bss_bootparameters(srv: &MockServer) {
   .await;
 }
 
+// Three images in an arbitrary backend order (IMS guarantees none), so
+// the tests exercise the service's own ordering. A single-image mock
+// (as this once had) cannot tell a working sort from a missing one,
+// which is how the cap-before-sort bug survived. `abc123` is the
+// newest; the listing must return it *last* (oldest-first display).
 async fn mock_ims_images(srv: &MockServer) {
   mock_get(
     srv,
     "/ims/v3/images",
     json!([
-      { "id": "abc123", "name": "compute-my-image", "created": "2024-01-01T00:00:00" }
+      { "id": "mid123", "name": "compute-middle-image", "created": "2024-06-01T00:00:00" },
+      { "id": "abc123", "name": "compute-my-image",     "created": "2024-12-01T00:00:00" },
+      { "id": "old123", "name": "compute-old-image",    "created": "2024-01-01T00:00:00" }
     ]),
   )
   .await;
@@ -525,7 +532,7 @@ async fn get_templates_happy_path() {
 
 // GET /api/v1/images
 //
-// Handler returns a plain Vec<Image> sorted by creation time. Each
+// Handler returns a plain Vec<Image>, oldest-first (newest last). Each
 // entry mirrors the IMS image shape: { id, name, created, link?, arch?, metadata? }.
 //
 // Call chain:
@@ -541,9 +548,113 @@ async fn get_images_happy_path() {
 
   let body = TestFixture::body_json(resp).await;
   let arr = body.as_array().expect("expected JSON array");
-  assert!(!arr.is_empty());
-  assert_eq!(arr[0]["id"], "abc123");
-  assert_eq!(arr[0]["name"], "compute-my-image");
+  assert_eq!(arr.len(), 3);
+
+  // Oldest-first display: the newest image (`abc123`) is last, so it
+  // stays visible at the bottom of the terminal — regardless of the
+  // arbitrary order the mock backend returns them in.
+  let ids: Vec<&str> = arr.iter().map(|i| i["id"].as_str().unwrap()).collect();
+  assert_eq!(ids, ["old123", "mid123", "abc123"]);
+}
+
+// GET /api/v1/images?limit=1
+//
+// Guards the selection-vs-display split end to end: `limit` selects the
+// newest N *before* the oldest-first display flip, so limit=1 is the
+// newest image — not whichever one IMS happened to list first.
+#[tokio::test]
+async fn get_images_limit_returns_the_newest() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx.send(fx.auth_get("/api/v1/images?limit=1")).await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let arr = body.as_array().expect("expected JSON array");
+  assert_eq!(arr.len(), 1);
+  assert_eq!(
+    arr[0]["id"], "abc123",
+    "selection is the newest N before display, so limit=1 is the newest image"
+  );
+}
+
+// GET /api/v1/images?since=...&until=...
+//
+// IMS accepts no query parameters, so the date bounds are applied by
+// service::image::get_images after the fetch.
+#[tokio::test]
+async fn get_images_filters_by_creation_date() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  // Window around the middle image only (mock spans 2024-01 .. 2024-12).
+  let resp = fx
+    .send(fx.auth_get(
+      "/api/v1/images?since=2024-03-01T00:00:00&until=2024-09-01T00:00:00",
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let arr = body.as_array().expect("expected JSON array");
+  assert_eq!(arr.len(), 1);
+  assert_eq!(arr[0]["id"], "mid123");
+}
+
+// GET /api/v1/images?since=... — lower bound only.
+#[tokio::test]
+async fn get_images_since_bound_is_inclusive() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  // Exactly the middle image's own timestamp: it must be kept.
+  let resp = fx
+    .send(fx.auth_get("/api/v1/images?since=2024-06-01T00:00:00"))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  let ids: Vec<&str> = body
+    .as_array()
+    .expect("expected JSON array")
+    .iter()
+    .map(|i| i["id"].as_str().unwrap())
+    .collect();
+  // Oldest-first: mid (2024-06) then abc (2024-12).
+  assert_eq!(ids, ["mid123", "abc123"]);
+}
+
+// GET /api/v1/images?since=<malformed> → 400 via parse_iso_datetime.
+#[tokio::test]
+async fn get_images_malformed_since_is_rejected() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx.send(fx.auth_get("/api/v1/images?since=notadate")).await;
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+
+  let body = TestFixture::body_json(resp).await;
+  let err = body["error"].as_str().unwrap_or_default();
+  assert!(
+    err.contains("since"),
+    "error should name the offending field; got: {err}"
+  );
+}
+
+// GET /api/v1/images?since=X&until=Y where X > Y → 400 via
+// service::configuration::validate_date_range.
+#[tokio::test]
+async fn get_images_inverted_range_is_rejected() {
+  let fx = TestFixture::setup().await;
+  mock_ims_images(&fx.mock_server).await;
+
+  let resp = fx
+    .send(fx.auth_get(
+      "/api/v1/images?since=2024-12-01T00:00:00&until=2024-01-01T00:00:00",
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
 // GET /api/v1/boot-parameters?hsm_group=compute

@@ -586,9 +586,11 @@ List IMS images.
 |------|------|----------|-------------|
 | `id` | string | no | Exact image ID |
 | `pattern` | string | no | Glob pattern matched against image name (e.g. `csm-*`, `*-1.6.2-*`). [globset](https://docs.rs/globset/) syntax, anchored to the full name. |
-| `limit` | u8 | no | Maximum number of results |
+| `since` | string | no | ISO-8601 timestamp (`YYYY-MM-DDTHH:MM:SS`). Only images created at or after this point. Inclusive. |
+| `until` | string | no | ISO-8601 timestamp (`YYYY-MM-DDTHH:MM:SS`). Only images created at or before this point. Inclusive. |
+| `limit` | u8 | no | Selects the newest N (selection happens before the display flip), so `limit=1` is the newest image |
 
-**Response `200`** — array of IMS `Image` objects, sorted by creation time:
+**Response `200`** — array of IMS `Image` objects, oldest first (newest last):
 
 ```json
 [
@@ -608,8 +610,15 @@ List IMS images.
 
 > Unlike `/configurations`, this endpoint does **not** carry an inline `safe_to_delete` field. For the deletion-safety verdict per image, call [`GET /analysis/images`](#get-analysisimages) and join on `image_id`. The CLI's `manta get images` does exactly this fan-out internally.
 
+> **`400`** when `since`/`until` is not a full ISO-8601 timestamp, or when `since` is later than `until`. IMS itself accepts no query parameters, so `pattern`, `since`, and `until` are all applied by `manta-server` after fetching the listing. Images whose `created` is missing or unparseable are omitted whenever either bound is set.
+
 ```bash
 curl -k "$MANTA_HOST/api/v1/images?pattern=^csm-image-.*" \
+  -H "X-Manta-Site: $MANTA_SITE" \
+  -H "Authorization: Bearer $MANTA_TOKEN"
+
+# Images created in January 2026
+curl -k "$MANTA_HOST/api/v1/images?since=2026-01-01T00:00:00&until=2026-01-31T23:59:59" \
   -H "X-Manta-Site: $MANTA_SITE" \
   -H "Authorization: Bearer $MANTA_TOKEN"
 ```

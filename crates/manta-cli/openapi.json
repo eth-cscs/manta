@@ -727,7 +727,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Cap on the number of configurations returned (most recent first).",
+            "description": "Cap on the number of configurations returned (the newest N; listed\noldest first, newest last).",
             "required": false,
             "schema": {
               "type": [
@@ -1944,7 +1944,7 @@
         "tags": [
           "images"
         ],
-        "summary": "GET /images — list IMS images sorted by creation time.",
+        "summary": "GET /images — list IMS images, oldest-first (newest last).",
         "operationId": "get_images",
         "parameters": [
           {
@@ -1972,9 +1972,33 @@
             }
           },
           {
+            "name": "since",
+            "in": "query",
+            "description": "ISO-8601 lower bound — only images created at or after this\npoint. Applied server-side; IMS cannot filter by date itself.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "description": "ISO-8601 upper bound — only images created at or before this\npoint. Applied server-side; IMS cannot filter by date itself.",
+            "required": false,
+            "schema": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
-            "description": "Cap on the number of images returned (most recent first).",
+            "description": "Cap on the number of images returned (the newest N; listed oldest\nfirst, newest last).",
             "required": false,
             "schema": {
               "type": [
@@ -2003,6 +2027,16 @@
                 "schema": {
                   "type": "array",
                   "items": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Malformed since/until, or since after until",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3897,7 +3931,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Cap on the number of sessions returned (most recent first).",
+            "description": "Cap on the number of sessions returned (the newest N; listed\noldest first, newest last).",
             "required": false,
             "schema": {
               "type": [
@@ -4337,7 +4371,7 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Cap on the number of templates returned (most recent first).",
+            "description": "Cap on the number of templates returned. BOS templates have no\ntimestamp, so this caps the count of the name-sorted list; it does\nnot select by recency.",
             "required": false,
             "schema": {
               "type": [
