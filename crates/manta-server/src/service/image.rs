@@ -303,8 +303,8 @@ mod tests {
   //! `apply_pattern_filter` (pattern compilation, name matching, and
   //! the BadRequest path on invalid globs), `apply_date_filter`
   //! (inclusive since/until bounds and unusable dates), and
-  //! `sort_and_cap` (most-recent-first ordering, and the cap applying
-  //! only after it).
+  //! `sort_and_cap` (newest-N selection with oldest-first display, and
+  //! the cap applying only after the sort).
   //!
   //! These call the same functions `get_images` calls, so the
   //! order-of-operations contract is genuinely covered here rather
