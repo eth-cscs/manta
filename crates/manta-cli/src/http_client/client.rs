@@ -105,7 +105,7 @@ impl std::error::Error for SiteNotFound {}
 ///   that progenitor's `Display` impl produces.
 /// - `UnexpectedResponse(r)`: the server answered with a status the
 ///   endpoint doesn't declare in `openapi.json` (spec drift — see
-///   `FOLLOWUP-error-status-and-openapi-audit.md`). The body is
+///   issue #109). The body is
 ///   still manta-server's standard error JSON, so read it (this is
 ///   why the method is `async`) and render it through the same
 ///   [`format_server_error`] path instead of losing the message and

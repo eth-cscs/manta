@@ -1,9 +1,11 @@
 # Error codes — design for issue #64
 
-- **Status:** accepted (2026-07-17), implementation in progress on `feature/custom-error-codes`
+- **Status:** accepted (2026-07-17), implemented on `feature/custom-error-codes`
 - **Issue:** https://github.com/eth-cscs/manta/issues/64
-- **Follow-ups split out:** see `FOLLOWUP-upstream-error-granularity.md`,
-  `FOLLOWUP-cli-exit-codes.md`, `FOLLOWUP-error-status-and-openapi-audit.md`
+- **Follow-ups split out:** [#107](https://github.com/eth-cscs/manta/issues/107)
+  (upstream error granularity), [#108](https://github.com/eth-cscs/manta/issues/108)
+  (CLI exit codes), [#109](https://github.com/eth-cscs/manta/issues/109)
+  (status-mapping / OpenAPI audit)
 
 This document records how issue #64 ("Implement Custom Error Handling with
 Error Codes and Messages") is being implemented, and where — and why — the
@@ -112,8 +114,8 @@ Honest limitation: the catalog can only be as granular as the variants it maps
 from. `BackendError` is a pinned crates.io crate
 (`manta-backend-dispatcher 1.0.0-beta.13`), so all deep CSM/OCHAMI failures
 collapse into a small `MANTA_BACKEND_*` family, with the detail only in the
-message. Finer granularity requires upstream variant work — split out as a
-follow-up (`FOLLOWUP-upstream-error-granularity.md`), not blocking this issue.
+message. Finer granularity requires upstream variant work — split out as
+[#107](https://github.com/eth-cscs/manta/issues/107), not blocking this issue.
 
 ## Implementation shape
 
@@ -171,9 +173,10 @@ follow-up (`FOLLOWUP-upstream-error-granularity.md`), not blocking this issue.
 ## Non-goals (this issue)
 
 - **Differentiated CLI exit codes** — behavioural change for scripts; see
-  `FOLLOWUP-cli-exit-codes.md`. Exit code stays `1` on any failure.
+  [#108](https://github.com/eth-cscs/manta/issues/108). Exit code stays `1`
+  on any failure.
 - **Codes inside csm-rs / ochami-rs / manta-backend-dispatcher** — separate
-  pinned repos; see `FOLLOWUP-upstream-error-granularity.md`.
+  pinned repos; see [#107](https://github.com/eth-cscs/manta/issues/107).
 - **Fixing the `MissingField` → 500 status and the hand-written per-endpoint
   utoipa `responses(...)` drift** — pre-existing; see
-  `FOLLOWUP-error-status-and-openapi-audit.md`.
+  [#109](https://github.com/eth-cscs/manta/issues/109).
