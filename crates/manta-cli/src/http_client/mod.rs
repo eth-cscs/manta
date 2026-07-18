@@ -40,7 +40,8 @@ mod streaming;
 mod wire;
 
 pub use client::{
-  AuthServerUnreachable, MantaClient, OpenApiResultExt, SiteNotFound,
+  AuthBackendUnreachable, AuthServerUnreachable, MantaClient, OpenApiResultExt,
+  SiteNotFound,
 };
 pub(super) use wire::ws_base_url;
 

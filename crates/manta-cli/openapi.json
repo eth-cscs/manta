@@ -157,6 +157,26 @@
                 }
               }
             }
+          },
+          "502": {
+            "description": "Authentication backend unreachable or erroring; credentials were not checked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Authentication backend timed out; credentials were not checked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }

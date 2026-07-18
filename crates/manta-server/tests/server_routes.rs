@@ -698,8 +698,10 @@ async fn auth_validate_unknown_site_returns_404() {
 #[tokio::test]
 async fn auth_token_known_site_is_not_404() {
   // Site "test" exists; the stub backend at http://stub.invalid can't
-  // be reached, so the credential exchange fails — but as a generic
-  // 401, never a 404 (which is reserved for unknown sites).
+  // be reached, so the credential exchange fails as a 502 backend
+  // outage (`auth_token_backend_outage_is_not_invalid_credentials`
+  // pins the body) — but never as a 404, which is reserved for
+  // unknown sites.
   let resp = router()
     .oneshot(post_auth(
       "/api/v1/auth/token",
@@ -709,7 +711,7 @@ async fn auth_token_known_site_is_not_404() {
     .await
     .unwrap();
   assert_ne!(resp.status(), StatusCode::NOT_FOUND);
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+  assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
 }
 
 #[tokio::test]
@@ -915,6 +917,39 @@ fn to_handler_error_body_carries_stable_code() {
     );
     assert!(!body.error.is_empty(), "empty message for {label}");
   }
+}
+
+#[tokio::test]
+async fn auth_token_backend_outage_is_not_invalid_credentials() {
+  // The stub site's backend URL (`http://stub.invalid`) can never be
+  // reached, so the credential exchange fails before any credential
+  // is evaluated. That must surface as a 502 gateway error with a
+  // MANTA_BACKEND_* / network code — NOT as the generic
+  // `401 MANTA_INVALID_CREDENTIALS`, which would make scripts (and
+  // the CLI's re-prompt loop) misread an outage as a bad password.
+  let resp = router()
+    .oneshot(post_auth(
+      "/api/v1/auth/token",
+      "test",
+      r#"{"username":"u","password":"p"}"#,
+    ))
+    .await
+    .unwrap();
+  assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+  let body = body_string(resp.into_body()).await;
+  let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+  let code = json["code"].as_str().unwrap_or_default();
+  assert!(
+    code == "MANTA_BACKEND_CONNECT_FAILED" || code == "MANTA_NETWORK_ERROR",
+    "expected a backend/network code, got: {body}"
+  );
+  assert!(
+    json["error"]
+      .as_str()
+      .unwrap_or_default()
+      .contains("credentials were not checked"),
+    "body: {body}"
+  );
 }
 
 #[test]

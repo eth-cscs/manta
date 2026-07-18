@@ -87,6 +87,35 @@ impl std::fmt::Display for SiteNotFound {
 
 impl std::error::Error for SiteNotFound {}
 
+/// Marker error attached as anyhow context when an `/auth/*` call
+/// reaches the manta server but comes back `502`/`504` — the *site's
+/// authentication backend* (CSM / Keycloak) is down or erroring, so
+/// the credentials were never evaluated. Lets
+/// [`crate::common::authentication`] abort the cascade instead of
+/// re-prompting for credentials that cannot succeed until the backend
+/// recovers. Distinct from [`AuthServerUnreachable`], which means the
+/// manta server itself couldn't be reached.
+#[derive(Debug)]
+pub struct AuthBackendUnreachable {
+  /// The `X-Manta-Site` whose backend failed. Surfaced in the error
+  /// message and recoverable via `downcast_ref`.
+  pub site: String,
+}
+
+impl std::fmt::Display for AuthBackendUnreachable {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "the authentication backend for site '{}' is unreachable or \
+       failing; your credentials were not checked. The manta server \
+       itself is fine — retry once the site's backend recovers.",
+      self.site,
+    )
+  }
+}
+
+impl std::error::Error for AuthBackendUnreachable {}
+
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
 ///
@@ -496,10 +525,12 @@ impl MantaClient {
   ///   serve this site; no credential can fix that.
   /// - [`AuthServerUnreachable`] on a TCP / timeout-layer failure —
   ///   the manta server itself is unreachable.
+  /// - [`AuthBackendUnreachable`] on a `502`/`504` — the site's
+  ///   authentication backend never evaluated the credentials.
   ///
   /// Anything else is wrapped plain (a genuine credential rejection,
   /// which *should* fall through to the next attempt / re-prompt).
-  fn map_auth_error<E: std::fmt::Debug>(
+  fn map_auth_error<E: std::fmt::Debug + serde::Serialize>(
     &self,
     err: progenitor_client::Error<E>,
   ) -> anyhow::Error
@@ -514,8 +545,33 @@ impl MantaClient {
       progenitor_client::Error::UnexpectedResponse(resp) => Some(resp.status()),
       _ => None,
     };
+    // Since `main` prints the full source chain, this message is
+    // user-visible beneath the marker context — render typed error
+    // bodies through the standard `HTTP <status> [MANTA_*]: <msg>`
+    // shape instead of progenitor's raw Display envelope.
+    let message = match &err {
+      progenitor_client::Error::ErrorResponse(rv) => {
+        let body = serde_json::to_value(&**rv)
+          .unwrap_or_else(|_| serde_json::Value::String(format!("{err}")));
+        format_server_error(rv.status().as_u16(), &body)
+      }
+      _ => format!("{err}"),
+    };
     if status == Some(reqwest::StatusCode::NOT_FOUND) {
-      return anyhow::anyhow!("{err}").context(SiteNotFound {
+      return anyhow::anyhow!(message).context(SiteNotFound {
+        site: self.site_name.clone(),
+      });
+    }
+    // 502/504 from /auth/* is the server saying the *site's backend*
+    // never evaluated the credentials (see the server's
+    // `auth_failure_response`). Tag it so the cascade stops instead
+    // of re-prompting; the underlying message keeps the MANTA_* code.
+    if matches!(
+      status,
+      Some(reqwest::StatusCode::BAD_GATEWAY)
+        | Some(reqwest::StatusCode::GATEWAY_TIMEOUT)
+    ) {
+      return anyhow::anyhow!(message).context(AuthBackendUnreachable {
         site: self.site_name.clone(),
       });
     }
@@ -523,7 +579,6 @@ impl MantaClient {
       &err,
       progenitor_client::Error::CommunicationError(e) if e.is_connect() || e.is_timeout()
     );
-    let message = format!("{err}");
     if unreachable {
       anyhow::anyhow!(message).context(AuthServerUnreachable {
         url: self.auth_base_url(),
@@ -535,9 +590,9 @@ impl MantaClient {
 
   /// `POST /api/v1/auth/validate` — check whether the backend still
   /// accepts `token`. Returns `Ok(())` on success; on the "abort
-  /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
-  /// [`SiteNotFound`] context so callers can distinguish them from
-  /// a plain credential rejection.
+  /// cascade" cases returns `Err` with [`AuthServerUnreachable`],
+  /// [`SiteNotFound`], or [`AuthBackendUnreachable`] context so
+  /// callers can distinguish them from a plain credential rejection.
   pub(crate) async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
     self
       .openapi
@@ -553,9 +608,10 @@ impl MantaClient {
   }
 
   /// `POST /api/v1/auth/token` — exchange Keycloak credentials for a
-  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`]
-  /// or [`SiteNotFound`] context on cascade-abort cases; plain `Err`
-  /// on a credential rejection (wrong username/password).
+  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`],
+  /// [`SiteNotFound`], or [`AuthBackendUnreachable`] context on
+  /// cascade-abort cases; plain `Err` on a credential rejection
+  /// (wrong username/password).
   pub(crate) async fn exchange_credentials(
     &self,
     username: &str,

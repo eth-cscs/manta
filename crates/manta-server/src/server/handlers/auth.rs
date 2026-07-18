@@ -19,11 +19,16 @@
 //! since [`crate::server::handlers::RequestCtx`] does the site lookup
 //! before the token is validated against the backend.)
 //!
-//! Every *other* auth failure surfaces a generic `401 invalid
+//! Genuine credential rejections surface a generic `401 invalid
 //! credentials` so the response never reveals whether a username
-//! exists or what the backend actually rejected. The specific reason
-//! is captured server-side with `tracing::warn!` and sent to the
-//! audit channel when one is configured on [`ServerState`].
+//! exists or what the backend actually rejected. Failures where the
+//! backend never evaluated the credentials at all — unreachable,
+//! timed out, or answering 5xx — are split out as `502`/`504` gateway
+//! errors with `MANTA_BACKEND_*` codes (see [`auth_failure_response`]);
+//! they carry no credential information, so the anti-enumeration
+//! stance is preserved. The specific reason is captured server-side
+//! with `tracing::warn!` and sent to the audit channel when one is
+//! configured on [`ServerState`].
 
 use std::net::SocketAddr;
 use std::sync::Arc;
@@ -39,6 +44,7 @@ use manta_shared::types::auth::{
   AuthTokenRequest, AuthTokenResponse, ValidateTokenRequest,
 };
 
+use manta_backend_dispatcher::error::Error as BackendError;
 use manta_shared::common::error_code::ErrorCode;
 
 use super::{ErrorResponse, ServerState, SiteHeader, SiteName};
@@ -54,6 +60,75 @@ fn generic_invalid_credentials() -> (StatusCode, Json<ErrorResponse>) {
       "invalid credentials",
     )),
   )
+}
+
+/// Classify a failed credential exchange.
+///
+/// Genuine rejections stay the deliberately generic 401 above
+/// (anti-enumeration policy — no hint whether the user exists). But a
+/// failure where the backend never *evaluated* the credentials —
+/// unreachable, timed out, or answering 5xx — must not be labelled
+/// `MANTA_INVALID_CREDENTIALS`: a script branching on the code would
+/// misread an outage as a bad password, and the CLI would re-prompt
+/// for credentials that were never checked. Those cases become
+/// gateway errors with an honest `MANTA_BACKEND_*` code and a message
+/// that carries no credential information.
+///
+/// The typed split works because csm-rs's Keycloak exchange surfaces
+/// transport failures and non-2xx statuses as
+/// `BackendError::NetError(reqwest::Error)` (`.send().await?` /
+/// `.error_for_status()?`). Upstream failures that arrive
+/// pre-stringified (e.g. `Message(...)`) can't be classified and fall
+/// back to the generic 401 — see `ERRORS.md` and issue #107.
+fn auth_failure_response(
+  e: &BackendError,
+) -> (StatusCode, Json<ErrorResponse>) {
+  match e {
+    BackendError::NetError(rqe) if rqe.is_timeout() => (
+      StatusCode::GATEWAY_TIMEOUT,
+      Json(ErrorResponse::new(
+        ErrorCode::BackendTimeout,
+        "authentication backend did not respond in time; \
+         credentials were not checked",
+      )),
+    ),
+    // A status-bearing reqwest error means the backend answered.
+    // 4xx = it evaluated and rejected the credentials → generic 401.
+    // 5xx = it is erroring → honest gateway error.
+    BackendError::NetError(rqe) if rqe.status().is_some() => {
+      let status = rqe.status().expect("guard checked is_some");
+      if status.is_server_error() {
+        (
+          StatusCode::BAD_GATEWAY,
+          Json(ErrorResponse::new(
+            ErrorCode::BackendHttpError,
+            format!(
+              "authentication backend returned {status}; \
+               credentials were not checked"
+            ),
+          )),
+        )
+      } else {
+        generic_invalid_credentials()
+      }
+    }
+    // No status and no timeout: the request never completed —
+    // connect refused, DNS failure, TLS failure, or a dropped
+    // connection mid-request.
+    BackendError::NetError(rqe) => (
+      StatusCode::BAD_GATEWAY,
+      Json(ErrorResponse::new(
+        if rqe.is_connect() {
+          ErrorCode::BackendConnectFailed
+        } else {
+          ErrorCode::NetworkError
+        },
+        "could not reach the authentication backend; \
+         credentials were not checked",
+      )),
+    ),
+    _ => generic_invalid_credentials(),
+  }
 }
 
 /// `404` returned when the `X-Manta-Site` header names a site that is
@@ -83,6 +158,8 @@ fn site_not_found(site: &str) -> (StatusCode, Json<ErrorResponse>) {
     (status = 404, description = "Unknown site", body = ErrorResponse),
     (status = 429, description = "Rate limit exceeded", body = ErrorResponse),
     (status = 500, description = "Internal error", body = ErrorResponse),
+    (status = 502, description = "Authentication backend unreachable or erroring; credentials were not checked", body = ErrorResponse),
+    (status = 504, description = "Authentication backend timed out; credentials were not checked", body = ErrorResponse),
   )
 )]
 #[tracing::instrument(skip_all)]
@@ -140,7 +217,7 @@ pub async fn auth_token(
         &site_name,
       )
       .await;
-      Err(generic_invalid_credentials())
+      Err(auth_failure_response(&e))
     }
   }
 }
@@ -177,5 +254,53 @@ pub async fn auth_validate(
       tracing::warn!("auth_validate: backend rejected token: {}", e);
       Err(generic_invalid_credentials())
     }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  /// Build a status-bearing `reqwest::Error` the same way csm-rs's
+  /// Keycloak exchange produces one: a response run through
+  /// `error_for_status()`.
+  fn reqwest_status_error(status: u16) -> reqwest::Error {
+    let http_resp = axum::http::Response::builder()
+      .status(status)
+      .body("boom".to_string())
+      .expect("valid response");
+    reqwest::Response::from(http_resp)
+      .error_for_status()
+      .expect_err("status is an error")
+  }
+
+  #[test]
+  fn backend_5xx_becomes_502_backend_http_error() {
+    let e = BackendError::NetError(reqwest_status_error(503));
+    let (status, axum::Json(body)) = auth_failure_response(&e);
+    assert_eq!(status, StatusCode::BAD_GATEWAY);
+    assert_eq!(body.code.as_deref(), Some("MANTA_BACKEND_HTTP_ERROR"));
+    assert!(body.error.contains("credentials were not checked"));
+  }
+
+  #[test]
+  fn backend_401_stays_generic_invalid_credentials() {
+    // Keycloak answered 401: it evaluated and rejected the
+    // credentials — the anti-enumeration 401 must be preserved.
+    let e = BackendError::NetError(reqwest_status_error(401));
+    let (status, axum::Json(body)) = auth_failure_response(&e);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(body.code.as_deref(), Some("MANTA_INVALID_CREDENTIALS"));
+    assert_eq!(body.error, "invalid credentials");
+  }
+
+  #[test]
+  fn stringly_failures_fall_back_to_generic_401() {
+    // Upstream errors that arrive pre-stringified can't be classified
+    // (issue #107); they must keep today's behaviour, not 502.
+    let e = BackendError::Message("CSM-RS > Net: something".into());
+    let (status, axum::Json(body)) = auth_failure_response(&e);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(body.code.as_deref(), Some("MANTA_INVALID_CREDENTIALS"));
   }
 }

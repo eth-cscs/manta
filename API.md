@@ -1999,7 +1999,9 @@ Exchange username + password for a backend bearer token.
 { "token": "<backend-bearer-token>" }
 ```
 
-**Response `401`** — `{ "error": "invalid credentials" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
+**Response `401`** — `{ "error": "invalid credentials", "code": "MANTA_INVALID_CREDENTIALS" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
+
+**Response `502` / `504`** — the site's authentication backend was unreachable, erroring (5xx), or timed out, so the credentials were **not** evaluated. Carries `MANTA_BACKEND_CONNECT_FAILED`, `MANTA_NETWORK_ERROR`, `MANTA_BACKEND_HTTP_ERROR`, or `MANTA_BACKEND_TIMEOUT` — deliberately distinct from the 401 so clients don't misread a backend outage as a credential rejection.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/auth/token" \

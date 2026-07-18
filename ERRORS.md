@@ -54,7 +54,7 @@ backend's own status.
 |------|------|----------------------|
 | `MANTA_AUTH_TOKEN_NOT_FOUND` | 401 | No usable auth token on the request (missing/expired/non-Bearer). Re-authenticate (`manta auth login`). |
 | `MANTA_JWT_MALFORMED` | 401 | The token is structurally invalid. Re-authenticate to obtain a fresh one. |
-| `MANTA_INVALID_CREDENTIALS` | 401 | Username/password rejected during login. Details deliberately stay server-side. |
+| `MANTA_INVALID_CREDENTIALS` | 401 | The backend evaluated and rejected the username/password. Details deliberately stay server-side. A backend that was *unreachable* during login returns a `MANTA_BACKEND_*` gateway error instead — unless the failure arrived pre-stringified from the backend crates (see the note under [Upstream backend](#upstream-backend-csm--openchami)), in which case it still falls back to this code. |
 | `MANTA_FORBIDDEN` | 403 | The token is valid but a role forbids the operation (e.g. the read-only role on a mutating endpoint). |
 | `MANTA_RATE_LIMITED` | 429 | Too many authentication attempts from this source. Wait and retry. |
 
@@ -75,10 +75,19 @@ backend's own status.
 
 | Code | HTTP | Meaning / what to do |
 |------|------|----------------------|
-| `MANTA_BACKEND_HTTP_ERROR` | upstream | The backend returned an HTTP error; manta forwards its status, and the message carries the upstream detail. |
+| `MANTA_BACKEND_HTTP_ERROR` | upstream | The backend returned an HTTP error; manta forwards its status, and the message carries the upstream detail. (On `POST /auth/token`, backend 5xx surfaces as 502 with this code.) |
 | `MANTA_BACKEND_TIMEOUT` | 504 | The manta-server → backend call timed out. The backend may still be processing; check backend health. |
-| `MANTA_BACKEND_CONNECT_FAILED` | 500 | manta-server couldn't open a TCP/TLS connection to the backend. Check the site's backend URL and reachability. |
-| `MANTA_NETWORK_ERROR` | 500 | Other outbound HTTP failure (DNS, body stream, protocol). |
+| `MANTA_BACKEND_CONNECT_FAILED` | 500 / 502 | manta-server couldn't open a TCP/TLS connection to the backend. Check the site's backend URL and reachability. |
+| `MANTA_NETWORK_ERROR` | 500 / 502 | Other outbound HTTP failure (DNS, body stream, protocol). |
+
+> **Known limitation:** many upstream failures currently arrive from the
+> backend crates as pre-formatted strings rather than typed errors, and
+> therefore surface as `MANTA_INTERNAL` with the network detail only in
+> the message (e.g. a dead CSM on ordinary endpoints). The codes above
+> fire where the error arrives typed — notably the login exchange and
+> the server's own outbound timeouts. Finer, reliably-typed
+> classification is tracked in
+> [#107](https://github.com/eth-cscs/manta/issues/107).
 
 ### Internal
 

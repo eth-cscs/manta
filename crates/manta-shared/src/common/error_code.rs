@@ -311,8 +311,10 @@ mod tests {
         end += 1;
       }
       let token = &doc[start..end];
-      // Bare "MANTA_" (as in the prose "MANTA_* code") is not a code.
-      if token != "MANTA_" {
+      // A trailing underscore means a wildcard prose reference
+      // ("MANTA_* code", "a MANTA_BACKEND_* gateway error") whose `*`
+      // stopped the scan — not a code. Real codes never end in '_'.
+      if !token.ends_with('_') {
         assert!(
           catalog.contains(token),
           "ERRORS.md mentions {token}, which is not in the catalog"
