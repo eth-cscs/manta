@@ -77,7 +77,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   let output_opt = cli_apply_hw_group.opt_str("output");
   let message = if dryrun {
     "Dry run enabled, not modifying the HSM groups on the system."

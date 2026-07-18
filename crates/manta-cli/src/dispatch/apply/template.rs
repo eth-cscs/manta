@@ -59,7 +59,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   let message = if p.dry_run {
     "Dry-run enabled. No changes persisted into the system."
   } else {

@@ -13,7 +13,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
 - **Read-only operators:** tokens carrying the `manta-read-only` Keycloak realm role are refused with `403 Forbidden` on every `POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`. `GET` and `/api/v1/auth/*` pass through. See [GUIDE.md §13](GUIDE.md#13-read-only-access).
-- **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
+- **Errors:** uniform JSON `{ "error": "...", "code": "MANTA_..." }` body with conventional HTTP status codes; see the table below and [ERRORS.md](ERRORS.md) for the code catalog.
 - **Interactive exploration:** `https://<host>:8443/docs` (Swagger UI loads the spec from `/openapi.json`).
 
 ## Starting the server
@@ -50,22 +50,30 @@ Every endpoint section below includes a ready-to-paste `curl` invocation that us
 
 ## Error responses
 
-All errors return JSON with an `error` field:
+All errors return JSON with an `error` field (human-readable, wording
+not stable) and a `code` field (stable machine-readable `MANTA_*`
+identifier — the key to reference in scripts and bug reports; see
+[ERRORS.md](ERRORS.md) for the full catalog):
 
 ```json
-{ "error": "description of what went wrong" }
+{ "error": "Session could not be found", "code": "MANTA_SESSION_NOT_FOUND" }
 ```
+
+`code` is optional on the wire: servers predating its introduction
+omit it, and clients must tolerate its absence.
 
 | Status | Meaning |
 |--------|---------|
 | `400` | Bad request — invalid parameters or body |
-| `401` | Missing or malformed `Authorization` header |
+| `401` | Missing or malformed `Authorization` header, or rejected credentials |
 | `403` | Token carries the `manta-read-only` realm role and the request method mutates state (`POST`/`PUT`/`PATCH`/`DELETE`). Safe methods (`GET`/`HEAD`/`OPTIONS`) and `/api/v1/auth/*` are unaffected. |
 | `404` | Resource not found |
 | `409` | Conflict — resource already exists |
 | `422` | Unprocessable entity — required field missing or wrong type |
+| `429` | Too many authentication attempts (`/api/v1/auth/*` rate limit) |
 | `500` | Backend call failed |
 | `501` | Feature requires per-site Vault / Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)) |
+| `502`/`504` | Upstream backend returned an out-of-range status / timed out; `4xx`/`5xx` from the backend itself is forwarded verbatim |
 
 ---
 
@@ -1991,7 +1999,9 @@ Exchange username + password for a backend bearer token.
 { "token": "<backend-bearer-token>" }
 ```
 
-**Response `401`** — `{ "error": "invalid credentials" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
+**Response `401`** — `{ "error": "invalid credentials", "code": "MANTA_INVALID_CREDENTIALS" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
+
+**Response `502` / `504`** — the site's authentication backend was unreachable, erroring (5xx), or timed out, so the credentials were **not** evaluated. Carries `MANTA_BACKEND_CONNECT_FAILED`, `MANTA_NETWORK_ERROR`, `MANTA_BACKEND_HTTP_ERROR`, or `MANTA_BACKEND_TIMEOUT` — deliberately distinct from the 401 so clients don't misread a backend outage as a credential rejection.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/auth/token" \

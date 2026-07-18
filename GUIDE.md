@@ -731,6 +731,18 @@ NODES=$(manta get group-nodes compute --xnames-only-one-line)
 echo "Nodes: $NODES"
 ```
 
+**Branch on error codes, not message text:**
+
+Every failure carries a stable `MANTA_*` error code — on stderr as
+`HTTP 404 [MANTA_SESSION_NOT_FOUND]: …` (or `[MANTA_SERVER_UNREACHABLE] …`
+for failures before the server responds), and in the HTTP API's JSON
+error body as the `code` field. When a failure is wrapped in operation
+context, the coded detail follows on an indented `caused by:` line —
+match against all of stderr, not just the first line. Codes are stable
+across releases; message wording is not — match on the code. The
+process exit code is `0` on success and `1` on any failure. Full
+catalog: [ERRORS.md](ERRORS.md).
+
 **Run the manta server and call it via curl:**
 
 ```bash

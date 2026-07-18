@@ -48,12 +48,31 @@ use clap::ArgMatches;
 use manta_shared::common::log_ops;
 
 /// Process entry point. Delegates to `run` and prints any error with
-/// `Display` (not `Debug`) so multi-line messages aren't escaped.
+/// `Display` (not `Debug`) so multi-line messages aren't escaped,
+/// followed by its `source()` chain — anyhow's `Display` shows only
+/// the outermost `.context(...)` label, so without the walk the
+/// underlying `HTTP <status> [MANTA_*]: <message>` detail would never
+/// reach stderr on context-wrapped paths (e.g. the accessible-groups
+/// fetch that runs before every authenticated command).
 fn main() {
   if let Err(e) = run() {
-    eprintln!("{e}");
+    eprint!("{}", render_error_chain(e.as_ref()));
     std::process::exit(1);
   }
+}
+
+/// Render an error and its `source()` chain, one `caused by:` line
+/// per level, each newline-terminated. Errors without a source (the
+/// common case — most CLI errors are a single `anyhow!` message)
+/// render exactly as before: just the `Display` line.
+fn render_error_chain(e: &(dyn std::error::Error + 'static)) -> String {
+  let mut out = format!("{e}\n");
+  let mut src = e.source();
+  while let Some(cause) = src {
+    out.push_str(&format!("  caused by: {cause}\n"));
+    src = cause.source();
+  }
+  out
 }
 
 /// Synchronous entry point. Loads `cli.toml`, resolves the active site,
@@ -63,11 +82,19 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
   let cli_matches = crate::build::build_cli().get_matches();
 
   let settings = manta_shared::common::config::get_cli_configuration()
-    .map_err(|e| format!("Could not read CLI configuration file: {e}"))?;
-  let configuration: CliConfiguration = settings
-    .clone()
-    .try_deserialize()
-    .map_err(|e| format!("CLI configuration file is not valid: {e}"))?;
+    .map_err(|e| {
+      format!(
+        "[{}] Could not read CLI configuration file: {e}",
+        e.error_code()
+      )
+    })?;
+  let configuration: CliConfiguration =
+    settings.clone().try_deserialize().map_err(|e| {
+      format!(
+        "[{}] CLI configuration file is not valid: {e}",
+        manta_shared::common::error_code::ErrorCode::ConfigError
+      )
+    })?;
 
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
@@ -144,4 +171,36 @@ async fn run_cli(
     crate::dispatch::process::process_cli(&cli_matches, app_context).await;
 
   cli_result.map_err(Into::into)
+}
+
+#[cfg(test)]
+mod render_error_chain_tests {
+  use super::render_error_chain;
+
+  // The load-bearing case: an anyhow context chain converted to
+  // `Box<dyn Error>` (exactly what `run()` hands `main`). Display
+  // shows only the outermost context label; the walk must surface
+  // the underlying `HTTP … [MANTA_*] …` detail on a `caused by:`
+  // line or the error code never reaches stderr.
+  #[test]
+  fn context_chain_prints_every_level() {
+    let inner = anyhow::anyhow!("HTTP 500 [MANTA_INTERNAL]: boom");
+    let wrapped: Box<dyn std::error::Error> =
+      inner.context("fetch accessible groups").into();
+    let rendered = render_error_chain(wrapped.as_ref());
+    assert_eq!(
+      rendered,
+      "fetch accessible groups\n  caused by: HTTP 500 [MANTA_INTERNAL]: boom\n"
+    );
+  }
+
+  #[test]
+  fn plain_error_renders_single_line() {
+    let plain: Box<dyn std::error::Error> =
+      anyhow::anyhow!("HTTP 404 [MANTA_NOT_FOUND]: nope").into();
+    assert_eq!(
+      render_error_chain(plain.as_ref()),
+      "HTTP 404 [MANTA_NOT_FOUND]: nope\n"
+    );
+  }
 }

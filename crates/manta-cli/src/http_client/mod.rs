@@ -15,7 +15,7 @@
 //!   .openapi
 //!   .get_groups(params.group_name.as_deref(), client.site_name())
 //!   .await
-//!   .into_anyhow()?;
+//!   .into_anyhow().await?;
 //! ```
 //!
 //! The progenitor result is converted via [`OpenApiResultExt::into_anyhow`].
@@ -40,7 +40,8 @@ mod streaming;
 mod wire;
 
 pub use client::{
-  AuthServerUnreachable, MantaClient, OpenApiResultExt, SiteNotFound,
+  AuthBackendUnreachable, AuthServerUnreachable, MantaClient, OpenApiResultExt,
+  SiteNotFound,
 };
 pub(super) use wire::ws_base_url;
 

@@ -190,6 +190,7 @@ pub async fn exec(
     )
     .await
     .into_anyhow()
+    .await
     .context("Server-side SAT validation failed")?;
   tracing::info!("SAT file validated server-side");
 

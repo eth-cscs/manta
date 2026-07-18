@@ -39,7 +39,7 @@ use crate::common::session::SessionContext;
 ///     .openapi
 ///     .get_groups(None, client.site_name())
 ///     .await
-///     .into_anyhow()?;
+///     .into_anyhow().await?;
 ///   println!("{groups:#?}");
 ///   Ok(())
 /// }

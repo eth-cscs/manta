@@ -21,7 +21,7 @@
 //!
 //! ## Short-circuits
 //!
-//! Two failures abort the cascade immediately instead of falling
+//! Three failures abort the cascade immediately instead of falling
 //! through to the next path (or re-prompting), because no other
 //! credential source could possibly succeed:
 //!
@@ -33,6 +33,11 @@
 //!   reachable but doesn't serve the configured `site`; no token can
 //!   authenticate against a site that doesn't exist, so the cascade
 //!   stops rather than prompting for credentials.
+//! - **Backend outage** — a `502`/`504` from `/auth/*`, surfaced by
+//!   the [`crate::http_client::AuthBackendUnreachable`] typed context.
+//!   The manta server is fine, but the site's authentication backend
+//!   (CSM / Keycloak) never evaluated the credentials; re-prompting
+//!   cannot help until the backend recovers.
 //!
 //!   Note: in the bare interactive case (no env var **and** no cache
 //!   file) the first server contact *is* the credential exchange, so
@@ -46,11 +51,14 @@
 //! never be answered.
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{AuthServerUnreachable, MantaClient, SiteNotFound};
+use crate::http_client::{
+  AuthBackendUnreachable, AuthServerUnreachable, MantaClient, SiteNotFound,
+};
 use anyhow::{Result, anyhow};
 use crossterm::style::Stylize;
 use dialoguer::{Input, Password};
 use manta_shared::common::config::get_default_cache_path;
+use manta_shared::common::error_code::ErrorCode;
 use std::{
   fs::{File, create_dir_all},
   io::{self, IsTerminal, Read, Write},
@@ -82,6 +90,17 @@ fn is_site_not_found(err: &anyhow::Error) -> bool {
   err.downcast_ref::<SiteNotFound>().is_some()
 }
 
+/// `true` if `err`'s typed-context chain contains
+/// [`AuthBackendUnreachable`] — the marker attached by
+/// [`MantaClient::validate_token`] / [`MantaClient::exchange_credentials`]
+/// on a `502`/`504` from `/auth/*` (the site's authentication backend
+/// is down or erroring; the credentials were never evaluated). Used
+/// by [`cascade_abort_reason`]; re-prompting cannot succeed until the
+/// backend recovers.
+fn is_auth_backend_unreachable(err: &anyhow::Error) -> bool {
+  err.downcast_ref::<AuthBackendUnreachable>().is_some()
+}
+
 /// Which error variant causes the auth cascade to stop immediately
 /// instead of falling through to the next credential source or
 /// re-prompting. Returned by [`cascade_abort_reason`].
@@ -90,17 +109,23 @@ enum CascadeAbort {
   ServerUnreachable,
   /// The server is up but doesn't serve the configured site (404).
   SiteNotFound,
+  /// The server is up but the site's authentication backend is down
+  /// or erroring (502/504); the credentials were never evaluated.
+  BackendUnreachable,
 }
 
 /// Return the cascade-abort reason if `err` contains an
-/// [`AuthServerUnreachable`] or [`SiteNotFound`] typed marker;
-/// `None` for a plain credential rejection (wrong password, etc.)
-/// that should let the caller try the next source or re-prompt.
+/// [`AuthServerUnreachable`], [`SiteNotFound`], or
+/// [`AuthBackendUnreachable`] typed marker; `None` for a plain
+/// credential rejection (wrong password, etc.) that should let the
+/// caller try the next source or re-prompt.
 fn cascade_abort_reason(err: &anyhow::Error) -> Option<CascadeAbort> {
   if is_auth_server_unreachable(err) {
     Some(CascadeAbort::ServerUnreachable)
   } else if is_site_not_found(err) {
     Some(CascadeAbort::SiteNotFound)
+  } else if is_auth_backend_unreachable(err) {
+    Some(CascadeAbort::BackendUnreachable)
   } else {
     None
   }
@@ -218,7 +243,10 @@ async fn get_token_from_env(client: &MantaClient) -> Result<String> {
   );
 
   let shasta_token = std::env::var(auth_token_env_name).map_err(|_| {
-    anyhow!("authentication token not found in env var '{auth_token_env_name}'")
+    anyhow!(
+      "[{}] authentication token not found in env var '{auth_token_env_name}'",
+      ErrorCode::AuthTokenNotFound
+    )
   })?;
 
   tracing::info!(
@@ -249,7 +277,11 @@ async fn get_token_from_local_file(
       tracing::debug!("Could not open token file '{}': {}", path.display(), e);
     })
     .map_err(|_| {
-      anyhow!("authentication token not found at '{}'", path.display())
+      anyhow!(
+        "[{}] authentication token not found at '{}'",
+        ErrorCode::AuthTokenNotFound,
+        path.display()
+      )
     })?
     .read_to_string(&mut shasta_token)?;
 
@@ -326,6 +358,13 @@ async fn get_token_interactively(client: &MantaClient) -> Result<String> {
           tracing::warn!(
             error = %err,
             "site not configured on server; aborting interactive retries"
+          );
+          return Err(err);
+        }
+        Some(CascadeAbort::BackendUnreachable) => {
+          tracing::warn!(
+            error = %err,
+            "authentication backend down; aborting interactive retries"
           );
           return Err(err);
         }

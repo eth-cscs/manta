@@ -16,6 +16,7 @@
 //! or *validate* the token in the first place).
 
 use anyhow::Context;
+use manta_shared::common::error_code::ErrorCode;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
@@ -48,9 +49,10 @@ impl std::fmt::Display for AuthServerUnreachable {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "cannot reach manta server at {} for authentication. \
+      "[{}] cannot reach manta server at {} for authentication. \
        Is the server running, and is `manta_server_url` in your \
        config correct?",
+      ErrorCode::ServerUnreachable,
       self.url,
     )
   }
@@ -75,14 +77,44 @@ impl std::fmt::Display for SiteNotFound {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(
       f,
-      "site '{}' is not configured on the manta server. \
+      "[{}] site '{}' is not configured on the manta server. \
        Check the `site` value in your `cli.toml`.",
+      ErrorCode::SiteNotFound,
       self.site,
     )
   }
 }
 
 impl std::error::Error for SiteNotFound {}
+
+/// Marker error attached as anyhow context when an `/auth/*` call
+/// reaches the manta server but comes back `502`/`504` — the *site's
+/// authentication backend* (CSM / Keycloak) is down or erroring, so
+/// the credentials were never evaluated. Lets
+/// [`crate::common::authentication`] abort the cascade instead of
+/// re-prompting for credentials that cannot succeed until the backend
+/// recovers. Distinct from [`AuthServerUnreachable`], which means the
+/// manta server itself couldn't be reached.
+#[derive(Debug)]
+pub struct AuthBackendUnreachable {
+  /// The `X-Manta-Site` whose backend failed. Surfaced in the error
+  /// message and recoverable via `downcast_ref`.
+  pub site: String,
+}
+
+impl std::fmt::Display for AuthBackendUnreachable {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(
+      f,
+      "the authentication backend for site '{}' is unreachable or \
+       failing; your credentials were not checked. The manta server \
+       itself is fine — retry once the site's backend recovers.",
+      self.site,
+    )
+  }
+}
+
+impl std::error::Error for AuthBackendUnreachable {}
 
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
@@ -95,13 +127,26 @@ impl std::error::Error for SiteNotFound {}
 /// Implementation: on `Err`, format the progenitor error in a
 /// user-friendly way:
 ///
-/// - `ErrorResponse(rv)`: the server returned a typed error body. We
-///   serialise it to JSON, pull the `error` string out, and surface
-///   `HTTP <status>: <message>`. This avoids dumping the full
-///   `Error Response: status=…; headers={…}; value: ErrorResponse {…}`
-///   envelope that progenitor's `Display` impl produces.
+/// - `ErrorResponse(rv)`: the server returned a typed error body.
+///   Rendered by [`format_server_error`] as
+///   `HTTP <status> [MANTA_*]: <message>`. This avoids dumping the
+///   full `Error Response: status=…; headers={…}; value: …` envelope
+///   that progenitor's `Display` impl produces.
+/// - `UnexpectedResponse(r)`: the server answered with a status the
+///   endpoint doesn't declare in `openapi.json` (spec drift — see
+///   issue #109). The body is
+///   still manta-server's standard error JSON, so read it (this is
+///   why the method is `async`) and render it through the same
+///   [`format_server_error`] path instead of losing the message and
+///   code to progenitor's raw `Debug` envelope.
 /// - All other variants: format via `Display` (transport errors,
 ///   payload-decode errors, etc.) — the inner detail is still useful.
+//
+// `async fn` in a public trait normally warns because callers can't
+// add `Send` bounds on the returned future; this trait is only
+// consumed inside this crate's single-runtime dispatch code, so the
+// flexibility loss is irrelevant.
+#[allow(async_fn_in_trait)]
 pub trait OpenApiResultExt<T> {
   /// Convert the progenitor result into `anyhow::Result<T>`. See the
   /// trait doc for the error-shaping rules.
@@ -111,7 +156,7 @@ pub trait OpenApiResultExt<T> {
   /// Returns `Err` whenever the wrapped `Result` is `Err`. The
   /// concrete message depends on the progenitor variant — see the
   /// trait-level doc.
-  fn into_anyhow(self) -> anyhow::Result<T>;
+  async fn into_anyhow(self) -> anyhow::Result<T>;
 }
 
 impl<T, E> OpenApiResultExt<T>
@@ -119,26 +164,52 @@ impl<T, E> OpenApiResultExt<T>
 where
   E: std::fmt::Debug + serde::Serialize,
 {
-  fn into_anyhow(self) -> anyhow::Result<T> {
+  async fn into_anyhow(self) -> anyhow::Result<T> {
     match self {
       Ok(rv) => Ok(rv.into_inner()),
       Err(progenitor_client::Error::ErrorResponse(rv)) => {
-        let status = rv.status();
+        let status = rv.status().as_u16();
         let inner = rv.into_inner();
-        let raw_msg = serde_json::to_value(&inner)
-          .ok()
-          .and_then(|v| {
-            v.get("error").and_then(|e| e.as_str()).map(String::from)
-          })
-          .unwrap_or_else(|| format!("{inner:?}"));
-        let msg = categorise_server_error(status.as_u16(), &raw_msg);
-        Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
+        let body = serde_json::to_value(&inner)
+          .unwrap_or_else(|_| serde_json::Value::String(format!("{inner:?}")));
+        Err(anyhow::anyhow!("{}", format_server_error(status, &body)))
+      }
+      Err(progenitor_client::Error::UnexpectedResponse(r)) => {
+        let status = r.status().as_u16();
+        let raw = r.text().await.unwrap_or_default();
+        let body = serde_json::from_str::<serde_json::Value>(&raw)
+          .unwrap_or(serde_json::Value::String(raw));
+        Err(anyhow::anyhow!("{}", format_server_error(status, &body)))
       }
       Err(progenitor_client::Error::CommunicationError(rqe)) => {
         Err(anyhow::anyhow!("{}", categorise_transport_error(&rqe)))
       }
       Err(e) => Err(anyhow::anyhow!("{}", e)),
     }
+  }
+}
+
+/// Render a server error body as `HTTP <status> [MANTA_*]: <message>`
+/// (code omitted when the body carries none — e.g. a pre-error-code
+/// server, axum's built-in 405, or a reverse proxy's page). `body` is
+/// the parsed JSON error body, or a `Value::String` fallback carrying
+/// the raw text when the body wasn't JSON.
+fn format_server_error(status: u16, body: &serde_json::Value) -> String {
+  let raw_msg = body
+    .get("error")
+    .and_then(|e| e.as_str())
+    .map(String::from)
+    .unwrap_or_else(|| match body {
+      serde_json::Value::String(s) => s.clone(),
+      other => other.to_string(),
+    });
+  // Stable `MANTA_*` code the server pairs with the message
+  // (`ERRORS.md`); absent when talking to a pre-code server.
+  let code = body.get("code").and_then(|c| c.as_str());
+  let msg = categorise_server_error(status, &raw_msg);
+  match code {
+    Some(code) => format!("HTTP {status} [{code}]: {msg}"),
+    None => format!("HTTP {status}: {msg}"),
   }
 }
 
@@ -151,30 +222,36 @@ fn categorise_transport_error(rqe: &reqwest::Error) -> String {
   if rqe.is_timeout() {
     if rqe.is_connect() {
       format!(
-        "CLI -> manta-server connect timed out. \
+        "[{}] CLI -> manta-server connect timed out. \
          The CLI gave up before the TCP/TLS handshake completed. \
          Likely causes: manta-server unreachable, wrong `manta_server_url` \
          in `cli.toml`, or a firewall dropping the SYN. \
-         Underlying: {rqe}"
+         Underlying: {rqe}",
+        ErrorCode::ServerUnreachable,
       )
     } else {
       format!(
-        "CLI -> manta-server request timed out. \
+        "[{}] CLI -> manta-server request timed out. \
          The CLI gave up before manta-server sent response headers. \
          This is the CLI-side `request_timeout_secs` in `cli.toml` \
          (default 300 s). manta-server may still be working on the \
          request — bump that value if you're hitting it on a heavy \
-         call against a busy site. Underlying: {rqe}"
+         call against a busy site. Underlying: {rqe}",
+        ErrorCode::ServerTimeout,
       )
     }
   } else if rqe.is_connect() {
     format!(
-      "CLI could not connect to manta-server. \
+      "[{}] CLI could not connect to manta-server. \
        Check `manta_server_url` in `cli.toml` and confirm the server \
-       is reachable from this host. Underlying: {rqe}"
+       is reachable from this host. Underlying: {rqe}",
+      ErrorCode::ServerUnreachable,
     )
   } else {
-    format!("CLI transport error talking to manta-server: {rqe}")
+    format!(
+      "[{}] CLI transport error talking to manta-server: {rqe}",
+      ErrorCode::TransportError,
+    )
   }
 }
 
@@ -275,12 +352,12 @@ mod into_anyhow_tests {
 ///   .openapi
 ///   .get_groups(None, client.site_name())
 ///   .await
-///   .into_anyhow()?;
+///   .into_anyhow().await?;
 /// ```
 #[derive(Debug)]
 pub struct MantaClient {
   /// Generated typed API client. Dispatch handlers call
-  /// `client.openapi.<method>(...).await.into_anyhow()?`.
+  /// `client.openapi.<method>(...).await.into_anyhow().await?`.
   pub openapi: crate::openapi_client::Client,
   /// `X-Manta-Site` header value the server uses to pick the backend
   /// config. Threaded explicitly to every `openapi.*` call.
@@ -448,10 +525,12 @@ impl MantaClient {
   ///   serve this site; no credential can fix that.
   /// - [`AuthServerUnreachable`] on a TCP / timeout-layer failure —
   ///   the manta server itself is unreachable.
+  /// - [`AuthBackendUnreachable`] on a `502`/`504` — the site's
+  ///   authentication backend never evaluated the credentials.
   ///
   /// Anything else is wrapped plain (a genuine credential rejection,
   /// which *should* fall through to the next attempt / re-prompt).
-  fn map_auth_error<E: std::fmt::Debug>(
+  fn map_auth_error<E: std::fmt::Debug + serde::Serialize>(
     &self,
     err: progenitor_client::Error<E>,
   ) -> anyhow::Error
@@ -466,8 +545,33 @@ impl MantaClient {
       progenitor_client::Error::UnexpectedResponse(resp) => Some(resp.status()),
       _ => None,
     };
+    // Since `main` prints the full source chain, this message is
+    // user-visible beneath the marker context — render typed error
+    // bodies through the standard `HTTP <status> [MANTA_*]: <msg>`
+    // shape instead of progenitor's raw Display envelope.
+    let message = match &err {
+      progenitor_client::Error::ErrorResponse(rv) => {
+        let body = serde_json::to_value(&**rv)
+          .unwrap_or_else(|_| serde_json::Value::String(format!("{err}")));
+        format_server_error(rv.status().as_u16(), &body)
+      }
+      _ => format!("{err}"),
+    };
     if status == Some(reqwest::StatusCode::NOT_FOUND) {
-      return anyhow::anyhow!("{err}").context(SiteNotFound {
+      return anyhow::anyhow!(message).context(SiteNotFound {
+        site: self.site_name.clone(),
+      });
+    }
+    // 502/504 from /auth/* is the server saying the *site's backend*
+    // never evaluated the credentials (see the server's
+    // `auth_failure_response`). Tag it so the cascade stops instead
+    // of re-prompting; the underlying message keeps the MANTA_* code.
+    if matches!(
+      status,
+      Some(reqwest::StatusCode::BAD_GATEWAY)
+        | Some(reqwest::StatusCode::GATEWAY_TIMEOUT)
+    ) {
+      return anyhow::anyhow!(message).context(AuthBackendUnreachable {
         site: self.site_name.clone(),
       });
     }
@@ -475,7 +579,6 @@ impl MantaClient {
       &err,
       progenitor_client::Error::CommunicationError(e) if e.is_connect() || e.is_timeout()
     );
-    let message = format!("{err}");
     if unreachable {
       anyhow::anyhow!(message).context(AuthServerUnreachable {
         url: self.auth_base_url(),
@@ -487,9 +590,9 @@ impl MantaClient {
 
   /// `POST /api/v1/auth/validate` — check whether the backend still
   /// accepts `token`. Returns `Ok(())` on success; on the "abort
-  /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
-  /// [`SiteNotFound`] context so callers can distinguish them from
-  /// a plain credential rejection.
+  /// cascade" cases returns `Err` with [`AuthServerUnreachable`],
+  /// [`SiteNotFound`], or [`AuthBackendUnreachable`] context so
+  /// callers can distinguish them from a plain credential rejection.
   pub(crate) async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
     self
       .openapi
@@ -505,9 +608,10 @@ impl MantaClient {
   }
 
   /// `POST /api/v1/auth/token` — exchange Keycloak credentials for a
-  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`]
-  /// or [`SiteNotFound`] context on cascade-abort cases; plain `Err`
-  /// on a credential rejection (wrong username/password).
+  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`],
+  /// [`SiteNotFound`], or [`AuthBackendUnreachable`] context on
+  /// cascade-abort cases; plain `Err` on a credential rejection
+  /// (wrong username/password).
   pub(crate) async fn exchange_credentials(
     &self,
     username: &str,
@@ -558,8 +662,9 @@ impl MantaClient {
   pub(super) fn unreachable_server_msg(&self) -> String {
     let server_url = self.base_url.trim_end_matches("/api/v1");
     format!(
-      "cannot reach manta server at {server_url}. Is the server \
-       running, and is `manta_server_url` in your config correct?"
+      "[{}] cannot reach manta server at {server_url}. Is the server \
+       running, and is `manta_server_url` in your config correct?",
+      ErrorCode::ServerUnreachable,
     )
   }
 }
@@ -575,9 +680,15 @@ pub(super) fn unwrap_error_body(body: &str) -> String {
   #[derive(serde::Deserialize)]
   struct ServerErrorBody {
     error: String,
+    // Stable `MANTA_*` code (`ERRORS.md`); absent from pre-code
+    // servers and non-manta bodies.
+    code: Option<String>,
   }
   serde_json::from_str::<ServerErrorBody>(body)
-    .map(|e| e.error)
+    .map(|e| match e.code {
+      Some(code) => format!("[{code}] {}", e.error),
+      None => e.error,
+    })
     .unwrap_or_else(|_| body.to_string())
 }
 
@@ -592,6 +703,23 @@ mod tests {
       unwrap_error_body(body),
       "Can't access HSM group 'compute-2'."
     );
+  }
+
+  #[test]
+  fn unwrap_error_body_prefixes_the_manta_code_when_present() {
+    let body =
+      r#"{"error":"session foo not found","code":"MANTA_SESSION_NOT_FOUND"}"#;
+    assert_eq!(
+      unwrap_error_body(body),
+      "[MANTA_SESSION_NOT_FOUND] session foo not found"
+    );
+  }
+
+  #[test]
+  fn unwrap_error_body_handles_explicit_null_code() {
+    // A body from a server that serialises `code: None` as JSON null.
+    let body = r#"{"error":"boom","code":null}"#;
+    assert_eq!(unwrap_error_body(body), "boom");
   }
 
   #[test]

@@ -28,6 +28,8 @@ use axum::{
   response::{IntoResponse, Response},
 };
 
+use manta_shared::common::error_code::ErrorCode;
+
 use super::ServerState;
 use super::handlers::ErrorResponse;
 
@@ -121,9 +123,10 @@ pub async fn rate_limit(
     );
     return (
       StatusCode::TOO_MANY_REQUESTS,
-      Json(ErrorResponse {
-        error: "rate limit exceeded".to_string(),
-      }),
+      Json(ErrorResponse::new(
+        ErrorCode::RateLimited,
+        "rate limit exceeded",
+      )),
     )
       .into_response();
   }
@@ -191,12 +194,13 @@ pub async fn read_only_guard(request: Request, next: Next) -> Response {
     );
     return (
       StatusCode::FORBIDDEN,
-      Json(ErrorResponse {
-        error: format!(
+      Json(ErrorResponse::new(
+        ErrorCode::Forbidden,
+        format!(
           "Token carries the `{}` role; refusing mutating endpoint.",
           super::common::jwt_ops::READ_ONLY_ROLE
         ),
-      }),
+      )),
     )
       .into_response();
   }

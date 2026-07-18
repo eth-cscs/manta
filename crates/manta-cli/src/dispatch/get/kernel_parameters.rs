@@ -61,7 +61,8 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
 
   let output = cli_args.req_str("output")?;
   let filter_opt = cli_args.opt_str("filter");

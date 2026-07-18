@@ -209,7 +209,8 @@ pub async fn handle_apply(
         .openapi
         .create_ephemeral_env(client.site_name(), &req)
         .await
-        .into_anyhow()?;
+        .into_anyhow()
+        .await?;
       println!("{}", response.hostname);
     }
 

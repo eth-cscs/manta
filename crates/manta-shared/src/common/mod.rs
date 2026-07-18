@@ -1,6 +1,6 @@
 //! Behavioural helpers shared by `manta-cli` and `manta-server`.
 //!
-//! The three submodules are intentionally narrow:
+//! The submodules are intentionally narrow:
 //!
 //! - [`config`] — locates and parses `cli.toml` / `server.toml`,
 //!   honouring `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG` and merging
@@ -9,6 +9,11 @@
 //! - [`error`] — the [`error::MantaError`] enum returned by every
 //!   fallible helper in this crate; the server bridges it to its
 //!   `BackendError` at call sites.
+//! - [`error_code`] — the stable `MANTA_*` error-code catalog
+//!   ([`error_code::ErrorCode`]) carried next to every reported
+//!   failure; see `ERRORS.md` for the user-facing reference.
+//! - [`jwt_ops`] — claim extraction from JWTs (no signature
+//!   verification; see the module docs).
 //! - [`log_ops`] — single `configure(...)` entry point both binaries
 //!   call once at startup to install the tracing subscriber.
 
@@ -58,5 +63,6 @@ pub fn parse_ims_timestamp(raw: &str) -> Option<chrono::NaiveDateTime> {
 
 pub mod config;
 pub mod error;
+pub mod error_code;
 pub mod jwt_ops;
 pub mod log_ops;

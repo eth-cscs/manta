@@ -163,7 +163,8 @@ async fn run_session(
     .openapi
     .create_session(client.site_name(), &req)
     .await
-    .into_anyhow()?;
+    .into_anyhow()
+    .await?;
   let cfs_configuration_name = created.configuration_name;
   let cfs_session_name = created.session_name;
 
