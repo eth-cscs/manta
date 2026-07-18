@@ -33,3 +33,6 @@ tracing   = { workspace = true }
 tokio      = { workspace = true }
 # Parses the checked-in `GET /groups` capture in `tests/fixture.rs`.
 serde_json = { workspace = true }
+# Local mock manta-server for offline tests of the refresh() HTTP path
+# (`tests/mock_server.rs`).
+wiremock   = "0.6"
