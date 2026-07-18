@@ -32,11 +32,16 @@ pub enum CacheError {
   },
 
   /// A site's manta-server responded with a non-success HTTP status.
-  #[error("site '{site}' returned HTTP {status}")]
+  #[error("site '{site}' returned HTTP {status}: {body}")]
   Status {
     /// Site (`X-Manta-Site`) whose request was rejected.
     site: String,
     /// The HTTP status code returned by manta-server.
     status: u16,
+    /// Bounded snippet of the response body — manta-server returns a
+    /// small JSON error object whose message is the actual diagnosis
+    /// (e.g. distinguishing an expired token from an unknown site).
+    /// `<empty body>` when the response had none.
+    body: String,
   },
 }
