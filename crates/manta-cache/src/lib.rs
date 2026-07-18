@@ -37,8 +37,9 @@
 //!   token: "ey…".into(),
 //! }];
 //!
-//! let index = refresh(&sites).await?;
-//! assert_eq!(index.group_to_site("gpu-cluster"), Some("alps"));
+//! let outcome = refresh(&sites).await?;
+//! assert!(outcome.is_complete(), "some sites failed: {:?}", outcome.failures);
+//! assert_eq!(outcome.index.group_to_site("gpu-cluster"), Some("alps"));
 //! # Ok(())
 //! # }
 //! ```
@@ -59,5 +60,5 @@ mod site;
 
 pub use error::CacheError;
 pub use index::{Index, NodeMembership, SiteSnapshot};
-pub use refresh::refresh;
+pub use refresh::{RefreshOutcome, refresh};
 pub use site::SiteDescriptor;

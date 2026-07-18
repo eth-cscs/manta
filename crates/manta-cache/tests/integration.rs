@@ -35,7 +35,13 @@ async fn refresh_against_live_server() {
     token,
   }];
 
-  let index = refresh(&sites).await.expect("refresh failed");
+  let outcome = refresh(&sites).await.expect("refresh failed");
+  assert!(
+    outcome.is_complete(),
+    "site refresh failures: {:?}",
+    outcome.failures
+  );
+  let index = outcome.index;
 
   // The configured site must be present in the resolved index.
   assert!(
