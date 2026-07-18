@@ -311,10 +311,14 @@ mod tests {
         end += 1;
       }
       let token = &doc[start..end];
-      // A trailing underscore means a wildcard prose reference
-      // ("MANTA_* code", "a MANTA_BACKEND_* gateway error") whose `*`
-      // stopped the scan — not a code. Real codes never end in '_'.
-      if !token.ends_with('_') {
+      // Skip only true wildcard prose references ("MANTA_* code",
+      // "a MANTA_BACKEND_* gateway error"): a trailing underscore
+      // whose very next character is `*`. A bare trailing underscore
+      // without the `*` (truncated code, lowercase typo like
+      // `MANTA_BACKEND_timeout`) must still be flagged.
+      let is_wildcard =
+        token.ends_with('_') && bytes.get(end).is_some_and(|b| *b == b'*');
+      if !is_wildcard {
         assert!(
           catalog.contains(token),
           "ERRORS.md mentions {token}, which is not in the catalog"
