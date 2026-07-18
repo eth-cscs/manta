@@ -21,13 +21,18 @@
 //!
 //! Genuine credential rejections surface a generic `401 invalid
 //! credentials` so the response never reveals whether a username
-//! exists or what the backend actually rejected. Failures where the
-//! backend never evaluated the credentials at all — unreachable,
-//! timed out, or answering 5xx — are split out as `502`/`504` gateway
-//! errors with `MANTA_BACKEND_*` codes (see [`auth_failure_response`]);
-//! they carry no credential information, so the anti-enumeration
-//! stance is preserved. The specific reason is captured server-side
-//! with `tracing::warn!` and sent to the audit channel when one is
+//! exists or what the backend actually rejected. On the *token
+//! exchange*, failures where the backend never evaluated the
+//! credentials at all — unreachable, timed out, or answering 5xx —
+//! are split out as `502`/`504` gateway errors with `MANTA_BACKEND_*`
+//! codes (see [`auth_failure_response`]); they carry no credential
+//! information, so the anti-enumeration stance is preserved.
+//! `auth_validate` cannot make the same split: csm-rs pre-stringifies
+//! its transport failures, so a backend outage during token
+//! *validation* still collapses into the generic 401 (the
+//! known-limitation note in `ERRORS.md`; typed upstream errors are
+//! issue #107). The specific reason is captured server-side with
+//! `tracing::warn!` and sent to the audit channel when one is
 //! configured on [`ServerState`].
 
 use std::net::SocketAddr;
