@@ -21,6 +21,10 @@
 //! out **two calls per site** — `GET /api/v1/groups/available` and
 //! `GET /api/v1/groups/nodes` — and folds the results into an [`Index`].
 //!
+//! A process that already holds the group data (an embedding
+//! `manta-server`, a fixture-driven test) can skip HTTP entirely and
+//! build the index with [`Index::from_snapshots`].
+//!
 //! # Example
 //!
 //! ```no_run
@@ -54,6 +58,6 @@ mod refresh;
 mod site;
 
 pub use error::CacheError;
-pub use index::Index;
+pub use index::{Index, NodeMembership, SiteSnapshot};
 pub use refresh::refresh;
 pub use site::SiteDescriptor;

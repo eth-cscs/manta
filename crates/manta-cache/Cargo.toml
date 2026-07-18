@@ -30,4 +30,6 @@ tracing   = { workspace = true }
 
 [dev-dependencies]
 # Needed only for `#[tokio::test]` on the async refresh path.
-tokio = { workspace = true }
+tokio      = { workspace = true }
+# Parses the checked-in `GET /groups` capture in `tests/fixture.rs`.
+serde_json = { workspace = true }
