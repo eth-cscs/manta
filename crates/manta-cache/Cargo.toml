@@ -23,7 +23,7 @@ path = "src/lib.rs"
 reqwest   = { workspace = true }
 serde     = { workspace = true }
 thiserror = { workspace = true }
-# `future::try_join_all` for the per-site refresh fan-out. Runtime-
+# `future::join_all` for the per-site refresh fan-out. Runtime-
 # agnostic, so the library doesn't pull in tokio as a hard dependency.
 futures   = { workspace = true }
 tracing   = { workspace = true }

@@ -46,38 +46,85 @@ struct GroupNode {
   hsm: String,
 }
 
+/// What a [`refresh`] produced: the index over every site that
+/// answered, plus the errors of those that did not.
+///
+/// The split leaves the availability policy with the caller: one
+/// unreachable site does not have to cost the mapping of every other
+/// site (e.g. at `manta-server` startup), but a caller that wants
+/// all-or-nothing can reject any outcome that is not
+/// [`complete`](RefreshOutcome::is_complete).
+#[derive(Debug)]
+pub struct RefreshOutcome {
+  /// Index built from the sites that refreshed successfully. Failed
+  /// sites contribute nothing — their groups and xnames are absent and
+  /// they do not appear in [`Index::sites`].
+  pub index: Index,
+  /// One [`CacheError`] per failed site, in input order (each variant
+  /// names the site). Empty on full success.
+  pub failures: Vec<CacheError>,
+}
+
+impl RefreshOutcome {
+  /// `true` when every site refreshed successfully.
+  pub fn is_complete(&self) -> bool {
+    self.failures.is_empty()
+  }
+}
+
 /// Refresh the index by querying every site concurrently.
 ///
-/// Fans out with [`futures::future::try_join_all`], so the call is
-/// all-or-nothing: the first site that errors aborts the refresh and
-/// returns its [`CacheError`]. (Partial-failure tolerance is a Stage-4
-/// refinement — see ROADMAP.)
+/// The fan-out tolerates per-site failure: sites that answer contribute
+/// their snapshot to [`RefreshOutcome::index`], sites that fail
+/// contribute a [`CacheError`] to [`RefreshOutcome::failures`] (and are
+/// logged at `warn`). The caller picks the policy — reject an
+/// incomplete refresh via [`RefreshOutcome::is_complete`], or serve the
+/// partial index and retry the failed sites later.
 ///
 /// # Errors
 ///
 /// Returns [`CacheError::ClientBuild`] if the shared HTTP client cannot
-/// be created, or [`CacheError::Request`] / [`CacheError::Status`] for
-/// the first site whose call fails.
-pub async fn refresh(sites: &[SiteDescriptor]) -> Result<Index, CacheError> {
+/// be created — the only failure that precedes the fan-out. Per-site
+/// failures ([`CacheError::Request`] / [`CacheError::Status`]) never
+/// error the call; they are collected in the outcome.
+pub async fn refresh(
+  sites: &[SiteDescriptor],
+) -> Result<RefreshOutcome, CacheError> {
   tracing::debug!(site_count = sites.len(), "cache refresh starting");
 
   // One pooled client, reused across every site request. Both timeouts
-  // are load-bearing: `try_join_all` makes the refresh as slow as its
-  // slowest site, so a hung site must not stall it indefinitely.
+  // are load-bearing: the fan-out completes only when the slowest site
+  // has answered, so a hung site must not stall it indefinitely.
   let client = reqwest::Client::builder()
     .connect_timeout(CONNECT_TIMEOUT)
     .timeout(REQUEST_TIMEOUT)
     .build()
     .map_err(CacheError::ClientBuild)?;
 
-  let snapshots = futures::future::try_join_all(
+  let results = futures::future::join_all(
     sites.iter().map(|site| fetch_site(&client, site)),
   )
-  .await?;
+  .await;
+
+  let mut snapshots = Vec::with_capacity(results.len());
+  let mut failures = Vec::new();
+  for result in results {
+    match result {
+      Ok(snapshot) => snapshots.push(snapshot),
+      Err(error) => {
+        tracing::warn!(%error, "site refresh failed");
+        failures.push(error);
+      }
+    }
+  }
 
   let index = Index::from_snapshots(snapshots);
-  tracing::debug!(sites = index.sites().count(), "cache refresh complete");
-  Ok(index)
+  tracing::debug!(
+    sites = index.sites().count(),
+    failures = failures.len(),
+    "cache refresh complete"
+  );
+  Ok(RefreshOutcome { index, failures })
 }
 
 /// Gather one site's snapshot from its two group endpoints.
