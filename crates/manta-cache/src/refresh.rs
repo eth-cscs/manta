@@ -75,7 +75,7 @@ pub async fn refresh(sites: &[SiteDescriptor]) -> Result<Index, CacheError> {
   )
   .await?;
 
-  let index = Index::build(snapshots);
+  let index = Index::from_snapshots(snapshots);
   tracing::debug!(sites = index.sites().count(), "cache refresh complete");
   Ok(index)
 }

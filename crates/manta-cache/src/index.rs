@@ -2,17 +2,19 @@
 //!
 //! The canonical data is the set of `(site, group, members)` triples;
 //! the two lookup maps (`group → site`, `xname → site`) are derived
-//! from it at [`Index::build`] time so reads are O(1).
+//! from it at [`Index::from_snapshots`] time so reads are O(1).
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
-/// One site's contribution to the index, as gathered by a refresh.
+/// One site's contribution to the index.
 ///
-/// This is the HTTP-free seam between [`crate::refresh`] (which builds
-/// it from the group endpoints) and [`Index::build`] (which folds it
-/// into the lookup maps). Unit tests construct it directly.
+/// This is the HTTP-free seam in front of [`Index::from_snapshots`].
+/// [`crate::refresh`] builds it from the group endpoints; a process
+/// that already holds the group data (an embedding `manta-server`, a
+/// fixture-driven test) constructs it directly and skips HTTP
+/// entirely.
 #[derive(Debug, Clone)]
-pub(crate) struct SiteSnapshot {
+pub struct SiteSnapshot {
   /// Site name (`X-Manta-Site`).
   pub site: String,
   /// Every group label accessible at this site
@@ -25,7 +27,7 @@ pub(crate) struct SiteSnapshot {
 
 /// One node and the groups it belongs to at a site.
 #[derive(Debug, Clone)]
-pub(crate) struct NodeMembership {
+pub struct NodeMembership {
   /// Physical location ID, e.g. `x3000c0s1b0n0`.
   pub xname: String,
   /// Group labels this node is a member of (parsed from the node's
@@ -35,9 +37,10 @@ pub(crate) struct NodeMembership {
 
 /// A resolved `(group, xname) → site` routing index.
 ///
-/// Build it with [`crate::refresh`] (live) or, in tests, from
-/// snapshots. All lookups are synchronous and infallible — they return
-/// `None` when nothing is known about the key.
+/// Build it with [`crate::refresh`] (live, over HTTP) or
+/// [`Index::from_snapshots`] (from data already in hand). All lookups
+/// are synchronous and infallible — they return `None` when nothing is
+/// known about the key.
 ///
 /// # Conflict handling
 ///
@@ -70,7 +73,13 @@ pub struct Index {
 
 impl Index {
   /// Fold per-site snapshots into the derived lookup maps.
-  pub(crate) fn build(snapshots: Vec<SiteSnapshot>) -> Self {
+  ///
+  /// This is the HTTP-free construction path: [`crate::refresh`] calls
+  /// it after fetching, and callers that already hold the group data
+  /// (an embedding process, a fixture-driven test) call it directly.
+  /// Snapshot order matters for cross-site collisions — see "Conflict
+  /// handling" above.
+  pub fn from_snapshots(snapshots: Vec<SiteSnapshot>) -> Self {
     let mut index = Index::default();
 
     for snap in snapshots {
@@ -172,7 +181,7 @@ mod tests {
   }
 
   fn sample() -> Index {
-    Index::build(vec![
+    Index::from_snapshots(vec![
       snapshot(
         "alps",
         &["compute", "gpu", "empty"],
@@ -244,7 +253,7 @@ mod tests {
   #[test]
   fn cross_site_collision_is_last_write_wins() {
     // Same label "compute" listed at two sites; the later snapshot wins.
-    let idx = Index::build(vec![
+    let idx = Index::from_snapshots(vec![
       snapshot("a", &["compute"], vec![node("x1", &["compute"])]),
       snapshot("b", &["compute"], vec![node("x2", &["compute"])]),
     ]);
@@ -262,7 +271,7 @@ mod tests {
     // Site "a" lists "shared" in /groups/available; site "b" only
     // mentions it via a node's hsm field. The listing keeps ownership
     // and the mentioning site's node is not recorded as a member.
-    let idx = Index::build(vec![
+    let idx = Index::from_snapshots(vec![
       snapshot("a", &["shared"], vec![node("x1", &["shared"])]),
       snapshot("b", &[], vec![node("x2", &["shared"])]),
     ]);
