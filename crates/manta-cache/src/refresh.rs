@@ -9,12 +9,27 @@
 //! Both calls send `X-Manta-Site: <name>` and `Authorization: Bearer
 //! <token>` from the [`SiteDescriptor`].
 
+use std::time::Duration;
+
 use serde::Deserialize;
 use serde::de::DeserializeOwned;
 
 use crate::error::CacheError;
 use crate::index::{Index, NodeMembership, SiteSnapshot};
 use crate::site::SiteDescriptor;
+
+/// TCP/TLS connect timeout per site request. A site that is down or
+/// unroutable should fail the refresh quickly, not stall it.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+
+/// Whole-request timeout per site request. Matches the CLI's
+/// `DEFAULT_API_TIMEOUT_SECS` (and manta-server's default global
+/// request timeout), so a refresh gives up at roughly the same point
+/// the server would have anyway.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
+
+/// Longest error-body snippet carried in [`CacheError::Status`].
+const ERROR_BODY_SNIPPET_CHARS: usize = 256;
 
 /// Subset of `GET /api/v1/groups/nodes`'s `NodeDetails` we consume.
 ///
@@ -46,8 +61,12 @@ struct GroupNode {
 pub async fn refresh(sites: &[SiteDescriptor]) -> Result<Index, CacheError> {
   tracing::debug!(site_count = sites.len(), "cache refresh starting");
 
-  // One pooled client, reused across every site request.
+  // One pooled client, reused across every site request. Both timeouts
+  // are load-bearing: `try_join_all` makes the refresh as slow as its
+  // slowest site, so a hung site must not stall it indefinitely.
   let client = reqwest::Client::builder()
+    .connect_timeout(CONNECT_TIMEOUT)
+    .timeout(REQUEST_TIMEOUT)
     .build()
     .map_err(CacheError::ClientBuild)?;
 
@@ -110,9 +129,13 @@ async fn get_json<T: DeserializeOwned>(
 
   let status = resp.status();
   if !status.is_success() {
+    // Carry a bounded snippet of the body: manta-server error bodies
+    // are small JSON objects whose message is the diagnosis.
+    let body = resp.text().await.unwrap_or_default();
     return Err(CacheError::Status {
       site: site.name.clone(),
       status: status.as_u16(),
+      body: body_snippet(&body),
     });
   }
 
@@ -123,6 +146,17 @@ async fn get_json<T: DeserializeOwned>(
       site: site.name.clone(),
       source,
     })
+}
+
+/// Bound an error body to [`ERROR_BODY_SNIPPET_CHARS`] characters for
+/// inclusion in [`CacheError::Status`], substituting a marker when the
+/// body is empty.
+fn body_snippet(body: &str) -> String {
+  let trimmed = body.trim();
+  if trimmed.is_empty() {
+    return "<empty body>".to_owned();
+  }
+  trimmed.chars().take(ERROR_BODY_SNIPPET_CHARS).collect()
 }
 
 /// Parse a node's comma-separated `hsm` field into trimmed,
@@ -168,6 +202,17 @@ mod tests {
     assert_eq!(
       normalize_base("https://manta.example.ch:8443/"),
       "https://manta.example.ch:8443/api/v1"
+    );
+  }
+
+  #[test]
+  fn body_snippet_bounds_length_and_marks_empty() {
+    assert_eq!(body_snippet("  \n"), "<empty body>");
+    assert_eq!(body_snippet(r#"{"error":"boom"}"#), r#"{"error":"boom"}"#);
+    let long = "e".repeat(4 * ERROR_BODY_SNIPPET_CHARS);
+    assert_eq!(
+      body_snippet(&long).chars().count(),
+      ERROR_BODY_SNIPPET_CHARS
     );
   }
 

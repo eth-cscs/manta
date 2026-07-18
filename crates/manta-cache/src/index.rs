@@ -41,10 +41,20 @@ pub(crate) struct NodeMembership {
 ///
 /// # Conflict handling
 ///
-/// If the same group label or xname is seen at more than one site, the
-/// **last** site wins (insertion order over the snapshot slice). A
-/// principled conflict policy is deferred to ROADMAP Stage 4; Stage 1
-/// only needs deterministic, non-panicking behaviour.
+/// A principled conflict policy is deferred to ROADMAP Stage 4; Stage 1
+/// only needs deterministic, non-panicking behaviour. The deterministic
+/// rules when the same key is seen at more than one site (in snapshot
+/// order) are:
+///
+/// - An **xname** resolves to the last site that reported it.
+/// - A **group label** listed by a site's `/groups/available` claims
+///   the label, replacing any earlier owner. A label known only from
+///   nodes' `hsm` fields stays with the first site that mentioned it —
+///   a listing outranks a mention.
+/// - [`Index::group_members`] reflects the owning site only: when
+///   ownership moves, the previous site's members are discarded, and a
+///   non-owning site's nodes are never added. Member lists never mix
+///   xnames from two sites.
 #[derive(Debug, Default, Clone)]
 pub struct Index {
   /// `group label → site`.
@@ -67,9 +77,14 @@ impl Index {
       index.sites.insert(snap.site.clone());
 
       for label in snap.labels {
-        index.group_to_site.insert(label.clone(), snap.site.clone());
-        // Ensure even empty groups appear in the membership map.
-        index.group_members.entry(label).or_default();
+        // A listed label claims ownership outright. If another site
+        // owned it, drop that site's members so the list only ever
+        // reflects the owner (see "Conflict handling" above).
+        let prev = index.group_to_site.insert(label.clone(), snap.site.clone());
+        let members = index.group_members.entry(label).or_default();
+        if prev.is_some_and(|p| p != snap.site) {
+          members.clear();
+        }
       }
 
       for node in snap.nodes {
@@ -78,17 +93,20 @@ impl Index {
           .insert(node.xname.clone(), snap.site.clone());
         for label in node.groups {
           // A node may list a group in `hsm` even if that group wasn't
-          // in `/groups/available` (e.g. not directly accessible);
-          // record the membership and the routing either way.
-          index
+          // in `/groups/available` (e.g. not directly accessible); such
+          // a mention claims the label only while it is unowned, and
+          // membership is recorded only when this site owns the label.
+          let owner = index
             .group_to_site
             .entry(label.clone())
             .or_insert_with(|| snap.site.clone());
-          index
-            .group_members
-            .entry(label)
-            .or_default()
-            .push(node.xname.clone());
+          if *owner == snap.site {
+            index
+              .group_members
+              .entry(label)
+              .or_default()
+              .push(node.xname.clone());
+          }
         }
       }
     }
@@ -225,14 +243,32 @@ mod tests {
 
   #[test]
   fn cross_site_collision_is_last_write_wins() {
-    // Same label "compute" at two sites; the later snapshot wins.
+    // Same label "compute" listed at two sites; the later snapshot wins.
     let idx = Index::build(vec![
       snapshot("a", &["compute"], vec![node("x1", &["compute"])]),
       snapshot("b", &["compute"], vec![node("x2", &["compute"])]),
     ]);
     assert_eq!(idx.group_to_site("compute"), Some("b"));
+    // Members follow the owning site — site a's node is discarded, so
+    // the group never mixes xnames from two sites.
+    assert_eq!(idx.group_members("compute"), Some(&["x2".to_owned()][..]));
     // Each xname still resolves to its own site.
     assert_eq!(idx.xname_to_site("x1"), Some("a"));
+    assert_eq!(idx.xname_to_site("x2"), Some("b"));
+  }
+
+  #[test]
+  fn listed_label_outranks_cross_site_hsm_mention() {
+    // Site "a" lists "shared" in /groups/available; site "b" only
+    // mentions it via a node's hsm field. The listing keeps ownership
+    // and the mentioning site's node is not recorded as a member.
+    let idx = Index::build(vec![
+      snapshot("a", &["shared"], vec![node("x1", &["shared"])]),
+      snapshot("b", &[], vec![node("x2", &["shared"])]),
+    ]);
+    assert_eq!(idx.group_to_site("shared"), Some("a"));
+    assert_eq!(idx.group_members("shared"), Some(&["x1".to_owned()][..]));
+    // The mentioning site's node itself still routes to its own site.
     assert_eq!(idx.xname_to_site("x2"), Some("b"));
   }
 }

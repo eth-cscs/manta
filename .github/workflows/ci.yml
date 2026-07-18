@@ -62,11 +62,11 @@ jobs:
     # step further down.
     - name: Verify formatting (PRs only)
       if: github.event_name == 'pull_request'
-      run: cargo fmt -p manta-shared -p manta-cli -p manta-server -- --check
+      run: cargo fmt -p manta-shared -p manta-cli -p manta-server -p manta-cache -- --check
     - name: Apply and commit formatting (main only)
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        cargo fmt -p manta-shared -p manta-cli -p manta-server
+        cargo fmt -p manta-shared -p manta-cli -p manta-server -p manta-cache
         if git diff --quiet; then
           echo "Formatting already in sync; nothing to commit."
           exit 0

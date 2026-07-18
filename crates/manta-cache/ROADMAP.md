@@ -25,14 +25,14 @@ What the module ships:
 - Data types — `Site`, `Group`, `Members`, and the combined index struct that owns the two derived maps (`group → site`, `xname → site`).
 - An async `refresh(sites: &[SiteDescriptor]) -> Result<Index, CacheError>` that fans out one HTTP call per site to populate the index. `SiteDescriptor` carries `{ name, manta_server_url, token }`.
 - Synchronous lookup methods on `Index`: `group_to_site(label) -> Option<&str>`, `xname_to_site(xname) -> Option<&str>`, `sites() -> impl Iterator`.
-- Unit tests that exercise the lookup methods against fixture inputs (no live `manta-server` needed). The starter fixture is [`testdata/groups-prealps.json`](testdata/groups-prealps.json) — a real extract of `GET /v2/groups/available` from the CSCS **prealps** test site; see the [Mock fixture](#mock-fixture-for-offline-tests) section below for details.
+- Unit tests that exercise the lookup methods against fixture inputs (no live `manta-server` needed). The starter fixture is [`testdata/groups-prealps.json`](testdata/groups-prealps.json) — a real extract of `GET /v2/groups` from the CSCS **prealps** test site; see the [Mock fixture](#mock-fixture-for-offline-tests) section below for details.
 - A single integration test that runs `refresh` against one live `manta-server` and asserts the index shape — gated behind an env var so CI without a backend skips it.
 
 No public API stability promise — the module is internal-only. Other code in the same crate may import it; nothing outside the crate sees it.
 
 **Acceptance.** Module compiles, unit tests pass, the integration test passes against a known-good `manta-server` URL + token.
 
-> **✅ Delivered** (built directly as the crate — see Stage 2). The library exposes `SiteDescriptor`, `Index` (`group_to_site` / `xname_to_site` / `groups` / `sites` / `group_members`), and `async refresh()`. `refresh` is **2 calls per site** (`GET /groups/available` + `GET /groups/nodes`, the latter unfiltered so one call returns every node and its `hsm` membership), fanned out concurrently with `futures::try_join_all`. Errors are a crate-local `CacheError` (thiserror). 10 unit tests cover the lookups + builder (incl. multi-group membership and last-write-wins on a cross-site collision); the integration test is env-gated (`MANTA_CACHE_IT_*`) and skips when unset.
+> **✅ Delivered** (built directly as the crate — see Stage 2). The library exposes `SiteDescriptor`, `Index` (`group_to_site` / `xname_to_site` / `groups` / `sites` / `group_members`), and `async refresh()`. `refresh` is **2 calls per site** (`GET /groups/available` + `GET /groups/nodes`, the latter unfiltered so one call returns every node and its `hsm` membership), fanned out concurrently with `futures::try_join_all`. Errors are a crate-local `CacheError` (thiserror). Unit tests cover the lookups + builder (incl. multi-group membership and the cross-site collision rules); the integration test is env-gated (`MANTA_CACHE_IT_*`) and skips when unset. **Deviation from the spec above:** the unit tests build their inputs by hand; `testdata/groups-prealps.json` is not yet wired into any test. The fixture is `GET /groups`-shaped (not `/groups/available`, which returns a bare list of names), so wiring it is gated on the refresh-source [open question](#open-questions).
 
 ## Stage 2 — Extract into the `manta-cache` crate
 
@@ -135,7 +135,7 @@ The deployment shape chosen at Stage 3 (in-process / sidecar / standalone) deter
 
 ### Local test setup
 
-The integration can be exercised against a locally running `manta-server` pointed at the real CSCS test sites. `manta-server` instantiates and refreshes the cache during its startup sequence, so both prerequisites below must be satisfied **before** `manta-server` is launched — otherwise the initial refresh fails and the server comes up with an empty index.
+The integration can be exercised against a locally running `manta-server` pointed at the real CSCS test sites. `manta-server` instantiates and refreshes the cache during its startup sequence, so both prerequisites below must be satisfied **before** `manta-server` is launched — otherwise the initial refresh fails, and because `refresh` is currently all-or-nothing, the server would have no index at all (see the partial-failure [open question](#open-questions)).
 
 - **VPN access to the test sites.** The startup refresh and `manta-server`'s backend calls both reach CSM / OpenCHAMI endpoints that live on the internal network; without VPN, the refresh fails at boot and no lookups succeed.
 - **Keycloak roles on the test HSM groups.** The tester's Keycloak account must carry the roles that grant read/operate access to the HSM groups used in the test scenarios (e.g. the `nodes_free` and equivalent test-only groups on each site). Without the right roles, `manta-server` returns `403` even after the cache has resolved the site correctly, which masks whether the cache itself is working.
@@ -152,7 +152,7 @@ Once the above is in place, the minimum scenarios to walk through are:
 
 ### Mock fixture for offline tests
 
-For unit tests and any scenario that should not require VPN / Keycloak / a live `manta-server`, the crate ships a captured response under [`testdata/groups-prealps.json`](testdata/groups-prealps.json). It is the verbatim payload returned by `GET /v2/groups/available` against the CSCS **prealps** test site, suitable as the input to a `refresh`-style code path that has been wired to read from a file (or to a mocked HTTP server returning the same body).
+For unit tests and any scenario that should not require VPN / Keycloak / a live `manta-server`, the crate ships a captured response under [`testdata/groups-prealps.json`](testdata/groups-prealps.json). It is the verbatim payload returned by `GET /v2/groups` against the CSCS **prealps** test site (`/v2/groups/available` returns only a bare `Vec<String>` of names — this fixture carries full group objects with `label` + `members.ids`), suitable as the input to a `refresh`-style code path that has been wired to read from a file (or to a mocked HTTP server returning the same body).
 
 Notable properties of this fixture, useful when writing assertions:
 
@@ -179,9 +179,12 @@ These are the decisions the roadmap deliberately punts on until the stage that a
 | ~~`manta-server` vs `manta-shared` as Stage-1 home~~ | ~~Stage 1 kickoff~~ | **Resolved:** standalone crate — no compile-time dep on either (HTTP-only). |
 | Deployment shape: in-proc / sidecar / standalone | Stage 3 | The choice does not affect the Stage-1 or Stage-2 code; only the wrapper around it. |
 | Auth model: service-account vs per-user | Stage 3 | Same — Stages 1 and 2 take a token, they don't care where it came from. |
-| Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. |
+| Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. Stage 1 ships documented deterministic rules (see `Index`'s "Conflict handling" doc), not a policy. |
 | Persistence (in-memory vs on-disk snapshot) | Stage 4 | A cold start is a few HTTP calls per site; tolerable until the deployment shape pushes back. |
 | Refresh cadence (pull-on-demand vs periodic background) | Stage 4 | Depends on the deployment shape and traffic pattern. |
+| Refresh source: two calls (`/groups/available` + `/groups/nodes`) vs one `GET /groups` | Next refresh change | Verified server-side: unfiltered `GET /groups` is access-scoped identically to `/groups/available` (both go through `resolve_target_and_available_groups`) and returns labels + members together — one atomic call per site, whose shape matches the checked-in fixture (which could then drive a unit test). Trade-off: loses labels known only from nodes' `hsm` fields. |
+| Partial-failure tolerance of `refresh` (all-or-nothing today) | Stage 3, at the latest Stage 4 | `try_join_all` aborts on the first failing site. Combined with Stage 4's "refresh before the listener starts" lifecycle, one unreachable site would block `manta-server` startup entirely — points at partial results (index + per-site errors) or a lifecycle change. |
+| In-process population path (public snapshot constructor) | Stage 3 | The in-proc deployment shape (option 1) cannot HTTP-refresh against its own not-yet-listening router at startup. `SiteSnapshot` / `Index::build` are `pub(crate)`, so HTTP `refresh()` is the only public way to build a non-empty index; a public snapshot-based constructor would let the server populate the cache from its own service layer (and enable fixture-driven tests without HTTP mocking). |
 
 ## Decisions taken at Stage 1
 
