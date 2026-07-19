@@ -254,38 +254,37 @@ async fn run_server(
     has_tls,
   );
 
+  // Read everything needed after `configuration` moves into the state.
+  let shutdown_grace_period =
+    Duration::from_secs(configuration.server.shutdown_grace_period_secs);
+  let refresh_interval = configuration.server.refresh_interval_secs;
+
+  let state = Arc::new(AppState {
+    cache: tokio::sync::RwLock::new(routes::CacheState::default()),
+    config: Arc::new(configuration),
+  });
+
   // Initial refresh before the listener binds (ROADMAP lifecycle).
   // Per-site failures are tolerated — the failed sites are absent from
-  // the index and the periodic refresh (if configured) retries them;
-  // only a refresh that cannot start at all (unreadable token_file,
-  // client build) aborts startup, since that is an operator error no
-  // retry will fix.
-  let outcome = refresh::refresh_once(&configuration).await?;
-  if !outcome.is_complete() {
-    for failure in &outcome.failures {
+  // the index and are retried by the periodic loop or a management
+  // POST /refresh; only a refresh that cannot start at all (unreadable
+  // token_file, client build) aborts startup, since that is an
+  // operator error no retry will fix.
+  let failures = refresh::refresh_all(&state).await?;
+  if !failures.is_empty() {
+    for failure in &failures {
       eprintln!("warning: initial refresh: {failure}");
     }
-    if configuration.server.refresh_interval_secs.is_none() {
+    if refresh_interval.is_none() {
       eprintln!(
         "warning: no refresh_interval_secs configured — the failed \
-         sites stay absent from the index until a restart"
+         sites stay absent until a POST /api/v1/refresh or a restart"
       );
     }
   }
 
-  let state = Arc::new(AppState {
-    index: tokio::sync::RwLock::new(outcome.index),
-    api_token: configuration.server.api_token.clone(),
-  });
-
-  let shutdown_grace_period =
-    Duration::from_secs(configuration.server.shutdown_grace_period_secs);
-  if let Some(secs) = configuration.server.refresh_interval_secs {
-    refresh::spawn_periodic(
-      state.clone(),
-      Arc::new(configuration),
-      Duration::from_secs(secs),
-    );
+  if let Some(secs) = refresh_interval {
+    refresh::spawn_periodic(state.clone(), Duration::from_secs(secs));
   }
 
   let app =
