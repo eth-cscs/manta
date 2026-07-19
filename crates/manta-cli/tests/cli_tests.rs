@@ -220,3 +220,113 @@ fn backend_command_without_a_site_errors_clearly() {
     .failure()
     .stderr(predicate::str::contains("No site selected"));
 }
+
+// ---------------------------------------------------------------------------
+// CLI-side site pre-resolution via manta-cache (cache_url in cli.toml)
+// ---------------------------------------------------------------------------
+
+/// Write a `cli.toml` with no `site` but a `cache_url`, plus
+/// `read_only = true` so mutating commands stop deterministically
+/// (offline, no auth prompt) right after resolution.
+fn cache_config(
+  cache_url: &str,
+  read_only: bool,
+) -> (tempfile::TempDir, std::path::PathBuf) {
+  let dir = tempfile::tempdir().unwrap();
+  let path = dir.path().join("cli.toml");
+  fs::write(
+    &path,
+    format!(
+      "log = \"error\"\n\
+       manta_server_url = \"https://127.0.0.1:1\"\n\
+       cache_url = \"{cache_url}\"\n\
+       read_only = {read_only}\n"
+    ),
+  )
+  .unwrap();
+  (dir, path)
+}
+
+/// One-shot HTTP mock: accepts a single connection and answers with
+/// `body` as JSON. Returns the base URL to put in `cache_url`.
+fn spawn_cache_mock(body: &'static str) -> String {
+  let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+  let addr = listener.local_addr().unwrap();
+  std::thread::spawn(move || {
+    if let Ok((mut stream, _)) = listener.accept() {
+      use std::io::{Read, Write};
+      let mut buf = [0u8; 4096];
+      let _ = stream.read(&mut buf);
+      let _ = write!(
+        stream,
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
+         Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+      );
+    }
+  });
+  format!("http://{addr}")
+}
+
+/// Scenario 1: a group-targeting command with no site resolves the
+/// site through the cache (visible on stderr), then proceeds — here
+/// into the read-only gate, proving resolution happened first and the
+/// "No site selected" path was never taken.
+#[test]
+fn cache_resolves_site_for_group_command() {
+  let url = spawn_cache_mock(r#"{"site":"alps"}"#);
+  let (_dir, path) = cache_config(&url, true);
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["power", "off", "group", "compute", "--assume-yes"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains(
+      "site 'alps' resolved via manta-cache (group 'compute')",
+    ))
+    .stderr(predicate::str::contains("read-only mode"))
+    .stderr(predicate::str::contains("No site selected").not());
+}
+
+/// Scenario 6 (cache down): resolution degrades with a warning and the
+/// command falls back to today's "No site selected" error.
+#[test]
+fn cache_unreachable_degrades_to_site_required() {
+  // Bind then immediately drop the listener so the port is closed.
+  let addr = {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.local_addr().unwrap()
+  };
+  let (_dir, path) = cache_config(&format!("http://{addr}"), false);
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["get", "group-nodes", "compute"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("site resolution degraded"))
+    .stderr(predicate::str::contains("No site selected"));
+}
+
+/// Scenario 3 (split xname list): the cache answers, the answer names
+/// two sites, and the CLI aborts with the per-xname resolutions —
+/// before any manta-server call.
+#[test]
+fn cache_split_xnames_error_names_both_sites() {
+  let url = spawn_cache_mock(
+    r#"{"site":null,
+        "resolutions":{"x1000c0s0b0n0":"alps","x2000c0s0b0n0":"daint"},
+        "unknown":[]}"#,
+  );
+  let (_dir, path) = cache_config(&url, false);
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .args(["get", "nodes", "x1000c0s0b0n0,x2000c0s0b0n0"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("do not resolve to a single site"))
+    .stderr(predicate::str::contains("x1000c0s0b0n0 → alps"))
+    .stderr(predicate::str::contains("x2000c0s0b0n0 → daint"));
+}

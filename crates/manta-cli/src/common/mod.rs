@@ -16,6 +16,8 @@
 //!   configured in read-only mode.
 //! - [`session`] — per-invocation JWT-derived facts (username, name,
 //!   is_admin, accessible_groups).
+//! - [`site_resolution`] — asks the manta-cache service which site
+//!   owns a command's group/xname target when no `--site` was given.
 
 pub mod app_context;
 pub mod authentication;
@@ -26,3 +28,4 @@ pub mod hooks;
 pub mod multi_line;
 pub mod read_only;
 pub mod session;
+pub mod site_resolution;
