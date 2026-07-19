@@ -1,6 +1,6 @@
 # manta-cache — roadmap
 
-> **Status:** Stages 1 + 2 delivered (collapsed). The crate **now exists** as a standalone workspace member. Rather than building a module inside `manta-server` and extracting it later, Stage 1 was implemented directly as the `manta-cache` crate — the cache has no compile-time dependency on `manta-server` (HTTP-only), so the intermediate module step bought nothing. Stages 3 (HTTP API) and 4 (management + `manta-server` integration) remain as planned below.
+> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing), and the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below). Stage 4 (management endpoints + `manta-server` integration) remains as planned.
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
@@ -75,6 +75,14 @@ Two **sub-decisions surfaced by the shape choice** remain for the Stage-3 implem
 - **Securing the cache's own endpoints** — as a shared network service, the lookup API needs its own TLS + caller-auth story (the in-proc and Unix-socket shapes would have sidestepped this).
 
 **Acceptance.** A `curl` from outside the host process can query the three endpoints; the shape and content of the responses match what the in-process API returned at Stage 2.
+
+> **✅ Delivered** as the `crates/manta-cache-server` binary. What shipped, and the sub-decisions taken:
+>
+> - **Endpoints** (under an `/api/v1` prefix, matching manta conventions rather than the bare draft paths above): `GET /api/v1/sites` → `["alps", …]`; `GET /api/v1/lookup/group/{label}` → `{"site": "…"}` or 404; `GET /api/v1/lookup/nodes?xnames=…` → `{"site": <unanimous-or-null>, "resolutions": {xname: site}, "unknown": [xname]}` (400 only for a missing/empty `xnames` param — split or partially-unknown lists are stated in the 200 payload for the Stage-4 caller to police). Plus an unauthenticated `GET /health` for probes.
+> - **Config**: `cache-server.toml` in the shared manta config dir (`MANTA_CACHE_SERVER_CONFIG` to override), `[server]` + `[sites.<name>]` blocks; the bootstrap mirrors `manta-server` (hand-rolled flags, fail-closed TLS unless `allow_http`, graceful SIGTERM drain, startup summary). Default ports 8444 (TLS) / 8081 (plain) — one above manta-server's, so a colocated pair never collides.
+> - **Token sourcing** (sub-decision): per site, exactly one of inline `token` or `token_file`; `token_file` is re-read on every refresh, so a secret manager can rotate credentials without a restart.
+> - **Securing the cache's endpoints** (sub-decision): TLS fail-closed like manta-server, plus an optional `[server] api_token` shared bearer secret guarding `/api/v1/*` (absent = rely on network controls). Revisit for something stronger if the multi-project consumers need it.
+> - **Refresh lifecycle**: initial refresh before the listener binds; per-site failures are tolerated (failed sites are absent, warned about, and retried by the optional `refresh_interval_secs` periodic loop, which swaps the index wholesale — keeping a failed site's stale entries alive is Stage-4 persistence territory). On-demand refresh endpoints stay in Stage 4.
 
 ## Stage 4 — Management functionalities + manta-server integration
 
