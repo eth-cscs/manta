@@ -1,6 +1,6 @@
 # manta-cache — roadmap
 
-> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** endpoints are live; and the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4). What remains: the conflict policy, the descoped site-CRUD question, the optional stale-window/persistence items, and the live end-to-end walkthrough (all offline tests pass; the walkthrough against real sites is still pending VPN + Keycloak access).
+> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** endpoints are live; and the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4). What remains: the conflict policy, the descoped site-CRUD question, and the optional stale-window/persistence items. The full chain was verified live against prealps on 2026-07-19 — see [LIVE-TEST.md](LIVE-TEST.md) for the reproducible walkthrough.
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
@@ -143,6 +143,8 @@ Per the CLI-side pre-resolution decision (Stage 4 above), the cache is consulted
 4. `manta-server` behaves as today — it still receives an explicit site header on every request.
 
 ### Local test setup
+
+**Step-by-step runbook: [LIVE-TEST.md](LIVE-TEST.md)** (three-terminal setup, config snippets, and the walkthrough below as concrete commands; verified 2026-07-19 against prealps).
 
 The integration can be exercised against a locally running `manta-cache-server` + `manta-server` pointed at the real CSCS test sites. The cache runs its initial refresh before its listener binds, so both prerequisites below must be satisfied **before** `manta-cache-server` is launched — otherwise the affected sites fail their refresh and are simply absent from the index (reported in the startup warnings, recoverable via `POST /api/v1/refresh`).
 
