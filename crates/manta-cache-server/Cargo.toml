@@ -37,4 +37,6 @@ tracing-subscriber = { workspace = true }
 
 [dev-dependencies]
 # `ServiceExt::oneshot` drives the router in-process for route tests.
-tower = { version = "0.5", features = ["util"] }
+tower    = { version = "0.5", features = ["util"] }
+# Mock manta-server for the management-refresh success-path tests.
+wiremock = "0.6"
