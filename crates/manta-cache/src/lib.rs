@@ -60,5 +60,5 @@ mod site;
 
 pub use error::CacheError;
 pub use index::{Index, NodeMembership, SiteSnapshot};
-pub use refresh::{RefreshOutcome, refresh};
+pub use refresh::{RefreshOutcome, SnapshotOutcome, fetch_snapshots, refresh};
 pub use site::SiteDescriptor;
