@@ -1,6 +1,6 @@
 # manta-cache
 
-> **Status:** Stage 1 landed. The crate **now exists** as a standalone workspace member (`crates/manta-cache/src/`), built directly rather than as a module inside `manta-server` first — collapsing the roadmap's Stage 1 + Stage 2, since the cache has no compile-time dependency on `manta-server` (it talks to it over HTTP). What ships today is the **core library**: `SiteDescriptor`, `Index` with synchronous lookups (`group_to_site`, `xname_to_site`, `groups`, `sites`, `group_members`), an async `refresh()`, and an HTTP-free constructor (`Index::from_snapshots`) for embedding processes and fixture-driven tests. The HTTP API (Stage 3) and `manta-server` integration (Stage 4) are not built yet. See [ROADMAP.md](ROADMAP.md).
+> **Status:** Stages 1–3 landed. This crate is the **core library** (built directly as a standalone workspace member, collapsing the roadmap's Stage 1 + Stage 2): `SiteDescriptor`, `Index` with synchronous lookups (`group_to_site`, `xname_to_site`, `groups`, `sites`, `group_members`), an async partial-failure-tolerant `refresh()`, and an HTTP-free constructor (`Index::from_snapshots`). The Stage-3 HTTP API ships as the sibling **`crates/manta-cache-server`** binary — a standalone shared lookup service (see the deployment-shape decision in [ROADMAP.md](ROADMAP.md)). The `manta-server` integration (Stage 4) is not built yet.
 
 A site-resolution cache for manta. It learns which **site** (CSM / OpenCHAMI cluster) each group and each compute node lives at, so the user does not have to name the site explicitly on every command.
 

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server", "crates/manta-cache"]
+members = ["crates/manta-shared", "crates/manta-cli", "crates/manta-server", "crates/manta-cache", "crates/manta-cache-server"]
 
 # Shared package metadata. Inherited per-crate via `version.workspace = true`.
 [workspace.package]
@@ -28,6 +28,9 @@ repository   = "https://github.com/eth-cscs/manta"
 # compatible. Bump this in lockstep with the workspace version on
 # every release.
 manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-beta.68" }
+# In-workspace path dep (both ends are publish = false, so no registry
+# version to pin — unlike manta-shared above).
+manta-cache              = { path = "crates/manta-cache" }
 # Sibling repos — registry-only (no `path = "../..."`) so CI runners
 # and fresh-clone contributors that don't have the adjacent sibling
 # checkouts can still resolve them. cargo's `path` attribute is
