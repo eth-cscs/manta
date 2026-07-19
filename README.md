@@ -250,6 +250,8 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
+A third, optional binary — `manta-cache-server`, the site-resolution cache behind `cli.toml`'s `cache_url` — reads its own `cache-server.toml` from the same directory; its schema, API, roadmap, and a live-test runbook live in [`crates/manta-cache/`](crates/manta-cache/).
+
 The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream. The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
 
 **`cli.toml`**
