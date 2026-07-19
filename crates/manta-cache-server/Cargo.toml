@@ -1,0 +1,40 @@
+[package]
+name        = "manta-cache-server"
+description = "Standalone HTTP service exposing the manta-cache site-resolution index."
+# Not published: deployment artifact, not a library. The reusable logic
+# lives in the manta-cache crate; this binary is its HTTP wrapper.
+publish     = false
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license-file           = "LICENSE"
+repository.workspace   = true
+
+[[bin]]
+name = "manta-cache-server"
+path = "src/main.rs"
+
+[dependencies]
+# The cache core: Index, refresh(), SiteDescriptor.
+manta-cache = { workspace = true }
+
+# HTTP server framework — same versions/features as manta-server.
+axum        = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
+axum-server = { version = "0.8", features = ["tls-rustls"] }
+tokio       = { workspace = true }
+
+# TLS bootstrap (rustls CryptoProvider install, mirroring manta-server).
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
+
+# Config file (cache-server.toml) parsing + platform config-dir lookup.
+toml        = { workspace = true }
+directories = { workspace = true }
+
+serde              = { workspace = true }
+serde_json         = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+[dev-dependencies]
+# `ServiceExt::oneshot` drives the router in-process for route tests.
+tower = { version = "0.5", features = ["util"] }
