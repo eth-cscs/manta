@@ -72,14 +72,26 @@ impl RefreshOutcome {
   }
 }
 
-/// Refresh the index by querying every site concurrently.
+/// What a [`fetch_snapshots`] produced: the raw per-site snapshots
+/// (for callers that keep their own snapshot store, e.g. to rebuild
+/// the index after re-fetching a single site) plus per-site errors.
+#[derive(Debug)]
+pub struct SnapshotOutcome {
+  /// One snapshot per site that answered, in input order.
+  pub snapshots: Vec<SiteSnapshot>,
+  /// One [`CacheError`] per failed site, in input order (each variant
+  /// names the site). Empty on full success.
+  pub failures: Vec<CacheError>,
+}
+
+/// Fetch every site's snapshot concurrently, without folding them into
+/// an [`Index`].
 ///
-/// The fan-out tolerates per-site failure: sites that answer contribute
-/// their snapshot to [`RefreshOutcome::index`], sites that fail
-/// contribute a [`CacheError`] to [`RefreshOutcome::failures`] (and are
-/// logged at `warn`). The caller picks the policy — reject an
-/// incomplete refresh via [`RefreshOutcome::is_complete`], or serve the
-/// partial index and retry the failed sites later.
+/// This is the lower-level half of [`refresh`], for callers that keep
+/// the snapshots — e.g. a service that re-fetches one site on demand
+/// and rebuilds via [`Index::from_snapshots`] together with the other
+/// sites' stored snapshots. Per-site failures are logged at `warn` and
+/// collected in [`SnapshotOutcome::failures`].
 ///
 /// # Errors
 ///
@@ -87,10 +99,10 @@ impl RefreshOutcome {
 /// be created — the only failure that precedes the fan-out. Per-site
 /// failures ([`CacheError::Request`] / [`CacheError::Status`]) never
 /// error the call; they are collected in the outcome.
-pub async fn refresh(
+pub async fn fetch_snapshots(
   sites: &[SiteDescriptor],
-) -> Result<RefreshOutcome, CacheError> {
-  tracing::debug!(site_count = sites.len(), "cache refresh starting");
+) -> Result<SnapshotOutcome, CacheError> {
+  tracing::debug!(site_count = sites.len(), "snapshot fetch starting");
 
   // One pooled client, reused across every site request. Both timeouts
   // are load-bearing: the fan-out completes only when the slowest site
@@ -117,14 +129,39 @@ pub async fn refresh(
       }
     }
   }
+  Ok(SnapshotOutcome {
+    snapshots,
+    failures,
+  })
+}
 
-  let index = Index::from_snapshots(snapshots);
+/// Refresh the index by querying every site concurrently.
+///
+/// The fan-out tolerates per-site failure: sites that answer contribute
+/// their snapshot to [`RefreshOutcome::index`], sites that fail
+/// contribute a [`CacheError`] to [`RefreshOutcome::failures`] (and are
+/// logged at `warn`). The caller picks the policy — reject an
+/// incomplete refresh via [`RefreshOutcome::is_complete`], or serve the
+/// partial index and retry the failed sites later. To keep the raw
+/// snapshots instead of the folded index, use [`fetch_snapshots`].
+///
+/// # Errors
+///
+/// Same as [`fetch_snapshots`], which this wraps.
+pub async fn refresh(
+  sites: &[SiteDescriptor],
+) -> Result<RefreshOutcome, CacheError> {
+  let outcome = fetch_snapshots(sites).await?;
+  let index = Index::from_snapshots(outcome.snapshots);
   tracing::debug!(
     sites = index.sites().count(),
-    failures = failures.len(),
+    failures = outcome.failures.len(),
     "cache refresh complete"
   );
-  Ok(RefreshOutcome { index, failures })
+  Ok(RefreshOutcome {
+    index,
+    failures: outcome.failures,
+  })
 }
 
 /// Gather one site's snapshot from its two group endpoints.
