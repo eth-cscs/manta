@@ -265,6 +265,8 @@ hsm_group            = "nodes_free"                          # optional: default
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
 read_only            = false                                 # optional: refuse mutating verbs locally (see below)
 request_timeout_secs = 600                                   # optional: per-request HTTP timeout (seconds). Default 300 for REST calls; streams (SSE log tail, WS console) unlimited. Setting this also caps streams — pick a value larger than your worst-case session if you set it.
+cache_url            = "https://manta-cache.cscs.ch:8444"    # optional: manta-cache-server used to resolve the site when none is named and the command targets a group or plain xname list (see crates/manta-cache/ROADMAP.md). Unreachable cache = fall back to requiring --site.
+cache_api_token      = "shared-secret"                       # optional: only when the cache requires its [server] api_token
 
 # Optional CLI-side wait loops. Values shown are the built-in defaults;
 # delete a line to keep the default. Full annotations in examples/cli.toml.

@@ -1,6 +1,6 @@
 # manta-cache — roadmap
 
-> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 partially delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); and the Stage-4 management **refresh** endpoints are live. What remains of Stage 4: the CLI-side pre-resolution integration (decided, not yet built — see Stage 4), the conflict policy, and the descoped site-CRUD question.
+> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** endpoints are live; and the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4). What remains: the conflict policy, the descoped site-CRUD question, the optional stale-window/persistence items, and the live end-to-end walkthrough (all offline tests pass; the walkthrough against real sites is still pending VPN + Keycloak access).
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
@@ -107,6 +107,13 @@ The originally-drafted **site CRUD** (`POST /sites`, `PUT /sites/{name}`, `DELET
 4. Neither → error as today (site is required).
 
 From the resolved site onward everything is unchanged: the right per-site token cache, the right `X-Manta-Site` header, per-user authorisation in the `manta-server` handler. The CLI grows two `cli.toml` keys (`cache_url`, optional `cache_api_token`) and degrades gracefully — cache unreachable means "site required", exactly today's behaviour. `manta-server` needs **no change** for this design.
+
+> **✅ CLI-side pre-resolution delivered** (`manta-cli`'s `common/site_resolution.rs`, hooked into `run_cli` before `AppContext` is built). Scope notes:
+>
+> - The clap tree has no uniform target-argument id, so the resolver uses a **closed per-command table**: `power on/off/reset group|nodes`, `get nodes`, `get group-nodes`, `get sessions` (via its `--group`/`--xnames` filters), `apply boot group|nodes`, `apply boot-parameters`, `apply kernel-parameters`, `console node`. Commands outside the table simply follow the old no-site path; extend the table in `extract_target` as commands earn support.
+> - Only **plain xname lists** resolve. Hostlist bracket expressions and NIDs are skipped (the cache indexes xnames; expansion is server-side), falling back to requiring `--site`.
+> - Failure semantics as designed: transport failures warn and degrade to the lazy "No site selected" error; definitive answers (unknown group, split list, rejected `cache_api_token`) abort with a specific message — silently guessing a site could aim a destructive command at the wrong cluster. A successful resolution prints a one-line notice on stderr.
+> - Covered by unit tests (target extraction incl. bracket/NID guards, reply interpretation) and three end-to-end `assert_cmd` tests driving the real binary against a mock cache (resolve, degrade, split).
 
 **Security stance (decided 2026-07).** The lookup endpoints serve read-only routing metadata — site names, group labels, xnames; no member lists, credentials, or per-node state — considered non-sensitive inside the deployment perimeter. They are open by default, gated by the optional shared `api_token`, and protected primarily by network placement. Two deliberate caveats: the management endpoints always require the token (above), and TLS on the cache matters for **integrity** more than secrecy — a tampered resolution answer could steer a destructive command at the wrong cluster, so production deployments should still terminate the cache behind TLS.
 
