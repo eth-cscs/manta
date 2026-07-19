@@ -62,18 +62,17 @@ Endpoints, draft (final shapes TBD during implementation):
 | `GET` | `/lookup/group/{label}` | Resolve `group → site` |
 | `GET` | `/lookup/nodes?xnames=…` | Resolve a comma-separated xname list → site(s) |
 
-**Deployment shape is decided at this stage**, not before. Three viable shapes:
+**Deployment shape — decided (2026-07, with the maintainer): standalone shared service.** A separate `manta-cache-server` binary that every `manta-server` instance points at. The deciding factor is the long-term plan to use the cache from other projects (OpenCHAMI tooling among them): a consumer outside this repo rules out in-process endpoints on `manta-server`. The multi-project features themselves are out of scope for now (and may eventually argue for extracting the crate to its own repo); the shape decision is what matters here. For the record, the rejected alternatives were:
 
-1. **In-process endpoints on `manta-server`** — the simplest; the cache is just more routes on the existing Axum router. Each `manta-server` still owns its own cache.
-2. **Standalone shared service** — a separate `manta-cache-server` binary that all `manta-server` instances point at. One cache for the whole org. More ops cost; biggest payoff.
-3. **Sidecar binary** — one `manta-cache-server` colocated 1:1 with each `manta-server`, talked to over a Unix socket or loopback HTTP. Process isolation without a network hop.
+1. ~~**In-process endpoints on `manta-server`**~~ — the cache as more routes on the existing Axum router. Ruled out by the multi-project consumer.
+2. ~~**Sidecar binary**~~ — one `manta-cache-server` colocated 1:1 with each `manta-server`. Nothing stops an operator from deploying the standalone binary this way, but the *design target* (config, auth, TLS) is the shared service.
 
-**Authentication** also lands here. The cache has to call `GET /groups/*` on every site to refresh, which means it needs a bearer token per site. Two models:
+**Authentication — decided (2026-07): service-account-style token per site.** The cache holds one rotated, scoped token per site; all users share the resulting index; per-user authorisation continues to run in the `manta-server` handler that ultimately receives the resolved request. The per-user-cache alternative (index built with the caller's own token, partitioned per `(user, site)`) was rejected: for a deployment shared by many users it multiplies refresh traffic and memory by the user count for little gain, since the cache only routes.
 
-- **Service-account-style token per site** (the default expectation). The cache holds one rotated, scoped token per site; all users share the resulting index; per-user authorisation continues to run in the `manta-server` handler that ultimately receives the resolved request.
-- **Per-user cache** — the index is built using the caller's own token and partitioned per `(user, site)`. Better authorisation fidelity at cache level, but multiplies traffic and memory by the user count.
+Two **sub-decisions surfaced by the shape choice** remain for the Stage-3 implementer:
 
-Both decisions are noted as [Open questions](#open-questions); the implementer of Stage 3 picks before writing code.
+- **Service-account token sourcing** — where the per-site tokens come from (config file, environment, Vault) and how rotation reaches the running service.
+- **Securing the cache's own endpoints** — as a shared network service, the lookup API needs its own TLS + caller-auth story (the in-proc and Unix-socket shapes would have sidestepped this).
 
 **Acceptance.** A `curl` from outside the host process can query the three endpoints; the shape and content of the responses match what the in-process API returned at Stage 2.
 
@@ -131,7 +130,7 @@ The cache is consulted by `manta-server`'s request entry point, before per-handl
    - xname list in the request → `GET /lookup/nodes?xnames=…` → site name (or `400` if the list straddles sites).
 4. The resolved site name is injected into the request context; the handler proceeds as if `X-Manta-Site` had been supplied.
 
-The deployment shape chosen at Stage 3 (in-process / sidecar / standalone) determines whether step 3 is a function call or an HTTP call, but the behaviour under test is the same.
+With the standalone-service shape decided at Stage 3, step 3 is an HTTP call to `manta-cache-server` (the behaviour under test would be the same for any shape).
 
 ### Local test setup
 
@@ -177,8 +176,8 @@ These are the decisions the roadmap deliberately punts on until the stage that a
 | Question | Decide at | Why deferred |
 |---|---|---|
 | ~~`manta-server` vs `manta-shared` as Stage-1 home~~ | ~~Stage 1 kickoff~~ | **Resolved:** standalone crate — no compile-time dep on either (HTTP-only). |
-| Deployment shape: in-proc / sidecar / standalone | Stage 3 | The choice does not affect the Stage-1 or Stage-2 code; only the wrapper around it. |
-| Auth model: service-account vs per-user | Stage 3 | Same — Stages 1 and 2 take a token, they don't care where it came from. |
+| ~~Deployment shape: in-proc / sidecar / standalone~~ | ~~Stage 3~~ | **Resolved (2026-07): standalone shared service** — planned reuse from other projects (OpenCHAMI) rules out in-proc. See Stage 3 for the rationale and the two sub-decisions it surfaces (token sourcing, securing the cache's own endpoints). |
+| ~~Auth model: service-account vs per-user~~ | ~~Stage 3~~ | **Resolved (2026-07): service-account-style token per site**; shared index, per-user authorisation stays in the downstream `manta-server` handler. |
 | Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. Stage 1 ships documented deterministic rules (see `Index`'s "Conflict handling" doc), not a policy. |
 | Persistence (in-memory vs on-disk snapshot) | Stage 4 | A cold start is a few HTTP calls per site; tolerable until the deployment shape pushes back. |
 | Refresh cadence (pull-on-demand vs periodic background) | Stage 4 | Depends on the deployment shape and traffic pattern. |
