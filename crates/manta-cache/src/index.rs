@@ -155,6 +155,19 @@ impl Index {
   pub fn groups(&self) -> impl Iterator<Item = &str> {
     self.group_members.keys().map(String::as_str)
   }
+
+  /// Iterate over every known `(xname, site)` pair.
+  ///
+  /// Unlike [`Index::groups`] and [`Index::sites`], the order is
+  /// **unspecified** — the backing map is a `HashMap`, chosen for O(1)
+  /// [`Index::xname_to_site`]. Collect into an ordered container when
+  /// the output has to be stable (a dump that gets diffed, say).
+  pub fn xnames(&self) -> impl Iterator<Item = (&str, &str)> {
+    self
+      .xname_to_site
+      .iter()
+      .map(|(xname, site)| (xname.as_str(), site.as_str()))
+  }
 }
 
 #[cfg(test)]
@@ -247,6 +260,21 @@ mod tests {
     assert_eq!(
       idx.groups().collect::<Vec<_>>(),
       vec!["compute", "compute_d", "empty", "gpu"]
+    );
+  }
+
+  #[test]
+  fn xnames_enumerates_every_pair() {
+    let idx = sample();
+    let mut pairs: Vec<_> = idx.xnames().collect();
+    pairs.sort(); // iteration order is unspecified by contract
+    assert_eq!(
+      pairs,
+      vec![
+        ("x1000c0s0b0n0", "alps"),
+        ("x1000c0s0b0n1", "alps"),
+        ("x2000c0s0b0n0", "daint"),
+      ]
     );
   }
 
