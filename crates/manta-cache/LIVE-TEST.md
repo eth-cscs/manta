@@ -113,6 +113,35 @@ cargo run -p manta-cli -- get group-nodes <a-real-group>
 curl -s -X POST -H "Authorization: Bearer local-test" \
   http://127.0.0.1:8081/api/v1/refresh
 # → {"sites":["<site>"],"failures":[]}
+
+# 7. Inspect what is actually cached — the debugging dump
+curl -s -H "Authorization: Bearer local-test" \
+  http://127.0.0.1:8081/api/v1/dump | jq
+```
+
+`GET /dump` is the endpoint to reach for when a resolution surprises
+you. It is management-gated (it is the only one serving group member
+lists), and its `groups`/`xnames` are a bulk mirror of what the lookups
+would answer — so it tells you what the CLI *would have* resolved,
+without running a command. Useful slices:
+
+```bash
+DUMP='curl -s -H "Authorization: Bearer local-test" http://127.0.0.1:8081/api/v1/dump'
+
+# Is the cache stale, and did every site refresh?
+eval $DUMP | jq '.sites'          # age_seconds, last_error, in_index
+
+# Why did this group resolve to that site?
+eval $DUMP | jq '.groups["<a-real-group>"]'
+
+# Anything contested across sites? (empty on a single-site setup)
+eval $DUMP | jq '.conflicts'
+
+# Diff two dumps: drop the fields that change on every call, or the
+# diff is pure noise.
+eval $DUMP | jq 'del(.generated_at, .sites[].age_seconds)' > /tmp/before
+# … do something, refresh …
+eval $DUMP | jq 'del(.generated_at, .sites[].age_seconds)' | diff /tmp/before -
 ```
 
 (The cross-site split scenario needs a second configured site — see
