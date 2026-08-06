@@ -1,18 +1,18 @@
 # manta-cache — roadmap
 
-> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** and **dump** endpoints are live; and the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4). What remains: the conflict policy, the descoped site-CRUD question, and the optional stale-window/persistence items. The full chain was verified live against prealps on 2026-07-19 — see [LIVE-TEST.md](LIVE-TEST.md) for the reproducible walkthrough.
+> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered, Stage 5 delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** and **dump** endpoints are live; the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4); and Stage 5 moved the refresh onto **per-site service accounts**. What remains: the conflict policy, the descoped site-CRUD question, and the optional stale-window/persistence items. The full chain was verified live against prealps on 2026-07-19 — see [LIVE-TEST.md](LIVE-TEST.md) for the reproducible walkthrough.
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
-Four stages. Each stage produces a self-contained deliverable that can be merged, reviewed, and used on its own; nothing later is a hard prerequisite for the user-visible payoff of an earlier stage.
+Five stages. Each stage produces a self-contained deliverable that can be merged, reviewed, and used on its own; nothing later is a hard prerequisite for the user-visible payoff of an earlier stage.
 
 ```text
-  Stage 1            Stage 2            Stage 3            Stage 4
-  ────────           ────────           ────────           ─────────────────
-  rust module    ──> extract into   ──> HTTP API       ──> management ops,
-  inside             manta-cache        wrapped              integration with
-  manta-server       crate              around crate         manta-server,
-  / manta-shared                                             persistence,
+  Stage 1            Stage 2            Stage 3            Stage 4              Stage 5
+  ────────           ────────           ────────           ─────────────────    ────────────────
+  rust module    ──> extract into   ──> HTTP API       ──> management ops,  ──> production
+  inside             manta-cache        wrapped              integration with     credentials
+  manta-server       crate              around crate         manta-server,        (service
+  / manta-shared                                             persistence,          accounts)
                                                              conflict policy
 ```
 
@@ -80,7 +80,7 @@ Two **sub-decisions surfaced by the shape choice** remain for the Stage-3 implem
 >
 > - **Endpoints** (under an `/api/v1` prefix, matching manta conventions rather than the bare draft paths above): `GET /api/v1/sites` → `["alps", …]`; `GET /api/v1/lookup/group/{label}` → `{"site": "…"}` or 404; `GET /api/v1/lookup/nodes?xnames=…` → `{"site": <unanimous-or-null>, "resolutions": {xname: site}, "unknown": [xname]}` (400 only for a missing/empty `xnames` param — split or partially-unknown lists are stated in the 200 payload for the Stage-4 caller to police). Plus an unauthenticated `GET /health` for probes.
 > - **Config**: `cache-server.toml` in the shared manta config dir (`MANTA_CACHE_SERVER_CONFIG` to override), `[server]` + `[sites.<name>]` blocks; the bootstrap mirrors `manta-server` (hand-rolled flags, fail-closed TLS unless `allow_http`, graceful SIGTERM drain, startup summary). Default ports 8444 (TLS) / 8081 (plain) — one above manta-server's, so a colocated pair never collides.
-> - **Token sourcing** (sub-decision): per site, exactly one of inline `token` or `token_file`; `token_file` is re-read on every refresh, so a secret manager can rotate credentials without a restart.
+> - **Token sourcing** (sub-decision): per site, exactly one of inline `token` or `token_file`; `token_file` is re-read on every refresh, so a secret manager can rotate credentials without a restart. **Superseded by Stage 5**, which removed inline `token` — `token_file` is now the only form — and added the credential advisory. *Where the tokens come from* (a Keycloak service account per site) was left open here and is settled there.
 > - **Securing the cache's endpoints** (sub-decision): TLS fail-closed like manta-server, plus an optional `[server] api_token` shared bearer secret guarding `/api/v1/*` (absent = rely on network controls). Revisit for something stronger if the multi-project consumers need it.
 > - **Refresh lifecycle**: initial refresh before the listener binds; per-site failures are tolerated (failed sites are absent, warned about, and retried by the optional `refresh_interval_secs` periodic loop, which swaps the index wholesale — keeping a failed site's stale entries alive is Stage-4 persistence territory). On-demand refresh endpoints stay in Stage 4.
 
@@ -101,7 +101,7 @@ The final stage delivers the user-visible payoff and the operability surface nee
 > **✅ Dump endpoint delivered** (`GET /api/v1/dump`) — a debugging view of the whole cache, for humans and `jq`. Not consumed by `manta-server` or the CLI. JSON only. What it answers, and the decisions behind each part:
 >
 > - **`groups` + `xnames` are a bulk mirror of the lookup endpoints** — same owners, same member lists, no second resolution path. The guiding rule was that the dump must be a trustworthy oracle for "what would the CLI have resolved", so it deliberately serves the derived `Index` rather than the raw snapshots.
-> - **`sites` is keyed by *configured* site, not indexed site.** A site whose refresh failed is absent from the index, and its absence is exactly what a reader is trying to explain — so each entry carries `manta_server_url`, `token_source` (`"inline"` or `{"file": "…"}`, **never** the token), `in_index`, `refreshed_at` + `age_seconds`, and `last_error`. This required new per-site state: `CacheState.status`, written by both refresh paths. The two fields are independent — a failed `POST /refresh/{site}` records the error while keeping the previous snapshot's timestamp, because that data is still what's serving.
+> - **`sites` is keyed by *configured* site, not indexed site.** A site whose refresh failed is absent from the index, and its absence is exactly what a reader is trying to explain — so each entry carries `manta_server_url`, `token_file` (the path, **never** the token; Stage 5 replaced the earlier `token_source` enum when inline tokens went away), `credential` (Stage 5's advisory block), `in_index`, `refreshed_at` + `age_seconds`, and `last_error`. This required new per-site state: `CacheState.status`, written by both refresh paths. The two fields are independent — a failed `POST /refresh/{site}` records the error while keeping the previous snapshot's timestamp, because that data is still what's serving.
 > - **`conflicts` is the one thing that is not a mirror.** `Index` resolves collisions at build time and keeps only the winner, so a group whose members were discarded when another site claimed the label is indistinguishable from a genuinely small group. Since the server holds the snapshots anyway, the dump re-scans them per request and reports contested labels/xnames with `claimed_by` (every site that contributed), `listed_by` (the subset that listed the label in `/groups/available`, which is what the tie-break actually runs over), `owner`, the tie-break `reason`, and `discarded_members` — **the xnames missing from the served member list**, so it is `[]` when sites disagree about ownership but not about membership. Listed rather than counted because the dump is otherwise index-only: those xnames appear nowhere else in the payload, so a count would report that a node went missing without saying which one. This matters in practice: `nodes_free` is a conventional pool name (see GUIDE.md), so the same label plausibly exists at several sites. It is a *diagnostic*, not a policy — the conflict-policy open question below is still open, and this endpoint is what makes it observable.
 > - **Auth: the management gate**, for a different reason than the refreshes. The dump is the only endpoint that serves group **member lists**, which the security stance below explicitly excludes from the open-by-default set. Operator-only by construction also keeps it clear of any future per-user filtering question — no end user ever sees it.
 > - **No filters or pagination.** A hand-called debug endpoint on an Alps-scale site is a few MB, dominated by the xname map and the member lists. The `discarded_members` lists ride on top of that, bounded by how many labels are actually contested — negligible in practice (two 5000-node sites contesting `nodes_free` adds ~75 KB), though a deployment where *most* labels collide would roughly double the payload. `?site=` / summary modes can be added if that ever bites.
@@ -135,6 +135,61 @@ From the resolved site onward everything is unchanged: the right per-site token 
 - **Persistence**. Decide whether to persist the index to disk (sqlite / JSON snapshot) so restarts skip the cross-site fan-out. May be in scope for Stage 4 or punted to a follow-up.
 
 **Acceptance.** An operator can run a `manta` command that names only a group or only a node list, with no `--site`, and it reaches the right cluster (via the CLI-side pre-resolution above). Failure modes (cross-site xname list, unknown group) produce clear errors naming the per-xname resolutions. The refresh half of runtime management is already delivered; site CRUD is not part of the acceptance unless the open question above resolves in its favour.
+
+## Stage 5 — Production credentials (service accounts)
+
+Stages 3 and 4 were developed and demoed against a **personal** credential: `token_file` pointed at the CLI's own token cache (`<cache_dir>/<site>_auth`), which made the live test a one-liner — whenever the operator re-authenticated, the cache followed. That is not a production deployment. A shared service must not refresh as a named human: the index silently inherits that person's group roles, dies when they leave or their token expires, and attributes every backend call to them.
+
+This stage moves the refresh onto **one Keycloak service account per site**, and — because the two credential kinds are byte-for-byte indistinguishable to the code that uses them — makes the difference *observable* instead of enforced.
+
+### What a service-account credential actually is (verified 2026-08-06)
+
+The credential is the same thing the CLI already accepts in `MANTA_CSM_TOKEN`: a Keycloak-issued JWT used verbatim as `Authorization: Bearer`. There is **no** exchange step, no client-credentials grant, and no Keycloak client for the cache to talk to. Decoding a real prealps service-account token gave:
+
+| Claim | Value |
+|---|---|
+| `typ` | `Bearer` |
+| `azp` | `manta-cache-test` (the Keycloak client id) |
+| `preferred_username` | `service-account-manta-cache-test` |
+| `iat` → `exp` | 2026-08-05 → 2027-08-05 (**one year**, via the `offline_access` scope) |
+| `realm_access.roles` | `default-roles-shasta`, `meda`, `offline_access`, `uma_authorization`, `gallina` |
+
+Three consequences drove the design:
+
+1. **It must be a JWT, not an opaque key.** `manta-cli`'s `SessionContext::from_parts` decodes `preferred_username`, `name`, and `realm_access.roles` from the bearer for every authenticated verb, so an opaque API key would never have worked through the CLI path either. The cache itself does not require this — it only forwards the bearer — but the credential is a JWT in practice, which is what makes the advisory below possible.
+2. **Service accounts are exactly identifiable.** Keycloak's convention is `preferred_username == "service-account-" + azp`. That is a string equality, not a heuristic: a human token carries a login name as `preferred_username` and can never satisfy it. So "is this a personal token?" is answerable with certainty.
+3. **The token's roles bound what the cache can index.** csm-rs's `get_group_name_available` (`hsm/group/utils.rs`) branches on the JWT: with `pa_admin` it returns every HSM group at the site; without it, the *available groups are the roles themselves*, minus Keycloak internals (`default-roles-shasta`, `offline_access`, `uma_authorization`) and site-wide umbrella names. The prealps account above therefore indexes exactly `meda` and `gallina`.
+
+### Decisions
+
+- **Storage — `token_file` only.** Inline `token` is removed from `[sites.<name>]`; a real Keycloak credential must not live in a config file that gets templated, backed up, or committed. `token_file` is already re-read on every refresh, so annual rotation is a file write with no restart. It is also the one form every deployment target can produce: a Kubernetes projected `Secret`, a systemd `LoadCredential=`, or a bind-mounted file all hand the process a path. `[server] api_token_file` is added alongside for the cache's own inbound bearer, which is the same class of secret.
+- **Permissions — warn, never refuse.** A group- or world-readable token file is worth flagging, but Kubernetes projected secrets default to `0644`, so failing closed would break the likeliest deployment target for a condition the operator often cannot change.
+- **Coverage — a deployment choice, not a code one.** Whether the service account carries `pa_admin` (cache resolves the whole site) or a scoped role set (cache resolves only those groups, everything else needs an explicit `--site`) is a Keycloak-side decision. The code is indifferent, and the CLI already degrades correctly: an unresolvable group falls back to "site is required", per the Stage-4 accelerator-not-dependency stance. `is_admin` is surfaced on `/dump` so the choice in force is visible without a role audit.
+- **Keep both credential kinds working, warn on personal ones.** No enforcement, no `--allow-user-token` escape hatch. The mechanism stays token-agnostic — which keeps [LIVE-TEST.md](LIVE-TEST.md)'s point-at-your-own-token flow working for demos — while the advisory makes a misdeployed personal token impossible to miss in the startup summary and on `/dump`.
+- **An empty snapshot is a failure, not a success.** See below.
+
+### The credential advisory
+
+On every token read the server decodes the JWT payload locally — base64 + JSON, no signature verification, exactly as `manta_shared::common::jwt_ops` does — and derives `principal` (`azp` for a service account, `preferred_username` for a person), `kind` (`service_account` / `user` / `unknown`), `expires_at`, `expires_in_days`, and `is_admin`. This is surfaced in two places: the startup summary, and a `credential` block on each `/api/v1/dump` site entry, next to the `token_file` path. The token value itself is never rendered anywhere.
+
+Warnings fire when the credential is a personal token, when it expires within 30 days, and when it has already expired (at `ERROR` level — a lapsed credential is an outage, not a heads-up). The near-expiry warning is the one that earns its keep: a credential that works for twelve months and then stops is precisely the kind nobody remembers, and `expires_at` on `/dump` gives monitoring something to alert on.
+
+Two details that look like nits and are not:
+
+- **`expires_in_days` floors rather than truncating.** `TimeDelta::num_days` divides toward zero, so a credential six hours past `exp` reports `0` — indistinguishable from one lapsing six hours from now, and enough to make the obvious `expires_in_days < 0` alert miss the entire first day of an outage. The warning text classifies on the timestamp directly, so it can never describe a lapsed credential as "expires in 0 day(s) — replace it before it lapses".
+- **The log dedup compares against the warnings previously *logged*, not against `previous.warnings(now)`.** Re-deriving both sides at the same instant makes them equal by construction for an unchanged token file, which suppresses every message after the first — a server booted eleven months before expiry would never report the lapse. The stored-warnings comparison is what makes the warning appear on the day it becomes true. `credential_state_changed` is a pure predicate precisely so this is testable; the regression test asserts on that decision, since the warnings are returned to the caller either way.
+
+The decode lives in `manta-cache-server`, not in `manta-cache` and not via `manta-shared`. Reaching for `manta_shared::common::jwt_ops` would drag `manta-backend-dispatcher` (+ csm/ochami types) into a deliberately standalone binary — the same trade already refused twice, for `config.rs`'s `ProjectDirs` lookup and `refresh.rs`'s `GroupNode` mirror. Thirty lines and a `base64` dependency is the cheaper side of that bargain.
+
+### Empty snapshots
+
+A site whose `GET /groups/available` returns `200 []` used to count as a successful refresh: `/dump` showed `in_index: true`, a fresh `refreshed_at`, and `last_error: null` — a site that looks perfectly healthy and resolves nothing, with no cause recorded anywhere.
+
+Partial visibility is expected (it is just the account's role set), but *empty* is not: there is no configuration in which you would list a site in `cache-server.toml` and want it to contribute nothing. It means the credential resolved to no HSM roles at all — expired, wrong account, roles removed, or pointed at the wrong site. A zero-label snapshot is therefore converted into a per-site failure carrying a diagnostic message.
+
+The conversion lives in `manta-cache-server::refresh`, not the library: `manta-cache` deliberately stays policy-free and hands availability decisions to the caller via `RefreshOutcome`. Both refresh paths then reuse the machinery already in place — `refresh_site` keeps the previous snapshot serving and records `last_error`, while `refresh_all` drops the site with `refreshed_at: null`, matching its documented wholesale-replace contract. Preserving a stale-but-good snapshot through a credential outage was considered and rejected as encroaching on the still-open stale-window question.
+
+**Acceptance.** `cache-server.toml` rejects an inline site token rather than ignoring it (the schema is `deny_unknown_fields`, so a half-migrated config that leaves `token` beside `token_file` fails to load instead of quietly parking a live credential in the file — and the error carries the migration); a cache refreshing as a personal token says so loudly at startup and on `/dump`; each site's principal, expiry and admin status are visible without decoding anything by hand; and a site that returns no groups is reported with a cause instead of appearing healthy.
 
 ---
 
@@ -200,6 +255,8 @@ These are the decisions the roadmap deliberately punts on until the stage that a
 | ~~`manta-server` vs `manta-shared` as Stage-1 home~~ | ~~Stage 1 kickoff~~ | **Resolved:** standalone crate — no compile-time dep on either (HTTP-only). |
 | ~~Deployment shape: in-proc / sidecar / standalone~~ | ~~Stage 3~~ | **Resolved (2026-07): standalone shared service** — planned reuse from other projects (OpenCHAMI) rules out in-proc. See Stage 3 for the rationale and the two sub-decisions it surfaces (token sourcing, securing the cache's own endpoints). |
 | ~~Auth model: service-account vs per-user~~ | ~~Stage 3~~ | **Resolved (2026-07): service-account-style token per site**; shared index, per-user authorisation stays in the downstream `manta-server` handler. |
+| ~~Service-account token sourcing (config / env / Vault) + rotation~~ | ~~Stage 3~~ | **Resolved (2026-08): `token_file` only**, one Keycloak service account per site; inline `token` removed. The file is re-read every refresh, so rotation needs no restart, and every deployment target (k8s projected Secret, systemd `LoadCredential=`, bind mount) can produce a path. See Stage 5. |
+| Service-account group coverage: `pa_admin` vs scoped roles | Deployment-time, per site | Not a code decision — csm-rs derives available groups from the token's realm roles, so the account's roles bound what the cache can index. Scoped is safe (unresolvable groups fall back to explicit `--site`); `pa_admin` makes the cache resolve the whole site. `/dump`'s `credential.is_admin` shows which is in force. |
 | Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. Stage 1 ships documented deterministic rules (see `Index`'s "Conflict handling" doc), not a policy — and the built `Index` does not retain that a collision happened, so surfacing candidates *in a lookup answer* needs library support. `GET /api/v1/dump` makes collisions observable in the meantime by re-scanning the snapshots. |
 | ~~Integration architecture: server-side vs CLI-side resolution~~ | ~~Stage 4~~ | **Resolved (2026-07): CLI-side pre-resolution** — per-site Keycloak tokens make server-side resolution self-defeating (the request would carry the wrong site's credential); see Stage 4. |
 | Site CRUD endpoints (runtime add/update/delete + config persistence) | Stage 4, if at all | Descoped from the original draft: declarative/read-only config deployments sit badly with a service rewriting its own TOML (and tokens). Needs a maintainer decision on whether runtime site management is wanted. |
