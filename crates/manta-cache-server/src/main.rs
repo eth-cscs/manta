@@ -17,6 +17,7 @@
 //!    optional periodic refresh, and serve until SIGTERM / Ctrl+C.
 
 mod config;
+mod credential;
 mod refresh;
 mod routes;
 
@@ -148,10 +149,16 @@ fn print_startup_summary(
   );
   println!(
     "  api_token:                   {}",
-    if configuration.server.api_token.is_some() {
-      "<set>"
-    } else {
-      "<none — /api/v1 is unauthenticated>"
+    match (
+      &configuration.server.api_token,
+      &configuration.server.api_token_file,
+    ) {
+      // `api_token_file` has already been read into `api_token` by
+      // `config::load`, so report the path the operator configured
+      // rather than the field it landed in.
+      (_, Some(path)) => format!("<set from {}>", path.display()),
+      (Some(_), None) => "<set>".to_string(),
+      (None, None) => "<none — /api/v1 is unauthenticated>".to_string(),
     }
   );
   println!(
@@ -163,19 +170,30 @@ fn print_startup_summary(
   );
   println!("  log_filter:                  {}", configuration.log);
   println!();
+  let now = chrono::Utc::now();
   let mut names: Vec<&String> = configuration.sites.keys().collect();
   names.sort();
   for name in names {
     let site = &configuration.sites[name];
     println!("[site: {name}]");
     println!("  manta_server_url: {}", site.manta_server_url);
-    println!(
-      "  credential:       {}",
-      match &site.token_file {
-        Some(path) => format!("token_file {}", path.display()),
-        None => "inline token".to_string(),
+    println!("  token_file:       {}", site.token_file.display());
+
+    // Describe the credential from its own claims, so a cache that is
+    // about to refresh as somebody's personal token says so before it
+    // ever reaches a site. Read failures are left silent here: the
+    // initial refresh reports them properly a moment later, and
+    // duplicating that as a summary line would only add noise.
+    match std::fs::read_to_string(&site.token_file) {
+      Ok(raw) => {
+        let info = credential::inspect(raw.trim());
+        println!("  credential:       {}", info.summary(now));
+        for warning in info.warnings(now) {
+          println!("  ⚠ WARNING:        {warning}");
+        }
       }
-    );
+      Err(e) => println!("  credential:       <unreadable: {e}>"),
+    }
   }
   println!();
 }

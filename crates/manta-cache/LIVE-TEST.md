@@ -40,10 +40,22 @@ api_token = "local-test"   # enables POST /api/v1/refresh; drop this line
 manta_server_url = "http://localhost:8080"   # same value as cli.toml's manta_server_url
 # Point straight at the CLI's cached JWT: the file holds the raw token,
 # and the cache re-reads it on every refresh — so whenever the CLI
-# re-authenticates, the cache follows automatically. (In production
-# this would be a dedicated service-account token instead.)
+# re-authenticates, the cache follows automatically.
 token_file = "<absolute path to the CLI token cache>/<site>_auth"
 ```
+
+> ⚠️ **The `token_file` above is a demo shortcut, not a deployment.**
+> Pointing it at your own token cache makes this walkthrough a one-liner,
+> but it refreshes the cache as *you*: the index inherits your Keycloak
+> roles, and it stops working when your token expires or your account
+> changes. Production uses one Keycloak **service account per site** —
+> see [Production credentials](README.md#production-credentials).
+>
+> The server does not forbid this (that is what keeps this demo usable),
+> but it will say so: expect a `⚠ WARNING: refreshing as personal
+> account '<you>'` line in the startup summary, and the same text under
+> `credential.warnings` in `GET /api/v1/dump`. Seeing that warning here
+> is correct; seeing it in production is a bug report.
 
 ### 2. `cli.toml` additions
 
