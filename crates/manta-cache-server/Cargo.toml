@@ -30,6 +30,13 @@ rustls = { version = "0.23", default-features = false, features = ["ring"] }
 toml        = { workspace = true }
 directories = { workspace = true }
 
+# RFC3339 timestamps for the dump endpoint's per-site freshness. The
+# workspace entry is `default-features = false`, which drops `clock`
+# (i.e. `Utc::now`); the other crates get it back through a transitive
+# feature-unification, but this one's dependency graph has nothing that
+# would, so it enables `clock` explicitly.
+chrono = { workspace = true, features = ["clock"] }
+
 serde              = { workspace = true }
 serde_json         = { workspace = true }
 tracing            = { workspace = true }

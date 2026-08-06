@@ -45,3 +45,39 @@ pub enum CacheError {
     body: String,
   },
 }
+
+impl CacheError {
+  /// The site this failure belongs to, or `None` for
+  /// [`CacheError::ClientBuild`] — the one variant that precedes the
+  /// fan-out and so blames no single site.
+  ///
+  /// Lets a caller fanning out over many sites attribute each failure
+  /// structurally instead of parsing the [`Display`](std::fmt::Display)
+  /// text.
+  pub fn site(&self) -> Option<&str> {
+    match self {
+      CacheError::ClientBuild(_) => None,
+      CacheError::Request { site, .. } | CacheError::Status { site, .. } => {
+        Some(site)
+      }
+    }
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  // `ClientBuild`'s `None` arm is not covered: `reqwest::Error` has no
+  // public constructor, so the variant cannot be built in a test. It is
+  // exhaustively matched above, so a new variant still breaks the build.
+  #[test]
+  fn site_names_the_failing_site() {
+    let status = CacheError::Status {
+      site: "alps".to_owned(),
+      status: 401,
+      body: "{\"error\":\"expired token\"}".to_owned(),
+    };
+    assert_eq!(status.site(), Some("alps"));
+  }
+}
