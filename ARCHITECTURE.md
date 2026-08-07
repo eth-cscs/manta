@@ -307,7 +307,6 @@ This means manta-server is a **single point of compromise** for everyone using i
 | Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
 | Audit event per auth attempt | code | `manta_server::server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }` to the configured Kafka producer. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
-| Read-only JWT-role gate on `/api/v1/*` | code | `server::auth_middleware::read_only_guard` refuses `POST`/`PUT`/`PATCH`/`DELETE` with 403 when the token's `realm_access.roles` claim contains `manta-read-only` (constant in `server::common::jwt_ops::READ_ONLY_ROLE`). The CLI mirrors this gate locally (see [GUIDE.md §13.1](GUIDE.md#131-cli-side-enforcement-local-fast-feedback)) for fast feedback before the HTTP request; this gate is the authoritative boundary. Provisioned in Keycloak; not a `server.toml` knob. |
 | TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence; manta-server's in-process limiter is belt-and-braces. |
 | Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
 | Network segmentation | **ops** | Treat manta-server as a privileged host. |
@@ -323,8 +322,7 @@ flowchart TD
     Req[Inbound HTTPS request] --> HSTS[HSTS header injector<br/>add_hsts_header]
     HSTS --> Split{nest path}
 
-    Split -->|/api/v1/*| ROG[read_only_guard<br/>refuses POST/PUT/PATCH/DELETE<br/>when JWT carries manta-read-only]
-    ROG --> Tmo[TimeoutLayer<br/>request_timeout_secs]
+    Split -->|/api/v1/*| Tmo[TimeoutLayer<br/>request_timeout_secs]
     Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
 
     Split -->|/api/v1/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
@@ -334,11 +332,9 @@ flowchart TD
     Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
 ```
 
-The diagram captures three facts that trip up new contributors: the nest split between `/api/v1/*` and `/api/v1/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path. `read_only_guard` is on `/api/v1/*` only — visible here, pinned by [`tests/server_routes.rs::auth_token_endpoint_is_not_affected_by_gate`](https://github.com/eth-cscs/manta/blob/main/crates/manta-server/tests/server_routes.rs).
+The diagram captures three facts that trip up new contributors: the nest split between `/api/v1/*` and `/api/v1/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path.
 
 **Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
-
-**On the `manta-read-only` JWT-role gate.** The role-based gate at `server::auth_middleware::read_only_guard` is *not* a signature-verification boundary — `jwt_ops::has_role` decodes the JWT body without verifying its signature (consistent with `is_user_admin`'s posture, documented inline in `jwt_ops.rs`). A forged token claiming the absence of `manta-read-only` would, in principle, slip past this gate and reach the handler; the handler then makes a backend call with that token, and the backend rejects the forged signature at the first round-trip. The gate is a **defence-in-depth control** that limits damage when a token's signature *does* verify but the user's permissions should still be reduced — it shifts the read-only policy from being a per-workstation `cli.toml` setting to being a property of the token itself, which is auditable in the identity provider. Local signature verification (per-site JWKS cache, `kid`-based rotation) is the long-term direction tracked in the `jwt_ops.rs` security caveat; this gate inherits that verification automatically when it lands.
 
 ---
 
