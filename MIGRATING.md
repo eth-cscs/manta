@@ -351,98 +351,13 @@ backend URLs, k8s/vault URLs (no secrets ever logged).
 Kafka topic. Same field shape as v1's audit block. If you don't run
 Kafka, omit the section — auditing is silent.
 
-### 2.7 Read-only access (optional)
-
-`manta-server` enforces a read-only policy when the caller's bearer
-token carries the realm role `manta-read-only`: every
-`POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*` is refused with
-`403 Forbidden`. Safe methods (`GET`/`HEAD`) and `/api/v1/auth/*`
-(login) pass through, so a read-only user can still inspect the
-cluster and refresh their token.
-
-The role is provisioned in your identity provider — there is no
-`server.toml` knob. For Keycloak:
-
-```bash
-# Create the realm role
-kcadm.sh create roles -r <realm> -s name=manta-read-only \
-  -s 'description=manta: refuses POST/PUT/PATCH/DELETE on /api/v1/*'
-
-# Assign it to a user
-kcadm.sh add-roles -r <realm> --uusername alice \
-  --rolename manta-read-only
-```
-
-No server restart is needed — the role takes effect on the next
-token the user obtains. The role string is `manta-read-only`,
-verbatim; it is not configurable. The JWT-role gate applies
-server-side regardless of which client (CLI, `curl`, script) sent
-the request. The CLI also carries its own local guard driven by the
-`read_only` flag in `cli.toml` — the two authorities are independent,
-see [§2.8](#28-clitoml-read_only-flag-and-config-setunset-read-only-commands-breaking).
-
-**Troubleshooting.** If the role doesn't appear to take effect:
-
-1. Decode the user's token and check `realm_access.roles`:
-
-   ```bash
-   # Get a token as the user, then decode its claims:
-   jq -R 'split(".") | .[1] | @base64d | fromjson' <<<"$TOKEN" \
-     | jq '.realm_access.roles'
-   ```
-
-   The array must contain the literal string `"manta-read-only"`. If
-   missing, re-check the `kcadm.sh add-roles` step — Keycloak silently
-   accepts unknown realm names or usernames in some configurations.
-
-2. Confirm the server is rejecting mutating endpoints:
-
-   ```bash
-   curl -k -X POST -H "Authorization: Bearer $TOKEN" \
-        -H "X-Manta-Site: $SITE" -H "Content-Type: application/json" \
-        -d '{"label":"diag"}' \
-        "https://$SERVER:8443/api/v1/groups"
-   # expected: 403 Forbidden, body contains "manta-read-only"
-   ```
-
-3. Confirm reads still work:
-
-   ```bash
-   curl -k -H "Authorization: Bearer $TOKEN" -H "X-Manta-Site: $SITE" \
-        "https://$SERVER:8443/api/v1/groups"
-   # expected: 200 OK
-   ```
-
-4. Server-side, the refusal appears in the log as:
-
-   ```
-   WARN  rejecting POST /api/v1/groups: caller carries `manta-read-only` role
-   ```
-
-   Grep `journalctl -u manta-server` (or your configured tracing sink)
-   for `manta-read-only` to confirm the gate fired.
-
-5. CLI-side, the same user invoking a mutating verb sees the refusal
-   immediately, without the request ever reaching the server:
-
-   ```
-   $ manta apply boot-image --boot-image foo x1000c0s0b0n0
-   Error: manta is in read-only mode (the bearer token carries the
-   `manta-read-only` role).
-   ```
-
-   If this CLI-side refusal does NOT fire but the server still
-   returns 403, the local token cache may pre-date the role
-   assignment — clear it with `manta config unset auth` and
-   re-authenticate.
-
 ### 2.8 cli.toml `read_only` flag and `config set/unset read-only` commands (BREAKING)
 
 The CLI-local `read_only` flag in `cli.toml` and the two subcommands
 that toggle it are the source of truth for the *CLI's* refuse-mutating-
 verbs gate. Server enforcement is independent: `manta-server` refuses
 mutating requests when the caller's bearer token carries the
-`manta-read-only` realm role (see §2.7), regardless of the CLI flag.
+`manta-read-only` realm role, regardless of the CLI flag.
 
 The two authorities can disagree: `cli.toml read_only = false` with a
 `manta-read-only` JWT means the CLI dispatches the request and the
@@ -462,7 +377,7 @@ That decision has been reversed: the flag is back and the CLI reads
    `cli.toml` (or run `manta config set read-only`). Default is
    `false`; absent is treated the same as `false`.
 2. If your site needs a hard server-side guard, provision the
-   `manta-read-only` realm role in Keycloak per §2.7. The two flags
+   `manta-read-only` realm role in Keycloak. The two flags
    compose — either can refuse.
 
 **`manta config show` failure-mode change**
@@ -822,6 +737,36 @@ manta add group --label compute --description "GPU nodes"
 This mirrors the earlier `add node -d/--disabled` → `-D`
 swap (2.0.0-beta.50-ish) which freed `-d` for `--dry-run` on
 that verb for the same reason.
+
+### 5.12. Server-side `manta-read-only` JWT-role enforcement removed (BREAKING)
+
+`manta-server` no longer refuses mutating requests based on the
+`manta-read-only` realm role on the bearer token. Operators who
+provisioned the role in their identity provider should be aware
+that the role is now decorative: any user holding a valid token
+can call mutating endpoints, subject to backend-side
+authorisation.
+
+**Migration.** If you relied on this role as a security boundary,
+replace it with one of:
+
+1. **Token-scope restrictions** in your identity provider — issue
+   read-only operators tokens with reduced scopes that the backend
+   itself enforces.
+2. **A policy gateway** in front of manta-server (Keycloak's
+   built-in authorisation services, an OPA sidecar, an API
+   gateway) that applies the same "refuse mutating methods for
+   flagged principals" rule at the network edge.
+3. **Restrict token issuance** — do not issue tokens to users who
+   should not perform mutating operations.
+
+Removing the role from an existing user no longer restricts them
+at the manta-server layer.
+
+**CLI-side unchanged.** The `read_only` flag in `cli.toml` (§2.8)
+continues to refuse mutating verbs locally on the operator's
+workstation. That gate was always a client-side accident guard
+and it remains one.
 
 ---
 

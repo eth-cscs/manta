@@ -12,7 +12,6 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 - **Bootstrap a token:** `POST /api/v1/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
-- **Read-only operators:** tokens carrying the `manta-read-only` Keycloak realm role are refused with `403 Forbidden` on every `POST`/`PUT`/`PATCH`/`DELETE` under `/api/v1/*`. `GET` and `/api/v1/auth/*` pass through. See [GUIDE.md §13](GUIDE.md#13-read-only-access).
 - **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
 - **Interactive exploration:** `https://<host>:8443/docs` (Swagger UI loads the spec from `/openapi.json`).
 
@@ -60,7 +59,6 @@ All errors return JSON with an `error` field:
 |--------|---------|
 | `400` | Bad request — invalid parameters or body |
 | `401` | Missing or malformed `Authorization` header |
-| `403` | Token carries the `manta-read-only` realm role and the request method mutates state (`POST`/`PUT`/`PATCH`/`DELETE`). Safe methods (`GET`/`HEAD`/`OPTIONS`) and `/api/v1/auth/*` are unaffected. |
 | `404` | Resource not found |
 | `409` | Conflict — resource already exists |
 | `422` | Unprocessable entity — required field missing or wrong type |
@@ -139,8 +137,6 @@ Create a CFS configuration and session from one or more git repositories.
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sessions" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -168,8 +164,6 @@ Delete and cancel a CFS session.
 | `dry_run` | bool | no | If `true`, return what would be deleted without deleting (default: `false`) |
 
 **Response `200`** — on dry run: deletion context object. On delete: `{ "deleted": "<name>" }`.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/sessions/my-session" \
@@ -254,8 +248,6 @@ Delete CFS configurations and their dependent images and session templates.
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/configurations?pattern=old-*&dry_run=true" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -312,8 +304,6 @@ Register a new node.
 
 **Response `201`** — `{ "id": "<xname>" }`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/nodes" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -331,8 +321,6 @@ Delete a node by xname.
 **Path parameters:** `id` — node xname.
 
 **Response `204`** — no content.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/nodes/x3000c0s1b0n0" \
@@ -400,8 +388,6 @@ Create a new HSM group. **Admin only** — non-admin callers receive `400 BadReq
 
 **Response `400`** — caller is not admin (or the body is malformed).
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/groups" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -429,8 +415,6 @@ Delete an HSM group.
 | `force` | bool | no | Skip orphan-node check (default: `false`) |
 
 **Response `204`** — no content.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/groups/my-group?force=true" \
@@ -464,8 +448,6 @@ Add nodes to an HSM group.
 
 > **`final_members` vs `removed`** — `final_members` carries the **final, sorted membership of the group after the update**. `removed` is a deprecated alias that holds the same value for one transition release, kept so existing clients reading the old name keep working; new clients should read `final_members`. `removed` will be dropped in the next major bump.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/groups/compute/members" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -497,8 +479,6 @@ Remove nodes from an HSM group.
 | `dry_run` | bool | no | Preview without removing (default: `false`) |
 
 **Response `204`** — no content.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/groups/compute/members" \
@@ -561,8 +541,6 @@ Create a BOS session from a named template.
 | `dry_run` | bool | no | Return the session object without creating it (default: `false`) |
 
 **Response `201`** (or `200` on dry run) — BOS session object.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/templates/my-template/sessions" \
@@ -641,8 +619,6 @@ Delete one or more IMS images.
 ```json
 { "deleted": ["uuid-1", "uuid-2"] }
 ```
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/images?ids=uuid-1,uuid-2&dry_run=true" \
@@ -788,8 +764,6 @@ Add boot parameters.
 
 **Response `201`** — `{ "created": true }`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/boot-parameters" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -831,8 +805,6 @@ Update boot parameters for specified nodes.
 
 **Response `204`** — no content.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X PUT "$MANTA_HOST/api/v1/boot-parameters" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -859,8 +831,6 @@ Delete boot parameters for a set of nodes.
 ```
 
 **Response `204`** — no content.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/boot-parameters" \
@@ -931,8 +901,6 @@ Append kernel parameters to a set of nodes without replacing existing ones.
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/kernel-parameters/add" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -985,8 +953,6 @@ Add, replace, or delete kernel parameters for a set of nodes.
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/kernel-parameters/apply" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1033,8 +999,6 @@ Remove specific kernel parameters from a set of nodes.
   "xnames_to_reboot": ["x3000c0s1b0n0"]
 }
 ```
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/kernel-parameters" \
@@ -1087,8 +1051,6 @@ Apply a combined boot configuration (image + runtime config + kernel params) to 
   "need_restart": false
 }
 ```
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/boot-config" \
@@ -1165,8 +1127,6 @@ The server maps `(action, force)` to the PCS wire-level operation: `on` (force i
 |-------|------|-------------|
 | `transitionID` | string | The PCS transition id. Feed it into `GET /power/transitions/{id}` to track progress. |
 | `operation` | string | The resolved PCS operation (`On`, `SoftOff`, `ForceOff`, `SoftRestart`, `HardRestart`). |
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/power" \
@@ -1252,8 +1212,6 @@ Add a Redfish endpoint.
 
 **Response `201`** — `{ "created": true }`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/redfish-endpoints" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1279,8 +1237,6 @@ Update a Redfish endpoint.
 
 **Response `204`** — no content.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X PUT "$MANTA_HOST/api/v1/redfish-endpoints" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1301,8 +1257,6 @@ Delete a Redfish endpoint.
 **Path parameters:** `id` — endpoint ID.
 
 **Response `204`** — no content.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/redfish-endpoints/x3000c0s1b0" \
@@ -1445,8 +1399,6 @@ Add hardware components (nodes) to a target cluster, sourcing them from a parent
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/members" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1486,8 +1438,6 @@ Remove hardware components from a target cluster and return them to a parent clu
 | `dry_run` | bool | no | Preview without moving nodes (default: `false`) |
 
 **Response `200`** — same shape as `POST /hardware-clusters/{target}/members`.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X DELETE "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/members" \
@@ -1543,8 +1493,6 @@ Pin or unpin a hardware cluster configuration by moving nodes between the target
 }
 ```
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/hardware-clusters/my-cluster/configuration" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1588,8 +1536,6 @@ Move nodes between HSM groups (vClusters).
 
 **Response `200`** — migration results object.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/migrate/nodes" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1627,8 +1573,6 @@ Back up vCluster configuration to files. **Admin only.**
 
 **Response `200`** — `{ "completed": true }`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/migrate/backup" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1660,8 +1604,6 @@ All fields optional. `overwrite` defaults to `false`.
 
 **Response `200`** — `{ "completed": true }`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/migrate/restore" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1689,8 +1631,6 @@ Create an ephemeral CFS environment from an existing image.
 ```
 
 **Response `201`** — `{ "hostname": "<allocated-hostname>" }`.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/ephemeral-env" \
@@ -1800,8 +1740,6 @@ Pre-flight validation of a whole SAT file against live CSM state. Read-only — 
 
 **Response `501`** — per-site Vault or Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)).
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/validate" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1837,8 +1775,6 @@ Apply one entry from the SAT file's `configurations` section. csm-rs validates t
 | `dry_run` | bool | no | Validate without creating; response carries a mock `CfsConfigurationResponse` with the name set (default: `false`). |
 
 **Response `200`** — the created `CfsConfigurationResponse`.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/configurations" \
@@ -1879,8 +1815,6 @@ The body includes the CLI's accumulated `ref_lookup` so the backend can resolve 
 
 **Response `201`** — the freshly-created `CfsSessionGetResponse` (same wire type as `GET /sessions`). `status.session.status` will be `pending` or `running`; the CLI drives it to completion via `GET /sessions?name=…` or `GET /sessions/{name}/logs`.
 
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
-
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/cfs-session" \
   -H "X-Manta-Site: $MANTA_SITE" \
@@ -1910,8 +1844,6 @@ Fails fast with `400 Bad Request` when the named session has no `result_id` — 
 | `cfs_session_name` | string | **yes** | Name of the (terminal-complete) CFS session whose result image should be stamped. |
 
 **Response `200`** — the patched IMS `Image` (with `metadata.manta.image_session.{base,groups,configuration}` set).
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/images/stamp" \
@@ -1953,8 +1885,6 @@ Apply one entry from the SAT file's `session_templates` section. The CLI's `ref_
 ```
 
 `session` is `null` when `create_bos_session=false`, and also when `dry_run=true` *without* `create_bos_session`. The dry-run + `create_bos_session` combination yields a mock session (no status, `dry-run-<template-name>`) — useful for previewing the boot that would follow without persisting anything.
-
-**Response `403`** — caller's token carries the `manta-read-only` realm role; the request method mutates state. See [Error responses](#error-responses).
 
 ```bash
 curl -k -X POST "$MANTA_HOST/api/v1/sat-file/session-templates" \

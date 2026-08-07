@@ -86,7 +86,7 @@ sequenceDiagram
     MS-->>CLI: { token }
     MS->>Kf: audit { outcome, username, source_ip, site }
 
-    Note over MS: /api/v1/* sub-router<br/>read_only_guard + TimeoutLayer
+    Note over MS: /api/v1/* sub-router<br/>TimeoutLayer
 
     CLI->>MS: {method} /api/v1/{resource}<br/>Authorization: Bearer …
     MS->>B: proxied call with bearer
@@ -128,8 +128,7 @@ accordingly.
 | Generic 401 on every auth failure | `manta-server` | `server::handlers::auth_token` returns identical `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
 | Audit event per auth attempt | `manta-server` | When `[auditor.kafka]` is configured, `server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }`. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | `manta-server` | `server::auth_middleware::strip_body_for_logs`. |
-| **JWT-role read-only gate on `/api/v1/*`** | `manta-server` | `server::auth_middleware::read_only_guard` refuses `POST`/`PUT`/`PATCH`/`DELETE` with `403` when the token's `realm_access.roles` claim contains `manta-read-only`. Defence in depth, **not** a signature-verification boundary — see Known limitations below. |
-| CLI-side read-only fast-feedback | `manta-cli` | Reads the same `manta-read-only` realm role from the JWT (locally decoded) and refuses mutating verbs before any HTTP request leaves the process. Fast feedback; not the security boundary — the server-side `read_only_guard` is. |
+| CLI-side read-only guard | `manta-cli` | Refuses mutating verbs locally when `cli.toml` has `read_only = true`, before any HTTP request leaves the process. Client-side accident guard only — `manta-server` does not enforce this; see [GUIDE.md §13](GUIDE.md#13-read-only-access). |
 | 0600 mode on cached tokens | `manta-cli` | Token cache file written with `0600` perms under the platform config dir; never logged. |
 
 ### In ops (your deployment)
@@ -139,7 +138,6 @@ accordingly.
 | TLS termination, WAF, reverse-proxy rate limit | First line of defence; manta-server's in-process limiter is belt-and-braces. |
 | Service-account scoping at CSM / Vault | Limit what the manta-server-issued tokens can do at the backend. |
 | Network segmentation | Treat manta-server as a privileged host. |
-| Realm-role provisioning in Keycloak | Provision `manta-read-only` (and any other least-privilege roles) per-user; see [MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional). |
 | `[server].migrate_backup_root` set explicitly | Confines `POST /migrate/{backup,restore}` paths. Server returns `400` for those endpoints when unset, even for admin callers. |
 
 ## Known limitations
@@ -148,15 +146,15 @@ accordingly.
 the JWT body without verifying its signature. This is documented
 inline at the top of that module. Consequences:
 
-- The `is_user_admin` and `manta-read-only` role gates are **advisory**
-  in the sense that a forged token passing the decode step is detected
-  only at the first backend round-trip, where CSM/OCHAMI rejects it.
-- The role gates are still useful as **defence in depth**: they
-  reduce the blast radius of a token whose signature does verify but
-  whose user's permissions should be tighter than what the backend
-  would otherwise allow.
+- The `is_user_admin` role gate is **advisory** in the sense that a
+  forged token passing the decode step is detected only at the first
+  backend round-trip, where CSM/OCHAMI rejects it.
+- The role gate is still useful as **defence in depth**: it reduces
+  the blast radius of a token whose signature does verify but whose
+  user's permissions should be tighter than what the backend would
+  otherwise allow.
 - Local JWKS-based signature verification (per-site cache, `kid`-based
-  rotation) is the long-term direction. The role gates inherit that
+  rotation) is the long-term direction. The role gate inherits that
   verification automatically when it lands; no per-gate work needed.
 
 **Single point of compromise.** As noted above, owning `manta-server`

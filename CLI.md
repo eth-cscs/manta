@@ -34,7 +34,7 @@ Every command takes one of the top-level verbs:
 |------|-------------|
 | `--site <SITE_NAME>` | Override the active site from config for this invocation. Accepted at any position on the command line — `manta --site alps get sessions` and `manta get sessions --site alps` both work. |
 
-**Universal mutating-verb flag.** Every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) accepts `-d/--dry-run`. The CLI builds and prints the exact request that would have been sent, skips confirmation prompts, and exits without contacting the server. `--dry-run` invocations also bypass the read-only gate, so an operator with the `manta-read-only` JWT role can still preview what they would have run. See [GUIDE.md §12 — Preview before mutating with `--dry-run`](GUIDE.md#preview-before-mutating-with---dry-run) for the full semantics.
+**Universal mutating-verb flag.** Every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) accepts `-d/--dry-run`. The CLI builds and prints the exact request that would have been sent, skips confirmation prompts, and exits without contacting the server. `--dry-run` invocations also bypass the read-only gate, so an operator with `read_only = true` in `cli.toml` can still preview what they would have run. See [GUIDE.md §12 — Preview before mutating with `--dry-run`](GUIDE.md#preview-before-mutating-with---dry-run) for the full semantics.
 
 > One short-alias caveat: `manta add group` reserves `-d` for `--dry-run`, so its `--description` short alias is `-D` (capital). Every other mutating verb uses `-d` for `--dry-run` consistently.
 
