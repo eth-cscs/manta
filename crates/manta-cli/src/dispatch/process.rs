@@ -13,10 +13,7 @@
 //!    `GET /groups/available` round-trip plus the JWT claims; cached
 //!    on `AppContext` for the duration of the command.
 //!
-//! Server-side read-only enforcement is independent, driven by the
-//! `manta-read-only` realm role on the bearer token
-//! (`manta-server`'s `server::auth_middleware::read_only_guard`).
-//! The CLI gate is fast local feedback, not the security boundary.
+//! This local gate is the only read-only enforcement in the system.
 
 use crate::common::app_context::AppContext;
 use crate::common::authentication::get_api_token;

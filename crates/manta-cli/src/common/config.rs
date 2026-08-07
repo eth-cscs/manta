@@ -41,9 +41,6 @@ pub struct CliConfiguration {
   /// [`crate::common::read_only::read_only_gate`] and
   /// [`crate::common::read_only::MUTATING_VERBS`]). Toggled with
   /// `manta config set read-only` / `manta config unset read-only`.
-  /// Server enforcement is independent and driven by the
-  /// `manta-read-only` realm role on the bearer token; this local
-  /// flag is fast local feedback, not the security boundary.
   #[serde(default)]
   pub read_only: bool,
   /// Optional per-request HTTP timeout, in seconds, for calls reaching

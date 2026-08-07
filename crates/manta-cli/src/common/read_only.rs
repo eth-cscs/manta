@@ -19,11 +19,7 @@
 //!   [`MUTATING_VERBS`] now plumbs it through).
 //!
 //! Otherwise the gate returns the [`ensure_can_mutate`] error.
-//! The server-side gate in `manta-server`'s
-//! `server::auth_middleware::read_only_guard` enforces read-only
-//! independently, via the `manta-read-only` realm role on the bearer
-//! token; the two flags can disagree. This CLI gate is fast local
-//! feedback, not the security boundary.
+//! This is the only read-only enforcement path in the system.
 
 use clap::ArgMatches;
 

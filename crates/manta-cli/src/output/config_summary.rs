@@ -40,9 +40,7 @@ pub struct ConfigSummary {
   pub configured_site: Option<String>,
   /// CLI-local read-only flag from `cli.toml`'s `read_only`. `true`
   /// means the local gate refuses every backend-mutating verb before
-  /// any HTTP request leaves the process; server enforcement (via the
-  /// `manta-read-only` realm role on the bearer token) is
-  /// independent.
+  /// any HTTP request leaves the process.
   pub read_only: bool,
   /// JWT-derived per-invocation facts. `None` when the command ran
   /// without a token — typically because no site is configured.

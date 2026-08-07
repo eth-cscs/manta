@@ -184,7 +184,7 @@ fn config_unset_read_only_removes_the_key() {
 
 /// With `read_only = true` in cli.toml, a mutating verb is refused
 /// locally — before any HTTP request. Message points at
-/// `manta config unset read-only`, not the JWT role.
+/// `manta config unset read-only`.
 #[test]
 fn read_only_gate_refuses_mutating_verb_locally() {
   let dir = tempfile::tempdir().unwrap();
@@ -204,8 +204,7 @@ fn read_only_gate_refuses_mutating_verb_locally() {
     .assert()
     .failure()
     .stderr(predicate::str::contains("read-only mode"))
-    .stderr(predicate::str::contains("manta config unset read-only"))
-    .stderr(predicate::str::contains("manta-read-only").not());
+    .stderr(predicate::str::contains("manta config unset read-only"));
 }
 
 /// A command that reaches the backend must fail fast with a clear

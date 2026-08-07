@@ -85,8 +85,7 @@ pub struct AppContext<'a> {
   /// [`crate::common::read_only::read_only_gate`] at the top of
   /// [`crate::dispatch::process::process_cli`] to refuse
   /// backend-mutating verbs before any HTTP request leaves the
-  /// process. `false` by default. Server enforcement is independent
-  /// (via the `manta-read-only` realm role on the bearer token).
+  /// process. `false` by default.
   pub read_only: bool,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
