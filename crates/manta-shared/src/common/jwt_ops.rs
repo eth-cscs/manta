@@ -127,19 +127,12 @@ pub fn get_roles(token: &str) -> Result<Vec<String>, MantaError> {
   )
 }
 
-/// Realm role string that puts the server into read-only mode for this
-/// caller. A token carrying this role is refused (`403 Forbidden`) on
-/// every mutating endpoint under `/api/v1/*` by the server's
-/// `auth_middleware::read_only_guard`.
-pub const READ_ONLY_ROLE: &str = "manta-read-only";
-
 /// Returns `true` when the token's `realm_access.roles` claim contains
 /// `role`. Any JWT-decode failure or missing claim returns `false` —
 /// callers want a yes/no answer, and downstream `BearerToken`
 /// extraction is the auth boundary that surfaces the underlying 401.
 ///
-/// Used by [`is_user_admin`] and by the server's
-/// `auth_middleware::read_only_guard`.
+/// Used by [`is_user_admin`].
 pub fn has_role(token: &str, role: &str) -> bool {
   get_roles(token).is_ok_and(|roles| roles.iter().any(|r| r == role))
 }
