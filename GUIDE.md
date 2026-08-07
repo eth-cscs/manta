@@ -661,7 +661,7 @@ Image deletion has its own verb (`manta delete images <IMAGE_LIST>`), currently 
 Cross-cutting reference material for advanced usage and ongoing
 operations: addressing multiple sites from one CLI install, automating
 manta from scripts (with the `--dry-run` preview path and the bearer-
-token resolution order), the JWT-derived read-only mode, and keeping
+token resolution order), the CLI-side read-only mode, and keeping
 the CLI binary itself current. Read once or skip until you need them.
 
 ## 11. Working with multiple sites

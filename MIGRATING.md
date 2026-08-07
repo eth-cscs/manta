@@ -351,23 +351,28 @@ backend URLs, k8s/vault URLs (no secrets ever logged).
 Kafka topic. Same field shape as v1's audit block. If you don't run
 Kafka, omit the section — auditing is silent.
 
+### 2.7 Read-only access (removed) — see §5.12
+
+The previously-shipped server-side `manta-read-only` JWT-role gate
+has been removed. See [§5.12](#512-server-side-manta-read-only-jwt-role-enforcement-removed-breaking)
+for the removal notice and migration guidance.
+
 ### 2.8 cli.toml `read_only` flag and `config set/unset read-only` commands (BREAKING)
 
 The CLI-local `read_only` flag in `cli.toml` and the two subcommands
-that toggle it are the source of truth for the *CLI's* refuse-mutating-
-verbs gate. Server enforcement is independent: `manta-server` refuses
-mutating requests when the caller's bearer token carries the
-`manta-read-only` realm role, regardless of the CLI flag.
+that toggle it are the *only* gate manta ships against mutating verbs.
+When set, the CLI refuses backend-mutating commands (add / apply /
+backup / delete / migrate / power / restore / run) before any HTTP
+request leaves the process — this is purely local, offline-checkable
+behaviour, not a claim about what the server will accept.
 
-The two authorities can disagree: `cli.toml read_only = false` with a
-`manta-read-only` JWT means the CLI dispatches the request and the
-server returns 403. The operator sees a server refusal instead of a
-local refusal. This is an accepted trade: the CLI's flag is offline-
-configurable and useful when a site does not (yet) run Keycloak
-manta-read-only.
+`--dry-run` bypasses this gate: an operator with `read_only = true`
+can still preview a mutating command with `--dry-run` without
+contacting the server, since `--dry-run` never sends the request
+either.
 
 **Historical note.** An intermediate v2 pre-release removed this flag
-and made the CLI read the JWT role directly (single source of truth).
+and made the CLI read a JWT role directly (single source of truth).
 That decision has been reversed: the flag is back and the CLI reads
 `cli.toml`, not the JWT.
 
@@ -376,9 +381,11 @@ That decision has been reversed: the flag is back and the CLI reads
 1. If you want the CLI's local guard on, add `read_only = true` to
    `cli.toml` (or run `manta config set read-only`). Default is
    `false`; absent is treated the same as `false`.
-2. If your site needs a hard server-side guard, provision the
-   `manta-read-only` realm role in Keycloak. The two flags
-   compose — either can refuse.
+2. There is no server-side counterpart to provision. See
+   [§5.12](#512-server-side-manta-read-only-jwt-role-enforcement-removed-breaking)
+   for the removal of the previous server-side `manta-read-only`
+   JWT-role gate and for alternatives if you need a real API-level
+   boundary.
 
 **`manta config show` failure-mode change**
 

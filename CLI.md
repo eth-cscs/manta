@@ -90,23 +90,23 @@ Manage the local manta configuration file (`~/.config/manta/cli.toml`).
 
 ### config show
 
-Print current configuration values, including a `session` block populated from the bearer token (`username`, `name`, `is_admin`, `is_read_only`, `accessible_groups`). Use this to inspect what the token grants the current user.
+Print current configuration values, including a top-level `read_only` flag (from `cli.toml`) and a `session` block populated from the bearer token (`username`, `name`, `is_admin`, `accessible_groups`). Use this to inspect what the token grants the current user.
 
 ```
 manta config show
 ```
 
-JSON output (`-o json`) renders the session as a sub-object:
+JSON output (`-o json`) renders the session as a sub-object, with `read_only` at the top level:
 
 ```
 {
   "config_file": "...",
   "current_site": "alps",
+  "read_only": false,
   "session": {
     "username": "alice",
     "name": "Alice Smith",
     "is_admin": false,
-    "is_read_only": false,
     "accessible_groups": ["compute", "uan"]
   },
   ...

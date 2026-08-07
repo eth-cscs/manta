@@ -6,12 +6,10 @@ found a potential vulnerability.
 
 For deeper technical detail on each control, see
 [ARCHITECTURE.md §Security model](ARCHITECTURE.md#security-model). For
-the operator-facing rollout of the JWT-role read-only gate, see
-[MIGRATING.md §2.7](MIGRATING.md#27-read-only-access-optional) and
-the deprecation note in
-[MIGRATING.md §2.8](MIGRATING.md#28-removal-of-clitoml-read_only-flag-and-config-setunset-read-only-commands-breaking).
-For the user-facing description, see
-[GUIDE.md §13](GUIDE.md#13-read-only-access).
+the removal of the previously-shipped `manta-read-only` JWT-role gate,
+see [MIGRATING.md §5.12](MIGRATING.md#512-server-side-manta-read-only-jwt-role-enforcement-removed-breaking).
+For the user-facing description of the CLI-side read-only flag that
+remains, see [GUIDE.md §13](GUIDE.md#13-read-only-access).
 
 ## Reporting a vulnerability
 

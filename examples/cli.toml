@@ -23,8 +23,8 @@ manta_server_url = "https://manta-server.example.com:8443"
 # (add / apply / backup / delete / migrate / power / restore / run) is
 # refused before any HTTP request leaves the process. Toggle with
 # `manta config set read-only` / `manta config unset read-only`.
-# Server enforcement is independent (via the `manta-read-only` realm
-# role on the bearer token); this flag is fast local feedback.
+# This is the only read-only gate manta ships; there is no
+# server-side counterpart. See MIGRATING.md §5.12.
 read_only = false
 
 

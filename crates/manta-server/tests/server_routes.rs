@@ -907,10 +907,16 @@ async fn post_with_manta_read_only_role_is_not_refused_by_role_gate() {
     .body(Body::from(r#"{"label":"x"}"#))
     .unwrap();
   let resp = router().oneshot(req).await.unwrap();
+  let status = resp.status();
+  let body = body_string(resp.into_body()).await;
   assert_ne!(
-    resp.status(),
+    status,
     StatusCode::FORBIDDEN,
     "POST with manta-read-only role must NOT be refused by a role gate \
      (the gate was intentionally removed)"
+  );
+  assert!(
+    !body.contains("manta-read-only"),
+    "response body must not reference the manta-read-only role: {body}"
   );
 }
