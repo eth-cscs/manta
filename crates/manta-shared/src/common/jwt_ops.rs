@@ -269,14 +269,14 @@ mod tests {
     assert!(get_name(&bad_bearer).is_err());
   }
 
-  // ---- has_role / READ_ONLY_ROLE ----
+  // ---- has_role ----
 
   #[test]
   fn has_role_finds_role_when_present() {
     let token = make_jwt(&serde_json::json!({
-      "realm_access": { "roles": ["other-role", "manta-read-only"] }
+      "realm_access": { "roles": ["other-role", "sample-role"] }
     }));
-    assert!(has_role(&token, READ_ONLY_ROLE));
+    assert!(has_role(&token, "sample-role"));
   }
 
   #[test]
@@ -284,13 +284,13 @@ mod tests {
     let token = make_jwt(&serde_json::json!({
       "realm_access": { "roles": ["other-role"] }
     }));
-    assert!(!has_role(&token, READ_ONLY_ROLE));
+    assert!(!has_role(&token, "sample-role"));
   }
 
   #[test]
   fn has_role_returns_false_on_missing_realm_access() {
     let token = make_jwt(&serde_json::json!({ "name": "Alice" }));
-    assert!(!has_role(&token, READ_ONLY_ROLE));
+    assert!(!has_role(&token, "sample-role"));
   }
 
   #[test]
@@ -298,23 +298,23 @@ mod tests {
     let token = make_jwt(&serde_json::json!({
       "realm_access": { "roles": [] }
     }));
-    assert!(!has_role(&token, READ_ONLY_ROLE));
+    assert!(!has_role(&token, "sample-role"));
   }
 
   #[test]
   fn has_role_returns_false_on_malformed_jwt() {
-    assert!(!has_role("not.a.jwt", READ_ONLY_ROLE));
-    assert!(!has_role("only-two.dots", READ_ONLY_ROLE));
-    assert!(!has_role("", READ_ONLY_ROLE));
+    assert!(!has_role("not.a.jwt", "sample-role"));
+    assert!(!has_role("only-two.dots", "sample-role"));
+    assert!(!has_role("", "sample-role"));
   }
 
   #[test]
   fn has_role_with_bearer_prefix() {
     let token = make_jwt(&serde_json::json!({
-      "realm_access": { "roles": ["manta-read-only"] }
+      "realm_access": { "roles": ["sample-role"] }
     }));
     let bearer_token = format!("Bearer {token}");
-    assert!(has_role(&bearer_token, READ_ONLY_ROLE));
+    assert!(has_role(&bearer_token, "sample-role"));
   }
 
   #[test]
@@ -325,12 +325,6 @@ mod tests {
       "realm_access": { "roles": ["pa_admin"] }
     }));
     assert!(has_role(&token, "pa_admin"));
-    assert!(!has_role(&token, "manta-read-only"));
-  }
-
-  #[test]
-  fn read_only_role_constant_is_expected_string() {
-    // Pin the exact wire string so a rename is a deliberate breaking change.
-    assert_eq!(READ_ONLY_ROLE, "manta-read-only");
+    assert!(!has_role(&token, "sample-role"));
   }
 }
