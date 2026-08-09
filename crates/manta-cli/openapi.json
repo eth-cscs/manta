@@ -10,7 +10,7 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.61"
+    "version": "2.0.0-beta.62"
   },
   "servers": [
     {
@@ -4596,7 +4596,7 @@
       },
       "ApplyBootConfigRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v1/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).\n\nAt least one of `boot_image_id`, `boot_image_configuration`,\n`kernel_parameters`, or `runtime_configuration` should be set;\n`null` fields are left unchanged on the targeted nodes.\n\n# Wire shape\n\n```json\n{\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_image_configuration\": null,\n  \"kernel_parameters\": \"console=ttyS0 nosmt\",\n  \"runtime_configuration\": \"cos-2.5\",\n  \"dry_run\": false\n}\n```",
+        "description": "Request body for `POST /api/v1/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).\n\nAt least one of `boot_image_id`, `boot_image_configuration`,\n`kernel_parameters`, or `runtime_configuration` should be set;\n`null` fields are left unchanged on the targeted nodes.\n\n# Wire shape\n\n```json\n{\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_image_configuration\": null,\n  \"kernel_parameters\": \"console=ttyS0 nosmt\",\n  \"runtime_configuration\": \"cos-2.5\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
         "required": [
           "hosts_expression"
         ],
@@ -4618,6 +4618,13 @@
           "dry_run": {
             "type": "boolean",
             "description": "When true, return the computed changeset without persisting it."
+          },
+          "enabled": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "Value to set on the CFS component `enabled` flag when a\n`runtime_configuration` is being applied. Absent → server\ndefault (`true`, i.e. let CFS reconfigure on its next pass);\n`false` stages the desired configuration without enabling CFS.\nIgnored when `runtime_configuration` is not set."
           },
           "hosts_expression": {
             "type": "string",

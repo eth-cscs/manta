@@ -1,6 +1,6 @@
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
-.TH manta 1  "manta 2.0.0-beta.61" 
+.TH manta 1  "manta 2.0.0-beta.62" 
 .ie \n(.g .ds Aq \(aq
 .el .ds Aq '
 .SH NAME
@@ -838,6 +838,9 @@ Configuration to apply to nodes after booting
 [\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
 Kernel parameters to assign to the nodes
 .TP
+[\fB\-D\fR, \fB\-\-disable\fR]
+Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires \-\-runtime\-configuration)
+.TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes
 .TP
@@ -875,6 +878,9 @@ Configuration to apply to nodes after booting
 .TP
 [\fB\-k\fR, \fB\-\-kernel\-parameters\fR] \fI<VALUE>\fR
 Kernel parameters to assign to all group members
+.TP
+[\fB\-D\fR, \fB\-\-disable\fR]
+Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires \-\-runtime\-configuration)
 .TP
 [\fB\-d\fR, \fB\-\-dry\-run\fR]
 Simulate the operation without making changes

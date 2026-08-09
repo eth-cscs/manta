@@ -256,11 +256,18 @@ pub(crate) async fn prepare_boot_config(
 /// updated BSS record, then — if `new_runtime_configuration_opt` is
 /// supplied — points the runtime configuration at it and patches the
 /// referenced images so they boot under the new CFS configuration.
+///
+/// `enabled_opt` controls the CFS component `enabled` flag written by
+/// `update_runtime_configuration`. `None` preserves the historical
+/// default of `true` (CFS applies on its next pass); `Some(false)`
+/// stages the desired configuration without enabling CFS. Only
+/// consulted when `new_runtime_configuration_opt` is `Some`.
 pub(crate) async fn persist_boot_config(
   infra: &InfraContext<'_>,
   token: &str,
   changeset: &BootConfigChangeset,
   new_runtime_configuration_opt: Option<&str>,
+  enabled_opt: Option<bool>,
 ) -> Result<(), Error> {
   tracing::info!("Persist changes");
 
@@ -295,7 +302,7 @@ pub(crate) async fn persist_boot_config(
         token,
         &changeset.xname_vec,
         new_runtime_configuration_name,
-        true,
+        enabled_opt.unwrap_or(true),
       )
       .await?;
 

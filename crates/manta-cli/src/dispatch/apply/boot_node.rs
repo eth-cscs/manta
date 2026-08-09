@@ -19,6 +19,10 @@ pub struct ExecParams<'a> {
   pub runtime_configuration: Option<&'a str>,
   pub kernel_parameters: Option<&'a str>,
   pub hosts_expression: &'a str,
+  /// When true, stage the runtime configuration without enabling CFS
+  /// to apply it (translates to `enabled: false` on the wire). Clap
+  /// enforces that this only accompanies `--runtime-configuration`.
+  pub disable: bool,
   pub dry_run: bool,
   pub output: Option<&'a str>,
 }
@@ -47,6 +51,7 @@ pub async fn exec(
           .map(str::to_string),
         kernel_parameters: p.kernel_parameters.map(str::to_string),
         runtime_configuration: p.runtime_configuration.map(str::to_string),
+        enabled: Some(!p.disable),
         dry_run: Some(p.dry_run),
       },
     )

@@ -204,6 +204,11 @@ pub fn subcommand_apply_boot_nodes() -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to the nodes"))
+    .arg(
+      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
+        .action(ArgAction::SetTrue)
+        .requires("runtime-configuration"),
+    )
     .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")
@@ -225,6 +230,11 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
     )
     .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all group members"))
+    .arg(
+      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
+        .action(ArgAction::SetTrue)
+        .requires("runtime-configuration"),
+    )
     .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")

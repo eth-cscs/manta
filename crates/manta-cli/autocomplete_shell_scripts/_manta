@@ -1077,6 +1077,8 @@ _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-D[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
+'--disable[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1099,6 +1101,8 @@ _arguments "${_arguments_options[@]}" : \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-D[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
+'--disable[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \

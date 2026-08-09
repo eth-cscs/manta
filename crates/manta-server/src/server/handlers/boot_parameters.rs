@@ -225,6 +225,7 @@ pub async fn apply_boot_config(
     &ctx.token,
     &changeset,
     body.runtime_configuration.as_deref(),
+    body.enabled,
   )
   .await
   .map_err(to_handler_error)?;

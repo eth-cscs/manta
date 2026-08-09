@@ -26,6 +26,7 @@ use utoipa::ToSchema;
 ///   "boot_image_configuration": null,
 ///   "kernel_parameters": "console=ttyS0 nosmt",
 ///   "runtime_configuration": "cos-2.5",
+///   "enabled": true,
 ///   "dry_run": false
 /// }
 /// ```
@@ -45,6 +46,12 @@ pub struct ApplyBootConfigRequest {
   pub kernel_parameters: Option<String>,
   /// CFS configuration to assign as the runtime desired-config.
   pub runtime_configuration: Option<String>,
+  /// Value to set on the CFS component `enabled` flag when a
+  /// `runtime_configuration` is being applied. Absent → server
+  /// default (`true`, i.e. let CFS reconfigure on its next pass);
+  /// `false` stages the desired configuration without enabling CFS.
+  /// Ignored when `runtime_configuration` is not set.
+  pub enabled: Option<bool>,
   /// When true, return the computed changeset without persisting it.
   #[serde(default)]
   pub dry_run: bool,
