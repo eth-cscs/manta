@@ -199,11 +199,18 @@ pub async fn prepare_boot_config(
 }
 
 /// Persist boot configuration changes.
+///
+/// `enabled_opt` controls the CFS component `enabled` flag written by
+/// `update_runtime_configuration`. `None` preserves the historical
+/// default of `true` (CFS applies on its next pass); `Some(false)`
+/// stages the desired configuration without enabling CFS. Only
+/// consulted when `new_runtime_configuration_opt` is `Some`.
 pub async fn persist_boot_config(
   infra: &InfraContext<'_>,
   token: &str,
   changeset: &BootConfigChangeset,
   new_runtime_configuration_opt: Option<&str>,
+  enabled_opt: Option<bool>,
 ) -> Result<(), Error> {
   tracing::info!("Persist changes");
 
@@ -233,7 +240,7 @@ pub async fn persist_boot_config(
         infra.shasta_root_cert,
         &changeset.xname_vec,
         new_runtime_configuration_name,
-        true,
+        enabled_opt.unwrap_or(true),
       )
       .await?;
 

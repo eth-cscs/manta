@@ -236,6 +236,7 @@ pub async fn handle_apply(
           m.get_one::<String>("kernel-parameters");
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
+        let disable = m.get_flag("disable");
         let dry_run = m.get_flag("dry-run");
         commands::apply_boot_node::exec(
           ctx,
@@ -247,6 +248,7 @@ pub async fn handle_apply(
           hosts_string,
           assume_yes,
           do_not_reboot,
+          disable,
           dry_run,
         )
         .await?;
@@ -264,6 +266,7 @@ pub async fn handle_apply(
           m.get_one("kernel-parameters");
         let assume_yes = m.get_flag("assume-yes");
         let do_not_reboot = m.get_flag("do-not-reboot");
+        let disable = m.get_flag("disable");
         let dry_run = m.get_flag("dry-run");
         commands::apply_boot_cluster::exec(
           ctx,
@@ -275,6 +278,7 @@ pub async fn handle_apply(
           hsm_group_name_arg,
           assume_yes,
           do_not_reboot,
+          disable,
           dry_run,
         )
         .await?;

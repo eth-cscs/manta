@@ -20,6 +20,7 @@ pub async fn exec(
   hosts_expression: &str,
   assume_yes: bool,
   do_not_reboot: bool,
+  disable: bool,
   dry_run: bool,
 ) -> Result<(), Error> {
   let changeset = service::boot_parameters::prepare_boot_config(
@@ -76,6 +77,7 @@ pub async fn exec(
       token,
       &changeset,
       new_runtime_configuration_opt,
+      Some(!disable),
     )
     .await?;
 

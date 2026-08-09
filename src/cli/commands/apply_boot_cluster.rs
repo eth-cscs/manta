@@ -17,6 +17,7 @@ pub async fn exec(
   hsm_group_name: &str,
   assume_yes: bool,
   do_not_reboot: bool,
+  disable: bool,
   dry_run: bool,
 ) -> Result<(), anyhow::Error> {
   let xname_vec = ctx
@@ -39,6 +40,7 @@ pub async fn exec(
     &xname_vec.join(","),
     assume_yes,
     do_not_reboot,
+    disable,
     dry_run,
   )
   .await

@@ -511,6 +511,11 @@ fn subcommand_apply_boot_nodes() -> Command {
     .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
     .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to the nodes while booting"))
+    .arg(
+      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
+        .action(ArgAction::SetTrue)
+        .requires("runtime-configuration"),
+    )
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot. This means, you will have to run 'manta apply template' command with the sessoin_template created'").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
@@ -526,6 +531,11 @@ fn subcommand_apply_boot_cluster() -> Command {
     .arg(arg!(-b --"boot-image-configuration" <VALUE> "CFS configuration name related to the image to boot the nodes. The most recent image id created using this configuration will be used to boot the nodes"))
     .arg(arg!(-r --"runtime-configuration" <VALUE> "CFS configuration name to configure the nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel boot parameters to assign to all cluster nodes while booting"))
+    .arg(
+      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
+        .action(ArgAction::SetTrue)
+        .requires("runtime-configuration"),
+    )
     .arg(arg!(-y --"assume-yes" "Automatic yes to prompts; assume 'yes' as answer to all prompts and run non-interactively.").action(ArgAction::SetTrue).action(ArgAction::SetTrue))
     .arg(arg!(--"do-not-reboot" "By default, nodes will restart if SAT file builds an image which is assigned to the nodes through a BOS sessiontemplate, if you do not want to reboot the nodes, then use this flag. The SAT file will be processeed as usual and different elements created but the nodes won't reboot. This means, you will have to run 'manta apply template' command with the sessoin_template created'").action(ArgAction::SetTrue))
     .arg(arg!(-d --"dry-run" "Simulates the execution of the command without making any actual changes.").action(ArgAction::SetTrue))
