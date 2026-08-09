@@ -2,12 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.71.2] - 2026-08-09
+
+### Features
+
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+- Stage runtime config without enabling CFS via --disable
+
 ## [1.71.1] - 2026-06-15
 
 ### Miscellaneous Tasks
 
 - Bump csm-rs version
 - Update .gitignore
+- Release manta-cli version 1.71.1
 
 ## [1.71.0] - 2026-06-02
 
