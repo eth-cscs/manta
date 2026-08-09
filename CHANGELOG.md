@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.62] - 2026-07-12
+## [2.0.0-beta.63] - 2026-08-09
 
 ### Bug Fixes
 
@@ -44,6 +44,10 @@ All notable changes to this project will be documented in this file.
 - Explain (BREAKING) tag convention and numbering scheme
 - Cross-link --dry-run and read-only sections
 - Organise sections into 3 tiers (Getting started / How-tos / Reference)
+- Drop references to removed server-side JWT read-only gate
+- Remove server-side read-only gate from ARCHITECTURE + GUIDE
+- Sweep remaining references to manta-read-only JWT gate
+- Address final-review findings for JWT-read-only removal
 
 ### Features
 
@@ -55,6 +59,7 @@ All notable changes to this project will be documented in this file.
 - [**breaking**] Group `manta config show` text output by value provenance
 - [**breaking**] Source read-only from cli.toml, not JWT
 - [**breaking**] Remove POST /sat-file/validate endpoint chain
+- [**breaking**] Remove manta-read-only JWT-role enforcement
 
 ### Miscellaneous Tasks
 
@@ -96,7 +101,12 @@ All notable changes to this project will be documented in this file.
 - Apply rustfmt [skip ci]
 - Apply rustfmt [skip ci]
 - Apply rustfmt [skip ci]
+- Apply rustfmt [skip ci]
 - Cargo fmt sweep after Phase 4 revert
+
+### Testing
+
+- Decouple has_role tests from READ_ONLY_ROLE
 
 ## [2.0.0-beta.61] - 2026-06-28
 
