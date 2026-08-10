@@ -329,6 +329,11 @@ async fn body_routes_reject_missing_bearer_token() {
       "/api/v1/hardware-clusters/my-cluster/configuration",
       r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
     ),
+    (
+      Method::PUT,
+      "/api/v1/runtime-configuration",
+      r#"{"cfs_configuration_name":"cfg","hosts_expression":"x1","enabled":true}"#,
+    ),
   ];
   for (method, uri, body) in cases {
     let resp = router()
@@ -540,11 +545,17 @@ async fn all_delete_routes_are_registered() {
 
 #[tokio::test]
 async fn all_put_routes_are_registered() {
-  // Only two endpoints currently accept PUT — boot-parameters and
-  // redfish-endpoints. Both are stacked onto the existing POST
-  // route, so a missed `.put(...)` registration would silently
-  // fall through to a 405 here.
-  for uri in &["/api/v1/boot-parameters", "/api/v1/redfish-endpoints"] {
+  // PUT endpoints. `boot-parameters` and `redfish-endpoints` share
+  // their URI with a POST route so a missed `.put(...)` registration
+  // would fall through to a 405 here; `runtime-configuration` is a
+  // PUT-only route so a typo would surface as 404. Both cases are
+  // covered by `assert_route_exists` (which asserts the response is
+  // NOT 405 and NOT 404).
+  for uri in &[
+    "/api/v1/boot-parameters",
+    "/api/v1/redfish-endpoints",
+    "/api/v1/runtime-configuration",
+  ] {
     assert_route_exists(Method::PUT, uri).await;
   }
 }
@@ -756,6 +767,32 @@ async fn openapi_spec_contains_expected_paths_and_schemas() {
   assert!(
     spec["components"]["schemas"].is_object(),
     "spec must have a schemas object"
+  );
+
+  // Fix #1 (b546d36b): POST /boot-config must declare 404 so the
+  // progenitor client deserializes CFS-not-found responses into
+  // ErrorResponse and surfaces the server body, instead of the
+  // undocumented-status Error::UnexpectedResponse that discards it.
+  assert!(
+    spec["paths"]["/boot-config"]["post"]["responses"]["404"].is_object(),
+    "POST /boot-config must declare 404 (progenitor drops the body otherwise)"
+  );
+
+  // PUT /runtime-configuration must be in the spec and declare 404
+  // for the CFS-configuration-not-found case, for the same reason.
+  assert!(
+    paths.contains_key("/runtime-configuration"),
+    "spec must document /runtime-configuration"
+  );
+  assert!(
+    spec["paths"]["/runtime-configuration"]["put"]["responses"]["404"]
+      .is_object(),
+    "PUT /runtime-configuration must declare 404"
+  );
+  assert!(
+    spec["components"]["schemas"]["ApplyRuntimeConfigurationRequest"]
+      .is_object(),
+    "spec must include the ApplyRuntimeConfigurationRequest schema"
   );
 }
 

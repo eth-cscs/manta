@@ -204,6 +204,21 @@ impl TestFixture {
       .body(Body::from(serde_json::to_string(&body).unwrap()))
       .unwrap()
   }
+
+  fn auth_put_json(
+    &self,
+    uri: &str,
+    body: serde_json::Value,
+  ) -> Request<Body> {
+    Request::builder()
+      .method(Method::PUT)
+      .uri(uri)
+      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::CONTENT_TYPE, "application/json")
+      .header("X-Manta-Site", "test")
+      .body(Body::from(serde_json::to_string(&body).unwrap()))
+      .unwrap()
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1077,6 +1092,179 @@ async fn post_power_on_nodes_happy_path() {
 // GET /api/v1/power/transitions/{id}
 //
 // The CLI polls this every few seconds after POST /power until the
+// ---------------------------------------------------------------------------
+// PUT /api/v1/runtime-configuration
+//
+// Call chain:
+//   handlers::apply_runtime_configuration
+//     → service::runtime_configuration::apply_runtime_configuration
+//         → node_ops::from_user_hosts_expression_to_xname_vec
+//             → backend.get_node_metadata_available
+//                 (GET /smd/hsm/v2/State/Components)
+//         → authorization::validate_user_group_members_access
+//             (bypassed here: TEST_TOKEN carries pa_admin → is_admin=true,
+//             which short-circuits before any HSM group lookup)
+//         → backend.get_configuration
+//             (GET /cfs/v3/configurations/{name})
+//         → backend.update_runtime_configuration
+//             (PATCH /cfs/v3/components, bulk body of {id, desired_config, enabled})
+// ---------------------------------------------------------------------------
+
+/// Happy path: real config, real node, `enabled=true`, no dry-run.
+/// The PATCH stub is present and MUST be hit — its absence would cause
+/// wiremock to return 404 and the request to fail.
+#[tokio::test]
+async fn apply_runtime_configuration_happy_path() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_hsm_components(&fx.mock_server).await;
+  mock_get(
+    &fx.mock_server,
+    "/cfs/v3/configurations/base-cfg",
+    json!({
+      "name": "base-cfg",
+      "last_updated": "2024-01-01T00:00:00",
+      "layers": []
+    }),
+  )
+  .await;
+  Mock::given(method("PATCH"))
+    .and(path("/cfs/v3/components"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
+    .expect(1)
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_put_json(
+      "/api/v1/runtime-configuration",
+      json!({
+        "cfs_configuration_name": "base-cfg",
+        "hosts_expression": "x3000c0s1b0n0",
+        "enabled": true
+      }),
+    ))
+    .await;
+  let status = resp.status();
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(status, StatusCode::OK, "unexpected body: {body}");
+  assert_eq!(body["dry_run"], false);
+  assert_eq!(body["cfs_configuration_name"], "base-cfg");
+  assert_eq!(body["enabled"], true);
+  assert_eq!(body["nodes"], json!(["x3000c0s1b0n0"]));
+}
+
+/// Dry-run must skip the CFS component PATCH entirely — the stub
+/// asserts `.expect(0)` and wiremock verifies on drop that no PATCH
+/// request landed.
+#[tokio::test]
+async fn apply_runtime_configuration_dry_run_skips_patch() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_hsm_components(&fx.mock_server).await;
+  mock_get(
+    &fx.mock_server,
+    "/cfs/v3/configurations/base-cfg",
+    json!({
+      "name": "base-cfg",
+      "last_updated": "2024-01-01T00:00:00",
+      "layers": []
+    }),
+  )
+  .await;
+  Mock::given(method("PATCH"))
+    .and(path("/cfs/v3/components"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
+    .expect(0)
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_put_json(
+      "/api/v1/runtime-configuration",
+      json!({
+        "cfs_configuration_name": "base-cfg",
+        "hosts_expression": "x3000c0s1b0n0",
+        "enabled": true,
+        "dry_run": true
+      }),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::OK);
+
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(body["dry_run"], true);
+  assert_eq!(body["nodes"], json!(["x3000c0s1b0n0"]));
+}
+
+/// Missing CFS configuration → 404, with the CSM upstream status
+/// propagated verbatim through `handle_json_or_text_response` (the
+/// csm-rs fix on `main` at `9077f33`).
+#[tokio::test]
+async fn apply_runtime_configuration_config_not_found_returns_404() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_hsm_components(&fx.mock_server).await;
+  Mock::given(method("GET"))
+    .and(path("/cfs/v3/configurations/does-not-exist"))
+    .respond_with(ResponseTemplate::new(404).set_body_json(json!({
+      "detail": "Configuration does-not-exist could not be found",
+      "status": 404,
+      "title": "Configuration not found",
+      "type": "about:blank"
+    })))
+    .mount(&fx.mock_server)
+    .await;
+  // If the service were to skip the config-existence check and
+  // proceed to PATCH, this stub would fire — assert it doesn't.
+  Mock::given(method("PATCH"))
+    .and(path("/cfs/v3/components"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
+    .expect(0)
+    .mount(&fx.mock_server)
+    .await;
+
+  let resp = fx
+    .send(fx.auth_put_json(
+      "/api/v1/runtime-configuration",
+      json!({
+        "cfs_configuration_name": "does-not-exist",
+        "hosts_expression": "x3000c0s1b0n0",
+        "enabled": true
+      }),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+}
+
+/// Empty `hosts_expression` fails fast before any backend call.
+/// Guards the "cheap validation first" ordering in the service.
+#[tokio::test]
+async fn apply_runtime_configuration_empty_hosts_returns_400() {
+  let fx = TestFixture::setup().await;
+  // No mocks — none should fire.
+
+  let resp = fx
+    .send(fx.auth_put_json(
+      "/api/v1/runtime-configuration",
+      json!({
+        "cfs_configuration_name": "base-cfg",
+        "hosts_expression": "",
+        "enabled": true
+      }),
+    ))
+    .await;
+  assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+  let body = TestFixture::body_json(resp).await;
+  assert!(
+    body["error"]
+      .as_str()
+      .unwrap_or_default()
+      .contains("hosts_expression"),
+    "expected error message to name the offending field, got: {body:?}"
+  );
+}
+
 // snapshot reports transitionStatus == "completed".
 #[tokio::test]
 async fn get_power_transition_happy_path() {

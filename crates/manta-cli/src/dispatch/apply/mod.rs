@@ -422,4 +422,216 @@ mod tests {
       "expected `--dry-run -o json` to parse on `apply ephemeral-environment`: {result:?}"
     );
   }
+
+  // ------------------------------------------------------------------
+  // `apply runtime-configuration nodes` / `group` — happy paths
+  // ------------------------------------------------------------------
+
+  /// The `nodes` subcommand parses with the required `-n` flag and a
+  /// positional hosts expression.
+  #[test]
+  fn apply_runtime_configuration_nodes_parses_min_args() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "nodes",
+      "-n",
+      "some-cfg",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `apply runtime-configuration nodes -n <cfg> <hosts>` to parse: {result:?}"
+    );
+  }
+
+  /// `-D` (short `--disable`) and `-d` (short `--dry-run`) compose
+  /// with `-n`. Guards against a short-flag collision if the two are
+  /// ever swapped by accident.
+  #[test]
+  fn apply_runtime_configuration_nodes_accepts_disable_and_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "nodes",
+      "-n",
+      "some-cfg",
+      "-D",
+      "-d",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `-D -d` to parse on `apply runtime-configuration nodes`: {result:?}"
+    );
+  }
+
+  /// `--configuration-name` (long form) parses.
+  #[test]
+  fn apply_runtime_configuration_nodes_accepts_long_configuration_name() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "nodes",
+      "--configuration-name",
+      "some-cfg",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `--configuration-name` long form to parse: {result:?}"
+    );
+  }
+
+  /// The `group` subcommand parses with `-n` and a positional group name.
+  #[test]
+  fn apply_runtime_configuration_group_parses_min_args() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "group",
+      "-n",
+      "some-cfg",
+      "my-group",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `apply runtime-configuration group -n <cfg> <group>` to parse: {result:?}"
+    );
+  }
+
+  /// `-D` and `-d` compose on the `group` subcommand too.
+  #[test]
+  fn apply_runtime_configuration_group_accepts_disable_and_dry_run() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "group",
+      "-n",
+      "some-cfg",
+      "-D",
+      "-d",
+      "my-group",
+    ]);
+    assert!(
+      result.is_ok(),
+      "expected `-D -d` to parse on `apply runtime-configuration group`: {result:?}"
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // `apply runtime-configuration nodes` / `group` — negative parsing
+  // ------------------------------------------------------------------
+
+  /// Missing `-n` / `--configuration-name` must fail. Server-side
+  /// validation would also catch an empty string, but clap should
+  /// reject the missing flag before the request is built.
+  #[test]
+  fn apply_runtime_configuration_nodes_missing_configuration_name_fails() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "nodes",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_err(),
+      "expected clap to reject `apply runtime-configuration nodes <hosts>` without `-n`"
+    );
+  }
+
+  #[test]
+  fn apply_runtime_configuration_group_missing_configuration_name_fails() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "runtime-configuration",
+      "group",
+      "my-group",
+    ]);
+    assert!(
+      result.is_err(),
+      "expected clap to reject `apply runtime-configuration group <group>` without `-n`"
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // Regression guards for the removed `--runtime-configuration` and
+  // `--disable` flags on `apply boot nodes` / `group`. Runtime CFS
+  // config is now the dedicated `apply runtime-configuration` verb;
+  // silently accepting the old flags would be a UX regression that
+  // pretends to work but sends nothing on the wire.
+  // ------------------------------------------------------------------
+
+  #[test]
+  fn apply_boot_nodes_rejects_removed_runtime_configuration_flag() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--runtime-configuration",
+      "some-cfg",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_err(),
+      "`apply boot nodes --runtime-configuration` must be rejected — the flag moved to `apply runtime-configuration nodes`"
+    );
+  }
+
+  #[test]
+  fn apply_boot_nodes_rejects_removed_disable_flag() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "boot",
+      "nodes",
+      "--disable",
+      "x1000c0s0b0n0",
+    ]);
+    assert!(
+      result.is_err(),
+      "`apply boot nodes --disable` must be rejected — the flag moved to `apply runtime-configuration nodes -D`"
+    );
+  }
+
+  #[test]
+  fn apply_boot_group_rejects_removed_runtime_configuration_flag() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "boot",
+      "group",
+      "--runtime-configuration",
+      "some-cfg",
+      "my-group",
+    ]);
+    assert!(
+      result.is_err(),
+      "`apply boot group --runtime-configuration` must be rejected — the flag moved to `apply runtime-configuration group`"
+    );
+  }
+
+  #[test]
+  fn apply_boot_group_rejects_removed_disable_flag() {
+    let result = crate::build::build_cli().try_get_matches_from([
+      "manta",
+      "apply",
+      "boot",
+      "group",
+      "--disable",
+      "my-group",
+    ]);
+    assert!(
+      result.is_err(),
+      "`apply boot group --disable` must be rejected — the flag moved to `apply runtime-configuration group -D`"
+    );
+  }
 }
