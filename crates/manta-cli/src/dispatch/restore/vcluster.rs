@@ -102,7 +102,7 @@ pub async fn exec(
     .openapi
     .migrate_restore(client.site_name(), &req)
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   crate::common::hooks::run_hook_if_present(posthook, "post")?;
 

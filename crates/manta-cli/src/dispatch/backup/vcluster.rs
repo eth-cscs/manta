@@ -70,7 +70,7 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
   tracing::debug!("Migrate backup completed successfully.");
 
   crate::common::hooks::run_hook_if_present(posthook, "post")?;

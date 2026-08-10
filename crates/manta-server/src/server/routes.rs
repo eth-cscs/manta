@@ -11,7 +11,7 @@ use axum::{
   Extension, Router,
   http::StatusCode,
   middleware,
-  routing::{delete, get, post},
+  routing::{delete, get, post, put},
 };
 use tower_http::timeout::TimeoutLayer;
 use utoipa::OpenApi as _;
@@ -106,6 +106,12 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .route("/configurations", delete(handlers::delete_configurations))
     // Boot config (apply with dry_run)
     .route("/boot-config", post(handlers::apply_boot_config))
+    // Runtime configuration (PUT — set CFS desired_configuration + enabled
+    // on the components resolved from a hosts expression)
+    .route(
+      "/runtime-configuration",
+      put(handlers::apply_runtime_configuration),
+    )
     // Kernel parameters (apply, add, delete)
     .route(
       "/kernel-parameters/apply",

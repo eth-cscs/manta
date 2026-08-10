@@ -95,11 +95,15 @@ impl std::error::Error for SiteNotFound {}
 /// Implementation: on `Err`, format the progenitor error in a
 /// user-friendly way:
 ///
-/// - `ErrorResponse(rv)`: the server returned a typed error body. We
-///   serialise it to JSON, pull the `error` string out, and surface
-///   `HTTP <status>: <message>`. This avoids dumping the full
-///   `Error Response: status=…; headers={…}; value: ErrorResponse {…}`
-///   envelope that progenitor's `Display` impl produces.
+/// - `ErrorResponse(rv)`: the server returned a status declared in the
+///   OpenAPI spec with a typed body. We serialise it to JSON, pull the
+///   `error` string out, and surface `HTTP <status>: <message>`.
+/// - `UnexpectedResponse(resp)`: the server returned a status the
+///   OpenAPI spec did NOT declare for this operation. The body hasn't
+///   been read yet — we consume it here, try to parse `{"error": ...}`
+///   out of it, and fall back to the raw body text. This branch is why
+///   the method is async: `reqwest::Response::text()` is async and no
+///   sync alternative reads the body.
 /// - All other variants: format via `Display` (transport errors,
 ///   payload-decode errors, etc.) — the inner detail is still useful.
 pub trait OpenApiResultExt<T> {
@@ -111,7 +115,8 @@ pub trait OpenApiResultExt<T> {
   /// Returns `Err` whenever the wrapped `Result` is `Err`. The
   /// concrete message depends on the progenitor variant — see the
   /// trait-level doc.
-  fn into_anyhow(self) -> anyhow::Result<T>;
+  #[allow(async_fn_in_trait)]
+  async fn into_anyhow(self) -> anyhow::Result<T>;
 }
 
 impl<T, E> OpenApiResultExt<T>
@@ -119,7 +124,7 @@ impl<T, E> OpenApiResultExt<T>
 where
   E: std::fmt::Debug + serde::Serialize,
 {
-  fn into_anyhow(self) -> anyhow::Result<T> {
+  async fn into_anyhow(self) -> anyhow::Result<T> {
     match self {
       Ok(rv) => Ok(rv.into_inner()),
       Err(progenitor_client::Error::ErrorResponse(rv)) => {
@@ -134,12 +139,36 @@ where
         let msg = categorise_server_error(status.as_u16(), &raw_msg);
         Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
       }
+      Err(progenitor_client::Error::UnexpectedResponse(resp)) => {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        let raw_msg = extract_error_body(&body, status.as_u16());
+        let msg = categorise_server_error(status.as_u16(), &raw_msg);
+        Err(anyhow::anyhow!("HTTP {}: {msg}", status.as_u16()))
+      }
       Err(progenitor_client::Error::CommunicationError(rqe)) => {
         Err(anyhow::anyhow!("{}", categorise_transport_error(&rqe)))
       }
       Err(e) => Err(anyhow::anyhow!("{}", e)),
     }
   }
+}
+
+/// Pull the human-readable error message out of a raw response body.
+/// Recognises the `{"error":"..."}` shape produced by
+/// `manta-server`'s `ErrorResponse`; otherwise returns the body
+/// verbatim (or a placeholder for empty bodies).
+fn extract_error_body(body: &str, status: u16) -> String {
+  serde_json::from_str::<serde_json::Value>(body)
+    .ok()
+    .and_then(|v| v.get("error").and_then(|e| e.as_str()).map(String::from))
+    .unwrap_or_else(|| {
+      if body.is_empty() {
+        format!("<empty response body, status {status}>")
+      } else {
+        body.to_string()
+      }
+    })
 }
 
 /// Re-shape a `reqwest::Error` from the CLI-to-manta-server transport
@@ -243,6 +272,26 @@ mod into_anyhow_tests {
     let body = "Not found: image abcd-1234";
     assert_eq!(categorise_server_error(404, body), body);
   }
+
+  #[test]
+  fn extract_error_body_parses_error_field() {
+    let body = r#"{"error":"Not found: Image 'abc-123'"}"#;
+    assert_eq!(extract_error_body(body, 404), "Not found: Image 'abc-123'");
+  }
+
+  #[test]
+  fn extract_error_body_returns_raw_on_non_json() {
+    let body = "plain-text failure";
+    assert_eq!(extract_error_body(body, 500), body);
+  }
+
+  #[test]
+  fn extract_error_body_flags_empty_body() {
+    assert_eq!(
+      extract_error_body("", 502),
+      "<empty response body, status 502>"
+    );
+  }
 }
 
 /// HTTP client that forwards CLI requests to a manta server.
@@ -275,12 +324,13 @@ mod into_anyhow_tests {
 ///   .openapi
 ///   .get_groups(None, client.site_name())
 ///   .await
-///   .into_anyhow()?;
+///   .into_anyhow()
+///   .await?;
 /// ```
 #[derive(Debug)]
 pub struct MantaClient {
   /// Generated typed API client. Dispatch handlers call
-  /// `client.openapi.<method>(...).await.into_anyhow()?`.
+  /// `client.openapi.<method>(...).await.into_anyhow().await?`.
   pub openapi: crate::openapi_client::Client,
   /// `X-Manta-Site` header value the server uses to pick the backend
   /// config. Threaded explicitly to every `openapi.*` call.

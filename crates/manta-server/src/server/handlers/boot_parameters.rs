@@ -190,6 +190,7 @@ pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
     (status = 200, description = "Boot config applied or preview", body = serde_json::Value),
     (status = 400, description = "Bad request",                    body = ErrorResponse),
     (status = 401, description = "Unauthorized",                   body = ErrorResponse),
+    (status = 404, description = "Not found",                      body = ErrorResponse),
     (status = 500, description = "Internal error",                 body = ErrorResponse),
   )
 )]

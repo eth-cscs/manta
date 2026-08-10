@@ -63,7 +63,7 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   // Mirror the historical tuple shape (_added, updated_members), then
   // hand the final membership to the action-result printer.

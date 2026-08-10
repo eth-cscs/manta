@@ -86,7 +86,7 @@ pub async fn dispatch_plan(
         .openapi
         .post_sat_configuration(client.site_name(), req)
         .await
-        .into_anyhow()
+        .into_anyhow().await
     }))
     .await?;
 
@@ -132,7 +132,7 @@ pub async fn dispatch_plan(
         .openapi
         .post_sat_session_template(client.site_name(), req)
         .await
-        .into_anyhow()
+        .into_anyhow().await
     }))
     .await?;
   for resp in st_results {

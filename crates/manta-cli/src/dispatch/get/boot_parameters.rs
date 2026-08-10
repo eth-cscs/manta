@@ -59,7 +59,7 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   output::boot_parameters::print(&boot_parameters)?;
 

@@ -181,34 +181,29 @@ pub fn subcommand_apply_sat_file() -> Command {
     .arg(output_flag_long_only())
 }
 
-/// `manta apply boot nodes` — set the boot image, runtime
-/// configuration, and kernel parameters for an arbitrary node set.
+/// `manta apply boot nodes` — set the boot image and kernel
+/// parameters for an arbitrary node set. Runtime CFS configuration
+/// lives on the dedicated `apply runtime-configuration` command.
 /// Handler: `crate::dispatch::apply::boot::nodes`.
 pub fn subcommand_apply_boot_nodes() -> Command {
   Command::new("nodes")
     .arg_required_else_help(true)
     .about("Update boot parameters for a set of nodes")
     .long_about(
-      "Update the boot parameters (image, runtime configuration, and kernel parameters) for a set of nodes.\n\n\
+      "Update the boot parameters (image and kernel parameters) for a set of nodes.\n\n\
       The boot image can be specified by image ID or by the configuration name used to build it \
-      (the most recent matching image is used).\n\n\
+      (the most recent matching image is used). To set the CFS runtime configuration on the same \
+      nodes, use `manta apply runtime-configuration nodes`.\n\n\
       eg:\n  \
       manta apply boot nodes \\\n    \
-        --boot-image-configuration <config-name> \\\n    \
-        --runtime-configuration <config-name> <nodes>",
+        --boot-image-configuration <config-name> <nodes>",
     )
     .arg(arg!(-i --"boot-image" <IMAGE_ID> "Image ID to boot the nodes"))
     .arg(
       arg!(-b --"boot-image-configuration" <NAME>
         "Configuration name used to build the boot image (uses the most recent matching image)"),
     )
-    .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to the nodes"))
-    .arg(
-      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
-        .action(ArgAction::SetTrue)
-        .requires("runtime-configuration"),
-    )
     .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")
@@ -228,13 +223,7 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
       arg!(-b --"boot-image-configuration" <NAME>
         "Configuration name used to build the boot image (uses the most recent matching image)"),
     )
-    .arg(arg!(-r --"runtime-configuration" <NAME> "Configuration to apply to nodes after booting"))
     .arg(arg!(-k --"kernel-parameters" <VALUE> "Kernel parameters to assign to all group members"))
-    .arg(
-      arg!(-D --disable "Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)")
-        .action(ArgAction::SetTrue)
-        .requires("runtime-configuration"),
-    )
     .arg(dry_run_flag())
     .group(
       ArgGroup::new("boot-image_or_boot-config")
@@ -245,20 +234,74 @@ fn add_apply_boot_group_args(cmd: Command) -> Command {
 }
 
 /// `manta apply boot group` — same as `apply boot nodes` but scoped
-/// to every member of a group. Handler:
+/// to every member of a group. Runtime CFS configuration lives on the
+/// dedicated `apply runtime-configuration` command. Handler:
 /// `crate::dispatch::apply::boot::group`.
 pub fn subcommand_apply_boot_group() -> Command {
   add_apply_boot_group_args(Command::new("group"))
     .about("Update boot parameters for all nodes in a group")
     .long_about(
-      "Update the boot parameters (image, runtime configuration, and kernel parameters) for all nodes in a group.\n\n\
+      "Update the boot parameters (image and kernel parameters) for all nodes in a group.\n\n\
       The boot image can be specified by image ID or by the configuration name used to build it \
-      (the most recent matching image is used).\n\n\
+      (the most recent matching image is used). To set the CFS runtime configuration on the same \
+      group, use `manta apply runtime-configuration group`.\n\n\
       eg:\n  \
       manta apply boot group \\\n    \
-        --boot-image-configuration <config-name> \\\n    \
-        --runtime-configuration <config-name> <group-name>",
+        --boot-image-configuration <config-name> <group-name>",
     )
+}
+
+/// `manta apply runtime-configuration nodes` — set the CFS
+/// `desired_configuration` and `enabled` flag on the given nodes.
+/// Handler: `crate::dispatch::apply::runtime_configuration_node`.
+pub fn subcommand_apply_runtime_configuration_nodes() -> Command {
+  Command::new("nodes")
+    .arg_required_else_help(true)
+    .about("Set the runtime CFS configuration on a set of nodes")
+    .long_about(
+      "Assigns a CFS configuration as the runtime desired_configuration on each targeted node's CFS component. \
+      Idempotent: repeating the same call leaves the components in the same state.\n\n\
+      eg:\n  \
+      manta apply runtime-configuration nodes \\\n    \
+        --configuration-name <config-name> <nodes>",
+    )
+    .arg(
+      arg!(-n --"configuration-name" <NAME> "CFS configuration to assign as the runtime desired configuration")
+        .required(true),
+    )
+    .arg(
+      arg!(-D --disable "Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(dry_run_flag())
+    .arg(arg!(<VALUE>).value_name("NODES").help(HOSTLIST_HELP))
+}
+
+/// `manta apply runtime-configuration group` — same as
+/// `apply runtime-configuration nodes` but scoped to every member of a
+/// group. Handler:
+/// `crate::dispatch::apply::runtime_configuration_group`.
+pub fn subcommand_apply_runtime_configuration_group() -> Command {
+  Command::new("group")
+    .arg_required_else_help(true)
+    .about("Set the runtime CFS configuration on all nodes in a group")
+    .long_about(
+      "Resolves the group's members and assigns the given CFS configuration as the runtime desired_configuration \
+      on each of them.\n\n\
+      eg:\n  \
+      manta apply runtime-configuration group \\\n    \
+        --configuration-name <config-name> <group-name>",
+    )
+    .arg(
+      arg!(-n --"configuration-name" <NAME> "CFS configuration to assign as the runtime desired configuration")
+        .required(true),
+    )
+    .arg(
+      arg!(-D --disable "Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)")
+        .action(ArgAction::SetTrue),
+    )
+    .arg(dry_run_flag())
+    .arg(arg!(<GROUP_NAME> "Group name").required(true))
 }
 
 /// Attach the boot-parameter argument set to a clap `Command`.
@@ -360,9 +403,16 @@ pub fn subcommand_apply() -> Command {
     .subcommand(
       Command::new("boot")
         .arg_required_else_help(true)
-        .about("Update boot parameters and runtime configuration")
+        .about("Update boot parameters")
         .subcommand(subcommand_apply_boot_nodes())
         .subcommand(subcommand_apply_boot_group()),
+    )
+    .subcommand(
+      Command::new("runtime-configuration")
+        .arg_required_else_help(true)
+        .about("Set the CFS runtime configuration on a set of nodes or a group")
+        .subcommand(subcommand_apply_runtime_configuration_nodes())
+        .subcommand(subcommand_apply_runtime_configuration_group()),
     )
     .subcommand(subcommand_apply_boot_parameters())
     .subcommand(subcommand_apply_redfish_endpoint())

@@ -62,7 +62,7 @@ pub async fn handle_log(
       client.site_name(),
     )
     .await
-    .into_anyhow()
+    .into_anyhow().await
     .ok()
     .and_then(|v| serde_json::from_value::<Vec<CfsSessionGetResponse>>(v).ok());
 
@@ -85,7 +85,7 @@ pub async fn handle_log(
         client.site_name(),
       )
       .await
-      .into_anyhow()
+      .into_anyhow().await
       .context("Failed to query CFS sessions by xname")?;
     let by_xname: Vec<CfsSessionGetResponse> = serde_json::from_value(raw)
       .context("Failed to deserialize CFS sessions list")?;

@@ -15,7 +15,7 @@
 //!   .openapi
 //!   .get_groups(params.group_name.as_deref(), client.site_name())
 //!   .await
-//!   .into_anyhow()?;
+//!   .into_anyhow().await?;
 //! ```
 //!
 //! The progenitor result is converted via [`OpenApiResultExt::into_anyhow`].

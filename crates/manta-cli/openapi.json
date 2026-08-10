@@ -10,7 +10,7 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.62"
+    "version": "2.0.0-beta.63"
   },
   "servers": [
     {
@@ -285,6 +285,16 @@
           },
           "401": {
             "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -3462,6 +3472,101 @@
         ]
       }
     },
+    "/runtime-configuration": {
+      "put": {
+        "tags": [
+          "runtime-configuration"
+        ],
+        "summary": "`PUT /api/v1/runtime-configuration` — assign a CFS configuration as\nthe desired runtime configuration for a set of nodes.",
+        "operationId": "apply_runtime_configuration",
+        "parameters": [
+          {
+            "name": "X-Manta-Site",
+            "in": "header",
+            "description": "Name of the target cluster (matches a site configured in the server).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyRuntimeConfigurationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Runtime configuration applied",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/sat-file/configurations": {
       "post": {
         "tags": [
@@ -4721,6 +4826,33 @@
               "null"
             ],
             "description": "Hosts expression (xnames, NIDs, or hostlist notation); mutually\nexclusive with `hsm_group`."
+          }
+        }
+      },
+      "ApplyRuntimeConfigurationRequest": {
+        "type": "object",
+        "description": "Request body for `PUT /api/v1/runtime-configuration`.\n\nAssigns a CFS configuration as the `desired_configuration` on every\nCFS component matching `hosts_expression`, and sets the component's\n`enabled` flag. Idempotent: the same request repeated leaves the\nnodes in the same state.\n\n# Wire shape\n\n```json\n{\n  \"cfs_configuration_name\": \"base-mc-compute-config-cscs-26.3.0-pa\",\n  \"hosts_expression\": \"x8000c1s0b1n[0-3]\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
+        "required": [
+          "cfs_configuration_name",
+          "hosts_expression",
+          "enabled"
+        ],
+        "properties": {
+          "cfs_configuration_name": {
+            "type": "string",
+            "description": "CFS configuration name to write as each component's\n`desired_configuration`. Must already exist in CFS."
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "When true, run all validations (hosts resolve, access check,\nconfiguration existence) but skip the final CFS component\nPATCH. The response still echoes the resolved xname list and\nthe configuration/enabled values that *would* have been\nwritten, with `applied: false` and `dry_run: true`."
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Value to set on each targeted CFS component's `enabled` flag.\n`true` lets CFS reconfigure on its next pass; `false` stages\nthe desired configuration without triggering CFS."
+          },
+          "hosts_expression": {
+            "type": "string",
+            "description": "Hosts expression (xnames, NIDs, or hostlist notation) naming\nthe target nodes. HSM group names are not accepted here."
           }
         }
       },

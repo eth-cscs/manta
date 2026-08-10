@@ -76,7 +76,7 @@ impl SessionContext {
       .openapi
       .get_available_groups(client.site_name())
       .await
-      .into_anyhow()
+      .into_anyhow().await
       .context("fetch accessible groups")?;
     Self::from_parts(token, accessible_groups)
   }

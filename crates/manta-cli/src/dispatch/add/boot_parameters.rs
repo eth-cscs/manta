@@ -84,7 +84,7 @@ pub async fn exec(
     .openapi
     .add_boot_parameters(client.site_name(), &bp_wire)
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   let output_opt = cli_args.opt_str("output");
   action_result::print("Boot parameters created successfully", output_opt)?;

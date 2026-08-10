@@ -57,7 +57,7 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
   let message = if p.dry_run {
     "Dry run enabled, not modifying the HSM groups on the system."
   } else {

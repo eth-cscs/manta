@@ -58,6 +58,7 @@ pub mod node_details;
 pub mod node_ops;
 pub mod power;
 pub mod redfish;
+pub mod runtime_configuration;
 pub mod sat_file;
 pub mod sat_groups;
 pub mod session;

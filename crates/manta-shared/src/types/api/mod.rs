@@ -62,6 +62,8 @@ pub mod power;
 pub mod queries;
 /// CLI-built params for `GET/POST/PUT /redfish-endpoints`.
 pub mod redfish_endpoints;
+/// Request body for `PUT /api/v1/runtime-configuration`.
+pub mod runtime_configuration;
 /// Tiny response shapes (`{ "created": true }`, `{ "id": "..." }`) so
 /// the OpenAPI spec carries real types instead of `serde_json::Value`.
 pub mod responses;

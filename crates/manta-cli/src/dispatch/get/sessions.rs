@@ -83,7 +83,7 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   let sessions: Vec<CfsSessionGetResponse> = serde_json::from_value(raw)
     .context("Failed to deserialize CFS sessions list")?;

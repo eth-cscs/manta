@@ -16,13 +16,8 @@ use anyhow::Error;
 pub struct ExecParams<'a> {
   pub boot_image: Option<&'a str>,
   pub boot_image_configuration: Option<&'a str>,
-  pub runtime_configuration: Option<&'a str>,
   pub kernel_parameters: Option<&'a str>,
   pub hosts_expression: &'a str,
-  /// When true, stage the runtime configuration without enabling CFS
-  /// to apply it (translates to `enabled: false` on the wire). Clap
-  /// enforces that this only accompanies `--runtime-configuration`.
-  pub disable: bool,
   pub dry_run: bool,
   pub output: Option<&'a str>,
 }
@@ -50,13 +45,13 @@ pub async fn exec(
           .boot_image_configuration
           .map(str::to_string),
         kernel_parameters: p.kernel_parameters.map(str::to_string),
-        runtime_configuration: p.runtime_configuration.map(str::to_string),
-        enabled: Some(!p.disable),
+        runtime_configuration: None,
+        enabled: None,
         dry_run: Some(p.dry_run),
       },
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

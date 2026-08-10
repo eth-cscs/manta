@@ -65,7 +65,7 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow()?;
+    .into_anyhow().await?;
 
   output::node::render_node_details(
     node_details_list,

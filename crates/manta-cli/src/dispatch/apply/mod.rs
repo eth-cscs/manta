@@ -33,6 +33,8 @@
 pub mod boot_group;
 pub mod boot_node;
 pub mod boot_parameters;
+pub mod runtime_configuration_group;
+pub mod runtime_configuration_node;
 pub mod hardware_group;
 pub mod kernel_parameters;
 pub mod redfish_endpoint;
@@ -209,7 +211,7 @@ pub async fn handle_apply(
         .openapi
         .create_ephemeral_env(client.site_name(), &req)
         .await
-        .into_anyhow()?;
+        .into_anyhow().await?;
       println!("{}", response.hostname);
     }
 
@@ -300,10 +302,8 @@ pub async fn handle_apply(
           boot_node::ExecParams {
             boot_image: new_boot_image_id_opt,
             boot_image_configuration: m.opt_str("boot-image-configuration"),
-            runtime_configuration: m.opt_str("runtime-configuration"),
             kernel_parameters: m.opt_str("kernel-parameters"),
             hosts_expression: hosts_string,
-            disable: m.get_flag("disable"),
             dry_run: m.get_flag("dry-run"),
             output: m.opt_str("output"),
           },
@@ -317,10 +317,8 @@ pub async fn handle_apply(
           boot_group::ExecParams {
             boot_image: m.opt_str("boot-image"),
             boot_image_configuration: m.opt_str("boot-image-configuration"),
-            runtime_configuration: m.opt_str("runtime-configuration"),
             kernel_parameters: m.opt_str("kernel-parameters"),
             hsm_group_name: m.req_str("GROUP_NAME")?,
-            disable: m.get_flag("disable"),
             dry_run: m.get_flag("dry-run"),
             output: m.opt_str("output"),
           },
@@ -329,6 +327,39 @@ pub async fn handle_apply(
       }
       Some((other, _)) => bail!("Unknown 'apply boot' subcommand: {other}"),
       None => bail!("No 'apply boot' subcommand provided"),
+    },
+
+    Some(("runtime-configuration", m)) => match m.subcommand() {
+      Some(("nodes", m)) => {
+        runtime_configuration_node::exec(
+          ctx,
+          &token,
+          runtime_configuration_node::ExecParams {
+            configuration_name: m.req_str("configuration-name")?,
+            hosts_expression: m.req_str("VALUE")?,
+            disable: m.get_flag("disable"),
+            dry_run: m.get_flag("dry-run"),
+          },
+        )
+        .await?;
+      }
+      Some(("group", m)) => {
+        runtime_configuration_group::exec(
+          ctx,
+          &token,
+          runtime_configuration_group::ExecParams {
+            configuration_name: m.req_str("configuration-name")?,
+            group_name: m.req_str("GROUP_NAME")?,
+            disable: m.get_flag("disable"),
+            dry_run: m.get_flag("dry-run"),
+          },
+        )
+        .await?;
+      }
+      Some((other, _)) => {
+        bail!("Unknown 'apply runtime-configuration' subcommand: {other}")
+      }
+      None => bail!("No 'apply runtime-configuration' subcommand provided"),
     },
 
     Some((other, _)) => bail!("Unknown 'apply' subcommand: {other}"),

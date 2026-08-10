@@ -91,9 +91,9 @@ pub async fn exec(
           site,
         )
         .await
-        .into_anyhow()
+        .into_anyhow().await
     },
-    async { client.openapi.get_image_analysis(site).await.into_anyhow() },
+    async { client.openapi.get_image_analysis(site).await.into_anyhow().await },
   )?;
 
   // The server returns IMS images as a JSON array. Deserialize into
