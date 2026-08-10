@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.64] - 2026-08-10
+
+### Features
+
+- Stage runtime config without enabling CFS via --disable
+- Dedicated CLI verb + PUT endpoint
+
+### Miscellaneous Tasks
+
+- Update ochami-rs
+
 ## [2.0.0-beta.63] - 2026-08-09
 
 ### Bug Fixes
