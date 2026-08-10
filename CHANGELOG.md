@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.71.3] - 2026-08-10
+## [1.71.4] - 2026-08-10
 
 ### Bug Fixes
 
@@ -40,6 +40,8 @@ All notable changes to this project will be documented in this file.
 
 - Make runtime-config-only invocations actionable and correct
 - Make runtime-config-only invocations actionable and correct
+- Release manta-cli version 1.71.3
+- Update Cargo.toml
 
 ## [1.71.2] - 2026-08-09
 
