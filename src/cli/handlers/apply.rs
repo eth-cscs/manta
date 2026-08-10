@@ -55,8 +55,8 @@ pub async fn handle_apply(
         if let Some(values_file_path) =
           m.get_one::<std::path::PathBuf>("values-file")
         {
-          let content =
-            std::fs::read_to_string(values_file_path).with_context(|| {
+          let content = std::fs::read_to_string(values_file_path)
+            .with_context(|| {
               format!(
                 "Failed to read values file '{}'",
                 values_file_path.display()
@@ -71,8 +71,8 @@ pub async fn handle_apply(
         .get_one::<std::path::PathBuf>("sat-template-file")
         .context("SAT template file argument not provided")?;
 
-      let sat_file_content: String =
-        std::fs::read_to_string(sat_template_file).with_context(|| {
+      let sat_file_content: String = std::fs::read_to_string(sat_template_file)
+        .with_context(|| {
           format!(
             "Could not read SAT file template '{}'",
             sat_template_file.display()
@@ -152,13 +152,11 @@ pub async fn handle_apply(
         .get_one("template")
         .context("Template name is mandatory")?;
       let limit: &String = m.get_one("limit").context("Limit is mandatory")?;
-      let bos_session_operation: &String = m
-        .get_one("operation")
-        .context("Operation is mandatory")?;
-      let include_disabled: bool =
-        *m.get_one("include-disabled").context(
-          "'include-disabled' must have a value",
-        )?;
+      let bos_session_operation: &String =
+        m.get_one("operation").context("Operation is mandatory")?;
+      let include_disabled: bool = *m
+        .get_one("include-disabled")
+        .context("'include-disabled' must have a value")?;
       let assume_yes: bool = m.get_flag("assume-yes");
       let dry_run: bool = m.get_flag("dry-run");
       commands::apply_template::exec(
@@ -191,8 +189,7 @@ pub async fn handle_apply(
     }
 
     Some(("kernel-parameters", m)) => {
-      let hsm_group_name_arg_opt =
-        m.get_one::<String>("hsm-group");
+      let hsm_group_name_arg_opt = m.get_one::<String>("hsm-group");
       let nodes_opt: Option<&String> = if hsm_group_name_arg_opt.is_none() {
         m.get_one::<String>("nodes")
       } else {

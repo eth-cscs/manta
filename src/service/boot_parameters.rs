@@ -2,11 +2,7 @@
 
 use manta_backend_dispatcher::{
   error::Error,
-  interfaces::{
-    bss::BootParametersTrait,
-    cfs::CfsTrait,
-    ims::ImsTrait,
-  },
+  interfaces::{bss::BootParametersTrait, cfs::CfsTrait, ims::ImsTrait},
   types::{
     bss::BootParameters,
     ims::{Image, PatchImage},
@@ -63,7 +59,11 @@ pub async fn delete_boot_parameters(
     cloud_init: None,
   };
 
-  infra.backend.delete_bootparameters(token, &boot_parameters).await.map(|_| ())
+  infra
+    .backend
+    .delete_bootparameters(token, &boot_parameters)
+    .await
+    .map(|_| ())
 }
 
 /// Add (create) boot parameters for specified nodes.
@@ -72,7 +72,10 @@ pub async fn add_boot_parameters(
   token: &str,
   boot_parameters: &BootParameters,
 ) -> Result<(), Error> {
-  infra.backend.add_bootparameters(token, boot_parameters).await
+  infra
+    .backend
+    .add_bootparameters(token, boot_parameters)
+    .await
 }
 
 /// Typed parameters for updating boot parameters.
@@ -98,8 +101,7 @@ pub async fn update_boot_parameters(
   token: &str,
   params: UpdateBootParametersParams,
 ) -> Result<(), Error> {
-  validate_target_hsm_members(infra.backend, token, &params.hosts)
-    .await?;
+  validate_target_hsm_members(infra.backend, token, &params.hosts).await?;
 
   let boot_parameters = BootParameters {
     hosts: params.hosts,
@@ -113,7 +115,10 @@ pub async fn update_boot_parameters(
 
   tracing::debug!("new boot params: {:#?}", boot_parameters);
 
-  infra.backend.update_bootparameters(token, &boot_parameters).await
+  infra
+    .backend
+    .update_bootparameters(token, &boot_parameters)
+    .await
 }
 
 /// Result of preparing boot configuration changes.
@@ -127,6 +132,12 @@ pub struct BootConfigChangeset {
   pub image_vec: HashMap<String, Image>,
   /// Whether nodes need a reboot to apply the new parameters.
   pub need_restart: bool,
+  /// Whether any image in `image_vec` was mutated in memory (currently
+  /// only by `set_boot_image_iscsi_ready`). Only set when a user-driven
+  /// boot change is being made (`need_restart` is true) — so a
+  /// runtime-config-only invocation never sets this, and PATCHing IMS
+  /// can be gated on this flag alone.
+  pub mutated_images: bool,
 }
 
 /// Prepare boot configuration changes (no side effects).
@@ -180,11 +191,21 @@ pub async fn prepare_boot_config(
   )
   .await?;
 
-  if current_node_boot_param_vec
-    .first()
-    .ok_or_else(|| Error::NotFound("No boot parameters found".to_string()))?
-    .is_root_kernel_param_iscsi_ready()
-  {
+  // Only stamp iSCSI-ready metadata onto images when the user's command
+  // actually triggered a boot-side change (`need_restart`). Otherwise the
+  // mutation would be a defensive edit unrelated to the invocation — and
+  // would later drive a wasteful IMS PATCH on runtime-config-only runs.
+  let mutated_images = need_restart
+    && current_node_boot_param_vec
+      .first()
+      .ok_or_else(|| {
+        Error::NotFound(format!(
+          "No boot parameters found for xnames: {xname_vec:?}"
+        ))
+      })?
+      .is_root_kernel_param_iscsi_ready();
+
+  if mutated_images {
     for image in image_vec.values_mut() {
       image.set_boot_image_iscsi_ready();
     }
@@ -195,6 +216,7 @@ pub async fn prepare_boot_config(
     boot_param_vec: current_node_boot_param_vec,
     image_vec,
     need_restart,
+    mutated_images,
   })
 }
 
@@ -214,16 +236,21 @@ pub async fn persist_boot_config(
 ) -> Result<(), Error> {
   tracing::info!("Persist changes");
 
-  for boot_parameter in &changeset.boot_param_vec {
-    tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
-    let component_patch_rep = infra
-      .backend
-      .update_bootparameters(token, boot_parameter)
-      .await;
-    tracing::debug!(
-      "Component boot parameters resp:\n{:#?}",
-      component_patch_rep
-    );
+  // BSS boot params are only PATCHed when the user's command actually
+  // changed boot state (`need_restart`). A runtime-config-only run must
+  // not resubmit unchanged boot params.
+  if changeset.need_restart {
+    for boot_parameter in &changeset.boot_param_vec {
+      tracing::debug!("Updating boot parameter:\n{:#?}", boot_parameter);
+      let component_patch_rep = infra
+        .backend
+        .update_bootparameters(token, boot_parameter)
+        .await;
+      tracing::debug!(
+        "Component boot parameters resp:\n{:#?}",
+        component_patch_rep
+      );
+    }
   }
 
   if let Some(new_runtime_configuration_name) = new_runtime_configuration_opt {
@@ -244,13 +271,17 @@ pub async fn persist_boot_config(
       )
       .await?;
 
-    for (_, image) in &changeset.image_vec {
-      let image_id = image
-        .id
-        .clone()
-        .ok_or_else(|| Error::MissingField("Image id is missing".to_string()))?;
-      let patch_image: PatchImage = image.clone().into();
-      infra.backend.update_image(token, &image_id, &patch_image).await?;
+    if changeset.mutated_images {
+      for (_, image) in &changeset.image_vec {
+        let image_id = image.id.clone().ok_or_else(|| {
+          Error::MissingField("Image id is missing".to_string())
+        })?;
+        let patch_image: PatchImage = image.clone().into();
+        infra
+          .backend
+          .update_image(token, &image_id, &patch_image)
+          .await?;
+      }
     }
   } else {
     tracing::info!("Runtime configuration does not change.");
@@ -291,10 +322,11 @@ async fn get_new_boot_image(
 
     backend.filter_images(&mut image_vec)?;
 
-    let most_recent_image = image_vec
-      .iter()
-      .last()
-      .ok_or_else(|| Error::NotFound("No image found for configuration".to_string()))?;
+    let most_recent_image = image_vec.iter().last().ok_or_else(|| {
+      Error::NotFound(format!(
+        "No image remained after filtering for configuration '{new_boot_image_configuration}'"
+      ))
+    })?;
 
     tracing::debug!(
       "Boot image id related to configuration '{}' found:\n{:#?}",
@@ -368,14 +400,18 @@ async fn collect_boot_images(
     let new_boot_image_id = new_boot_image
       .id
       .as_ref()
-      .ok_or_else(|| Error::MissingField("New boot image id is missing".to_string()))?
+      .ok_or_else(|| {
+        Error::MissingField("New boot image id is missing".to_string())
+      })?
       .clone();
 
     let new_boot_image_etag = new_boot_image
       .link
       .as_ref()
       .and_then(|link| link.etag.as_ref())
-      .ok_or_else(|| Error::MissingField("New boot image etag is missing".to_string()))?;
+      .ok_or_else(|| {
+        Error::MissingField("New boot image etag is missing".to_string())
+      })?;
 
     image_vec.insert(new_boot_image_id.clone(), new_boot_image.clone());
 
@@ -390,7 +426,8 @@ async fn collect_boot_images(
           boot_parameter.hosts,
           new_boot_image_id
         );
-        boot_parameter.update_boot_image(&new_boot_image_id, new_boot_image_etag)?;
+        boot_parameter
+          .update_boot_image(&new_boot_image_id, new_boot_image_etag)?;
       }
       *need_restart = true;
     }
@@ -408,7 +445,11 @@ async fn collect_boot_images(
         .get_images(shasta_token, Some(boot_image_id.as_str()))
         .await?
         .first()
-        .ok_or_else(|| Error::NotFound("No image found for boot image id".to_string()))?
+        .ok_or_else(|| {
+          Error::NotFound(format!(
+            "No image found for boot image id '{boot_image_id}'"
+          ))
+        })?
         .clone();
 
       image_vec.insert(boot_image_id, boot_image);

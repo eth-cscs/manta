@@ -7,6 +7,8 @@ use crate::{
 };
 
 use anyhow::{Error, bail};
+use manta_backend_dispatcher::types::ims::PatchImage;
+use serde_json::json;
 
 /// Apply a boot configuration to specific nodes.
 #[allow(clippy::too_many_arguments)]
@@ -38,8 +40,15 @@ pub async fn exec(
     changeset.boot_param_vec
   );
 
+  let has_changes =
+    changeset.need_restart || new_runtime_configuration_opt.is_some();
+
+  if !has_changes {
+    bail!("No changes detected. Nothing to do");
+  }
+
   if changeset.need_restart {
-    if common::user_interaction::confirm(
+    if !common::user_interaction::confirm(
       &format!(
         "This operation will modify the nodes \
          below:\n{}\nDo you want to continue?",
@@ -47,29 +56,59 @@ pub async fn exec(
       ),
       assume_yes,
     ) {
-      tracing::info!("Continue",);
-    } else {
       bail!("Operation cancelled by user");
     }
-  } else {
-    bail!("No changes detected. Nothing to do");
+    tracing::info!("Continue",);
   }
 
   if dry_run {
-    println!(
-      "Dry-run enabled. No changes persisted \
-       into the system"
-    );
-    println!(
-      "New boot parameters:\n{}",
-      serde_json::to_string_pretty(&changeset.boot_param_vec)
-        .unwrap_or_default()
-    );
-    println!(
-      "Images:\n{}",
-      serde_json::to_string_pretty(&changeset.image_vec)
-        .unwrap_or_default()
-    );
+    println!("Dry-run enabled. No requests would be sent.");
+
+    let base = ctx.infra.shasta_base_url;
+
+    if changeset.need_restart {
+      for boot_parameter in &changeset.boot_param_vec {
+        println!();
+        println!("Would send: PATCH {}/bss/boot/v1/bootparameters", base);
+        println!(
+          "Body:\n{}",
+          serde_json::to_string_pretty(boot_parameter).unwrap_or_default()
+        );
+      }
+    }
+
+    if let Some(new_runtime_configuration) = new_runtime_configuration_opt {
+      let component_list: Vec<serde_json::Value> = changeset
+        .xname_vec
+        .iter()
+        .map(|xname| {
+          json!({
+            "id": xname,
+            "desired_config": new_runtime_configuration,
+            "enabled": !disable,
+          })
+        })
+        .collect();
+      println!();
+      println!("Would send: PATCH {}/cfs/v3/components", base);
+      println!(
+        "Body:\n{}",
+        serde_json::to_string_pretty(&component_list).unwrap_or_default()
+      );
+
+      if changeset.mutated_images {
+        for (image_id, image) in &changeset.image_vec {
+          let patch_image: PatchImage = image.clone().into();
+          println!();
+          println!("Would send: PATCH {}/ims/v3/images/{}", base, image_id);
+          println!(
+            "Body:\n{}",
+            serde_json::to_string_pretty(&patch_image).unwrap_or_default()
+          );
+        }
+      }
+    }
+
     Ok(())
   } else {
     service::boot_parameters::persist_boot_config(
