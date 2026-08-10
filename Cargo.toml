@@ -50,8 +50,8 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # requires the sibling checkouts + the `.cargo/config.toml` override
 # above.
 manta-backend-dispatcher = "1.0.0-beta.15"
-csm-rs                   = { version = "1.0.0-beta.21", features = ["commands-admin"] }
-ochami-rs                = "1.0.0-beta.15"
+csm-rs                   = { version = "1.0.0-beta.23", features = ["commands-admin"] }
+ochami-rs                = "1.0.0-beta.17"
 
 anyhow             = { version = "1.0.44", default-features = false }
 base64             = { version = "0.22", default-features = false }
