@@ -186,10 +186,7 @@ async fn responses_carry_strict_transport_security_header() {
 
 #[tokio::test]
 async fn unknown_route_returns_404() {
-  let resp = router()
-    .oneshot(get("/v2/does-not-exist"))
-    .await
-    .unwrap();
+  let resp = router().oneshot(get("/v2/does-not-exist")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
@@ -381,10 +378,7 @@ async fn post_routes_reject_invalid_bodies() {
       "/v2/power",
       r#"{"host_expression":"x3000c0s1b0n0","target_type":"nodes"}"#,
     ),
-    (
-      "/v2/templates/my-template/sessions",
-      r#"{"dry_run":false}"#,
-    ),
+    ("/v2/templates/my-template/sessions", r#"{"dry_run":false}"#),
     ("/v2/sat-file/configurations", "{}"),
     ("/v2/sat-file/images/cfs-session", "{}"),
     ("/v2/sat-file/images/stamp", "{}"),
