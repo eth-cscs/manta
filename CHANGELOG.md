@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.65] - 2026-08-12
+
+### Miscellaneous Tasks
+
+- Rename public API path v1→v2 and drop dead socks5_proxy
+
+### Testing
+
+- Cover new PUT /runtime-configuration endpoint + CLI verb
+
 ## [2.0.0-beta.64] - 2026-08-10
 
 ### Features
