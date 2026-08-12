@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0-beta.68] - 2026-08-12
+
+### Miscellaneous Tasks
+
+- Rename public API path /api/v2 → /v2
+
 ## [2.0.0-beta.67] - 2026-08-12
 
 ### Bug Fixes
