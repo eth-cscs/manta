@@ -1,11 +1,11 @@
 //! HSM group CRUD + membership handlers.
 //!
-//! - `GET    /api/v2/groups`                  → [`get_groups`]
-//! - `GET    /api/v2/groups/available`        → [`get_available_groups`]
-//! - `POST   /api/v2/groups`                  → [`create_group`]
-//! - `DELETE /api/v2/groups/{label}`          → [`delete_group`]
-//! - `POST   /api/v2/groups/{name}/members`   → [`add_nodes_to_group`]
-//! - `DELETE /api/v2/groups/{name}/members`   → [`delete_group_members`]
+//! - `GET    /v2/groups`                  → [`get_groups`]
+//! - `GET    /v2/groups/available`        → [`get_available_groups`]
+//! - `POST   /v2/groups`                  → [`create_group`]
+//! - `DELETE /v2/groups/{label}`          → [`delete_group`]
+//! - `POST   /v2/groups/{name}/members`   → [`add_nodes_to_group`]
+//! - `DELETE /v2/groups/{name}/members`   → [`delete_group_members`]
 //!
 //! All wrap `crate::service::group::*`.
 
@@ -20,7 +20,7 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/groups
+// GET /v2/groups
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::{DeleteGroupQuery, GroupQuery};
@@ -76,7 +76,7 @@ pub async fn get_groups(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/groups/{label}
+// DELETE /v2/groups/{label}
 // ---------------------------------------------------------------------------
 
 /// DELETE /groups/{label} — remove an HSM group.
@@ -114,7 +114,7 @@ pub async fn delete_group(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/groups
+// POST /v2/groups
 // ---------------------------------------------------------------------------
 
 /// POST /groups — create a new HSM group.
@@ -155,7 +155,7 @@ pub async fn create_group(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/groups/{name}/members
+// POST /v2/groups/{name}/members
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::group::{
@@ -212,10 +212,10 @@ pub async fn add_nodes_to_group(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/groups/{name}/members — Remove nodes from HSM group
+// DELETE /v2/groups/{name}/members — Remove nodes from HSM group
 // ---------------------------------------------------------------------------
 
-/// `DELETE /api/v2/groups/{name}/members` — remove nodes from an HSM group.
+/// `DELETE /v2/groups/{name}/members` — remove nodes from an HSM group.
 #[utoipa::path(delete, path = "/groups/{name}/members", tag = "groups",
   params(("name" = String, Path, description = "Group name"), SiteHeader),
   request_body = DeleteGroupMembersRequest,

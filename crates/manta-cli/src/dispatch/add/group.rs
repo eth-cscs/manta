@@ -1,7 +1,7 @@
 //! Implements the `manta add group` command.
 //!
-//! `POST /api/v2/groups` creates the group. If `--nodes` is provided
-//! the leaf follows up with `POST /api/v2/groups/{label}/members` to
+//! `POST /v2/groups` creates the group. If `--nodes` is provided
+//! the leaf follows up with `POST /v2/groups/{label}/members` to
 //! seed initial membership. Both calls are issued only after the
 //! operator confirms the JSON preview shown on stdout
 //! (`--assume-yes` skips the prompt). `--dry-run` skips both POSTs and
@@ -25,7 +25,7 @@ pub struct ExecParams<'a> {
   /// Free-text description.
   pub description: Option<&'a str>,
   /// Optional `--nodes` host expression to seed initial members via a
-  /// follow-up `POST /api/v2/groups/{label}/members`.
+  /// follow-up `POST /v2/groups/{label}/members`.
   pub hosts_expression: Option<&'a str>,
   /// When `true`, skip the interactive confirmation prompt.
   pub assume_yes: bool,

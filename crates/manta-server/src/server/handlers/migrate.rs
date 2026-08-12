@@ -1,10 +1,10 @@
 //! Migration handlers (node moves + cluster backup/restore).
 //!
-//! - `POST /api/v2/migrate/nodes`   → [`migrate_nodes`] — bulk node
+//! - `POST /v2/migrate/nodes`   → [`migrate_nodes`] — bulk node
 //!   moves between HSM groups.
-//! - `POST /api/v2/migrate/backup`  → [`migrate_backup`] — dump the
+//! - `POST /v2/migrate/backup`  → [`migrate_backup`] — dump the
 //!   site's configuration state to a server-local file.
-//! - `POST /api/v2/migrate/restore` → [`migrate_restore`] — load a
+//! - `POST /v2/migrate/restore` → [`migrate_restore`] — load a
 //!   previously-written backup.
 //!
 //! The two backup endpoints are gated by
@@ -116,7 +116,7 @@ fn require_backup_root(ctx: &RequestCtx) -> Result<&Path, BackendError> {
   })
 }
 
-/// `POST /api/v2/migrate/nodes` — move nodes between HSM groups.
+/// `POST /v2/migrate/nodes` — move nodes between HSM groups.
 #[utoipa::path(post, path = "/migrate/nodes", tag = "migrate",
   params(SiteHeader),
   request_body = MigrateNodesRequest,
@@ -172,10 +172,10 @@ pub async fn migrate_nodes(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/migrate/backup — Backup BOS session templates
+// POST /v2/migrate/backup — Backup BOS session templates
 // ---------------------------------------------------------------------------
 
-/// `POST /api/v2/migrate/backup` — export BOS session templates to backup files.
+/// `POST /v2/migrate/backup` — export BOS session templates to backup files.
 #[utoipa::path(post, path = "/migrate/backup", tag = "migrate",
   params(SiteHeader),
   request_body = MigrateBackupRequest,
@@ -221,10 +221,10 @@ pub async fn migrate_backup(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/migrate/restore — Restore from backup files
+// POST /v2/migrate/restore — Restore from backup files
 // ---------------------------------------------------------------------------
 
-/// `POST /api/v2/migrate/restore` — import BOS session templates and related artifacts from backup.
+/// `POST /v2/migrate/restore` — import BOS session templates and related artifacts from backup.
 #[utoipa::path(post, path = "/migrate/restore", tag = "migrate",
   params(SiteHeader),
   request_body = MigrateRestoreRequest,

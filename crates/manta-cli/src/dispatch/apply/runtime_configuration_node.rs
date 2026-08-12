@@ -2,7 +2,7 @@
 //!
 //! Sets a CFS configuration as the runtime `desired_configuration` on
 //! a set of nodes named by a hosts expression via
-//! `PUT /api/v2/runtime-configuration`. Sibling of
+//! `PUT /v2/runtime-configuration`. Sibling of
 //! [`super::runtime_configuration_group`] which takes a group name and
 //! resolves its members first.
 

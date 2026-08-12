@@ -1,8 +1,8 @@
 //! BOS session-template handlers.
 //!
-//! - `GET  /api/v2/templates`                       → [`get_templates`] —
+//! - `GET  /v2/templates`                       → [`get_templates`] —
 //!   wraps `service::template::get_templates`.
-//! - `POST /api/v2/templates/{name}/sessions`       → [`post_template_session`] —
+//! - `POST /v2/templates/{name}/sessions`       → [`post_template_session`] —
 //!   wraps `service::template::create_template_session`; starts a
 //!   BOS session from the named template.
 
@@ -19,7 +19,7 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/templates
+// GET /v2/templates
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::TemplateQuery;
@@ -58,14 +58,14 @@ pub async fn get_templates(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/templates/{name}/sessions — Create BOS session from template
+// POST /v2/templates/{name}/sessions — Create BOS session from template
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::template::{
   BosOperation, PostTemplateSessionRequest,
 };
 
-/// `POST /api/v2/templates/{name}/sessions` — create a BOS session from a session template.
+/// `POST /v2/templates/{name}/sessions` — create a BOS session from a session template.
 #[utoipa::path(post, path = "/templates/{name}/sessions", tag = "templates",
   params(("name" = String, Path, description = "Template name"), SiteHeader),
   request_body = PostTemplateSessionRequest,

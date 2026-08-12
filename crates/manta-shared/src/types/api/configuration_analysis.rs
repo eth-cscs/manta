@@ -1,4 +1,4 @@
-//! Wire shape for `GET /api/v2/configurations`.
+//! Wire shape for `GET /v2/configurations`.
 //!
 //! One row per CFS configuration, carrying the full
 //! `CfsConfigurationResponse` and a `safe_to_delete` verdict derived

@@ -24,38 +24,38 @@
 
 /// Aggregate summary of CFS configurations + sessions + BOS templates +
 /// IMS images flattened into image-centric rows
-/// (`/api/v2/analysis/images`).
+/// (`/v2/analysis/images`).
 pub mod analysis;
-/// Boot-parameter request/response bodies (`/api/v2/boot-config`,
-/// `/api/v2/boot-parameters`).
+/// Boot-parameter request/response bodies (`/v2/boot-config`,
+/// `/v2/boot-parameters`).
 pub mod boot_parameters;
 /// CLI-built params for `GET /clusters`.
 pub mod cluster;
 /// CLI-built params for `GET /configurations`.
 pub mod configuration;
 /// Wire shape for the per-row configuration-deletion-safety verdict
-/// returned by `/api/v2/configurations`.
+/// returned by `/v2/configurations`.
 pub mod configuration_analysis;
-/// HSM group request/response bodies (`/api/v2/groups`,
-/// `/api/v2/groups/{name}/members`).
+/// HSM group request/response bodies (`/v2/groups`,
+/// `/v2/groups/{name}/members`).
 pub mod group;
 /// CLI-built params for `GET /groups/hardware` and the
 /// `/hardware-nodes-list` family.
 pub mod hardware;
-/// Wire types for the `POST/DELETE /api/v2/hardware-clusters/{target}/*`
+/// Wire types for the `POST/DELETE /v2/hardware-clusters/{target}/*`
 /// endpoints.
 pub mod hw_cluster;
 /// CLI-built params for `GET /images`.
 pub mod image;
 /// Kernel-parameter request/response bodies
-/// (`/api/v2/kernel-parameters/*`). The internal `KernelParamOperation`
+/// (`/v2/kernel-parameters/*`). The internal `KernelParamOperation`
 /// enum is server-only and lives in `service::kernel_parameters`.
 pub mod kernel_parameters;
-/// Wire types for the `POST /api/v2/migrate/*` endpoints.
+/// Wire types for the `POST /v2/migrate/*` endpoints.
 pub mod migrate;
-/// Node request/response bodies (`/api/v2/nodes`).
+/// Node request/response bodies (`/v2/nodes`).
 pub mod node;
-/// Power request/response bodies (`/api/v2/power`).
+/// Power request/response bodies (`/v2/power`).
 pub mod power;
 /// Shared `IntoParams` query-string structs for every non-trivial GET
 /// and DELETE endpoint.
@@ -65,14 +65,14 @@ pub mod redfish_endpoints;
 /// Tiny response shapes (`{ "created": true }`, `{ "id": "..." }`) so
 /// the OpenAPI spec carries real types instead of `serde_json::Value`.
 pub mod responses;
-/// Request body for `PUT /api/v2/runtime-configuration`.
+/// Request body for `PUT /v2/runtime-configuration`.
 pub mod runtime_configuration;
 /// SAT-file element-apply request/response bodies (`POST
-/// /api/v2/sat-file/*`) and CLI-built params for the whole-file
+/// /v2/sat-file/*`) and CLI-built params for the whole-file
 /// pass-through.
 pub mod sat_file;
-/// CFS session request/response bodies (`/api/v2/sessions`).
+/// CFS session request/response bodies (`/v2/sessions`).
 pub mod session;
-/// BOS session-template request/response bodies (`/api/v2/templates`,
-/// `/api/v2/templates/{name}/sessions`).
+/// BOS session-template request/response bodies (`/v2/templates`,
+/// `/v2/templates/{name}/sessions`).
 pub mod template;

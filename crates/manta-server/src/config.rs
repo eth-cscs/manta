@@ -99,7 +99,7 @@ pub struct ServerSettings {
   /// How long a node-console WebSocket stays open without activity
   /// before the server tears it down.
   pub console_inactivity_timeout_secs: u64,
-  /// Per-source-IP rate limit for the `/api/v2/auth/*` endpoints,
+  /// Per-source-IP rate limit for the `/v2/auth/*` endpoints,
   /// in requests per minute. `None` disables in-process rate limiting
   /// (operators are then expected to enforce it at the reverse proxy).
   pub auth_rate_limit_per_minute: Option<u32>,

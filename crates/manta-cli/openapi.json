@@ -10,11 +10,11 @@
     "license": {
       "name": ""
     },
-    "version": "2.0.0-beta.64"
+    "version": "2.0.0-beta.67"
   },
   "servers": [
     {
-      "url": "/api/v2",
+      "url": "/v2",
       "description": "manta API v2"
     }
   ],
@@ -84,7 +84,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "POST /api/v2/auth/token — exchange username/password for a CSM token.",
+        "summary": "POST /v2/auth/token — exchange username/password for a CSM token.",
         "operationId": "auth_token",
         "parameters": [
           {
@@ -166,7 +166,7 @@
         "tags": [
           "auth"
         ],
-        "summary": "POST /api/v2/auth/validate — check whether a CSM token is still valid.",
+        "summary": "POST /v2/auth/validate — check whether a CSM token is still valid.",
         "operationId": "auth_validate",
         "parameters": [
           {
@@ -241,7 +241,7 @@
         "tags": [
           "boot-parameters"
         ],
-        "summary": "`POST /api/v2/boot-config` — apply BSS boot configuration to a set of nodes.",
+        "summary": "`POST /v2/boot-config` — apply BSS boot configuration to a set of nodes.",
         "operationId": "apply_boot_config",
         "parameters": [
           {
@@ -803,7 +803,7 @@
         "tags": [
           "configurations"
         ],
-        "summary": "`DELETE /api/v2/configurations` — delete CFS configurations and all derived artifacts.",
+        "summary": "`DELETE /v2/configurations` — delete CFS configurations and all derived artifacts.",
         "operationId": "delete_configurations",
         "parameters": [
           {
@@ -913,7 +913,7 @@
         "tags": [
           "ephemeral-env"
         ],
-        "summary": "`POST /api/v2/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.",
+        "summary": "`POST /v2/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.",
         "operationId": "create_ephemeral_env",
         "parameters": [
           {
@@ -1500,7 +1500,7 @@
         "tags": [
           "groups"
         ],
-        "summary": "`DELETE /api/v2/groups/{name}/members` — remove nodes from an HSM group.",
+        "summary": "`DELETE /v2/groups/{name}/members` — remove nodes from an HSM group.",
         "operationId": "delete_group_members",
         "parameters": [
           {
@@ -1646,7 +1646,7 @@
         "tags": [
           "hardware"
         ],
-        "summary": "`POST /api/v2/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.",
+        "summary": "`POST /v2/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.",
         "operationId": "apply_hw_configuration",
         "parameters": [
           {
@@ -1720,7 +1720,7 @@
         "tags": [
           "hardware"
         ],
-        "summary": "`POST /api/v2/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.",
+        "summary": "`POST /v2/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.",
         "operationId": "add_hw_component",
         "parameters": [
           {
@@ -1792,7 +1792,7 @@
         "tags": [
           "hardware"
         ],
-        "summary": "`DELETE /api/v2/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.",
+        "summary": "`DELETE /v2/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.",
         "operationId": "delete_hw_component",
         "parameters": [
           {
@@ -2082,7 +2082,7 @@
         "tags": [
           "images"
         ],
-        "summary": "`DELETE /api/v2/images` — delete IMS images by ID; validates only when `dry_run=true`.",
+        "summary": "`DELETE /v2/images` — delete IMS images by ID; validates only when `dry_run=true`.",
         "operationId": "delete_images",
         "parameters": [
           {
@@ -2247,7 +2247,7 @@
         "tags": [
           "kernel-parameters"
         ],
-        "summary": "`DELETE /api/v2/kernel-parameters` — remove named kernel parameters from node BSS entries.",
+        "summary": "`DELETE /v2/kernel-parameters` — remove named kernel parameters from node BSS entries.",
         "operationId": "delete_kernel_parameters",
         "parameters": [
           {
@@ -2322,7 +2322,7 @@
         "tags": [
           "kernel-parameters"
         ],
-        "summary": "`POST /api/v2/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.",
+        "summary": "`POST /v2/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.",
         "operationId": "add_kernel_parameters",
         "parameters": [
           {
@@ -2397,7 +2397,7 @@
         "tags": [
           "kernel-parameters"
         ],
-        "summary": "`POST /api/v2/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.",
+        "summary": "`POST /v2/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.",
         "operationId": "apply_kernel_parameters",
         "parameters": [
           {
@@ -2472,7 +2472,7 @@
         "tags": [
           "migrate"
         ],
-        "summary": "`POST /api/v2/migrate/backup` — export BOS session templates to backup files.",
+        "summary": "`POST /v2/migrate/backup` — export BOS session templates to backup files.",
         "operationId": "migrate_backup",
         "parameters": [
           {
@@ -2539,7 +2539,7 @@
         "tags": [
           "migrate"
         ],
-        "summary": "`POST /api/v2/migrate/nodes` — move nodes between HSM groups.",
+        "summary": "`POST /v2/migrate/nodes` — move nodes between HSM groups.",
         "operationId": "migrate_nodes",
         "parameters": [
           {
@@ -2616,7 +2616,7 @@
         "tags": [
           "migrate"
         ],
-        "summary": "`POST /api/v2/migrate/restore` — import BOS session templates and related artifacts from backup.",
+        "summary": "`POST /v2/migrate/restore` — import BOS session templates and related artifacts from backup.",
         "operationId": "migrate_restore",
         "parameters": [
           {
@@ -2930,7 +2930,7 @@
         "tags": [
           "console"
         ],
-        "summary": "`WS /api/v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.",
+        "summary": "`WS /v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.",
         "operationId": "console_node_ws",
         "parameters": [
           {
@@ -3021,7 +3021,7 @@
         "tags": [
           "power"
         ],
-        "summary": "`POST /api/v2/power` — start a PCS power transition (on / off /\nreset) against nodes or all members of a cluster and return the\ntransition id **immediately**. Does not block until the\ntransition completes — the CLI is responsible for polling\n`GET /power/transitions/{id}` until the snapshot reports\n`transitionStatus = \"completed\"`.",
+        "summary": "`POST /v2/power` — start a PCS power transition (on / off /\nreset) against nodes or all members of a cluster and return the\ntransition id **immediately**. Does not block until the\ntransition completes — the CLI is responsible for polling\n`GET /power/transitions/{id}` until the snapshot reports\n`transitionStatus = \"completed\"`.",
         "description": "Returns a `TransitionStartOutput` (`{ transitionID, operation }`)\nas JSON. Callers can hand the `transitionID` to\n[`get_power_transition`].",
         "operationId": "post_power",
         "parameters": [
@@ -3097,7 +3097,7 @@
         "tags": [
           "power"
         ],
-        "summary": "`GET /api/v2/power/transitions/{id}` — fetch the current snapshot\nof a PCS power transition (status, task counts, per-task detail).\nCalled by the CLI's poll loop after `POST /power` returns the id.",
+        "summary": "`GET /v2/power/transitions/{id}` — fetch the current snapshot\nof a PCS power transition (status, task counts, per-task detail).\nCalled by the CLI's poll loop after `POST /power` returns the id.",
         "operationId": "get_power_transition",
         "parameters": [
           {
@@ -3477,7 +3477,7 @@
         "tags": [
           "runtime-configuration"
         ],
-        "summary": "`PUT /api/v2/runtime-configuration` — assign a CFS configuration as\nthe desired runtime configuration for a set of nodes.",
+        "summary": "`PUT /v2/runtime-configuration` — assign a CFS configuration as\nthe desired runtime configuration for a set of nodes.",
         "operationId": "apply_runtime_configuration",
         "parameters": [
           {
@@ -3572,7 +3572,7 @@
         "tags": [
           "sat-file"
         ],
-        "summary": "`POST /api/v2/sat-file/configurations` — apply a single SAT\nconfiguration entry. Returns the created `CfsConfigurationResponse`.",
+        "summary": "`POST /v2/sat-file/configurations` — apply a single SAT\nconfiguration entry. Returns the created `CfsConfigurationResponse`.",
         "operationId": "post_sat_configuration",
         "parameters": [
           {
@@ -3647,7 +3647,7 @@
         "tags": [
           "sat-file"
         ],
-        "summary": "`POST /api/v2/sat-file/images/cfs-session` — translate one SAT\n`images[]` entry into a CFS session payload and create it. Returns\nthe freshly-created [`CfsSessionGetResponse`] so the CLI can drive\nthe monitor + stamp steps itself.",
+        "summary": "`POST /v2/sat-file/images/cfs-session` — translate one SAT\n`images[]` entry into a CFS session payload and create it. Returns\nthe freshly-created [`CfsSessionGetResponse`] so the CLI can drive\nthe monitor + stamp steps itself.",
         "operationId": "post_sat_image_cfs_session",
         "parameters": [
           {
@@ -3722,7 +3722,7 @@
         "tags": [
           "sat-file"
         ],
-        "summary": "`POST /api/v2/sat-file/images/stamp` — fetch the named CFS session,\nderive the provenance stamp, and PATCH the produced IMS image.",
+        "summary": "`POST /v2/sat-file/images/stamp` — fetch the named CFS session,\nderive the provenance stamp, and PATCH the produced IMS image.",
         "description": "Performs two boundary checks before delegating to the backend:\nthe caller must have access to every HSM group the session\ntargets, and the session must have produced a result image. See\n[`crate::service::session::validate_session_access`] +\n[`crate::service::session::require_result_image`].",
         "operationId": "post_sat_image_stamp",
         "parameters": [
@@ -3798,7 +3798,7 @@
         "tags": [
           "sat-file"
         ],
-        "summary": "`POST /api/v2/sat-file/session-templates` — apply a single SAT\nsession_template entry. Returns the created BOS session template\nand (if `create_bos_session` was set and we're not in dry-run) the\nBOS session that was created from the new template to boot the\ntargeted nodes through it.",
+        "summary": "`POST /v2/sat-file/session-templates` — apply a single SAT\nsession_template entry. Returns the created BOS session template\nand (if `create_bos_session` was set and we're not in dry-run) the\nBOS session that was created from the new template to boot the\ntargeted nodes through it.",
         "operationId": "post_sat_session_template",
         "parameters": [
           {
@@ -4026,7 +4026,7 @@
         "tags": [
           "sessions"
         ],
-        "summary": "`POST /api/v2/sessions` — create a CFS session from one or more git repositories.",
+        "summary": "`POST /v2/sessions` — create a CFS session from one or more git repositories.",
         "operationId": "create_session",
         "parameters": [
           {
@@ -4196,7 +4196,7 @@
         "tags": [
           "console"
         ],
-        "summary": "`WS /api/v2/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.",
+        "summary": "`WS /v2/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.",
         "operationId": "console_session_ws",
         "parameters": [
           {
@@ -4287,7 +4287,7 @@
         "tags": [
           "sessions"
         ],
-        "summary": "`GET /api/v2/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.",
+        "summary": "`GET /v2/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.",
         "operationId": "get_session_logs",
         "parameters": [
           {
@@ -4458,7 +4458,7 @@
         "tags": [
           "templates"
         ],
-        "summary": "`POST /api/v2/templates/{name}/sessions` — create a BOS session from a session template.",
+        "summary": "`POST /v2/templates/{name}/sessions` — create a BOS session from a session template.",
         "operationId": "post_template_session",
         "parameters": [
           {
@@ -4550,7 +4550,7 @@
     "schemas": {
       "AddHwComponentRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/hardware-clusters/{target}/members`.\n\nMoves nodes matching `pattern` out of `parent_cluster` and into\nthe path-level target cluster. The reverse direction lives in\n[`DeleteHwComponentRequest`]; both operations are also expressible\nin unified form via [`ApplyHwConfigurationRequest`] with\n[`HwClusterMode::Pin`] vs [`HwClusterMode::Unpin`].",
+        "description": "Request body for `POST /v2/hardware-clusters/{target}/members`.\n\nMoves nodes matching `pattern` out of `parent_cluster` and into\nthe path-level target cluster. The reverse direction lives in\n[`DeleteHwComponentRequest`]; both operations are also expressible\nin unified form via [`ApplyHwConfigurationRequest`] with\n[`HwClusterMode::Pin`] vs [`HwClusterMode::Unpin`].",
         "required": [
           "parent_cluster",
           "pattern"
@@ -4576,7 +4576,7 @@
       },
       "AddKernelParametersRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/kernel-parameters/add` (append mode).",
+        "description": "Request body for `POST /v2/kernel-parameters/add` (append mode).",
         "required": [
           "params"
         ],
@@ -4615,7 +4615,7 @@
       },
       "AddNodeRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/nodes`.\n\nPaired with [`super::responses::AddNodeResponse`] on success.\n\n# Wire shape\n\n```json\n{\n  \"id\": \"x3000c0s1b0n0\",\n  \"group\": \"alps\",\n  \"enabled\": true,\n  \"arch\": \"X86\"\n}\n```",
+        "description": "Request body for `POST /v2/nodes`.\n\nPaired with [`super::responses::AddNodeResponse`] on success.\n\n# Wire shape\n\n```json\n{\n  \"id\": \"x3000c0s1b0n0\",\n  \"group\": \"alps\",\n  \"enabled\": true,\n  \"arch\": \"X86\"\n}\n```",
         "required": [
           "id",
           "group"
@@ -4644,7 +4644,7 @@
       },
       "AddNodeResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v2/nodes` — echoes the registered xname.\n\nPaired with [`super::node::AddNodeRequest`].\n\n# Wire shape\n\n```json\n{ \"id\": \"x3000c0s1b0n0\" }\n```",
+        "description": "Response for `POST /v2/nodes` — echoes the registered xname.\n\nPaired with [`super::node::AddNodeRequest`].\n\n# Wire shape\n\n```json\n{ \"id\": \"x3000c0s1b0n0\" }\n```",
         "required": [
           "id"
         ],
@@ -4657,7 +4657,7 @@
       },
       "AddNodesToGroupRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/groups/{name}/members`.\n\nPaired with [`AddNodesToGroupResponse`] on success.",
+        "description": "Request body for `POST /v2/groups/{name}/members`.\n\nPaired with [`AddNodesToGroupResponse`] on success.",
         "required": [
           "hosts_expression"
         ],
@@ -4670,7 +4670,7 @@
       },
       "AddNodesToGroupResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v2/groups/{name}/members`.\n\nThe `removed` field name is retained for wire stability; its value\nis the final, sorted membership of the group after the update —\n**not** a list of removed nodes.\n\n`added` and `final_members` are both sorted alphabetically by xname.\n\n# Wire shape\n\n```json\n{\n  \"added\": [\"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"final_members\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"removed\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"]\n}\n```",
+        "description": "Response body for `POST /v2/groups/{name}/members`.\n\nThe `removed` field name is retained for wire stability; its value\nis the final, sorted membership of the group after the update —\n**not** a list of removed nodes.\n\n`added` and `final_members` are both sorted alphabetically by xname.\n\n# Wire shape\n\n```json\n{\n  \"added\": [\"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"final_members\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"],\n  \"removed\": [\"x3000c0s1b0n0\", \"x3000c0s1b0n1\", \"x3000c0s1b0n2\", \"x3000c0s1b0n3\"]\n}\n```",
         "required": [
           "added",
           "final_members"
@@ -4701,7 +4701,7 @@
       },
       "ApplyBootConfigRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).\n\nAt least one of `boot_image_id`, `boot_image_configuration`,\n`kernel_parameters`, or `runtime_configuration` should be set;\n`null` fields are left unchanged on the targeted nodes.\n\n# Wire shape\n\n```json\n{\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_image_configuration\": null,\n  \"kernel_parameters\": \"console=ttyS0 nosmt\",\n  \"runtime_configuration\": \"cos-2.5\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
+        "description": "Request body for `POST /v2/boot-config`.\n\nApplies a combined boot configuration (image + runtime config +\nkernel parameters) to the nodes named by `hosts_expression`. The\nfield is a hosts expression — xnames, NIDs, or hostlist notation;\nHSM group names are not accepted here (resolve them client-side\nfirst if needed).\n\nAt least one of `boot_image_id`, `boot_image_configuration`,\n`kernel_parameters`, or `runtime_configuration` should be set;\n`null` fields are left unchanged on the targeted nodes.\n\n# Wire shape\n\n```json\n{\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_image_configuration\": null,\n  \"kernel_parameters\": \"console=ttyS0 nosmt\",\n  \"runtime_configuration\": \"cos-2.5\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
         "required": [
           "hosts_expression"
         ],
@@ -4753,7 +4753,7 @@
       },
       "ApplyHwConfigurationRequest": {
         "type": "object",
-        "description": "Request body for\n`POST /api/v2/hardware-clusters/{target}/configuration`.",
+        "description": "Request body for\n`POST /v2/hardware-clusters/{target}/configuration`.",
         "required": [
           "parent_cluster",
           "pattern"
@@ -4787,7 +4787,7 @@
       },
       "ApplyKernelParametersRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/kernel-parameters/apply`.\n\nOne of `xnames_expression` or `hsm_group` must be set (not both).\nThe chosen [`KernelParamOp`] determines what `params` means:\nmerge-keys, replace-set, or remove-set.\n\n# Wire shape\n\n```json\n{\n  \"xnames_expression\": \"x3000c0s1b0n[0-3]\",\n  \"hsm_group\": null,\n  \"operation\": \"add\",\n  \"params\": \"console=ttyS0 nosmt\",\n  \"overwrite\": false,\n  \"project_sbps\": true,\n  \"dry_run\": false\n}\n```",
+        "description": "Request body for `POST /v2/kernel-parameters/apply`.\n\nOne of `xnames_expression` or `hsm_group` must be set (not both).\nThe chosen [`KernelParamOp`] determines what `params` means:\nmerge-keys, replace-set, or remove-set.\n\n# Wire shape\n\n```json\n{\n  \"xnames_expression\": \"x3000c0s1b0n[0-3]\",\n  \"hsm_group\": null,\n  \"operation\": \"add\",\n  \"params\": \"console=ttyS0 nosmt\",\n  \"overwrite\": false,\n  \"project_sbps\": true,\n  \"dry_run\": false\n}\n```",
         "required": [
           "operation",
           "params"
@@ -4831,7 +4831,7 @@
       },
       "ApplyRuntimeConfigurationRequest": {
         "type": "object",
-        "description": "Request body for `PUT /api/v2/runtime-configuration`.\n\nAssigns a CFS configuration as the `desired_configuration` on every\nCFS component matching `hosts_expression`, and sets the component's\n`enabled` flag. Idempotent: the same request repeated leaves the\nnodes in the same state.\n\n# Wire shape\n\n```json\n{\n  \"cfs_configuration_name\": \"base-mc-compute-config-cscs-26.3.0-pa\",\n  \"hosts_expression\": \"x8000c1s0b1n[0-3]\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
+        "description": "Request body for `PUT /v2/runtime-configuration`.\n\nAssigns a CFS configuration as the `desired_configuration` on every\nCFS component matching `hosts_expression`, and sets the component's\n`enabled` flag. Idempotent: the same request repeated leaves the\nnodes in the same state.\n\n# Wire shape\n\n```json\n{\n  \"cfs_configuration_name\": \"base-mc-compute-config-cscs-26.3.0-pa\",\n  \"hosts_expression\": \"x8000c1s0b1n[0-3]\",\n  \"enabled\": true,\n  \"dry_run\": false\n}\n```",
         "required": [
           "cfs_configuration_name",
           "hosts_expression",
@@ -4858,7 +4858,7 @@
       },
       "AuthTokenRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/auth/token`.\n\nPaired with [`AuthTokenResponse`] on success. The `/auth/*`\nsub-router is wrapped by `strip_body_for_logs`, so neither the\nrequest body nor the issued token appears in access logs.\n\n# Wire shape\n\n```json\n{ \"username\": \"alice\", \"password\": \"hunter2\" }\n```",
+        "description": "Request body for `POST /v2/auth/token`.\n\nPaired with [`AuthTokenResponse`] on success. The `/auth/*`\nsub-router is wrapped by `strip_body_for_logs`, so neither the\nrequest body nor the issued token appears in access logs.\n\n# Wire shape\n\n```json\n{ \"username\": \"alice\", \"password\": \"hunter2\" }\n```",
         "required": [
           "username",
           "password"
@@ -4876,7 +4876,7 @@
       },
       "AuthTokenResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v2/auth/token`.\n\nReturned in exchange for a valid [`AuthTokenRequest`].\n\n# Wire shape\n\n```json\n{ \"token\": \"eyJhbGciOi...\" }\n```",
+        "description": "Response body for `POST /v2/auth/token`.\n\nReturned in exchange for a valid [`AuthTokenRequest`].\n\n# Wire shape\n\n```json\n{ \"token\": \"eyJhbGciOi...\" }\n```",
         "required": [
           "token"
         ],
@@ -4976,7 +4976,7 @@
       },
       "CompletedResponse": {
         "type": "object",
-        "description": "Response for endpoints that simply confirm a backup / restore /\nlong-running migrate operation finished. Emitted by\n`POST /api/v2/migrate/backup` and `POST /api/v2/migrate/restore`.\n\n# Wire shape\n\n```json\n{ \"completed\": true }\n```",
+        "description": "Response for endpoints that simply confirm a backup / restore /\nlong-running migrate operation finished. Emitted by\n`POST /v2/migrate/backup` and `POST /v2/migrate/restore`.\n\n# Wire shape\n\n```json\n{ \"completed\": true }\n```",
         "required": [
           "completed"
         ],
@@ -5019,7 +5019,7 @@
       },
       "CreateImageCfsSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/sat-file/images/cfs-session`.\n\nCarries one entry from the SAT file's `images` section plus the\nCLI's accumulated `ref_lookup` and the ansible knobs the CFS\nsession needs.",
+        "description": "Request body for `POST /v2/sat-file/images/cfs-session`.\n\nCarries one entry from the SAT file's `images` section plus the\nCLI's accumulated `ref_lookup` and the ansible knobs the CFS\nsession needs.",
         "required": [
           "image"
         ],
@@ -5061,7 +5061,7 @@
       },
       "CreateSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/sessions`.\n\nThe CLI submits this when the user runs `manta run session`; the\nserver deserialises it in `handlers::session::create_session`.\n`repo_names` and `repo_last_commit_ids` are parallel-indexed —\n`repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.\nThe two vectors must therefore have the same length.\n\nPaired with [`super::responses::CreateSessionResponse`].",
+        "description": "Request body for `POST /v2/sessions`.\n\nThe CLI submits this when the user runs `manta run session`; the\nserver deserialises it in `handlers::session::create_session`.\n`repo_names` and `repo_last_commit_ids` are parallel-indexed —\n`repo_last_commit_ids[i]` is the commit SHA for `repo_names[i]`.\nThe two vectors must therefore have the same length.\n\nPaired with [`super::responses::CreateSessionResponse`].",
         "required": [
           "repo_names",
           "repo_last_commit_ids"
@@ -5127,7 +5127,7 @@
       },
       "CreateSessionResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v2/sessions` — names of the created CFS\nsession and its underlying configuration.\n\nPaired with [`super::session::CreateSessionRequest`]. When the\ncaller did not supply `cfs_conf_sess_name`, the server-generated\nname is echoed back here.",
+        "description": "Response for `POST /v2/sessions` — names of the created CFS\nsession and its underlying configuration.\n\nPaired with [`super::session::CreateSessionRequest`]. When the\ncaller did not supply `cfs_conf_sess_name`, the server-generated\nname is echoed back here.",
         "required": [
           "session_name",
           "configuration_name"
@@ -5145,7 +5145,7 @@
       },
       "CreatedResponse": {
         "type": "object",
-        "description": "Response for endpoints that simply confirm a write happened.\n\nEmitted by `POST /api/v2/redfish-endpoints`,\n`POST /api/v2/boot-parameters`, and `POST /api/v2/groups`.\n\n# Wire shape\n\n```json\n{ \"created\": true }\n```",
+        "description": "Response for endpoints that simply confirm a write happened.\n\nEmitted by `POST /v2/redfish-endpoints`,\n`POST /v2/boot-parameters`, and `POST /v2/groups`.\n\n# Wire shape\n\n```json\n{ \"created\": true }\n```",
         "required": [
           "created"
         ],
@@ -5174,7 +5174,7 @@
       },
       "DeleteGroupMembersRequest": {
         "type": "object",
-        "description": "Request body for `DELETE /api/v2/groups/{name}/members`.",
+        "description": "Request body for `DELETE /v2/groups/{name}/members`.",
         "required": [
           "xnames_expression"
         ],
@@ -5191,7 +5191,7 @@
       },
       "DeleteHwComponentRequest": {
         "type": "object",
-        "description": "Request body for `DELETE /api/v2/hardware-clusters/{target}/members`.\n\nReverse of [`AddHwComponentRequest`]: moves nodes matching\n`pattern` out of the path-level target cluster and back to\n`parent_cluster`.",
+        "description": "Request body for `DELETE /v2/hardware-clusters/{target}/members`.\n\nReverse of [`AddHwComponentRequest`]: moves nodes matching\n`pattern` out of the path-level target cluster and back to\n`parent_cluster`.",
         "required": [
           "parent_cluster",
           "pattern"
@@ -5217,7 +5217,7 @@
       },
       "DeleteKernelParametersRequest": {
         "type": "object",
-        "description": "Request body for `DELETE /api/v2/kernel-parameters`.",
+        "description": "Request body for `DELETE /v2/kernel-parameters`.",
         "required": [
           "params"
         ],
@@ -5248,7 +5248,7 @@
       },
       "EphemeralEnvResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v2/ephemeral-env` — the freshly provisioned\nephemeral host.",
+        "description": "Response for `POST /v2/ephemeral-env` — the freshly provisioned\nephemeral host.",
         "required": [
           "hostname"
         ],
@@ -5324,7 +5324,7 @@
       },
       "KernelParamOp": {
         "type": "string",
-        "description": "Which kernel-parameter mutation to perform on\n`POST /api/v2/kernel-parameters/apply`.",
+        "description": "Which kernel-parameter mutation to perform on\n`POST /v2/kernel-parameters/apply`.",
         "enum": [
           "add",
           "apply",
@@ -5347,7 +5347,7 @@
       },
       "MigrateBackupRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/migrate/backup`.\n\nPaired with [`super::responses::CompletedResponse`] on success.",
+        "description": "Request body for `POST /v2/migrate/backup`.\n\nPaired with [`super::responses::CompletedResponse`] on success.",
         "properties": {
           "bos": {
             "type": [
@@ -5401,7 +5401,7 @@
       },
       "MigrateNodesRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/migrate/nodes`.\n\nPaired with [`super::responses::MigrateNodesResponse`] on success.\n`target_hsm_names` and `parent_hsm_names` are length-matched: each\n`parent_hsm_names[i]` donates members to `target_hsm_names[i]`.\n\n# Wire shape\n\n```json\n{\n  \"target_hsm_names\": [\"zinal\"],\n  \"parent_hsm_names\": [\"alps\"],\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"dry_run\": false,\n  \"create_hsm_group\": false\n}\n```",
+        "description": "Request body for `POST /v2/migrate/nodes`.\n\nPaired with [`super::responses::MigrateNodesResponse`] on success.\n`target_hsm_names` and `parent_hsm_names` are length-matched: each\n`parent_hsm_names[i]` donates members to `target_hsm_names[i]`.\n\n# Wire shape\n\n```json\n{\n  \"target_hsm_names\": [\"zinal\"],\n  \"parent_hsm_names\": [\"alps\"],\n  \"hosts_expression\": \"x3000c0s1b0n[0-3]\",\n  \"dry_run\": false,\n  \"create_hsm_group\": false\n}\n```",
         "required": [
           "target_hsm_names",
           "parent_hsm_names",
@@ -5438,7 +5438,7 @@
       },
       "MigrateNodesResponse": {
         "type": "object",
-        "description": "Response for `POST /api/v2/migrate/nodes` — moved xnames plus a\nper-(target,parent) result list. Dry-run uses the same shape so the\nCLI consumes one type regardless of mode.\n\nPaired with [`super::migrate::MigrateNodesRequest`]. The `results`\narray runs in lockstep with the request's `target_hsm_names` /\n`parent_hsm_names` pairs.",
+        "description": "Response for `POST /v2/migrate/nodes` — moved xnames plus a\nper-(target,parent) result list. Dry-run uses the same shape so the\nCLI consumes one type regardless of mode.\n\nPaired with [`super::migrate::MigrateNodesRequest`]. The `results`\narray runs in lockstep with the request's `target_hsm_names` /\n`parent_hsm_names` pairs.",
         "required": [
           "xnames",
           "results"
@@ -5462,7 +5462,7 @@
       },
       "MigrateRestoreRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/migrate/restore`.\n\nPaired with [`super::responses::CompletedResponse`] on success.\nEvery `*_file` field is optional independently — supplying only\n`cfs_file` restores CFS configurations and leaves BOS, HSM, IMS,\nand image layers untouched.",
+        "description": "Request body for `POST /v2/migrate/restore`.\n\nPaired with [`super::responses::CompletedResponse`] on success.\nEvery `*_file` field is optional independently — supplying only\n`cfs_file` restores CFS configurations and leaves BOS, HSM, IMS,\nand image layers untouched.",
         "properties": {
           "bos_file": {
             "type": [
@@ -5507,7 +5507,7 @@
       },
       "NodeDetails": {
         "type": "object",
-        "description": "Per-node details returned by `GET /api/v2/nodes`.\n\nMirror of `csm_rs::node::types::NodeDetails` with identical fields\nand identical JSON wire format. No conversion impl is needed in\nthe server crate — the response is serialised straight from the\ncsm-rs type and the CLI deserialises it into this mirror.\n\nAll fields are wire-stringified (CSM serializes them that way);\ncallers parse them as needed for display or comparison. The empty\nstring is the conventional \"unset\" sentinel — see\n`cluster_status::compute_summary_status` for case-insensitive\nmatching on the status fields.\n\n# Wire shape\n\n```json\n{\n  \"xname\": \"x3000c0s1b0n0\",\n  \"nid\": \"nid001313\",\n  \"hsm\": \"alps,zinal\",\n  \"power_status\": \"On\",\n  \"desired_configuration\": \"cos-2.5\",\n  \"configuration_status\": \"configured\",\n  \"enabled\": \"true\",\n  \"error_count\": \"0\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_configuration\": \"cos-2.5\",\n  \"kernel_params\": \"console=ttyS0 ...\"\n}\n```",
+        "description": "Per-node details returned by `GET /v2/nodes`.\n\nMirror of `csm_rs::node::types::NodeDetails` with identical fields\nand identical JSON wire format. No conversion impl is needed in\nthe server crate — the response is serialised straight from the\ncsm-rs type and the CLI deserialises it into this mirror.\n\nAll fields are wire-stringified (CSM serializes them that way);\ncallers parse them as needed for display or comparison. The empty\nstring is the conventional \"unset\" sentinel — see\n`cluster_status::compute_summary_status` for case-insensitive\nmatching on the status fields.\n\n# Wire shape\n\n```json\n{\n  \"xname\": \"x3000c0s1b0n0\",\n  \"nid\": \"nid001313\",\n  \"hsm\": \"alps,zinal\",\n  \"power_status\": \"On\",\n  \"desired_configuration\": \"cos-2.5\",\n  \"configuration_status\": \"configured\",\n  \"enabled\": \"true\",\n  \"error_count\": \"0\",\n  \"boot_image_id\": \"0a1b2c3d-...\",\n  \"boot_configuration\": \"cos-2.5\",\n  \"kernel_params\": \"console=ttyS0 ...\"\n}\n```",
         "required": [
           "xname",
           "nid",
@@ -5570,7 +5570,7 @@
       },
       "PostSatConfigurationRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/sat-file/configurations`.\n\nCarries one entry from the SAT file's `configurations` section\nplus per-call flags. csm-rs owns the SAT schema; the CLI and server\njust shuttle the entry through as `serde_json::Value`.",
+        "description": "Request body for `POST /v2/sat-file/configurations`.\n\nCarries one entry from the SAT file's `configurations` section\nplus per-call flags. csm-rs owns the SAT schema; the CLI and server\njust shuttle the entry through as `serde_json::Value`.",
         "required": [
           "configuration"
         ],
@@ -5590,7 +5590,7 @@
       },
       "PostSatSessionTemplateRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/sat-file/session-templates`.\n\nCarries one entry from the SAT file's `session_templates` section\nplus the CLI's accumulated `ref_lookup` and per-call flags.",
+        "description": "Request body for `POST /v2/sat-file/session-templates`.\n\nCarries one entry from the SAT file's `session_templates` section\nplus the CLI's accumulated `ref_lookup` and per-call flags.",
         "required": [
           "session_template"
         ],
@@ -5620,7 +5620,7 @@
       },
       "PostSatSessionTemplateResponse": {
         "type": "object",
-        "description": "Response body for `POST /api/v2/sat-file/session-templates`.\n\n`session` is populated when `create_bos_session` was true. In a real\napply it carries the freshly-created BOS session; in a dry-run it\ncarries a mock with no status and a `dry-run-` name prefix.",
+        "description": "Response body for `POST /v2/sat-file/session-templates`.\n\n`session` is populated when `create_bos_session` was true. In a real\napply it carries the freshly-created BOS session; in a dry-run it\ncarries a mock with no status and a `dry-run-` name prefix.",
         "required": [
           "template"
         ],
@@ -5635,7 +5635,7 @@
       },
       "PostTemplateSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/templates/{name}/sessions`.\n\nCreates a BOS session from an existing session template (the\n`{name}` path segment).\n\n# Wire shape\n\n```json\n{\n  \"operation\": \"reboot\",\n  \"limit\": \"x3000c0s1b0n[0-3]\",\n  \"session_name\": null,\n  \"include_disabled\": false,\n  \"dry_run\": false\n}\n```",
+        "description": "Request body for `POST /v2/templates/{name}/sessions`.\n\nCreates a BOS session from an existing session template (the\n`{name}` path segment).\n\n# Wire shape\n\n```json\n{\n  \"operation\": \"reboot\",\n  \"limit\": \"x3000c0s1b0n[0-3]\",\n  \"session_name\": null,\n  \"include_disabled\": false,\n  \"dry_run\": false\n}\n```",
         "required": [
           "operation",
           "limit"
@@ -5677,7 +5677,7 @@
       },
       "PowerRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/power`.\n\nThe interpretation of `host_expression` depends on [`PowerTargetType`];\nthe action itself is one of [`PowerAction`]'s variants.\n\n# Wire shape\n\n```json\n{\n  \"action\": \"on\",\n  \"host_expression\": \"x3000c0s1b0n[0-3]\",\n  \"target_type\": \"nodes\",\n  \"force\": false\n}\n```",
+        "description": "Request body for `POST /v2/power`.\n\nThe interpretation of `host_expression` depends on [`PowerTargetType`];\nthe action itself is one of [`PowerAction`]'s variants.\n\n# Wire shape\n\n```json\n{\n  \"action\": \"on\",\n  \"host_expression\": \"x3000c0s1b0n[0-3]\",\n  \"target_type\": \"nodes\",\n  \"force\": false\n}\n```",
         "required": [
           "action",
           "host_expression",
@@ -5712,7 +5712,7 @@
       },
       "StampImageFromSessionRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/sat-file/images/stamp`.",
+        "description": "Request body for `POST /v2/sat-file/images/stamp`.",
         "required": [
           "cfs_session_name"
         ],
@@ -5874,7 +5874,7 @@
       },
       "ValidateTokenRequest": {
         "type": "object",
-        "description": "Request body for `POST /api/v2/auth/validate`.\n\nUsed to check a previously-issued [`AuthTokenResponse::token`]\nbefore relying on it. The server returns `200 OK` for a valid\ntoken and `401` otherwise — there is no dedicated response body.",
+        "description": "Request body for `POST /v2/auth/validate`.\n\nUsed to check a previously-issued [`AuthTokenResponse::token`]\nbefore relying on it. The server returns `200 OK` for a valid\ntoken and `401` otherwise — there is no dedicated response body.",
         "required": [
           "token"
         ],

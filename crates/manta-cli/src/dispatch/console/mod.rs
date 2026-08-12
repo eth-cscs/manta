@@ -3,8 +3,8 @@
 //! and `target-ansible` subcommands.
 //!
 //! Each leaf opens a websocket against the manta server (`GET
-//! /api/v2/console/node/{xname}` or
-//! `/api/v2/console/session/{name}`), upgrades the terminal to raw
+//! /v2/console/node/{xname}` or
+//! `/v2/console/session/{name}`), upgrades the terminal to raw
 //! mode, then runs [`run_console_loop`] until either side EOFs.
 //! Raw mode is unconditionally disabled before the function returns
 //! (whether via the loop's exit branches or via

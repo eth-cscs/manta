@@ -1,10 +1,10 @@
 //! CFS-configuration handlers.
 //!
-//! - `GET    /api/v2/configurations` → [`get_configurations`] —
+//! - `GET    /v2/configurations` → [`get_configurations`] —
 //!   wraps `service::configuration::get_configurations_with_analysis`;
 //!   each row carries a `safe_to_delete` verdict derived from CFS
 //!   components only.
-//! - `DELETE /api/v2/configurations` → [`delete_configurations`] —
+//! - `DELETE /v2/configurations` → [`delete_configurations`] —
 //!   wraps `service::configuration::{get_deletion_candidates,
 //!   delete_configurations_and_derivatives}`; with `?dry_run=true`,
 //!   returns the candidate set without deleting.
@@ -19,7 +19,7 @@ use crate::service;
 use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/configurations
+// GET /v2/configurations
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::{
@@ -68,10 +68,10 @@ pub async fn get_configurations(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/configurations — with ?pattern=...&since=...&until=...&dry_run=true
+// DELETE /v2/configurations — with ?pattern=...&since=...&until=...&dry_run=true
 // ---------------------------------------------------------------------------
 
-/// `DELETE /api/v2/configurations` — delete CFS configurations and all derived artifacts.
+/// `DELETE /v2/configurations` — delete CFS configurations and all derived artifacts.
 #[utoipa::path(delete, path = "/configurations", tag = "configurations",
   params(DeleteConfigurationsQuery, SiteHeader),
   security(("bearerAuth" = [])),

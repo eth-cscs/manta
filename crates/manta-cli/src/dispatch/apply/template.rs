@@ -1,7 +1,7 @@
 //! Implements the `manta apply template` command.
 //!
 //! Creates a BOS session from an existing session template via
-//! `POST /api/v2/sessiontemplates/{name}/session`. The `--operation`
+//! `POST /v2/sessiontemplates/{name}/session`. The `--operation`
 //! argument is one of `boot`, `reboot`, `shutdown` — anything else
 //! aborts before any HTTP call. The endpoint honours `dry_run`
 //! server-side and returns the created session JSON, which the leaf

@@ -3,7 +3,7 @@
 //! Sets the kernel parameter set to *exactly* `--VALUE` on nodes
 //! selected by `--group` or a hosts expression — anything previously
 //! present that is not in `VALUE` is removed. Forwards to
-//! `POST /api/v2/kernel-parameters` with `operation=Apply`. The
+//! `POST /v2/kernel-parameters` with `operation=Apply`. The
 //! endpoint reboots affected nodes server-side and honours `dry_run`.
 //! See [`super::super::add::kernel_parameters`] for the additive
 //! variant and [`super::super::delete::kernel_parameters`] for the

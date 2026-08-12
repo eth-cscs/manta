@@ -1,4 +1,4 @@
-//! Wire types for the `POST /api/v2/auth/{token,validate}` endpoints.
+//! Wire types for the `POST /v2/auth/{token,validate}` endpoints.
 //!
 //! Carried over the wire by both `manta-cli` (sending requests via
 //! `MantaClient`) and `manta-server` (deserializing them in handlers).
@@ -6,7 +6,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v2/auth/token`.
+/// Request body for `POST /v2/auth/token`.
 ///
 /// Paired with [`AuthTokenResponse`] on success. The `/auth/*`
 /// sub-router is wrapped by `strip_body_for_logs`, so neither the
@@ -26,7 +26,7 @@ pub struct AuthTokenRequest {
   pub password: String,
 }
 
-/// Response body for `POST /api/v2/auth/token`.
+/// Response body for `POST /v2/auth/token`.
 ///
 /// Returned in exchange for a valid [`AuthTokenRequest`].
 ///
@@ -43,7 +43,7 @@ pub struct AuthTokenResponse {
   pub token: String,
 }
 
-/// Request body for `POST /api/v2/auth/validate`.
+/// Request body for `POST /v2/auth/validate`.
 ///
 /// Used to check a previously-issued [`AuthTokenResponse::token`]
 /// before relying on it. The server returns `200 OK` for a valid

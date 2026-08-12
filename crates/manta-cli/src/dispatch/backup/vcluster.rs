@@ -1,6 +1,6 @@
 //! Implements the `manta backup vcluster` command.
 //!
-//! Drives `POST /api/v2/migrate/backup` to dump a cluster's BOS / CFS
+//! Drives `POST /v2/migrate/backup` to dump a cluster's BOS / CFS
 //! / HSM / IMS state to a destination folder on the server. Runs an
 //! optional pre-hook before the POST and a post-hook after. The hook
 //! perms are validated up-front so a misconfigured hook never blocks

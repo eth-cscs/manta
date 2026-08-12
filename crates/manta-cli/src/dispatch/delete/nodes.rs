@@ -1,7 +1,7 @@
 //! Implements the `manta delete nodes` command.
 //!
 //! Removes (unassigns) the xnames matching a host expression from an
-//! HSM group via `DELETE /api/v2/groups/{label}/members`. Prompts for
+//! HSM group via `DELETE /v2/groups/{label}/members`. Prompts for
 //! confirmation unless `--assume-yes` is set. `--dry-run` prints a
 //! summary and returns without contacting the server. Inverse of
 //! [`super::super::add::nodes`].

@@ -2,7 +2,7 @@
 //!
 //! Appends (or replaces, with `--overwrite`) kernel parameters on the
 //! BSS boot-parameter records for nodes selected by `--group` or a
-//! hosts expression. Forwards to `POST /api/v2/kernel-parameters`.
+//! hosts expression. Forwards to `POST /v2/kernel-parameters`.
 //! The endpoint supports a server-side `dry_run` flag; the leaf
 //! forwards it verbatim. Nodes whose effective kernel parameters
 //! change are rebooted by the server-side workflow.

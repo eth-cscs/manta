@@ -2,7 +2,7 @@
 //!
 //! Removes specific kernel parameter tokens from the BSS boot-parameter
 //! records of nodes selected by `--group` or `--nodes`. Forwards to
-//! `DELETE /api/v2/kernel-parameters` with server-side `dry_run`.
+//! `DELETE /v2/kernel-parameters` with server-side `dry_run`.
 //! Nodes whose effective parameter set changes are rebooted by the
 //! server-side workflow.
 

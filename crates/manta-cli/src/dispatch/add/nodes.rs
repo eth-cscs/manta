@@ -1,7 +1,7 @@
 //! Implements the `manta add nodes` command.
 //!
 //! Assigns the xnames matching a host expression to an existing HSM
-//! group via `POST /api/v2/groups/{label}/members`. Shows an
+//! group via `POST /v2/groups/{label}/members`. Shows an
 //! interactive confirmation prompt unless `--assume-yes` is set.
 //! `--dry-run` prints what *would* happen and returns without calling
 //! the server. Sibling of [`super::group`] (which can also seed

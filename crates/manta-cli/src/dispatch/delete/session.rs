@@ -1,7 +1,7 @@
 //! Implements the `manta delete session` command.
 //!
 //! Cancels (or removes once complete) a CFS session via
-//! `DELETE /api/v2/sessions/{name}?dry_run=…`. Always prompts for
+//! `DELETE /v2/sessions/{name}?dry_run=…`. Always prompts for
 //! confirmation unless `--assume-yes` is set, even in dry-run mode
 //! (because the confirmation text reflects the user's intent rather
 //! than the server outcome).

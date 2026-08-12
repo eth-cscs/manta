@@ -1,7 +1,7 @@
-//! Axum router registration: maps every `/api/v2/` path to its handler.
+//! Axum router registration: maps every `/v2/` path to its handler.
 //!
 //! The OpenAPI JSON spec is served at `GET /openapi.json` and the
-//! Swagger UI is served at `GET /docs`. The `/api/v2/auth/*`
+//! Swagger UI is served at `GET /docs`. The `/v2/auth/*`
 //! sub-router carries its own defensive layers (rate limit, body
 //! redaction) — see [`crate::server::auth_middleware`].
 
@@ -27,12 +27,12 @@ use super::handlers;
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
 ///
 /// Structure:
-/// - `/api/v2/*` — the main resource router, with the global
+/// - `/v2/*` — the main resource router, with the global
 ///   [`ServerState::request_timeout`] applied as an outer
 ///   `TimeoutLayer`. `POST /power` now returns immediately with a
 ///   PCS transition id (the polling loop runs CLI-side), so it fits
 ///   well under the default timeout — no per-route override is needed.
-/// - `/api/v2/auth/*` — separate sub-router with two layered
+/// - `/v2/auth/*` — separate sub-router with two layered
 ///   defences: per-IP rate limit (see [`AuthRateLimiter`]) and body
 ///   redaction from any log span (see [`strip_body_for_logs`]). No
 ///   Bearer-token extractor (these endpoints issue the token).
@@ -185,7 +185,7 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       state.request_timeout,
     ));
 
-  // /api/v2/auth/* — credential-handling sub-router. No Bearer
+  // /v2/auth/* — credential-handling sub-router. No Bearer
   // extractor (chicken-and-egg). Two layered defences applied:
   // (1) per-IP rate limit, (2) body redaction from any log span.
   let limiter = AuthRateLimiter::new();
@@ -197,8 +197,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .layer(Extension(limiter));
 
   Router::new()
-    .nest("/api/v2", api)
-    .nest("/api/v2/auth", auth)
+    .nest("/v2", api)
+    .nest("/v2/auth", auth)
     .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
     // HSTS on every response. Browsers ignore HSTS over plain HTTP
     // per RFC 6797, so this is a no-op when `allow_http = true`

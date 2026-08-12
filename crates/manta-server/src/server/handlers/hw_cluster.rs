@@ -1,8 +1,8 @@
 //! Hardware-cluster membership and configuration handlers.
 //!
-//! - `POST   /api/v2/hardware-clusters/{target}/members`        → [`add_hw_component`]
-//! - `DELETE /api/v2/hardware-clusters/{target}/members`        → [`delete_hw_component`]
-//! - `POST   /api/v2/hardware-clusters/{target}/configuration`  → [`apply_hw_configuration`]
+//! - `POST   /v2/hardware-clusters/{target}/members`        → [`add_hw_component`]
+//! - `DELETE /v2/hardware-clusters/{target}/members`        → [`delete_hw_component`]
+//! - `POST   /v2/hardware-clusters/{target}/configuration`  → [`apply_hw_configuration`]
 //!
 //! All wrap `crate::service::hw_cluster::*`. Each handler runs
 //! `service::authorization::validate_user_group_access` against both
@@ -19,7 +19,7 @@ pub use manta_shared::types::api::hw_cluster::{
   HwClusterMode,
 };
 
-/// `POST /api/v2/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.
+/// `POST /v2/hardware-clusters/{target}/members` — move nodes matching a hardware pattern into a cluster.
 #[utoipa::path(post, path = "/hardware-clusters/{target}/members", tag = "hardware",
   params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
   request_body = AddHwComponentRequest,
@@ -81,10 +81,10 @@ pub async fn add_hw_component(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/hardware-clusters/{target}/members
+// DELETE /v2/hardware-clusters/{target}/members
 // ---------------------------------------------------------------------------
 
-/// `DELETE /api/v2/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.
+/// `DELETE /v2/hardware-clusters/{target}/members` — move nodes back to parent cluster by hardware pattern.
 #[utoipa::path(delete, path = "/hardware-clusters/{target}/members", tag = "hardware",
   params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
   request_body = DeleteHwComponentRequest,
@@ -146,10 +146,10 @@ pub async fn delete_hw_component(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/hardware-clusters/{target}/configuration
+// POST /v2/hardware-clusters/{target}/configuration
 // ---------------------------------------------------------------------------
 
-/// `POST /api/v2/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.
+/// `POST /v2/hardware-clusters/{target}/configuration` — pin or unpin nodes between clusters by hardware pattern.
 #[utoipa::path(post, path = "/hardware-clusters/{target}/configuration", tag = "hardware",
   params(("target" = String, Path, description = "Target cluster name"), SiteHeader),
   request_body = ApplyHwConfigurationRequest,

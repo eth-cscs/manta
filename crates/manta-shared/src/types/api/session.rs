@@ -1,10 +1,10 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the CFS session endpoints (`/api/v2/sessions`).
+//! the CFS session endpoints (`/v2/sessions`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v2/sessions`.
+/// Request body for `POST /v2/sessions`.
 ///
 /// The CLI submits this when the user runs `manta run session`; the
 /// server deserialises it in `handlers::session::create_session`.

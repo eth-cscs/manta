@@ -1,8 +1,8 @@
 //! WebSocket console handlers (interactive PTY attachments).
 //!
-//! - `WS /api/v2/nodes/{xname}/console`    → [`console_node_ws`] —
+//! - `WS /v2/nodes/{xname}/console`    → [`console_node_ws`] —
 //!   attach to a single node's console.
-//! - `WS /api/v2/sessions/{name}/console`  → [`console_session_ws`] —
+//! - `WS /v2/sessions/{name}/console`  → [`console_session_ws`] —
 //!   attach to a CFS-session-spawned ephemeral environment.
 //!
 //! Both require Vault (for Kubernetes credentials) and the per-site
@@ -31,12 +31,12 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// WS /api/v2/nodes/{xname}/console — Interactive node console
+// WS /v2/nodes/{xname}/console — Interactive node console
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::ConsoleQuery;
 
-/// `WS /api/v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
+/// `WS /v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",
   params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, SiteHeader),
   security(("bearerAuth" = [])),
@@ -111,10 +111,10 @@ pub async fn console_node_ws(
 }
 
 // ---------------------------------------------------------------------------
-// WS /api/v2/sessions/{name}/console — Interactive CFS session console
+// WS /v2/sessions/{name}/console — Interactive CFS session console
 // ---------------------------------------------------------------------------
 
-/// `WS /api/v2/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.
+/// `WS /v2/sessions/{name}/console` — attach an interactive PTY console to a CFS session pod via WebSocket.
 #[utoipa::path(get, path = "/sessions/{name}/console", tag = "console",
   params(("name" = String, Path, description = "Session name"), ConsoleQuery, SiteHeader),
   security(("bearerAuth" = [])),

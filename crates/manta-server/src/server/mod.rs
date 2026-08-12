@@ -11,10 +11,10 @@
 //! - Submodules:
 //!   - [`handlers`] — per-resource Axum handlers; converts HTTP
 //!     requests into service-layer calls.
-//!   - [`routes`] — router registration (one entry per `/api/v2`
+//!   - [`routes`] — router registration (one entry per `/v2`
 //!     path).
 //!   - [`auth_middleware`] — defensive middleware applied to
-//!     `/api/v2/auth/*` (per-IP rate limit + body redaction).
+//!     `/v2/auth/*` (per-IP rate limit + body redaction).
 //!   - [`common`] — server-only helpers (per-request `InfraContext`,
 //!     Kafka audit producer, JWT claim extractors, Vault client).
 //!   - [`api_doc`] — utoipa OpenAPI document served at
@@ -82,9 +82,9 @@ pub struct ServerState {
   /// closes it.  Protects against leaked Kubernetes pod attachments.
   pub console_inactivity_timeout: Duration,
   /// Kafka producer for security/audit events (currently used only by
-  /// `/api/v2/auth/*`). `None` disables audit emission.
+  /// `/v2/auth/*`). `None` disables audit emission.
   pub auditor: Option<Kafka>,
-  /// Per-source-IP rate limit on `/api/v2/auth/*` (requests/minute).
+  /// Per-source-IP rate limit on `/v2/auth/*` (requests/minute).
   /// `None` disables in-process rate limiting.
   pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route (router-level

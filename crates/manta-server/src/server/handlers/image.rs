@@ -1,10 +1,10 @@
 //! IMS image handlers.
 //!
-//! - `GET    /api/v2/images` → [`get_images`] —
+//! - `GET    /v2/images` → [`get_images`] —
 //!   wraps `service::image::get_images`. Orders oldest-first (newest
 //!   last) and filters by name glob and `since`/`until` creation-date
 //!   bounds.
-//! - `DELETE /api/v2/images` → [`delete_images`] —
+//! - `DELETE /v2/images` → [`delete_images`] —
 //!   wraps `service::image::delete_images`; with `?dry_run=true`
 //!   returns the validation result without deleting.
 
@@ -16,7 +16,7 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/images
+// GET /v2/images
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::{DeleteImagesQuery, ImageQuery};
@@ -66,10 +66,10 @@ pub async fn get_images(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/images — with ?ids=id1,id2&dry_run=true
+// DELETE /v2/images — with ?ids=id1,id2&dry_run=true
 // ---------------------------------------------------------------------------
 
-/// `DELETE /api/v2/images` — delete IMS images by ID; validates only when `dry_run=true`.
+/// `DELETE /v2/images` — delete IMS images by ID; validates only when `dry_run=true`.
 #[utoipa::path(delete, path = "/images", tag = "images",
   params(DeleteImagesQuery, SiteHeader),
   security(("bearerAuth" = [])),

@@ -147,9 +147,9 @@ Axum HTTPS server. Key files:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
-| `routes.rs` | Registers REST endpoints (including the two `/api/v2/auth/*` endpoints) + 2 WebSocket upgrades under `/api/v2/`; serves `GET /openapi.json` and `GET /docs` |
+| `routes.rs` | Registers REST endpoints (including the two `/v2/auth/*` endpoints) + 2 WebSocket upgrades under `/v2/`; serves `GET /openapi.json` and `GET /docs` |
 | `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
-| `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/api/v2` server base path |
+| `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/v2` server base path |
 
 The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention. The crate lints `#![warn(missing_docs)]`; CI's `cargo doc` step still surfaces undocumented public items.
 
@@ -247,7 +247,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 | Aspect | CLI | HTTP server |
 |--------|-----|-------------|
 | Entry point | `cli::process::process_cli` | `server::start_server` |
-| Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /api/v2/auth/token`) | `Authorization: Bearer` header, per request |
+| Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /v2/auth/token`) | `Authorization: Bearer` header, per request |
 | Context type | `AppContext` (flat 10-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
@@ -285,7 +285,7 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 ## Security model
 
-`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /api/v2/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`.
+`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /v2/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`.
 
 After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 10-field struct of CLI-side knobs (site, server URL, default group, plus tuneable request and poll timeouts); the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
@@ -303,7 +303,7 @@ This means manta-server is a **single point of compromise** for everyone using i
 
 | Layer | Where | Notes |
 |---|---|---|
-| Per-source-IP rate limit on `/api/v2/auth/*` | code | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
+| Per-source-IP rate limit on `/v2/auth/*` | code | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
 | Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
 | Audit event per auth attempt | code | `manta_server::server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }` to the configured Kafka producer. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
@@ -322,17 +322,17 @@ flowchart TD
     Req[Inbound HTTPS request] --> HSTS[HSTS header injector<br/>add_hsts_header]
     HSTS --> Split{nest path}
 
-    Split -->|/api/v2/*| Tmo[TimeoutLayer<br/>request_timeout_secs]
+    Split -->|/v2/*| Tmo[TimeoutLayer<br/>request_timeout_secs]
     Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
 
-    Split -->|/api/v2/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
+    Split -->|/v2/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
     StripBody --> RL[rate_limit<br/>per-source-IP token bucket]
     RL --> AuthH[auth_token / auth_validate handlers]
 
     Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
 ```
 
-The diagram captures three facts that trip up new contributors: the nest split between `/api/v2/*` and `/api/v2/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path.
+The diagram captures three facts that trip up new contributors: the nest split between `/v2/*` and `/v2/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path.
 
 **Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
 
@@ -380,7 +380,7 @@ Only the CLI has a first-class SOCKS5 knob — `cli.toml`'s optional top-level `
 
 ## Audit trail
 
-Only `manta-server` emits Kafka audit events. Configuration lives under `[auditor.kafka]` in `server.toml` and currently covers `/api/v2/auth/*` attempts via `send_auth_audit`. Every CLI command goes through HTTP to the server, so the server-side request log + auth-audit stream together cover what the CLI used to record locally. The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
+Only `manta-server` emits Kafka audit events. Configuration lives under `[auditor.kafka]` in `server.toml` and currently covers `/v2/auth/*` attempts via `send_auth_audit`. Every CLI command goes through HTTP to the server, so the server-side request log + auth-audit stream together cover what the CLI used to record locally. The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
 
 ## Hooks
 

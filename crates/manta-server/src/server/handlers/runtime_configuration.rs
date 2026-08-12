@@ -1,6 +1,6 @@
 //! Runtime-configuration handler.
 //!
-//! - `PUT /api/v2/runtime-configuration` → [`apply_runtime_configuration`]
+//! - `PUT /v2/runtime-configuration` → [`apply_runtime_configuration`]
 //!
 //! Thin wrapper around
 //! [`crate::service::runtime_configuration::apply_runtime_configuration`].
@@ -12,7 +12,7 @@ use crate::service;
 
 pub use manta_shared::types::api::runtime_configuration::ApplyRuntimeConfigurationRequest;
 
-/// `PUT /api/v2/runtime-configuration` — assign a CFS configuration as
+/// `PUT /v2/runtime-configuration` — assign a CFS configuration as
 /// the desired runtime configuration for a set of nodes.
 #[utoipa::path(put, path = "/runtime-configuration", tag = "runtime-configuration",
   params(SiteHeader),

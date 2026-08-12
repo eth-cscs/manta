@@ -1,11 +1,11 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the boot-parameter endpoints (`/api/v2/boot-config` and
-//! `/api/v2/boot-parameters`).
+//! the boot-parameter endpoints (`/v2/boot-config` and
+//! `/v2/boot-parameters`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v2/boot-config`.
+/// Request body for `POST /v2/boot-config`.
 ///
 /// Applies a combined boot configuration (image + runtime config +
 /// kernel parameters) to the nodes named by `hosts_expression`. The

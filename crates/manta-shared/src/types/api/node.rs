@@ -1,10 +1,10 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the node endpoints (`/api/v2/nodes`).
+//! the node endpoints (`/v2/nodes`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v2/nodes`.
+/// Request body for `POST /v2/nodes`.
 ///
 /// Paired with [`super::responses::AddNodeResponse`] on success.
 ///

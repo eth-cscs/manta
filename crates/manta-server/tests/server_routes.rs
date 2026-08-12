@@ -147,13 +147,13 @@ fn post_auth(uri: &str, site: &str, body: &str) -> Request<Body> {
 
 #[tokio::test]
 async fn health_returns_200_without_auth() {
-  let resp = router().oneshot(get("/api/v2/health")).await.unwrap();
+  let resp = router().oneshot(get("/v2/health")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn health_body_contains_status_ok() {
-  let resp = router().oneshot(get("/api/v2/health")).await.unwrap();
+  let resp = router().oneshot(get("/v2/health")).await.unwrap();
   let body = body_string(resp.into_body()).await;
   assert!(body.contains("\"ok\""), "body was: {body}");
 }
@@ -169,7 +169,7 @@ async fn responses_carry_strict_transport_security_header() {
   // protected without further config. Pin the exact value so a
   // future bump of max-age or addition of `preload` is an explicit
   // operator decision, not a silent drift.
-  let resp = router().oneshot(get("/api/v2/health")).await.unwrap();
+  let resp = router().oneshot(get("/v2/health")).await.unwrap();
   let hsts = resp
     .headers()
     .get(axum::http::header::STRICT_TRANSPORT_SECURITY)
@@ -187,15 +187,15 @@ async fn responses_carry_strict_transport_security_header() {
 #[tokio::test]
 async fn unknown_route_returns_404() {
   let resp = router()
-    .oneshot(get("/api/v2/does-not-exist"))
+    .oneshot(get("/v2/does-not-exist"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
-async fn wrong_api_version_returns_404() {
-  let resp = router().oneshot(get("/api/v1/sessions")).await.unwrap();
+async fn old_prefix_returns_404() {
+  let resp = router().oneshot(get("/api/v2/sessions")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
@@ -205,7 +205,7 @@ async fn wrong_api_version_returns_404() {
 
 #[tokio::test]
 async fn get_on_post_only_route_returns_405() {
-  let resp = router().oneshot(get("/api/v2/power")).await.unwrap();
+  let resp = router().oneshot(get("/v2/power")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
 
@@ -216,7 +216,7 @@ async fn post_on_get_only_route_returns_405() {
     .oneshot(
       Request::builder()
         .method(Method::POST)
-        .uri("/api/v2/clusters")
+        .uri("/v2/clusters")
         .body(Body::empty())
         .unwrap(),
     )
@@ -231,7 +231,7 @@ async fn delete_health_returns_405() {
     .oneshot(
       Request::builder()
         .method(Method::DELETE)
-        .uri("/api/v2/health")
+        .uri("/v2/health")
         .body(Body::empty())
         .unwrap(),
     )
@@ -249,16 +249,16 @@ async fn delete_health_returns_405() {
 #[tokio::test]
 async fn get_routes_reject_missing_bearer_token() {
   let routes = [
-    "/api/v2/sessions",
-    "/api/v2/configurations",
-    "/api/v2/groups",
-    "/api/v2/images",
-    "/api/v2/templates",
-    "/api/v2/boot-parameters",
-    "/api/v2/kernel-parameters",
-    "/api/v2/redfish-endpoints",
-    "/api/v2/clusters",
-    "/api/v2/hardware-clusters",
+    "/v2/sessions",
+    "/v2/configurations",
+    "/v2/groups",
+    "/v2/images",
+    "/v2/templates",
+    "/v2/boot-parameters",
+    "/v2/kernel-parameters",
+    "/v2/redfish-endpoints",
+    "/v2/clusters",
+    "/v2/hardware-clusters",
   ];
   for uri in routes {
     let resp = router().oneshot(get(uri)).await.unwrap();
@@ -273,10 +273,10 @@ async fn get_routes_reject_missing_bearer_token() {
 #[tokio::test]
 async fn delete_routes_without_body_reject_missing_bearer_token() {
   let routes = [
-    "/api/v2/nodes/x3000c0s1b0n0",
-    "/api/v2/groups/my-group",
-    "/api/v2/sessions/my-session",
-    "/api/v2/redfish-endpoints/x3000c0s1b0",
+    "/v2/nodes/x3000c0s1b0n0",
+    "/v2/groups/my-group",
+    "/v2/sessions/my-session",
+    "/v2/redfish-endpoints/x3000c0s1b0",
   ];
   for uri in routes {
     let resp = router()
@@ -304,32 +304,32 @@ async fn body_routes_reject_missing_bearer_token() {
   let cases: &[(Method, &str, &str)] = &[
     (
       Method::POST,
-      "/api/v2/kernel-parameters/add",
+      "/v2/kernel-parameters/add",
       r#"{"params":"quiet"}"#,
     ),
     (
       Method::DELETE,
-      "/api/v2/kernel-parameters",
+      "/v2/kernel-parameters",
       r#"{"params":"quiet"}"#,
     ),
     (
       Method::POST,
-      "/api/v2/hardware-clusters/my-cluster/members",
+      "/v2/hardware-clusters/my-cluster/members",
       r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
     ),
     (
       Method::DELETE,
-      "/api/v2/hardware-clusters/my-cluster/members",
+      "/v2/hardware-clusters/my-cluster/members",
       r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
     ),
     (
       Method::POST,
-      "/api/v2/hardware-clusters/my-cluster/configuration",
+      "/v2/hardware-clusters/my-cluster/configuration",
       r#"{"parent_cluster":"p","pattern":"a100:2"}"#,
     ),
     (
       Method::PUT,
-      "/api/v2/runtime-configuration",
+      "/v2/runtime-configuration",
       r#"{"cfs_configuration_name":"cfg","hosts_expression":"x1","enabled":true}"#,
     ),
   ];
@@ -369,29 +369,29 @@ async fn post_routes_reject_invalid_bodies() {
   // the handler runs. Comments inline justify each case beyond the
   // generic "missing required field".
   let cases: &[(&str, &str)] = &[
-    ("/api/v2/nodes", "{}"),
-    ("/api/v2/ephemeral-env", "{}"),
+    ("/v2/nodes", "{}"),
+    ("/v2/ephemeral-env", "{}"),
     // "fly" is not a valid PowerAction enum variant.
     (
-      "/api/v2/power",
+      "/v2/power",
       r#"{"action":"fly","host_expression":"x3000c0s1b0n0","target_type":"nodes"}"#,
     ),
     // Missing required `action` field.
     (
-      "/api/v2/power",
+      "/v2/power",
       r#"{"host_expression":"x3000c0s1b0n0","target_type":"nodes"}"#,
     ),
     (
-      "/api/v2/templates/my-template/sessions",
+      "/v2/templates/my-template/sessions",
       r#"{"dry_run":false}"#,
     ),
-    ("/api/v2/sat-file/configurations", "{}"),
-    ("/api/v2/sat-file/images/cfs-session", "{}"),
-    ("/api/v2/sat-file/images/stamp", "{}"),
-    ("/api/v2/sat-file/session-templates", "{}"),
-    ("/api/v2/kernel-parameters/add", "{}"),
-    ("/api/v2/hardware-clusters/my-cluster/members", "{}"),
-    ("/api/v2/hardware-clusters/my-cluster/configuration", "{}"),
+    ("/v2/sat-file/configurations", "{}"),
+    ("/v2/sat-file/images/cfs-session", "{}"),
+    ("/v2/sat-file/images/stamp", "{}"),
+    ("/v2/sat-file/session-templates", "{}"),
+    ("/v2/kernel-parameters/add", "{}"),
+    ("/v2/hardware-clusters/my-cluster/members", "{}"),
+    ("/v2/hardware-clusters/my-cluster/configuration", "{}"),
   ];
   for (uri, body) in cases {
     let resp = router().oneshot(post_json(uri, body)).await.unwrap();
@@ -412,14 +412,14 @@ async fn post_routes_reject_invalid_bodies() {
 
 #[tokio::test]
 async fn get_nodes_without_xname_returns_400() {
-  let resp = router().oneshot(get_auth("/api/v2/nodes")).await.unwrap();
+  let resp = router().oneshot(get_auth("/v2/nodes")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn get_hardware_nodes_list_without_xnames_returns_400() {
   let resp = router()
-    .oneshot(get_auth("/api/v2/hardware-nodes-list"))
+    .oneshot(get_auth("/v2/hardware-nodes-list"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
@@ -432,7 +432,7 @@ async fn get_hardware_nodes_list_without_xnames_returns_400() {
 #[tokio::test]
 async fn get_session_logs_without_k8s_config_returns_501() {
   let resp = router()
-    .oneshot(get_auth("/api/v2/sessions/my-session/logs"))
+    .oneshot(get_auth("/v2/sessions/my-session/logs"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_IMPLEMENTED);
@@ -467,26 +467,26 @@ async fn assert_route_exists(method: Method, uri: &str) {
 #[tokio::test]
 async fn all_get_routes_are_registered() {
   for uri in &[
-    "/api/v2/sessions",
-    "/api/v2/configurations",
-    "/api/v2/nodes",
-    "/api/v2/groups",
-    "/api/v2/groups/available",
-    "/api/v2/groups/nodes",
-    "/api/v2/groups/hardware",
-    "/api/v2/images",
-    "/api/v2/templates",
-    "/api/v2/boot-parameters",
-    "/api/v2/kernel-parameters",
-    "/api/v2/redfish-endpoints",
-    "/api/v2/clusters",
-    "/api/v2/hardware-clusters",
-    "/api/v2/hardware-nodes-list",
-    "/api/v2/power/transitions/abcd-1234",
-    "/api/v2/sessions/my-session/logs",
-    "/api/v2/health",
-    "/api/v2/nodes/x3000c0s1b0n0/console",
-    "/api/v2/sessions/my-session/console",
+    "/v2/sessions",
+    "/v2/configurations",
+    "/v2/nodes",
+    "/v2/groups",
+    "/v2/groups/available",
+    "/v2/groups/nodes",
+    "/v2/groups/hardware",
+    "/v2/images",
+    "/v2/templates",
+    "/v2/boot-parameters",
+    "/v2/kernel-parameters",
+    "/v2/redfish-endpoints",
+    "/v2/clusters",
+    "/v2/hardware-clusters",
+    "/v2/hardware-nodes-list",
+    "/v2/power/transitions/abcd-1234",
+    "/v2/sessions/my-session/logs",
+    "/v2/health",
+    "/v2/nodes/x3000c0s1b0n0/console",
+    "/v2/sessions/my-session/console",
   ] {
     assert_route_exists(Method::GET, uri).await;
   }
@@ -495,29 +495,29 @@ async fn all_get_routes_are_registered() {
 #[tokio::test]
 async fn all_post_routes_are_registered() {
   for uri in &[
-    "/api/v2/sessions",
-    "/api/v2/nodes",
-    "/api/v2/groups",
-    "/api/v2/groups/test/members",
-    "/api/v2/boot-parameters",
-    "/api/v2/redfish-endpoints",
-    "/api/v2/boot-config",
-    "/api/v2/kernel-parameters/apply",
-    "/api/v2/kernel-parameters/add",
-    "/api/v2/migrate/nodes",
-    "/api/v2/migrate/backup",
-    "/api/v2/migrate/restore",
-    "/api/v2/ephemeral-env",
-    "/api/v2/power",
-    "/api/v2/templates/my-template/sessions",
-    "/api/v2/sat-file/configurations",
-    "/api/v2/sat-file/images/cfs-session",
-    "/api/v2/sat-file/images/stamp",
-    "/api/v2/sat-file/session-templates",
-    "/api/v2/hardware-clusters/my-cluster/members",
-    "/api/v2/hardware-clusters/my-cluster/configuration",
-    "/api/v2/auth/token",
-    "/api/v2/auth/validate",
+    "/v2/sessions",
+    "/v2/nodes",
+    "/v2/groups",
+    "/v2/groups/test/members",
+    "/v2/boot-parameters",
+    "/v2/redfish-endpoints",
+    "/v2/boot-config",
+    "/v2/kernel-parameters/apply",
+    "/v2/kernel-parameters/add",
+    "/v2/migrate/nodes",
+    "/v2/migrate/backup",
+    "/v2/migrate/restore",
+    "/v2/ephemeral-env",
+    "/v2/power",
+    "/v2/templates/my-template/sessions",
+    "/v2/sat-file/configurations",
+    "/v2/sat-file/images/cfs-session",
+    "/v2/sat-file/images/stamp",
+    "/v2/sat-file/session-templates",
+    "/v2/hardware-clusters/my-cluster/members",
+    "/v2/hardware-clusters/my-cluster/configuration",
+    "/v2/auth/token",
+    "/v2/auth/validate",
   ] {
     assert_route_exists(Method::POST, uri).await;
   }
@@ -526,16 +526,16 @@ async fn all_post_routes_are_registered() {
 #[tokio::test]
 async fn all_delete_routes_are_registered() {
   for uri in &[
-    "/api/v2/nodes/x3000c0s1b0n0",
-    "/api/v2/groups/my-group",
-    "/api/v2/groups/my-group/members",
-    "/api/v2/boot-parameters",
-    "/api/v2/kernel-parameters",
-    "/api/v2/redfish-endpoints/x3000c0s1b0",
-    "/api/v2/sessions/my-session",
-    "/api/v2/images",
-    "/api/v2/configurations",
-    "/api/v2/hardware-clusters/my-cluster/members",
+    "/v2/nodes/x3000c0s1b0n0",
+    "/v2/groups/my-group",
+    "/v2/groups/my-group/members",
+    "/v2/boot-parameters",
+    "/v2/kernel-parameters",
+    "/v2/redfish-endpoints/x3000c0s1b0",
+    "/v2/sessions/my-session",
+    "/v2/images",
+    "/v2/configurations",
+    "/v2/hardware-clusters/my-cluster/members",
   ] {
     assert_route_exists(Method::DELETE, uri).await;
   }
@@ -550,9 +550,9 @@ async fn all_put_routes_are_registered() {
   // covered by `assert_route_exists` (which asserts the response is
   // NOT 405 and NOT 404).
   for uri in &[
-    "/api/v2/boot-parameters",
-    "/api/v2/redfish-endpoints",
-    "/api/v2/runtime-configuration",
+    "/v2/boot-parameters",
+    "/v2/redfish-endpoints",
+    "/v2/runtime-configuration",
   ] {
     assert_route_exists(Method::PUT, uri).await;
   }
@@ -569,7 +569,7 @@ async fn delete_kernel_parameters_missing_params_returns_422() {
     .oneshot(
       Request::builder()
         .method(Method::DELETE)
-        .uri("/api/v2/kernel-parameters")
+        .uri("/v2/kernel-parameters")
         .header(header::CONTENT_TYPE, "application/json")
         .header(header::AUTHORIZATION, "Bearer test-token")
         .header("X-Manta-Site", "test")
@@ -593,7 +593,7 @@ async fn delete_kernel_parameters_missing_params_returns_422() {
 async fn create_session_with_vault_does_not_return_501() {
   let resp = router_with_vault()
     .oneshot(post_json(
-      "/api/v2/sessions",
+      "/v2/sessions",
       r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc123"]}"#,
     ))
     .await
@@ -608,7 +608,7 @@ async fn create_session_with_vault_does_not_return_501() {
 #[tokio::test]
 async fn get_session_logs_with_vault_and_k8s_does_not_return_501() {
   let resp = router_with_vault()
-    .oneshot(get_auth("/api/v2/sessions/my-session/logs"))
+    .oneshot(get_auth("/v2/sessions/my-session/logs"))
     .await
     .unwrap();
   assert_ne!(
@@ -640,7 +640,7 @@ fn ws_upgrade(uri: &str) -> Request<Body> {
 #[tokio::test]
 async fn console_node_without_auth_returns_401() {
   let resp = router()
-    .oneshot(ws_upgrade("/api/v2/nodes/x3000c0s1b0n0/console"))
+    .oneshot(ws_upgrade("/v2/nodes/x3000c0s1b0n0/console"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
@@ -649,7 +649,7 @@ async fn console_node_without_auth_returns_401() {
 #[tokio::test]
 async fn console_session_without_auth_returns_401() {
   let resp = router()
-    .oneshot(ws_upgrade("/api/v2/sessions/my-session/console"))
+    .oneshot(ws_upgrade("/v2/sessions/my-session/console"))
     .await
     .unwrap();
   assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
@@ -670,7 +670,7 @@ async fn console_session_without_auth_returns_401() {
 async fn auth_token_unknown_site_returns_404() {
   let resp = router()
     .oneshot(post_auth(
-      "/api/v2/auth/token",
+      "/v2/auth/token",
       "nonexistent-site",
       r#"{"username":"alice","password":"hunter2"}"#,
     ))
@@ -688,7 +688,7 @@ async fn auth_token_unknown_site_returns_404() {
 async fn auth_validate_unknown_site_returns_404() {
   let resp = router()
     .oneshot(post_auth(
-      "/api/v2/auth/validate",
+      "/v2/auth/validate",
       "nonexistent-site",
       r#"{"token":"some-token"}"#,
     ))
@@ -709,7 +709,7 @@ async fn auth_token_known_site_is_not_404() {
   // 401, never a 404 (which is reserved for unknown sites).
   let resp = router()
     .oneshot(post_auth(
-      "/api/v2/auth/token",
+      "/v2/auth/token",
       "test",
       r#"{"username":"alice","password":"hunter2"}"#,
     ))
@@ -723,7 +723,7 @@ async fn auth_token_known_site_is_not_404() {
 async fn auth_validate_known_site_is_not_404() {
   let resp = router()
     .oneshot(post_auth(
-      "/api/v2/auth/validate",
+      "/v2/auth/validate",
       "test",
       r#"{"token":"some-token"}"#,
     ))
@@ -935,7 +935,7 @@ async fn post_with_manta_read_only_role_is_not_refused_by_role_gate() {
   let token = format!("{header}.{payload}.sig");
   let req = Request::builder()
     .method(Method::POST)
-    .uri("/api/v2/groups")
+    .uri("/v2/groups")
     .header(header::CONTENT_TYPE, "application/json")
     .header(header::AUTHORIZATION, format!("Bearer {token}"))
     .header("X-Manta-Site", "test")

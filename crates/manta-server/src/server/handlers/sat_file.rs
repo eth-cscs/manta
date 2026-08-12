@@ -7,10 +7,10 @@
 //!
 //! Configuration + session-template entries take one call each:
 //!
-//! - `POST /api/v2/sat-file/configurations` →
+//! - `POST /v2/sat-file/configurations` →
 //!   [`post_sat_configuration`] — Body: [`PostSatConfigurationRequest`];
 //!   response: a `CfsConfigurationResponse` as JSON.
-//! - `POST /api/v2/sat-file/session-templates` →
+//! - `POST /v2/sat-file/session-templates` →
 //!   [`post_sat_session_template`] — Body:
 //!   [`PostSatSessionTemplateRequest`]; response:
 //!   [`PostSatSessionTemplateResponse`].
@@ -18,7 +18,7 @@
 //! Image entries are split across three calls so the CLI can monitor
 //! the build instead of blocking on one long server round-trip:
 //!
-//! - `POST /api/v2/sat-file/images/cfs-session` →
+//! - `POST /v2/sat-file/images/cfs-session` →
 //!   [`post_sat_image_cfs_session`] — translate one `images[]` entry
 //!   into a CFS session payload and create it. Body:
 //!   [`CreateImageCfsSessionRequest`]; response: the freshly-created
@@ -26,7 +26,7 @@
 //! - Monitor via the existing `GET /sessions?name=…` or
 //!   `GET /sessions/{name}/logs` (SSE) endpoints — the CLI picks
 //!   which based on `--watch-logs`.
-//! - `POST /api/v2/sat-file/images/stamp` → [`post_sat_image_stamp`] —
+//! - `POST /v2/sat-file/images/stamp` → [`post_sat_image_stamp`] —
 //!   once the session is terminal-complete, the server fetches it,
 //!   derives `manta.image_session.{base,groups,configuration}`, and
 //!   PATCHes them onto the produced IMS image. Body:
@@ -57,7 +57,7 @@ use super::{
 };
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/sat-file/configurations — Apply one SAT configuration entry
+// POST /v2/sat-file/configurations — Apply one SAT configuration entry
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::sat_file::{
@@ -79,7 +79,7 @@ pub use manta_shared::types::api::sat_file::{
     (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
   )
 )]
-/// `POST /api/v2/sat-file/configurations` — apply a single SAT
+/// `POST /v2/sat-file/configurations` — apply a single SAT
 /// configuration entry. Returns the created `CfsConfigurationResponse`.
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_configuration(
@@ -124,7 +124,7 @@ pub async fn post_sat_configuration(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/sat-file/images/cfs-session — Create the CFS session that
+// POST /v2/sat-file/images/cfs-session — Create the CFS session that
 // will build the image, but do not wait for it or stamp the result. The
 // CLI drives the monitor + stamp steps via the existing session endpoints
 // and the companion `/sat-file/images/stamp` endpoint below.
@@ -143,7 +143,7 @@ pub async fn post_sat_configuration(
     (status = 501, description = "Vault or k8s not configured", body = ErrorResponse),
   )
 )]
-/// `POST /api/v2/sat-file/images/cfs-session` — translate one SAT
+/// `POST /v2/sat-file/images/cfs-session` — translate one SAT
 /// `images[]` entry into a CFS session payload and create it. Returns
 /// the freshly-created [`CfsSessionGetResponse`] so the CLI can drive
 /// the monitor + stamp steps itself.
@@ -183,7 +183,7 @@ pub async fn post_sat_image_cfs_session(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/sat-file/images/stamp — Given a (terminal-complete) CFS
+// POST /v2/sat-file/images/stamp — Given a (terminal-complete) CFS
 // session name, fetch it, derive `manta.image_session.{base,groups,
 // configuration}` from it, and PATCH them onto the IMS image the session
 // produced. Fails fast when the session has no result image.
@@ -202,7 +202,7 @@ pub async fn post_sat_image_cfs_session(
     (status = 500, description = "Internal error",              body = ErrorResponse),
   )
 )]
-/// `POST /api/v2/sat-file/images/stamp` — fetch the named CFS session,
+/// `POST /v2/sat-file/images/stamp` — fetch the named CFS session,
 /// derive the provenance stamp, and PATCH the produced IMS image.
 ///
 /// Performs two boundary checks before delegating to the backend:
@@ -241,7 +241,7 @@ pub async fn post_sat_image_stamp(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/sat-file/session-templates — Apply one SAT session_template
+// POST /v2/sat-file/session-templates — Apply one SAT session_template
 // ---------------------------------------------------------------------------
 
 #[utoipa::path(post, path = "/sat-file/session-templates", tag = "sat-file",
@@ -254,7 +254,7 @@ pub async fn post_sat_image_stamp(
     (status = 500, description = "Internal error",           body = ErrorResponse),
   )
 )]
-/// `POST /api/v2/sat-file/session-templates` — apply a single SAT
+/// `POST /v2/sat-file/session-templates` — apply a single SAT
 /// session_template entry. Returns the created BOS session template
 /// and (if `create_bos_session` was set and we're not in dry-run) the
 /// BOS session that was created from the new template to boot the

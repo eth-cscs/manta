@@ -1,9 +1,9 @@
 //! HSM Redfish-endpoint CRUD handlers.
 //!
-//! - `GET    /api/v2/redfish-endpoints`        → [`get_redfish_endpoints`]
-//! - `POST   /api/v2/redfish-endpoints`        → [`add_redfish_endpoint`]
-//! - `PUT    /api/v2/redfish-endpoints`        → [`update_redfish_endpoint`]
-//! - `DELETE /api/v2/redfish-endpoints/{id}`   → [`delete_redfish_endpoint`]
+//! - `GET    /v2/redfish-endpoints`        → [`get_redfish_endpoints`]
+//! - `POST   /v2/redfish-endpoints`        → [`add_redfish_endpoint`]
+//! - `PUT    /v2/redfish-endpoints`        → [`update_redfish_endpoint`]
+//! - `DELETE /v2/redfish-endpoints/{id}`   → [`delete_redfish_endpoint`]
 //!
 //! All wrap `crate::service::redfish::*`.
 
@@ -21,7 +21,7 @@ use manta_shared::types::api::redfish_endpoints::{
 };
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/redfish-endpoints
+// GET /v2/redfish-endpoints
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::RedfishEndpointsQuery;
@@ -62,7 +62,7 @@ pub async fn get_redfish_endpoints(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v2/redfish-endpoints/{id}
+// DELETE /v2/redfish-endpoints/{id}
 // ---------------------------------------------------------------------------
 
 /// DELETE /redfish-endpoints/{id} — remove a Redfish endpoint from HSM.
@@ -92,7 +92,7 @@ pub async fn delete_redfish_endpoint(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v2/redfish-endpoints
+// POST /v2/redfish-endpoints
 // ---------------------------------------------------------------------------
 
 /// POST /redfish-endpoints — register a new Redfish endpoint in HSM.
@@ -125,7 +125,7 @@ pub async fn add_redfish_endpoint(
 }
 
 // ---------------------------------------------------------------------------
-// PUT /api/v2/redfish-endpoints
+// PUT /v2/redfish-endpoints
 // ---------------------------------------------------------------------------
 
 /// PUT /redfish-endpoints — update an existing Redfish endpoint's properties.

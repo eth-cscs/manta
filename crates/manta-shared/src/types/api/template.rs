@@ -1,6 +1,6 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the BOS session template endpoints (`/api/v2/templates`,
-//! `/api/v2/templates/{name}/sessions`).
+//! the BOS session template endpoints (`/v2/templates`,
+//! `/v2/templates/{name}/sessions`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
@@ -29,7 +29,7 @@ impl BosOperation {
   }
 }
 
-/// Request body for `POST /api/v2/templates/{name}/sessions`.
+/// Request body for `POST /v2/templates/{name}/sessions`.
 ///
 /// Creates a BOS session from an existing session template (the
 /// `{name}` path segment).

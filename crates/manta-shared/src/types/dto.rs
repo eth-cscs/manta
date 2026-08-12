@@ -31,7 +31,7 @@ pub use manta_backend_dispatcher::types::{
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Per-node details returned by `GET /api/v2/nodes`.
+/// Per-node details returned by `GET /v2/nodes`.
 ///
 /// Mirror of `csm_rs::node::types::NodeDetails` with identical fields
 /// and identical JSON wire format. No conversion impl is needed in

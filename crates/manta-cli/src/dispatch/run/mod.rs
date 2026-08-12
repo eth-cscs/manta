@@ -2,7 +2,7 @@
 //!
 //! Today only [`session`] exists; it creates and runs a one-off CFS
 //! session targeting a group or an `--ansible-limit` host list via
-//! `POST /api/v2/sessions`. See [`session`] for the per-leaf
+//! `POST /v2/sessions`. See [`session`] for the per-leaf
 //! workflow.
 
 pub mod session;

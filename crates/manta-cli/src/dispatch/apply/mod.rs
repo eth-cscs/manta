@@ -5,17 +5,17 @@
 //!
 //! - [`sat_file`] — `manta apply sat-file`: renders a SAT template,
 //!   builds an in-memory plan, and POSTs one element at a time to
-//!   `/api/v2/sat-file/{configurations,images,session-templates}`. See
+//!   `/v2/sat-file/{configurations,images,session-templates}`. See
 //!   that module's docs for the plan/apply pattern.
 //! - [`template`] — `manta apply template`: `POST
-//!   /api/v2/sessiontemplates/{name}/session` to create a BOS session.
+//!   /v2/sessiontemplates/{name}/session` to create a BOS session.
 //! - [`boot_node`] / [`boot_group`] — `manta apply boot {nodes,group}`:
-//!   `POST /api/v2/boot-config` against an explicit hosts expression
+//!   `POST /v2/boot-config` against an explicit hosts expression
 //!   (the `group` leaf resolves group members first).
 //! - [`boot_parameters`] — `manta apply boot-parameters`: `PUT
-//!   /api/v2/boot-parameters` to update an existing record.
+//!   /v2/boot-parameters` to update an existing record.
 //! - [`hardware_group`] — `manta apply hardware group`: `POST
-//!   /api/v2/hardware-clusters/{target}` to pin or unpin
+//!   /v2/hardware-clusters/{target}` to pin or unpin
 //!   pattern-selected components.
 //! - [`kernel_parameters`] — `manta apply kernel-parameters`: full
 //!   replace, rebooting affected nodes. See
@@ -23,7 +23,7 @@
 //! - [`redfish_endpoint`] — `manta apply redfish-endpoint`: update an
 //!   existing record.
 //! - `ephemeral-environment` (handled inline below) — `POST
-//!   /api/v2/ephemeral-env` to provision an ephemeral environment for
+//!   /v2/ephemeral-env` to provision an ephemeral environment for
 //!   an image; refuses to run if stdout is not a TTY.
 //!
 //! Most leaves accept `--dry-run`; whether that flows to the server or

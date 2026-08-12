@@ -1,10 +1,10 @@
 //! HTTP request/response bodies for the runtime-configuration endpoint
-//! (`PUT /api/v2/runtime-configuration`).
+//! (`PUT /v2/runtime-configuration`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `PUT /api/v2/runtime-configuration`.
+/// Request body for `PUT /v2/runtime-configuration`.
 ///
 /// Assigns a CFS configuration as the `desired_configuration` on every
 /// CFS component matching `hosts_expression`, and sets the component's

@@ -74,8 +74,8 @@ mod tests {
   #[test]
   fn ws_base_url_preserves_path_and_query() {
     assert_eq!(
-      ws_base_url("https://h.example/api/v2?x=1"),
-      "wss://h.example/api/v2?x=1"
+      ws_base_url("https://h.example/v2?x=1"),
+      "wss://h.example/v2?x=1"
     );
   }
 
@@ -139,7 +139,7 @@ mod tests {
     let c =
       MantaClient::new_with_timeout("http://stub.invalid", "alps", None, None)
         .expect("construction with timeout=None must succeed");
-    assert_eq!(c.base_url(), "http://stub.invalid/api/v2");
+    assert_eq!(c.base_url(), "http://stub.invalid/v2");
     assert_eq!(c.site_name(), "alps");
   }
 
@@ -152,7 +152,7 @@ mod tests {
       None,
     )
     .expect("construction with timeout=Some(5) must succeed");
-    assert_eq!(c.base_url(), "http://stub.invalid/api/v2");
+    assert_eq!(c.base_url(), "http://stub.invalid/v2");
     assert_eq!(c.site_name(), "alps");
   }
 
@@ -161,6 +161,6 @@ mod tests {
     let c =
       MantaClient::new_with_timeout("stub.invalid:8080", "alps", None, None)
         .expect("scheme-less host must succeed");
-    assert_eq!(c.base_url(), "http://stub.invalid:8080/api/v2");
+    assert_eq!(c.base_url(), "http://stub.invalid:8080/v2");
   }
 }

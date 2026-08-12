@@ -1,7 +1,7 @@
 //! Implements the `manta apply boot-parameters` command.
 //!
 //! Updates an existing BSS boot-parameter record via
-//! `PUT /api/v2/boot-parameters`. The CLI parses comma-separated
+//! `PUT /v2/boot-parameters`. The CLI parses comma-separated
 //! `--hosts`, `--macs`, and `--nids` into the typed wire shape (NIDs
 //! become `i32` to match the generated client). The endpoint has no
 //! server-side dry-run flag; see [`super::super::add::boot_parameters`]

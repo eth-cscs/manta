@@ -1,5 +1,5 @@
 //! HTTP request/response bodies for the per-element SAT-file apply
-//! endpoints under `POST /api/v2/sat-file/*`, plus CLI-built params
+//! endpoints under `POST /v2/sat-file/*`, plus CLI-built params
 //! for the backend's whole-file `apply_sat_file` pass-through.
 
 use std::collections::HashMap;
@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 use crate::types::dto::BosSessionTemplate;
 use manta_backend_dispatcher::types::bos::session::BosSession;
 
-/// Request body for `POST /api/v2/sat-file/configurations`.
+/// Request body for `POST /v2/sat-file/configurations`.
 ///
 /// Carries one entry from the SAT file's `configurations` section
 /// plus per-call flags. csm-rs owns the SAT schema; the CLI and server
@@ -29,7 +29,7 @@ pub struct PostSatConfigurationRequest {
   pub dry_run: bool,
 }
 
-/// Request body for `POST /api/v2/sat-file/images/cfs-session`.
+/// Request body for `POST /v2/sat-file/images/cfs-session`.
 ///
 /// Carries one entry from the SAT file's `images` section plus the
 /// CLI's accumulated `ref_lookup` and the ansible knobs the CFS
@@ -54,7 +54,7 @@ pub struct CreateImageCfsSessionRequest {
   pub dry_run: bool,
 }
 
-/// Request body for `POST /api/v2/sat-file/images/stamp`.
+/// Request body for `POST /v2/sat-file/images/stamp`.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct StampImageFromSessionRequest {
   /// Name of the (already terminal-complete) CFS session whose result
@@ -62,7 +62,7 @@ pub struct StampImageFromSessionRequest {
   pub cfs_session_name: String,
 }
 
-/// Request body for `POST /api/v2/sat-file/session-templates`.
+/// Request body for `POST /v2/sat-file/session-templates`.
 ///
 /// Carries one entry from the SAT file's `session_templates` section
 /// plus the CLI's accumulated `ref_lookup` and per-call flags.
@@ -87,7 +87,7 @@ pub struct PostSatSessionTemplateRequest {
   pub dry_run: bool,
 }
 
-/// Response body for `POST /api/v2/sat-file/session-templates`.
+/// Response body for `POST /v2/sat-file/session-templates`.
 ///
 /// `session` is populated when `create_bos_session` was true. In a real
 /// apply it carries the freshly-created BOS session; in a dry-run it

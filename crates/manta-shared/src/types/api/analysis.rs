@@ -1,4 +1,4 @@
-//! Wire shape for `GET /api/v2/analysis/images`.
+//! Wire shape for `GET /v2/analysis/images`.
 //!
 //! Each `BackendSummary` is one row in an image-centric projection of
 //! the four backend resource lists. See the field-population rules in

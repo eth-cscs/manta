@@ -20,7 +20,7 @@ pub struct ExecParams<'a> {
 
 /// Delete CFS configurations and their derived artifacts.
 ///
-/// Forwards to `DELETE /api/v2/configurations` with the
+/// Forwards to `DELETE /v2/configurations` with the
 /// `configuration-name` pattern and the `since` / `until` window
 /// (each formatted as a SQL-style timestamp). The server cascades to
 /// CFS sessions and IMS images derived from each matched

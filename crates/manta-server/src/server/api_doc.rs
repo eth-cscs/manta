@@ -7,7 +7,7 @@
 //! below, and every wire-type used in request/response bodies must
 //! be listed under `components(schemas(...))`. The `SecurityAddon`
 //! `Modify` impl registers the `bearerAuth` (HTTP `Bearer` / JWT)
-//! security scheme and declares `/api/v2` as the spec's server URL
+//! security scheme and declares `/v2` as the spec's server URL
 //! so Swagger UI's "Try it out" buttons build full paths.
 
 use utoipa::{
@@ -149,11 +149,11 @@ impl Modify for SecurityAddon {
         ),
       );
     }
-    // Declare the /api/v2 base path as the server so that Swagger UI
-    // constructs full URLs like /api/v2/sessions when trying out calls.
+    // Declare the /v2 base path as the server so that Swagger UI
+    // constructs full URLs like /v2/sessions when trying out calls.
     openapi.servers = Some(vec![
       utoipa::openapi::ServerBuilder::new()
-        .url("/api/v2")
+        .url("/v2")
         .description(Some("manta API v2"))
         .build(),
     ]);

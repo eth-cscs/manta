@@ -1,8 +1,8 @@
 //! Group/cluster node-listing handlers.
 //!
-//! - `GET /api/v2/groups/nodes` → [`get_groups_nodes`] (canonical) —
+//! - `GET /v2/groups/nodes` → [`get_groups_nodes`] (canonical) —
 //!   wraps `service::cluster::get_cluster_nodes`.
-//! - `GET /api/v2/clusters` → [`get_clusters_deprecated`] —
+//! - `GET /v2/clusters` → [`get_clusters_deprecated`] —
 //!   deprecated alias; logs a server-side warning and forwards.
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
@@ -11,7 +11,7 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v2/groups/nodes
+// GET /v2/groups/nodes
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::ClusterQuery;

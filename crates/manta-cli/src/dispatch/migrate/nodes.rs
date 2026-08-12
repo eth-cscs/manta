@@ -1,7 +1,7 @@
 //! Implements the `manta migrate nodes` command.
 //!
 //! Moves xnames between HSM groups via
-//! `POST /api/v2/migrate/nodes`. The dispatcher resolves the source
+//! `POST /v2/migrate/nodes`. The dispatcher resolves the source
 //! groups before calling this leaf — either the single `--from` group
 //! or the full accessible-groups list when `--from` is omitted. The
 //! server then re-checks per-name access and atomically removes each

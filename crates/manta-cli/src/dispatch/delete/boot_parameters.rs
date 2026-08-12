@@ -1,7 +1,7 @@
 //! Implements the `manta delete boot-parameters` command.
 //!
 //! Removes the BSS boot-parameter records for the given hosts via
-//! `DELETE /api/v2/boot-parameters`. `--dry-run` is a client-side
+//! `DELETE /v2/boot-parameters`. `--dry-run` is a client-side
 //! short-circuit (the endpoint has no `dry_run` flag): the leaf prints
 //! the request payload that *would* be sent via
 //! [`crate::output::action_result::preview_request`] and returns.

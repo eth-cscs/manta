@@ -1,7 +1,7 @@
 //! `manta backup` subcommands.
 //!
 //! Today only [`vcluster`] exists; it drives a cluster-data backup via
-//! `POST /api/v2/migrate/backup`. Paired with the symmetric
+//! `POST /v2/migrate/backup`. Paired with the symmetric
 //! [`super::restore`] commands.
 
 pub mod vcluster;
