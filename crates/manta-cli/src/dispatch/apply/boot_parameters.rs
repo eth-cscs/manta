@@ -67,7 +67,8 @@ pub async fn exec(
     .openapi
     .update_boot_parameters(client.site_name(), &params)
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   action_result::print("Boot parameters updated", p.output)?;
 

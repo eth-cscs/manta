@@ -40,7 +40,8 @@ pub async fn exec(
     .openapi
     .delete_session(session_name, Some(dry_run), client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   action_result::print(
     &format!("Session '{session_name}' deleted"),
     output_opt,

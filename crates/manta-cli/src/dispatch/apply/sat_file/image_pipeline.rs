@@ -126,7 +126,8 @@ pub async fn run_image_pipeline(
       },
     )
     .await
-    .into_anyhow().await
+    .into_anyhow()
+    .await
     .context("create CFS session from SAT image entry")?;
 
   // Server returns the freshly-created session as JSON. Round-trip
@@ -186,7 +187,8 @@ pub async fn run_image_pipeline(
       },
     )
     .await
-    .into_anyhow().await
+    .into_anyhow()
+    .await
     .with_context(|| {
       format!("stamp image from CFS session '{session_name}'")
     })?;
@@ -327,7 +329,8 @@ async fn fetch_session_opt(
       client.site_name(),
     )
     .await
-    .into_anyhow().await
+    .into_anyhow()
+    .await
     .with_context(|| format!("fetch CFS session '{session_name}'"))?;
 
   // Deserialise as raw Values first, extract the one element we need,

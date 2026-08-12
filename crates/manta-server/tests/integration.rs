@@ -204,11 +204,7 @@ impl TestFixture {
       .unwrap()
   }
 
-  fn auth_put_json(
-    &self,
-    uri: &str,
-    body: serde_json::Value,
-  ) -> Request<Body> {
+  fn auth_put_json(&self, uri: &str, body: serde_json::Value) -> Request<Body> {
     Request::builder()
       .method(Method::PUT)
       .uri(uri)

@@ -65,7 +65,8 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   // Server returns the BOS session template list as `serde_json::Value`;
   // deserialize into the manta-shared typed shape so the renderer can

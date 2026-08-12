@@ -7,9 +7,7 @@
 //! latter also touches BSS boot parameters; this one only writes CFS
 //! component state.
 
-use manta_backend_dispatcher::{
-  error::Error, interfaces::cfs::CfsTrait as _,
-};
+use manta_backend_dispatcher::{error::Error, interfaces::cfs::CfsTrait as _};
 
 use crate::server::common::app_context::InfraContext;
 

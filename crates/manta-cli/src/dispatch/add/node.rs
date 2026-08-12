@@ -58,7 +58,8 @@ pub async fn exec(
     .openapi
     .add_node(client.site_name(), &req)
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   action_result::print(
     &format!("Node '{}' created and added to group '{}'", p.id, p.group),

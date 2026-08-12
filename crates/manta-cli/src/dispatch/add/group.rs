@@ -92,14 +92,16 @@ pub async fn exec(
     .openapi
     .create_group(client.site_name(), &grp)
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   if let Some(req) = add_nodes_req {
     client
       .openapi
       .add_nodes_to_group(p.label, client.site_name(), &req)
       .await
-      .into_anyhow().await?;
+      .into_anyhow()
+      .await?;
   }
 
   action_result::print(&format!("Group '{}' created", p.label), p.output)?;

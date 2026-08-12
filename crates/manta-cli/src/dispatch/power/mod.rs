@@ -268,7 +268,8 @@ async fn dispatch_and_wait(
     .openapi
     .post_power(client.site_name(), &req)
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   let transition_id = started
     .get("transitionID")
     .and_then(Value::as_str)
@@ -329,7 +330,8 @@ async fn poll_until_done(
     .openapi
     .get_power_transition(transition_id, client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   for attempt in 1..=max_attempts_usize {
     tracing::info!(
@@ -346,7 +348,8 @@ async fn poll_until_done(
       .openapi
       .get_power_transition(transition_id, client.site_name())
       .await
-      .into_anyhow().await?;
+      .into_anyhow()
+      .await?;
   }
 
   bail!(

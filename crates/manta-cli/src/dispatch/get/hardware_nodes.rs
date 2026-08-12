@@ -57,7 +57,8 @@ pub async fn exec(
     .openapi
     .get_hardware_nodes_list(&params.host_expression, client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   output::hardware::print_nodes_list(&json, output)?;
   Ok(())

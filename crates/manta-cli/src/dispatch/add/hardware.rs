@@ -51,7 +51,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   let message = if p.dry_run {
     "Dryrun enabled, not modifying the groups on the system."
   } else {

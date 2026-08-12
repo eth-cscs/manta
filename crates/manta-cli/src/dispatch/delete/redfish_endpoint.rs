@@ -42,7 +42,8 @@ pub async fn exec(
     .openapi
     .delete_redfish_endpoint(id, client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   action_result::print(
     &format!("Redfish endpoint for id '{id}' deleted successfully"),
     output_opt,

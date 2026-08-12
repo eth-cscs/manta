@@ -58,7 +58,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   if p.dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

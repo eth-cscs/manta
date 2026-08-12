@@ -36,7 +36,8 @@ pub async fn exec(
     .openapi
     .delete_images(Some(dry_run), &ids, client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   if dry_run {
     action_result::print_with_data(
       "Dry-run enabled. No changes persisted into the system.",

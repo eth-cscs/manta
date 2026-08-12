@@ -41,17 +41,16 @@ pub async fn apply_runtime_configuration(
   );
   let infra = ctx.infra();
 
-  let xnames =
-    service::runtime_configuration::apply_runtime_configuration(
-      &infra,
-      &ctx.token,
-      &body.cfs_configuration_name,
-      &body.hosts_expression,
-      body.enabled,
-      body.dry_run,
-    )
-    .await
-    .map_err(to_handler_error)?;
+  let xnames = service::runtime_configuration::apply_runtime_configuration(
+    &infra,
+    &ctx.token,
+    &body.cfs_configuration_name,
+    &body.hosts_expression,
+    body.enabled,
+    body.dry_run,
+  )
+  .await
+  .map_err(to_handler_error)?;
 
   Ok((
     StatusCode::OK,

@@ -45,7 +45,8 @@ pub async fn exec(
     .openapi
     .delete_group(label, Some(force), client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   action_result::print(&format!("Group '{label}' deleted"), output_opt)?;
 

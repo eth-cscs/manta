@@ -58,7 +58,8 @@ pub async fn exec(
     .openapi
     .get_groups_nodes(hsm, params.status_filter.as_deref(), client.site_name())
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   output::node::render_node_details(
     node_details_list,

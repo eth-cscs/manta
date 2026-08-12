@@ -73,7 +73,8 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   // The server returns one `ConfigurationAnalysis` per configuration:
   // `{ configuration: CfsConfigurationResponse, safe_to_delete: bool }`.

@@ -48,7 +48,8 @@ pub async fn exec(
       client.site_name(),
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
   action_result::print_with_data("Configurations deleted", &result, p.output)?;
   Ok(())
 }

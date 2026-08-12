@@ -62,7 +62,8 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow().await?;
+    .into_anyhow()
+    .await?;
 
   action_result::print(
     &format!(

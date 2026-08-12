@@ -33,11 +33,11 @@
 pub mod boot_group;
 pub mod boot_node;
 pub mod boot_parameters;
-pub mod runtime_configuration_group;
-pub mod runtime_configuration_node;
 pub mod hardware_group;
 pub mod kernel_parameters;
 pub mod redfish_endpoint;
+pub mod runtime_configuration_group;
+pub mod runtime_configuration_node;
 pub mod sat_file;
 pub mod template;
 
@@ -211,7 +211,8 @@ pub async fn handle_apply(
         .openapi
         .create_ephemeral_env(client.site_name(), &req)
         .await
-        .into_anyhow().await?;
+        .into_anyhow()
+        .await?;
       println!("{}", response.hostname);
     }
 
