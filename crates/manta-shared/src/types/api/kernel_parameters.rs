@@ -1,5 +1,5 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the kernel-parameter endpoints (`/api/v1/kernel-parameters/*`).
+//! the kernel-parameter endpoints (`/api/v2/kernel-parameters/*`).
 //!
 //! The internal `KernelParamOperation` enum used by the server's
 //! kernel-parameter orchestration is not exposed here — it lives in
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// Which kernel-parameter mutation to perform on
-/// `POST /api/v1/kernel-parameters/apply`.
+/// `POST /api/v2/kernel-parameters/apply`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum KernelParamOp {
@@ -22,7 +22,7 @@ pub enum KernelParamOp {
   Delete,
 }
 
-/// Request body for `POST /api/v1/kernel-parameters/apply`.
+/// Request body for `POST /api/v2/kernel-parameters/apply`.
 ///
 /// One of `xnames_expression` or `hsm_group` must be set (not both).
 /// The chosen [`KernelParamOp`] determines what `params` means:
@@ -63,7 +63,7 @@ pub struct ApplyKernelParametersRequest {
   pub dry_run: bool,
 }
 
-/// Request body for `POST /api/v1/kernel-parameters/add` (append mode).
+/// Request body for `POST /api/v2/kernel-parameters/add` (append mode).
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct AddKernelParametersRequest {
   /// Space-separated kernel parameter `key=value` pairs to add.
@@ -84,7 +84,7 @@ pub struct AddKernelParametersRequest {
   pub dry_run: bool,
 }
 
-/// Request body for `DELETE /api/v1/kernel-parameters`.
+/// Request body for `DELETE /api/v2/kernel-parameters`.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DeleteKernelParametersRequest {
   /// Space-separated parameter names (or `key=value` pairs) to

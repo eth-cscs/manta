@@ -7,7 +7,7 @@
 //!    commit id, and (interactively) confirm any uncommitted changes.
 //!    Implemented in [`check_local_repos`], with git helpers in
 //!    [`local_git_repo`].
-//! 2. POST `/api/v1/sessions` (`create_session`) with the layer list,
+//! 2. POST `/api/v2/sessions` (`create_session`) with the layer list,
 //!    the optional `--playbook`, `--ansible-limit`, `--ansible-verbosity`,
 //!    and `--ansible-passthrough`. Server returns the created CFS
 //!    configuration and session names.
@@ -41,7 +41,7 @@ const GITEA_REPO_NAME_PREFIX: &str = "cray/";
 ///
 /// Authorization (target HSM group access + every xname in
 /// `--ansible-limit` belonging to an accessible group) is enforced
-/// server-side by `POST /api/v1/sessions`.
+/// server-side by `POST /api/v2/sessions`.
 ///
 /// # Errors
 ///

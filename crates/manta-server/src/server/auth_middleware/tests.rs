@@ -1,4 +1,4 @@
-//! Tests for the `/api/v1/auth/*` defensive middleware.
+//! Tests for the `/api/v2/auth/*` defensive middleware.
 //!
 //! The rate-limiter is the main subject — its token-bucket algorithm
 //! has time-based behaviours (window reset, stale-entry pruning) that

@@ -66,9 +66,6 @@ impl BackendTechnology {
 pub struct Site {
   /// Which backend implementation this site uses (`csm` or `ochami`).
   pub backend: BackendTechnology,
-  /// Optional per-site SOCKS5 proxy URL used by every outbound HTTP
-  /// request to this site's backend. `None` means direct connection.
-  pub socks5_proxy: Option<String>,
   /// Base URL of the backend API (e.g. `https://api.alps.cscs.ch`).
   pub shasta_base_url: String,
   /// Optional Kubernetes connection details, required by handlers
@@ -102,7 +99,7 @@ pub struct ServerSettings {
   /// How long a node-console WebSocket stays open without activity
   /// before the server tears it down.
   pub console_inactivity_timeout_secs: u64,
-  /// Per-source-IP rate limit for the `/api/v1/auth/*` endpoints,
+  /// Per-source-IP rate limit for the `/api/v2/auth/*` endpoints,
   /// in requests per minute. `None` disables in-process rate limiting
   /// (operators are then expected to enforce it at the reverse proxy).
   pub auth_rate_limit_per_minute: Option<u32>,
@@ -230,7 +227,6 @@ mod tests {
   fn make_minimal_site() -> Site {
     Site {
       backend: BackendTechnology::Csm,
-      socks5_proxy: None,
       shasta_base_url: "https://api.example.com".to_string(),
       k8s: None,
       root_ca_cert_file: "cert.pem".to_string(),

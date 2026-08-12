@@ -1,4 +1,4 @@
-//! Public-router auth handlers (`POST /api/v1/auth/{token,validate}`).
+//! Public-router auth handlers (`POST /api/v2/auth/{token,validate}`).
 //!
 //! Deliberately not behind the `BearerToken` extractor — these are the
 //! endpoints clients call *to obtain* a bearer token. The defensive
@@ -69,7 +69,7 @@ fn site_not_found(site: &str) -> (StatusCode, Json<ErrorResponse>) {
   )
 }
 
-/// POST /api/v1/auth/token — exchange username/password for a CSM token.
+/// POST /api/v2/auth/token — exchange username/password for a CSM token.
 #[utoipa::path(post, path = "/auth/token", tag = "auth",
   params(SiteHeader),
   request_body = AuthTokenRequest,
@@ -141,7 +141,7 @@ pub async fn auth_token(
   }
 }
 
-/// POST /api/v1/auth/validate — check whether a CSM token is still valid.
+/// POST /api/v2/auth/validate — check whether a CSM token is still valid.
 #[utoipa::path(post, path = "/auth/validate", tag = "auth",
   params(SiteHeader),
   request_body = ValidateTokenRequest,

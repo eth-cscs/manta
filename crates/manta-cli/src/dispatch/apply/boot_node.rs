@@ -2,7 +2,7 @@
 //!
 //! Applies a boot configuration (image id, runtime configuration,
 //! kernel parameters) to nodes selected by a hosts expression via
-//! `POST /api/v1/boot-config`. Sibling of [`super::boot_group`] which
+//! `POST /api/v2/boot-config`. Sibling of [`super::boot_group`] which
 //! takes a group name and resolves the members first; both leaves
 //! forward the request's `dry_run` flag verbatim to the server.
 

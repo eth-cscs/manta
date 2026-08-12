@@ -2,7 +2,7 @@
 //!
 //! Builds a [`BootParameters`] payload from `--hosts`, `--macs`,
 //! `--nids`, `--params`, `--kernel`, `--initrd` (and optionally
-//! `--cloud-init`) and POSTs it to `/api/v1/boot-parameters`. The
+//! `--cloud-init`) and POSTs it to `/api/v2/boot-parameters`. The
 //! manta-shared `BootParameters` and the generated openapi type share
 //! the JSON shape but differ in Rust-level optionality / integer width
 //! (u32 vs i32); the bridge here is a serde round-trip.

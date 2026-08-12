@@ -1,7 +1,7 @@
 //! Implements the `manta delete images` command.
 //!
 //! Removes IMS images by id (comma-separated list) via
-//! `DELETE /api/v1/images?ids=…&dry_run=…`. The server honours
+//! `DELETE /api/v2/images?ids=…&dry_run=…`. The server honours
 //! `--dry-run` and returns the cascade plan (boot images, S3 artifacts,
 //! IMS records) without persisting any changes; live runs return the
 //! actually-deleted set.

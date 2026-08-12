@@ -1,7 +1,7 @@
 //! Implements the `manta apply redfish-endpoint` command.
 //!
 //! Updates an existing Redfish endpoint via
-//! `PUT /api/v1/redfish-endpoints`. The endpoint has no server-side
+//! `PUT /api/v2/redfish-endpoints`. The endpoint has no server-side
 //! `dry_run` flag; `--dry-run` is a client-side short-circuit that
 //! prints the `UpdateRedfishEndpointParams` payload that *would* be
 //! sent. Sibling of [`super::super::add::redfish_endpoint`] (creation)

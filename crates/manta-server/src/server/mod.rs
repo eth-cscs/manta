@@ -11,10 +11,10 @@
 //! - Submodules:
 //!   - [`handlers`] — per-resource Axum handlers; converts HTTP
 //!     requests into service-layer calls.
-//!   - [`routes`] — router registration (one entry per `/api/v1`
+//!   - [`routes`] — router registration (one entry per `/api/v2`
 //!     path).
 //!   - [`auth_middleware`] — defensive middleware applied to
-//!     `/api/v1/auth/*` (per-IP rate limit + body redaction).
+//!     `/api/v2/auth/*` (per-IP rate limit + body redaction).
 //!   - [`common`] — server-only helpers (per-request `InfraContext`,
 //!     Kafka audit producer, JWT claim extractors, Vault client).
 //!   - [`api_doc`] — utoipa OpenAPI document served at
@@ -55,8 +55,6 @@ pub struct SiteBackend {
   pub shasta_base_url: String,
   /// PEM-encoded root CA certificate for the backend; empty vec skips verification.
   pub shasta_root_cert: Vec<u8>,
-  /// SOCKS5 proxy URL; `None` means direct connections.
-  pub socks5_proxy: Option<String>,
   /// HashiCorp Vault base URL; `None` means features requiring vault return 501.
   pub vault_base_url: Option<String>,
   /// Gitea VCS base URL derived from the site base URL.
@@ -84,9 +82,9 @@ pub struct ServerState {
   /// closes it.  Protects against leaked Kubernetes pod attachments.
   pub console_inactivity_timeout: Duration,
   /// Kafka producer for security/audit events (currently used only by
-  /// `/api/v1/auth/*`). `None` disables audit emission.
+  /// `/api/v2/auth/*`). `None` disables audit emission.
   pub auditor: Option<Kafka>,
-  /// Per-source-IP rate limit on `/api/v1/auth/*` (requests/minute).
+  /// Per-source-IP rate limit on `/api/v2/auth/*` (requests/minute).
   /// `None` disables in-process rate limiting.
   pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route (router-level
@@ -129,7 +127,6 @@ impl ServerState {
       site_name,
       shasta_base_url: &site.shasta_base_url,
       shasta_root_cert: &site.shasta_root_cert,
-      socks5_proxy: site.socks5_proxy.as_deref(),
       vault_base_url: site.vault_base_url.as_deref(),
       gitea_base_url: &site.gitea_base_url,
       k8s_api_url: site.k8s_api_url.as_deref(),

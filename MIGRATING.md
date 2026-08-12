@@ -327,7 +327,7 @@ for `localhost` smoke tests, never for a deployment.
 ### 2.4 Auth rate limiting
 
 `[server].auth_rate_limit_per_minute` enforces a per-source-IP token
-bucket on `/api/v1/auth/*`. Default is 60 req/min/IP; omit to
+bucket on `/api/v2/auth/*`. Default is 60 req/min/IP; omit to
 disable in-process limiting and rely on your reverse proxy. The
 limiter is defence-in-depth — terminate at the proxy as well.
 
@@ -468,7 +468,7 @@ For scripts written against v1 syntax:
 4. **Drop direct backend URLs.** v1 scripts that hit the CSM API
    directly (e.g. `curl $SHASTA_BASE_URL/cfs/v3/sessions`) should now
    go through `manta-server`'s
-   `https://<server>:8443/api/v1/sessions` endpoint — auth and
+   `https://<server>:8443/api/v2/sessions` endpoint — auth and
    token-handling are the server's job.
 
 ### 3.2 Programmatic HTTP clients
@@ -478,9 +478,9 @@ backend calls, switching to v2 means rewriting against
 `manta-server`'s API. The full reference is in [API.md](API.md);
 the headline:
 
-- Base URL: `https://<host>:8443/api/v1`
+- Base URL: `https://<host>:8443/api/v2`
 - Required headers: `X-Manta-Site: <site>` + `Authorization: Bearer <token>`
-- Auth bootstrap: `POST /api/v1/auth/token` with
+- Auth bootstrap: `POST /api/v2/auth/token` with
   `{"username":"...","password":"..."}` → returns `{"token":"..."}`
 - Error envelope: `{"error":"..."}` with conventional status codes
 - OpenAPI spec served at `/openapi.json`; Swagger UI at `/docs`
@@ -658,7 +658,7 @@ manta apply sat-file -t cluster.yaml -s --create-bos-session
 ```
 
 The rename propagates to the HTTP wire layer:
-`POST /api/v1/sat-file/session-templates` now carries a
+`POST /api/v2/sat-file/session-templates` now carries a
 `create_bos_session` boolean (was `reboot`). HTTP clients posting
 that body must rename the field. See
 [API.md → POST /sat-file/session-templates](API.md#post-sat-filesession-templates).
@@ -684,7 +684,7 @@ for the response shape.
 ### 5.10. `manta apply sat-file` runs server-side pre-flight validation
 
 `manta apply sat-file` now calls
-`POST /api/v1/sat-file/validate` between the operator
+`POST /api/v2/sat-file/validate` between the operator
 preview-confirm step and the per-element apply loop. The server
 resolves the `configurations`, `images`, and `session_templates`
 sections against live CFS, IMS, and `cray-product-catalog` state

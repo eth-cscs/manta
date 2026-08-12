@@ -2,7 +2,7 @@
 //! configured CSM/OCHAMI backend.
 //!
 //! The CLI never talks to Keycloak directly; it POSTs username+password
-//! to `manta-server /api/v1/auth/token`, which calls
+//! to `manta-server /api/v2/auth/token`, which calls
 //! `backend.get_api_token` on the user's behalf and returns the CSM
 //! bearer token. `validate_api_token` exposes a lightweight
 //! "is-this-token-still-valid" probe the CLI can call before sending
@@ -18,7 +18,7 @@ use crate::server::common::app_context::InfraContext;
 /// Exchange `username` + `password` for a CSM bearer token via the
 /// site's configured backend.
 ///
-/// The CLI's `auth` command posts to `/api/v1/auth/token`, which
+/// The CLI's `auth` command posts to `/api/v2/auth/token`, which
 /// reaches this function. The returned token is the same bearer the
 /// caller then sends as `Authorization: Bearer ...` on every
 /// subsequent request.

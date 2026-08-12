@@ -3,13 +3,13 @@
 //! Each leaf creates a new resource on the server via a `POST` to the
 //! corresponding OpenAPI endpoint:
 //!
-//! - [`node`]  — `POST /api/v1/nodes`
-//! - [`nodes`] — `POST /api/v1/groups/{label}/members` (assign xnames)
-//! - [`group`] — `POST /api/v1/groups` (+ optional members on creation)
-//! - [`hardware`] — `POST /api/v1/hardware-clusters/{target}/members`
-//! - [`boot_parameters`] — `POST /api/v1/boot-parameters`
-//! - [`kernel_parameters`] — `POST /api/v1/kernel-parameters`
-//! - [`redfish_endpoint`] — `POST /api/v1/redfish-endpoints`
+//! - [`node`]  — `POST /api/v2/nodes`
+//! - [`nodes`] — `POST /api/v2/groups/{label}/members` (assign xnames)
+//! - [`group`] — `POST /api/v2/groups` (+ optional members on creation)
+//! - [`hardware`] — `POST /api/v2/hardware-clusters/{target}/members`
+//! - [`boot_parameters`] — `POST /api/v2/boot-parameters`
+//! - [`kernel_parameters`] — `POST /api/v2/kernel-parameters`
+//! - [`redfish_endpoint`] — `POST /api/v2/redfish-endpoints`
 //!
 //! Most leaves accept `--dry-run`. Where the underlying endpoint
 //! supports a server-side dry-run flag, the request is sent with
@@ -98,7 +98,7 @@ pub async fn handle_add(
     }
     Some(("hardware", m)) => {
       // Authorization (target + parent HSM group access) is enforced by
-      // POST /api/v1/hardware-clusters/{target}/members on the server.
+      // POST /api/v2/hardware-clusters/{target}/members on the server.
       let target = m
         .opt_str("target-group")
         .or(ctx.settings_group_name_opt)

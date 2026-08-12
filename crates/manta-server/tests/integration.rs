@@ -5,23 +5,23 @@
 //! `tower::ServiceExt::oneshot` without opening a TCP listener.
 //!
 //! Read endpoints:
-//!   GET /api/v1/groups
-//!   GET /api/v1/configurations
-//!   GET /api/v1/sessions
-//!   GET /api/v1/templates
-//!   GET /api/v1/images
-//!   GET /api/v1/boot-parameters
-//!   GET /api/v1/kernel-parameters
-//!   GET /api/v1/redfish-endpoints
+//!   GET /api/v2/groups
+//!   GET /api/v2/configurations
+//!   GET /api/v2/sessions
+//!   GET /api/v2/templates
+//!   GET /api/v2/images
+//!   GET /api/v2/boot-parameters
+//!   GET /api/v2/kernel-parameters
+//!   GET /api/v2/redfish-endpoints
 //!
 //! Write endpoints:
-//!   POST   /api/v1/groups
-//!   DELETE /api/v1/groups/{label}
-//!   DELETE /api/v1/groups/{name}/members  (dry_run and live)
-//!   POST   /api/v1/nodes
-//!   DELETE /api/v1/nodes/{id}
-//!   POST   /api/v1/kernel-parameters/apply (dry_run)
-//!   POST   /api/v1/power                   (action=on, target_type=nodes)
+//!   POST   /api/v2/groups
+//!   DELETE /api/v2/groups/{label}
+//!   DELETE /api/v2/groups/{name}/members  (dry_run and live)
+//!   POST   /api/v2/nodes
+//!   DELETE /api/v2/nodes/{id}
+//!   POST   /api/v2/kernel-parameters/apply (dry_run)
+//!   POST   /api/v2/power                   (action=on, target_type=nodes)
 //!
 //! Note: DELETE /boot-parameters, POST /boot-parameters, DELETE/POST
 //! /redfish-endpoints are not tested here because csm-rs 0.105.0 returns
@@ -29,8 +29,8 @@
 //! client that panics in async context).
 //!
 //! Error paths:
-//!   GET /api/v1/groups — backend error → 500
-//!   DELETE /api/v1/sessions/{name} — not found → 404
+//!   GET /api/v2/groups — backend error → 500
+//!   DELETE /api/v2/sessions/{name} — not found → 404
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -122,7 +122,6 @@ impl TestFixture {
         backend,
         shasta_base_url: mock_server.uri(),
         shasta_root_cert: TEST_ROOT_CERT.to_vec(),
-        socks5_proxy: None,
         vault_base_url: None,
         gitea_base_url: "http://stub.invalid".to_string(),
         k8s_api_url: None,
@@ -394,7 +393,7 @@ async fn mock_hsm_components(srv: &MockServer) {
 // Tests
 // ---------------------------------------------------------------------------
 
-// GET /api/v1/groups
+// GET /api/v2/groups
 //
 // Call chain:
 //   service::group::get_groups
@@ -405,7 +404,7 @@ async fn get_groups_happy_path() {
   let fx = TestFixture::setup().await;
   mock_hsm_groups(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/groups")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/groups")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -415,7 +414,7 @@ async fn get_groups_happy_path() {
   assert_eq!(arr[0]["members"]["ids"][0], "x3000c0s1b0n0");
 }
 
-// GET /api/v1/configurations
+// GET /api/v2/configurations
 //
 // Call chain (csm-rs uses CFS v2 for the listing, v3 for the
 // components-only safe_to_delete verdict):
@@ -444,7 +443,7 @@ async fn get_configurations_happy_path() {
   mock_cfs_v2_components(&fx.mock_server).await;
   mock_cfs_v3_components(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/configurations")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/configurations")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -457,7 +456,7 @@ async fn get_configurations_happy_path() {
   assert_eq!(arr[0]["safe_to_delete"], true);
 }
 
-// GET /api/v1/sessions
+// GET /api/v2/sessions
 //
 // Call chain (csm-rs uses CFS v2 for sessions):
 //   service::session::get_sessions
@@ -476,7 +475,7 @@ async fn get_sessions_happy_path() {
   mock_hsm_groups(&fx.mock_server).await;
   mock_cfs_v2_sessions(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/sessions")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/sessions")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -485,7 +484,7 @@ async fn get_sessions_happy_path() {
   assert_eq!(arr[0]["name"], "my-session");
 }
 
-// GET /api/v1/sessions?xnames=x3000c0s1b0n0
+// GET /api/v2/sessions?xnames=x3000c0s1b0n0
 //
 // Verifies that the server resolves the xnames query parameter via
 // resolve_hosts_expression (GET /smd/hsm/v2/groups + /smd/hsm/v2/State/Components)
@@ -508,7 +507,7 @@ async fn get_sessions_xnames_expression_resolves_correctly() {
   mock_cfs_v2_sessions(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/sessions?xnames=x3000c0s1b0n0"))
+    .send(fx.auth_get("/api/v2/sessions?xnames=x3000c0s1b0n0"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -517,7 +516,7 @@ async fn get_sessions_xnames_expression_resolves_correctly() {
   assert_eq!(arr[0]["name"], "my-session");
 }
 
-// GET /api/v1/templates
+// GET /api/v2/templates
 //
 // Call chain:
 //   service::template::get_templates
@@ -532,7 +531,7 @@ async fn get_templates_happy_path() {
   mock_hsm_groups(&fx.mock_server).await;
   mock_bos_v2_templates(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/templates")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/templates")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -541,7 +540,7 @@ async fn get_templates_happy_path() {
   assert_eq!(arr[0]["name"], "my-template");
 }
 
-// GET /api/v1/images
+// GET /api/v2/images
 //
 // Handler returns a plain Vec<Image>, oldest-first (newest last). Each
 // entry mirrors the IMS image shape: { id, name, created, link?, arch?, metadata? }.
@@ -554,7 +553,7 @@ async fn get_images_happy_path() {
   let fx = TestFixture::setup().await;
   mock_ims_images(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/images")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/images")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -568,7 +567,7 @@ async fn get_images_happy_path() {
   assert_eq!(ids, ["old123", "mid123", "abc123"]);
 }
 
-// GET /api/v1/images?limit=1
+// GET /api/v2/images?limit=1
 //
 // Guards the selection-vs-display split end to end: `limit` selects the
 // newest N *before* the oldest-first display flip, so limit=1 is the
@@ -578,7 +577,7 @@ async fn get_images_limit_returns_the_newest() {
   let fx = TestFixture::setup().await;
   mock_ims_images(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/images?limit=1")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/images?limit=1")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -590,7 +589,7 @@ async fn get_images_limit_returns_the_newest() {
   );
 }
 
-// GET /api/v1/images?since=...&until=...
+// GET /api/v2/images?since=...&until=...
 //
 // IMS accepts no query parameters, so the date bounds are applied by
 // service::image::get_images after the fetch.
@@ -602,7 +601,7 @@ async fn get_images_filters_by_creation_date() {
   // Window around the middle image only (mock spans 2024-01 .. 2024-12).
   let resp = fx
     .send(fx.auth_get(
-      "/api/v1/images?since=2024-03-01T00:00:00&until=2024-09-01T00:00:00",
+      "/api/v2/images?since=2024-03-01T00:00:00&until=2024-09-01T00:00:00",
     ))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
@@ -613,7 +612,7 @@ async fn get_images_filters_by_creation_date() {
   assert_eq!(arr[0]["id"], "mid123");
 }
 
-// GET /api/v1/images?since=... — lower bound only.
+// GET /api/v2/images?since=... — lower bound only.
 #[tokio::test]
 async fn get_images_since_bound_is_inclusive() {
   let fx = TestFixture::setup().await;
@@ -621,7 +620,7 @@ async fn get_images_since_bound_is_inclusive() {
 
   // Exactly the middle image's own timestamp: it must be kept.
   let resp = fx
-    .send(fx.auth_get("/api/v1/images?since=2024-06-01T00:00:00"))
+    .send(fx.auth_get("/api/v2/images?since=2024-06-01T00:00:00"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -636,13 +635,13 @@ async fn get_images_since_bound_is_inclusive() {
   assert_eq!(ids, ["mid123", "abc123"]);
 }
 
-// GET /api/v1/images?since=<malformed> → 400 via parse_iso_datetime.
+// GET /api/v2/images?since=<malformed> → 400 via parse_iso_datetime.
 #[tokio::test]
 async fn get_images_malformed_since_is_rejected() {
   let fx = TestFixture::setup().await;
   mock_ims_images(&fx.mock_server).await;
 
-  let resp = fx.send(fx.auth_get("/api/v1/images?since=notadate")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/images?since=notadate")).await;
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 
   let body = TestFixture::body_json(resp).await;
@@ -653,7 +652,7 @@ async fn get_images_malformed_since_is_rejected() {
   );
 }
 
-// GET /api/v1/images?since=X&until=Y where X > Y → 400 via
+// GET /api/v2/images?since=X&until=Y where X > Y → 400 via
 // service::configuration::validate_date_range.
 #[tokio::test]
 async fn get_images_inverted_range_is_rejected() {
@@ -662,13 +661,13 @@ async fn get_images_inverted_range_is_rejected() {
 
   let resp = fx
     .send(fx.auth_get(
-      "/api/v1/images?since=2024-12-01T00:00:00&until=2024-01-01T00:00:00",
+      "/api/v2/images?since=2024-12-01T00:00:00&until=2024-01-01T00:00:00",
     ))
     .await;
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
-// GET /api/v1/boot-parameters?hsm_group=compute
+// GET /api/v2/boot-parameters?hsm_group=compute
 //
 // Call chain:
 //   service::boot_parameters::get_boot_parameters
@@ -692,7 +691,7 @@ async fn get_boot_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/boot-parameters?hsm_group=compute"))
+    .send(fx.auth_get("/api/v2/boot-parameters?hsm_group=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -741,7 +740,7 @@ async fn mock_cfs_v3_components(srv: &MockServer) {
 // Phase A — Remaining GET happy paths
 // ---------------------------------------------------------------------------
 
-// GET /api/v1/kernel-parameters?hsm_group=compute
+// GET /api/v2/kernel-parameters?hsm_group=compute
 //
 // Call chain mirrors get_boot_parameters: resolve_target_nodes
 // (HSM groups + components) → get_bootparameters.
@@ -753,7 +752,7 @@ async fn get_kernel_parameters_happy_path() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/kernel-parameters?hsm_group=compute"))
+    .send(fx.auth_get("/api/v2/kernel-parameters?hsm_group=compute"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
 
@@ -763,7 +762,7 @@ async fn get_kernel_parameters_happy_path() {
   assert_eq!(arr[0]["hosts"][0], "x3000c0s1b0n0");
 }
 
-// GET /api/v1/redfish-endpoints
+// GET /api/v2/redfish-endpoints
 //
 // Call chain:
 //   InfraContext::get_redfish_endpoints
@@ -778,7 +777,7 @@ async fn get_redfish_endpoints_happy_path() {
 
   // Admin tokens may list broadly; non-admins must scope by `id`.
   // TEST_TOKEN carries pa_admin so this exercises the admin path.
-  let resp = fx.send(fx.auth_get("/api/v1/redfish-endpoints")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/redfish-endpoints")).await;
   assert_eq!(resp.status(), StatusCode::OK);
 
   let body = TestFixture::body_json(resp).await;
@@ -793,7 +792,7 @@ async fn get_redfish_endpoints_happy_path() {
 // Phase B — Write endpoint happy paths
 // ---------------------------------------------------------------------------
 
-// POST /api/v1/groups
+// POST /api/v2/groups
 //
 // Call chain:
 //   service::group::create_group → backend.add_group
@@ -811,14 +810,14 @@ async fn create_group_happy_path() {
 
   let resp = fx
     .send(fx.auth_post_json(
-      "/api/v1/groups",
+      "/api/v2/groups",
       json!({"label": "new-group", "description": "integration test"}),
     ))
     .await;
   assert_eq!(resp.status(), StatusCode::CREATED);
 }
 
-// DELETE /api/v1/groups/compute?force=true
+// DELETE /api/v2/groups/compute?force=true
 //
 // force=true bypasses validate_group_deletion, going directly to
 //   backend.delete_group → DELETE /smd/hsm/v2/groups/compute
@@ -832,12 +831,12 @@ async fn delete_group_force_happy_path() {
     .await;
 
   let resp = fx
-    .send(fx.auth_delete("/api/v1/groups/compute?force=true"))
+    .send(fx.auth_delete("/api/v2/groups/compute?force=true"))
     .await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 }
 
-// DELETE /api/v1/nodes/x3000c0s1b0n0
+// DELETE /api/v2/nodes/x3000c0s1b0n0
 //
 // Call chain:
 //   service::node::delete_node → backend.delete_node
@@ -852,11 +851,11 @@ async fn delete_node_happy_path() {
     .mount(&fx.mock_server)
     .await;
 
-  let resp = fx.send(fx.auth_delete("/api/v1/nodes/x3000c0s1b0n0")).await;
+  let resp = fx.send(fx.auth_delete("/api/v2/nodes/x3000c0s1b0n0")).await;
   assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 }
 
-// DELETE /api/v1/groups/compute/members — dry_run=true
+// DELETE /api/v2/groups/compute/members — dry_run=true
 //
 // When dry_run=true the handler returns 204 immediately without
 // making any backend calls, so no mock stubs are needed.
@@ -868,7 +867,7 @@ async fn delete_group_members_dry_run() {
 
   let resp = fx
     .send(fx.auth_delete_json(
-      "/api/v1/groups/compute/members",
+      "/api/v2/groups/compute/members",
       json!({"xnames_expression": "x3000c0s1b0n0", "dry_run": true}),
     ))
     .await;
@@ -879,7 +878,7 @@ async fn delete_group_members_dry_run() {
 // Phase D — Write endpoint happy paths (continued)
 // ---------------------------------------------------------------------------
 
-// POST /api/v1/nodes
+// POST /api/v2/nodes
 //
 // Call chain:
 //   service::node::add_node
@@ -903,7 +902,7 @@ async fn add_node_happy_path() {
 
   let resp = fx
     .send(fx.auth_post_json(
-      "/api/v1/nodes",
+      "/api/v2/nodes",
       json!({"id": "x3000c0s2b0n0", "group": "compute", "enabled": true}),
     ))
     .await;
@@ -913,7 +912,7 @@ async fn add_node_happy_path() {
   assert_eq!(body["id"], "x3000c0s2b0n0");
 }
 
-// POST /api/v1/kernel-parameters/apply with dry_run=true, operation=delete
+// POST /api/v2/kernel-parameters/apply with dry_run=true, operation=delete
 //
 // Using the "delete" operation avoids IMS image lookups (only Add and Apply
 // call get_images for SBPS projection). dry_run=true skips the update_bootparameters
@@ -946,7 +945,7 @@ async fn apply_kernel_parameters_delete_dry_run() {
 
   let resp = fx
     .send(fx.auth_post_json(
-      "/api/v1/kernel-parameters/apply",
+      "/api/v2/kernel-parameters/apply",
       json!({
         "xnames_expression": "x3000c0s1b0n0",
         "operation": "delete",
@@ -961,7 +960,7 @@ async fn apply_kernel_parameters_delete_dry_run() {
   assert!(body["has_changes"].is_boolean());
 }
 
-// DELETE /api/v1/groups/compute/members — dry_run=false (live)
+// DELETE /api/v2/groups/compute/members — dry_run=false (live)
 //
 // Call chain:
 //   handlers::delete_group_members
@@ -981,7 +980,7 @@ async fn delete_group_members_live() {
 
   let resp = fx
     .send(fx.auth_delete_json(
-      "/api/v1/groups/compute/members",
+      "/api/v2/groups/compute/members",
       json!({"xnames_expression": "x3000c0s1b0n0", "dry_run": false}),
     ))
     .await;
@@ -992,7 +991,7 @@ async fn delete_group_members_live() {
 // Phase C — Error paths
 // ---------------------------------------------------------------------------
 
-// GET /api/v1/groups — backend returns an error → handler returns 500.
+// GET /api/v2/groups — backend returns an error → handler returns 500.
 //
 // With no mock mounted wiremock returns 404 for the HSM groups call.
 // csm-rs treats any non-2xx as Error::Message, which to_handler_error
@@ -1002,11 +1001,11 @@ async fn get_groups_backend_error_returns_500() {
   let fx = TestFixture::setup().await;
   // No mock → wiremock default 404 → csm-rs Error::Message → 500.
 
-  let resp = fx.send(fx.auth_get("/api/v1/groups")).await;
+  let resp = fx.send(fx.auth_get("/api/v2/groups")).await;
   assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 }
 
-// DELETE /api/v1/sessions/unknown-session — session not found → 404.
+// DELETE /api/v2/sessions/unknown-session — session not found → 404.
 //
 // Call chain:
 //   service::session::prepare_session_deletion
@@ -1031,12 +1030,12 @@ async fn delete_session_unknown_session_returns_404() {
   mock_bss_bootparameters(&fx.mock_server).await;
 
   let resp = fx
-    .send(fx.auth_delete("/api/v1/sessions/unknown-session"))
+    .send(fx.auth_delete("/api/v2/sessions/unknown-session"))
     .await;
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
-// POST /api/v1/power (action=on, target_type=nodes)
+// POST /api/v2/power (action=on, target_type=nodes)
 //
 // Call chain after the move-polling-to-CLI refactor:
 //   handlers::post_power
@@ -1049,7 +1048,7 @@ async fn delete_session_unknown_session_returns_404() {
 //             (one shot — returns transitionID, does NOT poll)
 //
 // The CLI is responsible for polling
-// `GET /api/v1/power/transitions/{id}` until completion; that endpoint
+// `GET /api/v2/power/transitions/{id}` until completion; that endpoint
 // is exercised by `get_power_transition_happy_path` below.
 //
 // Field names below match the on-the-wire camelCase that csm-rs's
@@ -1071,7 +1070,7 @@ async fn post_power_on_nodes_happy_path() {
 
   let resp = fx
     .send(fx.auth_post_json(
-      "/api/v1/power",
+      "/api/v2/power",
       json!({
         "action": "on",
         "host_expression": "x3000c0s1b0n0",
@@ -1089,11 +1088,11 @@ async fn post_power_on_nodes_happy_path() {
   assert!(body.get("transitionStatus").is_none());
 }
 
-// GET /api/v1/power/transitions/{id}
+// GET /api/v2/power/transitions/{id}
 //
 // The CLI polls this every few seconds after POST /power until the
 // ---------------------------------------------------------------------------
-// PUT /api/v1/runtime-configuration
+// PUT /api/v2/runtime-configuration
 //
 // Call chain:
 //   handlers::apply_runtime_configuration
@@ -1137,7 +1136,7 @@ async fn apply_runtime_configuration_happy_path() {
 
   let resp = fx
     .send(fx.auth_put_json(
-      "/api/v1/runtime-configuration",
+      "/api/v2/runtime-configuration",
       json!({
         "cfs_configuration_name": "base-cfg",
         "hosts_expression": "x3000c0s1b0n0",
@@ -1181,7 +1180,7 @@ async fn apply_runtime_configuration_dry_run_skips_patch() {
 
   let resp = fx
     .send(fx.auth_put_json(
-      "/api/v1/runtime-configuration",
+      "/api/v2/runtime-configuration",
       json!({
         "cfs_configuration_name": "base-cfg",
         "hosts_expression": "x3000c0s1b0n0",
@@ -1226,7 +1225,7 @@ async fn apply_runtime_configuration_config_not_found_returns_404() {
 
   let resp = fx
     .send(fx.auth_put_json(
-      "/api/v1/runtime-configuration",
+      "/api/v2/runtime-configuration",
       json!({
         "cfs_configuration_name": "does-not-exist",
         "hosts_expression": "x3000c0s1b0n0",
@@ -1246,7 +1245,7 @@ async fn apply_runtime_configuration_empty_hosts_returns_400() {
 
   let resp = fx
     .send(fx.auth_put_json(
-      "/api/v1/runtime-configuration",
+      "/api/v2/runtime-configuration",
       json!({
         "cfs_configuration_name": "base-cfg",
         "hosts_expression": "",
@@ -1288,7 +1287,7 @@ async fn get_power_transition_happy_path() {
     .await;
 
   let resp = fx
-    .send(fx.auth_get("/api/v1/power/transitions/abc-123"))
+    .send(fx.auth_get("/api/v2/power/transitions/abc-123"))
     .await;
   assert_eq!(resp.status(), StatusCode::OK);
   let body = TestFixture::body_json(resp).await;

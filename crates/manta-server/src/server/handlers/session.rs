@@ -1,10 +1,10 @@
 //! CFS session handlers.
 //!
-//! - `GET    /api/v1/sessions`              → [`get_sessions`]
-//! - `POST   /api/v1/sessions`              → [`create_session`]
-//! - `DELETE /api/v1/sessions/{name}`       → [`delete_session`]
+//! - `GET    /api/v2/sessions`              → [`get_sessions`]
+//! - `POST   /api/v2/sessions`              → [`create_session`]
+//! - `DELETE /api/v2/sessions/{name}`       → [`delete_session`]
 //!   — with `?dry_run=true`, returns the deletion plan only.
-//! - `GET    /api/v1/sessions/{name}/logs`  → [`get_session_logs`] —
+//! - `GET    /api/v2/sessions/{name}/logs`  → [`get_session_logs`] —
 //!   Server-Sent Events stream from the CFS session's pod log.
 //!
 //! All wrap `crate::service::session::*` and (for create) the
@@ -33,7 +33,7 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/sessions
+// GET /api/v2/sessions
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::{DeleteSessionQuery, SessionQuery};
@@ -88,7 +88,7 @@ pub async fn get_sessions(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v1/sessions/{name} — with ?dry_run=true support
+// DELETE /api/v2/sessions/{name} — with ?dry_run=true support
 // ---------------------------------------------------------------------------
 
 /// DELETE /sessions/{name} — cancel and delete a CFS session; `?dry_run=true` previews.
@@ -134,12 +134,12 @@ pub async fn delete_session(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/sessions — Create CFS session
+// POST /api/v2/sessions — Create CFS session
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::session::CreateSessionRequest;
 
-/// `POST /api/v1/sessions` — create a CFS session from one or more git repositories.
+/// `POST /api/v2/sessions` — create a CFS session from one or more git repositories.
 #[utoipa::path(post, path = "/sessions", tag = "sessions",
   params(SiteHeader),
   request_body = CreateSessionRequest,
@@ -232,12 +232,12 @@ pub async fn create_session(
 }
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/sessions/{name}/logs — Stream CFS session logs via SSE
+// GET /api/v2/sessions/{name}/logs — Stream CFS session logs via SSE
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::SessionLogsQuery;
 
-/// `GET /api/v1/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
+/// `GET /api/v2/sessions/{name}/logs` — stream CFS session pod logs via Server-Sent Events.
 #[utoipa::path(get, path = "/sessions/{name}/logs", tag = "sessions",
   params(("name" = String, Path, description = "Session name"), SessionLogsQuery, SiteHeader),
   security(("bearerAuth" = [])),

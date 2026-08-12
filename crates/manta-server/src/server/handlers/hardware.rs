@@ -1,8 +1,8 @@
 //! Hardware-inventory query handlers.
 //!
-//! - `GET /api/v1/groups/hardware`        → [`get_groups_hardware`] (canonical)
-//! - `GET /api/v1/hardware-clusters`      → [`get_hardware_clusters_deprecated`] (deprecated alias)
-//! - `GET /api/v1/hardware-nodes-list`    → [`get_hardware_nodes_list`]
+//! - `GET /api/v2/groups/hardware`        → [`get_groups_hardware`] (canonical)
+//! - `GET /api/v2/hardware-clusters`      → [`get_hardware_clusters_deprecated`] (deprecated alias)
+//! - `GET /api/v2/hardware-nodes-list`    → [`get_hardware_nodes_list`]
 //!
 //! All wrap `crate::service::hardware::*`. The deprecated alias logs
 //! a warning and forwards to the canonical endpoint.
@@ -13,7 +13,7 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/groups/hardware (canonical) and /hardware-clusters (deprecated)
+// GET /api/v2/groups/hardware (canonical) and /hardware-clusters (deprecated)
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::{
@@ -81,7 +81,7 @@ pub async fn get_hardware_clusters_deprecated(
 }
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/hardware-nodes-list
+// GET /api/v2/hardware-nodes-list
 // ---------------------------------------------------------------------------
 
 /// GET /hardware-nodes-list — hardware details for an explicit list of xnames.

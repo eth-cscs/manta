@@ -1,9 +1,9 @@
 //! Power endpoints.
 //!
-//! - `POST /api/v1/power` starts a PCS power transition and returns
+//! - `POST /api/v2/power` starts a PCS power transition and returns
 //!   immediately with `{ transition_id, operation }`. The CLI then
 //!   polls the next endpoint until the transition reports `completed`.
-//! - `GET /api/v1/power/transitions/{id}` returns the current snapshot
+//! - `GET /api/v2/power/transitions/{id}` returns the current snapshot
 //!   of the named transition (status + task counts + per-task detail).
 //!
 //! The two-step shape (start → poll) is dictated by PCS itself: a
@@ -19,14 +19,14 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/power — Power on/off/reset nodes or cluster
+// POST /api/v2/power — Power on/off/reset nodes or cluster
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::power::{
   PowerAction, PowerRequest, PowerTargetType,
 };
 
-/// `POST /api/v1/power` — start a PCS power transition (on / off /
+/// `POST /api/v2/power` — start a PCS power transition (on / off /
 /// reset) against nodes or all members of a cluster and return the
 /// transition id **immediately**. Does not block until the
 /// transition completes — the CLI is responsible for polling
@@ -83,10 +83,10 @@ pub async fn post_power(
 }
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/power/transitions/{id} — Snapshot a PCS transition
+// GET /api/v2/power/transitions/{id} — Snapshot a PCS transition
 // ---------------------------------------------------------------------------
 
-/// `GET /api/v1/power/transitions/{id}` — fetch the current snapshot
+/// `GET /api/v2/power/transitions/{id}` — fetch the current snapshot
 /// of a PCS power transition (status, task counts, per-task detail).
 /// Called by the CLI's poll loop after `POST /power` returns the id.
 #[utoipa::path(get, path = "/power/transitions/{id}", tag = "power",

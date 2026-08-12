@@ -1,6 +1,6 @@
 //! Implements the `manta delete node` command.
 //!
-//! Removes an HSM node record via `DELETE /api/v1/nodes/{id}`. The
+//! Removes an HSM node record via `DELETE /api/v2/nodes/{id}`. The
 //! endpoint has no `dry_run` flag; `--dry-run` is a client-side
 //! short-circuit that prints the URI/payload via
 //! [`crate::output::action_result::preview_request`].

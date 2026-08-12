@@ -1,6 +1,6 @@
 //! Implements the `manta add node` command.
 //!
-//! Registers a new node in HSM via `POST /api/v1/nodes` and adds it
+//! Registers a new node in HSM via `POST /api/v2/nodes` and adds it
 //! to the requested group in the same call. `--dry-run` is a
 //! client-side short-circuit (the endpoint has no `dry_run` flag): the
 //! leaf prints the `AddNodeRequest` payload that *would* be sent via

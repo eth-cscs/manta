@@ -25,7 +25,7 @@ What the module ships:
 - Data types — `Site`, `Group`, `Members`, and the combined index struct that owns the two derived maps (`group → site`, `xname → site`).
 - An async `refresh(sites: &[SiteDescriptor]) -> Result<Index, CacheError>` that fans out one HTTP call per site to populate the index. `SiteDescriptor` carries `{ name, manta_server_url, token }`.
 - Synchronous lookup methods on `Index`: `group_to_site(label) -> Option<&str>`, `xname_to_site(xname) -> Option<&str>`, `sites() -> impl Iterator`.
-- Unit tests that exercise the lookup methods against fixture inputs (no live `manta-server` needed). The starter fixture is [`testdata/groups-prealps.json`](testdata/groups-prealps.json) — a real extract of `GET /api/v1/groups/available` from the CSCS **prealps** test site; see the [Mock fixture](#mock-fixture-for-offline-tests) section below for details.
+- Unit tests that exercise the lookup methods against fixture inputs (no live `manta-server` needed). The starter fixture is [`testdata/groups-prealps.json`](testdata/groups-prealps.json) — a real extract of `GET /api/v2/groups/available` from the CSCS **prealps** test site; see the [Mock fixture](#mock-fixture-for-offline-tests) section below for details.
 - A single integration test that runs `refresh` against one live `manta-server` and asserts the index shape — gated behind an env var so CI without a backend skips it.
 
 No public API stability promise — the module is internal-only. Other code in the same crate may import it; nothing outside the crate sees it.
@@ -148,7 +148,7 @@ Once the above is in place, the minimum scenarios to walk through are:
 
 ### Mock fixture for offline tests
 
-For unit tests and any scenario that should not require VPN / Keycloak / a live `manta-server`, the crate ships a captured response under [`testdata/groups-prealps.json`](testdata/groups-prealps.json). It is the verbatim payload returned by `GET /api/v1/groups/available` against the CSCS **prealps** test site, suitable as the input to a `refresh`-style code path that has been wired to read from a file (or to a mocked HTTP server returning the same body).
+For unit tests and any scenario that should not require VPN / Keycloak / a live `manta-server`, the crate ships a captured response under [`testdata/groups-prealps.json`](testdata/groups-prealps.json). It is the verbatim payload returned by `GET /api/v2/groups/available` against the CSCS **prealps** test site, suitable as the input to a `refresh`-style code path that has been wired to read from a file (or to a mocked HTTP server returning the same body).
 
 Notable properties of this fixture, useful when writing assertions:
 

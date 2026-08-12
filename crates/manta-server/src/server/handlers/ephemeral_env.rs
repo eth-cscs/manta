@@ -1,6 +1,6 @@
 //! Ephemeral environment handler.
 //!
-//! `POST /api/v1/ephemeral-env` → [`create_ephemeral_env`] — wraps
+//! `POST /api/v2/ephemeral-env` → [`create_ephemeral_env`] — wraps
 //! `service::ephemeral_env::exec`. Launches a short-lived CFS
 //! environment booted from a caller-supplied IMS image and returns
 //! the hostname the user can attach to via the console endpoint.
@@ -12,7 +12,7 @@ use utoipa::ToSchema;
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/ephemeral-env — Create ephemeral CFS environment
+// POST /api/v2/ephemeral-env — Create ephemeral CFS environment
 // ---------------------------------------------------------------------------
 
 /// Request body for `POST /ephemeral-env`.
@@ -22,7 +22,7 @@ pub struct CreateEphemeralEnvRequest {
   pub image_id: String,
 }
 
-/// `POST /api/v1/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.
+/// `POST /api/v2/ephemeral-env` — launch an ephemeral CFS environment from an IMS image.
 #[utoipa::path(post, path = "/ephemeral-env", tag = "ephemeral-env",
   params(SiteHeader),
   request_body = CreateEphemeralEnvRequest,

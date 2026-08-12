@@ -8,7 +8,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::IntoParams;
 
-/// Query parameters for `GET /api/v1/sessions`.
+/// Query parameters for `GET /api/v2/sessions`.
 ///
 /// Server-side counterpart to [`super::session::GetSessionParams`].
 /// `min_age` / `max_age` are parsed as Go-style duration strings
@@ -36,7 +36,7 @@ pub struct SessionQuery {
   pub limit: Option<u8>,
 }
 
-/// Query parameters for `GET /api/v1/sessions/{name}/logs`.
+/// Query parameters for `GET /api/v2/sessions/{name}/logs`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct SessionLogsQuery {
   /// When true, prefix each log line with its timestamp.
@@ -44,7 +44,7 @@ pub struct SessionLogsQuery {
   pub timestamps: bool,
 }
 
-/// Query parameters for `DELETE /api/v1/sessions/{name}`.
+/// Query parameters for `DELETE /api/v2/sessions/{name}`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct DeleteSessionQuery {
   /// When true, return deletion context without actually deleting
@@ -53,7 +53,7 @@ pub struct DeleteSessionQuery {
   pub dry_run: bool,
 }
 
-/// Query parameters for `GET /api/v1/configurations`.
+/// Query parameters for `GET /api/v2/configurations`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct ConfigurationQuery {
   /// Exact configuration name to fetch.
@@ -67,7 +67,7 @@ pub struct ConfigurationQuery {
   pub limit: Option<u8>,
 }
 
-/// Query parameters for `DELETE /api/v1/configurations`.
+/// Query parameters for `DELETE /api/v2/configurations`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct DeleteConfigurationsQuery {
   /// Glob pattern to match configuration names.
@@ -83,8 +83,8 @@ pub struct DeleteConfigurationsQuery {
   pub dry_run: bool,
 }
 
-/// Query parameters for `GET /api/v1/groups/nodes` (the renamed
-/// alias of the legacy `GET /api/v1/clusters`).
+/// Query parameters for `GET /api/v2/groups/nodes` (the renamed
+/// alias of the legacy `GET /api/v2/clusters`).
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct ClusterQuery {
   /// HSM group name to list nodes for. When omitted the response
@@ -94,14 +94,14 @@ pub struct ClusterQuery {
   pub status: Option<String>,
 }
 
-/// Query parameters for `GET /api/v1/groups`.
+/// Query parameters for `GET /api/v2/groups`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct GroupQuery {
   /// Exact group name; returns all groups when `None`.
   pub name: Option<String>,
 }
 
-/// Query parameters for `DELETE /api/v1/groups/{label}`.
+/// Query parameters for `DELETE /api/v2/groups/{label}`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct DeleteGroupQuery {
   /// Delete even if the group still has members (default: `false`).
@@ -109,8 +109,8 @@ pub struct DeleteGroupQuery {
   pub force: bool,
 }
 
-/// Query parameters for `GET /api/v1/groups/hardware` (the renamed
-/// alias of the legacy `GET /api/v1/hardware-clusters`).
+/// Query parameters for `GET /api/v2/groups/hardware` (the renamed
+/// alias of the legacy `GET /api/v2/hardware-clusters`).
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct HardwareClusterQuery {
   /// HSM group name to inventory. When omitted the response covers
@@ -118,7 +118,7 @@ pub struct HardwareClusterQuery {
   pub hsm_group: Option<String>,
 }
 
-/// Query parameters for `GET /api/v1/hardware-nodes-list`.
+/// Query parameters for `GET /api/v2/hardware-nodes-list`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct HardwareNodesListQuery {
   /// Hosts expression (xnames, NIDs, or hostlist notation). The field
@@ -126,7 +126,7 @@ pub struct HardwareNodesListQuery {
   pub xnames: String,
 }
 
-/// Query parameters for `GET /api/v1/templates`.
+/// Query parameters for `GET /api/v2/templates`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct TemplateQuery {
   /// Exact template name.
@@ -139,7 +139,7 @@ pub struct TemplateQuery {
   pub limit: Option<u8>,
 }
 
-/// Query parameters for `GET /api/v1/images`.
+/// Query parameters for `GET /api/v2/images`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct ImageQuery {
   /// Exact IMS image ID; returns just that image when set.
@@ -158,7 +158,7 @@ pub struct ImageQuery {
   pub limit: Option<u8>,
 }
 
-/// Query parameters for `DELETE /api/v1/images`.
+/// Query parameters for `DELETE /api/v2/images`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct DeleteImagesQuery {
   /// Comma-separated list of IMS image IDs to delete.
@@ -169,7 +169,7 @@ pub struct DeleteImagesQuery {
   pub dry_run: bool,
 }
 
-/// Query parameters for `GET /api/v1/boot-parameters`.
+/// Query parameters for `GET /api/v2/boot-parameters`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct BootParametersQuery {
   /// HSM group whose members' boot parameters should be returned.
@@ -179,7 +179,7 @@ pub struct BootParametersQuery {
   pub nodes: Option<String>,
 }
 
-/// Query parameters for `GET /api/v1/kernel-parameters`.
+/// Query parameters for `GET /api/v2/kernel-parameters`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct KernelParametersQuery {
   /// HSM group whose members' kernel parameters should be returned.
@@ -189,7 +189,7 @@ pub struct KernelParametersQuery {
   pub nodes: Option<String>,
 }
 
-/// Query parameters for `GET /api/v1/nodes`.
+/// Query parameters for `GET /api/v2/nodes`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct NodesQuery {
   /// Comma-separated xnames, NIDs, or hostlist expression
@@ -201,7 +201,7 @@ pub struct NodesQuery {
   pub status: Option<String>,
 }
 
-/// Query parameters for `GET /api/v1/redfish-endpoints`.
+/// Query parameters for `GET /api/v2/redfish-endpoints`.
 #[derive(Debug, Serialize, Deserialize, IntoParams)]
 pub struct RedfishEndpointsQuery {
   /// Exact endpoint ID (BMC xname) filter.

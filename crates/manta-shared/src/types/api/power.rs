@@ -1,10 +1,10 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the power endpoints (`/api/v1/power`).
+//! the power endpoints (`/api/v2/power`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v1/power`.
+/// Request body for `POST /api/v2/power`.
 ///
 /// The interpretation of `host_expression` depends on [`PowerTargetType`];
 /// the action itself is one of [`PowerAction`]'s variants.

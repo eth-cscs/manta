@@ -67,7 +67,7 @@ pub(crate) fn build_auth_audit_message(
   })
 }
 
-/// Send a structured audit event for an `/api/v1/auth/token` attempt.
+/// Send a structured audit event for an `/api/v2/auth/token` attempt.
 ///
 /// Used by the server's auth handler — there is no JWT yet (the user is
 /// asking for one), so identity is captured from the submitted username

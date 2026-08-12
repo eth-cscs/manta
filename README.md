@@ -11,7 +11,7 @@ Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/202
 A command-line + HTTP API frontend for HPC clusters running [CSM](https://github.com/Cray-HPE/cray-site-init) or [OpenCHAMI](https://www.openchami.org/). Two independent binaries from one Cargo workspace:
 
 - **`manta`** — interactive CLI. Forwards every operation (including auth) to a `manta-server` over HTTPS; never calls the backend directly.
-- **`manta-server`** — Axum HTTPS server. Holds the per-site backend credentials and exposes a Swagger-documented REST + WebSocket API at `https://<host>:8443/api/v1` (default port).
+- **`manta-server`** — Axum HTTPS server. Holds the per-site backend credentials and exposes a Swagger-documented REST + WebSocket API at `https://<host>:8443/api/v2` (default port).
 
 **Get something running locally:**
 
@@ -250,7 +250,7 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault, per-site SOCKS proxies) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream.
+The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream. The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
 
 **`cli.toml`**
 
@@ -283,7 +283,7 @@ port                            = 8443        # optional; default 8443 if cert+k
 cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute      = 60      # per source IP for /api/v1/auth/*; omit to disable
+auth_rate_limit_per_minute      = 60      # per source IP for /api/v2/auth/*; omit to disable
 request_timeout_secs            = 300     # global per-route timeout (returns 408); default 300 (5 min)
 
 [auditor.kafka]
@@ -294,7 +294,6 @@ topic   = "manta-server-audit"
 backend           = "csm"
 shasta_base_url   = "https://api.alps.cscs.ch"
 root_ca_cert_file = "/etc/manta/certs/alps_root_cert.pem"
-socks5_proxy      = "socks5h://127.0.0.1:1080"   # optional: per-site backend proxy
 
 [sites.alps.k8s]
 api_url = "https://10.0.0.10:6443"
@@ -315,14 +314,14 @@ There is no auto-migration command. When either binary starts and finds its conf
 
 ```bash
 curl -sk -H "Authorization: Bearer $TOKEN" \
-  https://localhost:8443/api/v1/sessions | jq .
+  https://localhost:8443/api/v2/sessions | jq .
 ```
 
 **Example — open a node console (WebSocket)**
 
 ```bash
 wscat -H "Authorization: Bearer $TOKEN" \
-  --connect wss://localhost:8443/api/v1/nodes/x3000c0s1b0n0/console
+  --connect wss://localhost:8443/api/v2/nodes/x3000c0s1b0n0/console
 ```
 
 See [API.md](API.md) for the full endpoint reference, or browse the interactive Swagger UI at `https://localhost:8443/docs` once the server is running.

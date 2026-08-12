@@ -10,8 +10,8 @@ use utoipa::ToSchema;
 
 /// Response for endpoints that simply confirm a write happened.
 ///
-/// Emitted by `POST /api/v1/redfish-endpoints`,
-/// `POST /api/v1/boot-parameters`, and `POST /api/v1/groups`.
+/// Emitted by `POST /api/v2/redfish-endpoints`,
+/// `POST /api/v2/boot-parameters`, and `POST /api/v2/groups`.
 ///
 /// # Wire shape
 ///
@@ -24,7 +24,7 @@ pub struct CreatedResponse {
   pub created: bool,
 }
 
-/// Response for `POST /api/v1/nodes` — echoes the registered xname.
+/// Response for `POST /api/v2/nodes` — echoes the registered xname.
 ///
 /// Paired with [`super::node::AddNodeRequest`].
 ///
@@ -39,7 +39,7 @@ pub struct AddNodeResponse {
   pub id: String,
 }
 
-/// Response for `POST /api/v1/sessions` — names of the created CFS
+/// Response for `POST /api/v2/sessions` — names of the created CFS
 /// session and its underlying configuration.
 ///
 /// Paired with [`super::session::CreateSessionRequest`]. When the
@@ -53,7 +53,7 @@ pub struct CreateSessionResponse {
   pub configuration_name: String,
 }
 
-/// Response for `POST /api/v1/ephemeral-env` — the freshly provisioned
+/// Response for `POST /api/v2/ephemeral-env` — the freshly provisioned
 /// ephemeral host.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct EphemeralEnvResponse {
@@ -63,7 +63,7 @@ pub struct EphemeralEnvResponse {
 
 /// Response for endpoints that simply confirm a backup / restore /
 /// long-running migrate operation finished. Emitted by
-/// `POST /api/v1/migrate/backup` and `POST /api/v1/migrate/restore`.
+/// `POST /api/v2/migrate/backup` and `POST /api/v2/migrate/restore`.
 ///
 /// # Wire shape
 ///
@@ -92,7 +92,7 @@ pub struct MigrateNodesPairResult {
   pub parent_members: Vec<String>,
 }
 
-/// Response for `POST /api/v1/migrate/nodes` — moved xnames plus a
+/// Response for `POST /api/v2/migrate/nodes` — moved xnames plus a
 /// per-(target,parent) result list. Dry-run uses the same shape so the
 /// CLI consumes one type regardless of mode.
 ///

@@ -1,4 +1,4 @@
-//! Business logic for `PUT /api/v1/runtime-configuration`.
+//! Business logic for `PUT /api/v2/runtime-configuration`.
 //!
 //! Sets a CFS configuration as the `desired_configuration` on every
 //! CFS component matching a hosts expression, and writes the

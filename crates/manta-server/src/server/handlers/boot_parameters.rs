@@ -1,10 +1,10 @@
 //! BSS boot-parameter handlers.
 //!
-//! - `GET    /api/v1/boot-parameters` → [`get_boot_parameters`]
-//! - `POST   /api/v1/boot-parameters` → [`add_boot_parameters`]
-//! - `PUT    /api/v1/boot-parameters` → [`update_boot_parameters`]
-//! - `DELETE /api/v1/boot-parameters` → [`delete_boot_parameters`]
-//! - `POST   /api/v1/boot-config`     → [`apply_boot_config`]
+//! - `GET    /api/v2/boot-parameters` → [`get_boot_parameters`]
+//! - `POST   /api/v2/boot-parameters` → [`add_boot_parameters`]
+//! - `PUT    /api/v2/boot-parameters` → [`update_boot_parameters`]
+//! - `DELETE /api/v2/boot-parameters` → [`delete_boot_parameters`]
+//! - `POST   /api/v2/boot-config`     → [`apply_boot_config`]
 //!
 //! All five wrap `crate::service::boot_parameters::*`. `apply_boot_config`
 //! optionally runs as dry-run (`?dry_run=true`) and returns the prepared
@@ -20,7 +20,7 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/boot-parameters
+// GET /api/v2/boot-parameters
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::BootParametersQuery;
@@ -57,7 +57,7 @@ pub async fn get_boot_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v1/boot-parameters
+// DELETE /api/v2/boot-parameters
 // ---------------------------------------------------------------------------
 
 /// Body for `DELETE /boot-parameters`.
@@ -105,7 +105,7 @@ pub async fn delete_boot_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/boot-parameters
+// POST /api/v2/boot-parameters
 // ---------------------------------------------------------------------------
 
 /// POST /boot-parameters — create a new BSS boot parameters entry.
@@ -144,7 +144,7 @@ pub async fn add_boot_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// PUT /api/v1/boot-parameters
+// PUT /api/v2/boot-parameters
 // ---------------------------------------------------------------------------
 
 /// PUT /boot-parameters — update boot image, kernel params, or runtime config for nodes.
@@ -175,12 +175,12 @@ pub async fn update_boot_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/boot-config — Apply boot configuration (with ?dry_run=true)
+// POST /api/v2/boot-config — Apply boot configuration (with ?dry_run=true)
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
 
-/// `POST /api/v1/boot-config` — apply BSS boot configuration to a set of nodes.
+/// `POST /api/v2/boot-config` — apply BSS boot configuration to a set of nodes.
 #[utoipa::path(post, path = "/boot-config", tag = "boot-parameters",
   params(SiteHeader),
   request_body = ApplyBootConfigRequest,

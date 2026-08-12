@@ -109,7 +109,7 @@ In CSM (and OpenCHAMI), every node belongs to one or more **HSM groups** — nam
 
 **How groups appear in manta commands.** Most read commands accept `-H/--group <name>` to scope a query — `manta get group-nodes compute`, `manta get sessions --group compute`, `manta get kernel-parameters --group compute`, `manta get boot-parameters --group compute`. Most write commands accept `--group <name>` to target every node in the group at once — `manta apply boot group compute`, `manta apply kernel-parameters "console=ttyS0" --group compute`, `manta power off group compute --graceful`. Each is shorthand for *"apply this change to every member of `compute`."* SAT files reference groups too: `session_templates[].bos_parameters.boot_sets[].node_groups` and `images[]` group selectors resolve against HSM groups by label, and the server's pre-flight (`POST /sat-file/validate`) checks that the caller is allowed to target every group the file mentions.
 
-**Authorization scope.** The manta server only lets a caller act on the groups its bearer token is authorized for. The authoritative list comes from `GET /api/v1/groups/available`, which the server consults internally for SAT-file and session-template paths. Applying against a group your token can't reach fails with `403 Forbidden` *before* anything is changed. To see what your token can do:
+**Authorization scope.** The manta server only lets a caller act on the groups its bearer token is authorized for. The authoritative list comes from `GET /api/v2/groups/available`, which the server consults internally for SAT-file and session-template paths. Applying against a group your token can't reach fails with `403 Forbidden` *before* anything is changed. To see what your token can do:
 
 ```bash
 manta get groups        # all groups visible to the server
@@ -117,7 +117,7 @@ manta get groups        # all groups visible to the server
 # vs. the subset the server will let *this* token act on:
 curl -sk -H "Authorization: Bearer $MANTA_TOKEN" \
   -H "X-Manta-Site: $MANTA_SITE" \
-  "$MANTA_HOST/api/v1/groups/available"
+  "$MANTA_HOST/api/v2/groups/available"
 ```
 
 **Default group from `cli.toml`.** A `hsm_group = "<name>"` line in `cli.toml` is used as the default whenever a command's `--group` flag is omitted, so e.g. `manta get sessions` becomes equivalent to `manta get sessions --group compute`. Set/unset it at any time:
@@ -499,7 +499,7 @@ sequenceDiagram
     participant MS as manta-server
     participant Node as Console (via backend)
 
-    CLI->>MS: GET /api/v1/nodes/{xname}/console<br/>Upgrade: websocket
+    CLI->>MS: GET /api/v2/nodes/{xname}/console<br/>Upgrade: websocket
     MS-->>CLI: 101 Switching Protocols
     Note over CLI,MS: WebSocket established
 
@@ -738,7 +738,7 @@ manta-server &
 
 curl -sk -H "Authorization: Bearer $TOKEN" \
   -H "X-Manta-Site: $SITE" \
-  https://localhost:8443/api/v1/sessions | jq .
+  https://localhost:8443/api/v2/sessions | jq .
 ```
 
 `manta-server` is a separate binary; it reads `~/.config/manta/server.toml` (override path with `MANTA_SERVER_CONFIG`). See [API.md](API.md) for the full HTTP API reference and [README.md](README.md) for the per-binary config files.

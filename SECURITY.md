@@ -76,17 +76,17 @@ sequenceDiagram
 
     Note over MS: chokepoint — every CSM/OCHAMI call proxies through here
 
-    Note over MS: /api/v1/auth/* sub-router<br/>rate_limit + body-redaction layers
+    Note over MS: /api/v2/auth/* sub-router<br/>rate_limit + body-redaction layers
 
-    CLI->>MS: POST /api/v1/auth/token<br/>{username, password}
+    CLI->>MS: POST /api/v2/auth/token<br/>{username, password}
     MS->>K: exchange credentials
     K-->>MS: bearer token
     MS-->>CLI: { token }
     MS->>Kf: audit { outcome, username, source_ip, site }
 
-    Note over MS: /api/v1/* sub-router<br/>TimeoutLayer
+    Note over MS: /api/v2/* sub-router<br/>TimeoutLayer
 
-    CLI->>MS: {method} /api/v1/{resource}<br/>Authorization: Bearer …
+    CLI->>MS: {method} /api/v2/{resource}<br/>Authorization: Bearer …
     MS->>B: proxied call with bearer
     B-->>MS: backend response (signature verified upstream)
     MS-->>CLI: 2xx / 4xx
@@ -102,7 +102,7 @@ For where the middleware layers sit in the request pipeline, see
   under the platform config dir. Never speaks to CSM/OCHAMI directly.
 - **Server side** (`manta-server` binary): the
   credential-handling chokepoint. Receives user/password on
-  `POST /api/v1/auth/token`, exchanges them with the per-site backend,
+  `POST /api/v2/auth/token`, exchanges them with the per-site backend,
   returns the bearer token to the CLI. Subsequent authenticated
   endpoints proxy backend calls using the user's token.
 - **Upstream** (CSM / OpenCHAMI / Keycloak): not part of this repo.
@@ -122,7 +122,7 @@ accordingly.
 |---|---|---|
 | TLS required by default | `manta-server` | Server fails closed without `cert` + `key`. Pass `--allow-http` only when TLS terminates upstream. |
 | HSTS on every response | `manta-server` | `Strict-Transport-Security: max-age=31536000; includeSubDomains`. No-op over plain HTTP per RFC 6797. |
-| Per-source-IP rate limit on `/api/v1/auth/*` | `manta-server` | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
+| Per-source-IP rate limit on `/api/v2/auth/*` | `manta-server` | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
 | Generic 401 on every auth failure | `manta-server` | `server::handlers::auth_token` returns identical `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
 | Audit event per auth attempt | `manta-server` | When `[auditor.kafka]` is configured, `server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }`. Credentials are never logged. |
 | Body redaction on `/auth/*` log spans | `manta-server` | `server::auth_middleware::strip_body_for_logs`. |
@@ -175,7 +175,7 @@ this requires a sibling-repo upgrade.
 - **JWT decode:** `base64::prelude::BASE64_URL_SAFE_NO_PAD` with a
   fall-back to `BASE64_STANDARD`. No signature verification (see Known
   limitations).
-- **Password handling:** credentials submitted to `/api/v1/auth/token`
+- **Password handling:** credentials submitted to `/api/v2/auth/token`
   are deserialised into `serde` types, forwarded to the configured
   backend, and dropped. They are not written to disk; they are not
   emitted to any log span (see `strip_body_for_logs`).

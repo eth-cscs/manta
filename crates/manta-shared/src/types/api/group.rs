@@ -1,11 +1,11 @@
 //! HTTP request/response bodies and CLI-built parameter structs for
-//! the HSM group endpoints (`/api/v1/groups`,
-//! `/api/v1/groups/{name}/members`).
+//! the HSM group endpoints (`/api/v2/groups`,
+//! `/api/v2/groups/{name}/members`).
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v1/groups/{name}/members`.
+/// Request body for `POST /api/v2/groups/{name}/members`.
 ///
 /// Paired with [`AddNodesToGroupResponse`] on success.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -15,7 +15,7 @@ pub struct AddNodesToGroupRequest {
   pub hosts_expression: String,
 }
 
-/// Response body for `POST /api/v1/groups/{name}/members`.
+/// Response body for `POST /api/v2/groups/{name}/members`.
 ///
 /// The `removed` field name is retained for wire stability; its value
 /// is the final, sorted membership of the group after the update —
@@ -49,7 +49,7 @@ pub struct AddNodesToGroupResponse {
   pub removed: Vec<String>,
 }
 
-/// Request body for `DELETE /api/v1/groups/{name}/members`.
+/// Request body for `DELETE /api/v2/groups/{name}/members`.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct DeleteGroupMembersRequest {
   /// Hosts expression (xnames, NIDs, or hostlist notation)

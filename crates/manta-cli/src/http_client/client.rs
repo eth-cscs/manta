@@ -38,7 +38,7 @@ pub const DEFAULT_API_TIMEOUT_SECS: u64 = 300;
 /// instead of triggering the re-prompt loop.
 #[derive(Debug)]
 pub struct AuthServerUnreachable {
-  /// The base manta server URL (without `/api/v1`) that was tried.
+  /// The base manta server URL (without `/api/v2`) that was tried.
   /// Surfaced in the error message and recoverable by the loop via
   /// `downcast_ref` if a caller needs to log it separately.
   pub url: String,
@@ -301,7 +301,7 @@ mod into_anyhow_tests {
 ///   `openapi` field) for every endpoint declared in `openapi.json`;
 /// - a `reqwest::Client` (`raw`) sharing the same bearer-auth default
 ///   header, used by the hand-rolled WebSocket / SSE paths;
-/// - the base URL (`<scheme>://host:port/api/v1`) and the
+/// - the base URL (`<scheme>://host:port/api/v2`) and the
 ///   `X-Manta-Site` header value the server uses to pick the active
 ///   backend config.
 ///
@@ -341,7 +341,7 @@ pub struct MantaClient {
   /// Bearer token kept around for the WS path (which builds its own
   /// `Authorization` header on the tungstenite request).
   pub token: Option<String>,
-  /// Base URL `<http(s)://host:port>/api/v1` used by the WS / SSE
+  /// Base URL `<http(s)://host:port>/api/v2` used by the WS / SSE
   /// paths to build `wss://…` and `…/sessions/{name}/logs` URLs.
   pub base_url: String,
 }
@@ -432,7 +432,7 @@ impl MantaClient {
     } else {
       format!("http://{server_url}")
     };
-    let base_url = format!("{}/api/v1", normalized.trim_end_matches('/'));
+    let base_url = format!("{}/api/v2", normalized.trim_end_matches('/'));
 
     let mut default_headers = HeaderMap::new();
     if let Some(t) = token {
@@ -476,18 +476,18 @@ impl MantaClient {
     &self.site_name
   }
 
-  /// Base URL `<scheme>://<host>/api/v1` — used by the WebSocket /
+  /// Base URL `<scheme>://<host>/api/v2` — used by the WebSocket /
   /// SSE paths to derive their own URLs.
   pub fn base_url(&self) -> &str {
     &self.base_url
   }
 
-  /// Strip `/api/v1` from `base_url` to get the server root URL used
+  /// Strip `/api/v2` from `base_url` to get the server root URL used
   /// in auth-error messages. Both [`Self::validate_token`] and
   /// [`Self::exchange_credentials`] perform the same trim — centralised
   /// here instead of duplicated at each call site.
   fn auth_base_url(&self) -> String {
-    self.base_url.trim_end_matches("/api/v1").to_string()
+    self.base_url.trim_end_matches("/api/v2").to_string()
   }
 
   /// Wrap a progenitor `Error<E>` from an `/auth/*` call into an
@@ -535,7 +535,7 @@ impl MantaClient {
     }
   }
 
-  /// `POST /api/v1/auth/validate` — check whether the backend still
+  /// `POST /api/v2/auth/validate` — check whether the backend still
   /// accepts `token`. Returns `Ok(())` on success; on the "abort
   /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
   /// [`SiteNotFound`] context so callers can distinguish them from
@@ -554,7 +554,7 @@ impl MantaClient {
       .map_err(|e| self.map_auth_error(e))
   }
 
-  /// `POST /api/v1/auth/token` — exchange Keycloak credentials for a
+  /// `POST /api/v2/auth/token` — exchange Keycloak credentials for a
   /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`]
   /// or [`SiteNotFound`] context on cascade-abort cases; plain `Err`
   /// on a credential rejection (wrong username/password).
@@ -606,7 +606,7 @@ impl MantaClient {
   /// Names the server URL the CLI tried and hints at the two most
   /// common causes — server not running, or wrong `manta_server_url`.
   pub(super) fn unreachable_server_msg(&self) -> String {
-    let server_url = self.base_url.trim_end_matches("/api/v1");
+    let server_url = self.base_url.trim_end_matches("/api/v2");
     format!(
       "cannot reach manta server at {server_url}. Is the server \
        running, and is `manta_server_url` in your config correct?"

@@ -8,7 +8,7 @@
 //! ## Resolution order
 //!
 //! [`get_api_token`] walks the candidates in this order and returns
-//! the first one that the server's `/api/v1/auth/validate` accepts:
+//! the first one that the server's `/api/v2/auth/validate` accepts:
 //!
 //! 1. `MANTA_CSM_TOKEN` environment variable.
 //! 2. Cached file at `<cache_dir>/<site>_auth` (0600-permissions). The
@@ -16,7 +16,7 @@
 //!    [`manta_shared::common::config::get_default_cache_path`].
 //! 3. Interactive Keycloak username + password prompt
 //!    (`dialoguer`-based), retried up to [`MAX_LOGIN_ATTEMPTS`] times
-//!    against `/api/v1/auth/token`. A successful interactive login is
+//!    against `/api/v2/auth/token`. A successful interactive login is
 //!    written back to the cache file.
 //!
 //! ## Short-circuits

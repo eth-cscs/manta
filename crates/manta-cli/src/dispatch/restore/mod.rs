@@ -1,7 +1,7 @@
 //! `manta restore` subcommands.
 //!
 //! Today only [`vcluster`] exists; it drives a cluster-data restore
-//! via `POST /api/v1/migrate/restore`. Inverse of
+//! via `POST /api/v2/migrate/restore`. Inverse of
 //! [`super::backup`].
 
 pub mod vcluster;

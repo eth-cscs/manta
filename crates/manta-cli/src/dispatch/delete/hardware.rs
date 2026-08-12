@@ -2,7 +2,7 @@
 //!
 //! Removes hardware components matching `--pattern` from a target HSM
 //! cluster, returning them to `--parent-group`. Forwards to
-//! `DELETE /api/v1/hardware-clusters/{target}/members` with
+//! `DELETE /api/v2/hardware-clusters/{target}/members` with
 //! server-side `dry_run` honoured. If `--delete-group` is set the
 //! server also removes the now-empty target HSM group. Inverse of
 //! [`super::super::add::hardware`].

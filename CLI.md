@@ -343,7 +343,7 @@ manta get analysis image --only-safe-to-delete
 manta get analysis image --only-unsafe-to-delete -o json | jq '.[].image_id'
 ```
 
-Sorted by `image_created` ascending (oldest first); images without a created timestamp sink to the bottom; ties on the timestamp (or both `None`) break by `image_id` ascending. Calls `GET /api/v1/analysis/images`.
+Sorted by `image_created` ascending (oldest first); images without a created timestamp sink to the bottom; ties on the timestamp (or both `None`) break by `image_id` ascending. Calls `GET /api/v2/analysis/images`.
 
 ### get analysis configuration
 
@@ -361,7 +361,7 @@ manta get analysis configuration --only-safe-to-delete
 manta get analysis configuration --only-unsafe-to-delete -o json | jq '.[].name'
 ```
 
-Calls `GET /api/v1/analysis/configurations`.
+Calls `GET /api/v2/analysis/configurations`.
 
 ### get boot-parameters
 

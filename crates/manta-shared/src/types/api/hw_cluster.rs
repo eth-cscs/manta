@@ -1,11 +1,11 @@
 //! HTTP request/response bodies and shared types for the
-//! `POST /api/v1/hardware-clusters/{target}/*` and
-//! `DELETE /api/v1/hardware-clusters/{target}/members` endpoints.
+//! `POST /api/v2/hardware-clusters/{target}/*` and
+//! `DELETE /api/v2/hardware-clusters/{target}/members` endpoints.
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v1/hardware-clusters/{target}/members`.
+/// Request body for `POST /api/v2/hardware-clusters/{target}/members`.
 ///
 /// Moves nodes matching `pattern` out of `parent_cluster` and into
 /// the path-level target cluster. The reverse direction lives in
@@ -27,7 +27,7 @@ pub struct AddHwComponentRequest {
   pub dry_run: bool,
 }
 
-/// Request body for `DELETE /api/v1/hardware-clusters/{target}/members`.
+/// Request body for `DELETE /api/v2/hardware-clusters/{target}/members`.
 ///
 /// Reverse of [`AddHwComponentRequest`]: moves nodes matching
 /// `pattern` out of the path-level target cluster and back to
@@ -51,7 +51,7 @@ pub struct DeleteHwComponentRequest {
 }
 
 /// Request body for
-/// `POST /api/v1/hardware-clusters/{target}/configuration`.
+/// `POST /api/v2/hardware-clusters/{target}/configuration`.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ApplyHwConfigurationRequest {
   /// Source (parent) HSM group supplying nodes.

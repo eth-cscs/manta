@@ -55,7 +55,7 @@ impl SessionContext {
 
   /// Build a `SessionContext` by:
   ///
-  /// 1. Calling `GET /api/v1/groups/available` to populate
+  /// 1. Calling `GET /api/v2/groups/available` to populate
   ///    `accessible_groups` (server filters by realm role for
   ///    non-admin callers, returns the universe for admins).
   /// 2. Locally decoding the JWT claims via

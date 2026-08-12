@@ -1,9 +1,9 @@
 //! Kernel-parameter handlers.
 //!
-//! - `GET    /api/v1/kernel-parameters`         → [`get_kernel_parameters`]
-//! - `POST   /api/v1/kernel-parameters/apply`   → [`apply_kernel_parameters`]
-//! - `POST   /api/v1/kernel-parameters/add`     → [`add_kernel_parameters`]
-//! - `DELETE /api/v1/kernel-parameters`         → [`delete_kernel_parameters`]
+//! - `GET    /api/v2/kernel-parameters`         → [`get_kernel_parameters`]
+//! - `POST   /api/v2/kernel-parameters/apply`   → [`apply_kernel_parameters`]
+//! - `POST   /api/v2/kernel-parameters/add`     → [`add_kernel_parameters`]
+//! - `DELETE /api/v2/kernel-parameters`         → [`delete_kernel_parameters`]
 //!
 //! All wrap `crate::service::kernel_parameters::*`. Target nodes can
 //! be supplied as an xname expression or an HSM group name; the
@@ -19,7 +19,7 @@ use super::{
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/kernel-parameters
+// GET /api/v2/kernel-parameters
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::KernelParametersQuery;
@@ -57,14 +57,14 @@ pub async fn get_kernel_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/kernel-parameters/apply — Apply kernel parameter changes
+// POST /api/v2/kernel-parameters/apply — Apply kernel parameter changes
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::kernel_parameters::{
   ApplyKernelParametersRequest, KernelParamOp,
 };
 
-/// `POST /api/v1/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
+/// `POST /api/v2/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
 #[utoipa::path(post, path = "/kernel-parameters/apply", tag = "kernel-parameters",
   params(SiteHeader),
   request_body = ApplyKernelParametersRequest,
@@ -153,12 +153,12 @@ pub async fn apply_kernel_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/kernel-parameters/add
+// POST /api/v2/kernel-parameters/add
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::kernel_parameters::AddKernelParametersRequest;
 
-/// `POST /api/v1/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.
+/// `POST /api/v2/kernel-parameters/add` — merge new kernel parameters into existing node BSS entries.
 #[utoipa::path(post, path = "/kernel-parameters/add", tag = "kernel-parameters",
   params(SiteHeader),
   request_body = AddKernelParametersRequest,
@@ -231,12 +231,12 @@ pub async fn add_kernel_parameters(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v1/kernel-parameters
+// DELETE /api/v2/kernel-parameters
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::kernel_parameters::DeleteKernelParametersRequest;
 
-/// `DELETE /api/v1/kernel-parameters` — remove named kernel parameters from node BSS entries.
+/// `DELETE /api/v2/kernel-parameters` — remove named kernel parameters from node BSS entries.
 #[utoipa::path(delete, path = "/kernel-parameters", tag = "kernel-parameters",
   params(SiteHeader),
   request_body = DeleteKernelParametersRequest,

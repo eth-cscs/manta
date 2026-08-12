@@ -1,7 +1,7 @@
 //! Implements the `manta add redfish-endpoint` command.
 //!
 //! Registers a Redfish endpoint with HSM via
-//! `POST /api/v1/redfish-endpoints`. The endpoint has no server-side
+//! `POST /api/v2/redfish-endpoints`. The endpoint has no server-side
 //! `dry_run` flag; `--dry-run` is a client-side short-circuit that
 //! prints the `UpdateRedfishEndpointParams` payload that *would* be
 //! sent and returns. The sibling [`super::super::apply::redfish_endpoint`]

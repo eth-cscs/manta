@@ -1,7 +1,7 @@
 //! Implements the `manta delete redfish-endpoint` command.
 //!
 //! Removes a registered Redfish endpoint from HSM via
-//! `DELETE /api/v1/redfish-endpoints/{id}`. The endpoint has no
+//! `DELETE /api/v2/redfish-endpoints/{id}`. The endpoint has no
 //! `dry_run` flag; `--dry-run` is a client-side short-circuit that
 //! prints the URI/payload via
 //! [`crate::output::action_result::preview_request`]. Sibling of

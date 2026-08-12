@@ -226,7 +226,6 @@ fn print_site_summary(
   gitea_base_url: &str,
   k8s_api_url: Option<&str>,
   vault_base_url: Option<&str>,
-  has_socks5_proxy: bool,
   root_ca_cert_file: &str,
 ) {
   println!("[site: {name}]");
@@ -237,10 +236,6 @@ fn print_site_summary(
   println!(
     "  vault_base_url:    {}",
     vault_base_url.unwrap_or("<none>")
-  );
-  println!(
-    "  socks5_proxy:      {}",
-    if has_socks5_proxy { "<set>" } else { "<none>" }
   );
   println!("  root_ca_cert_file: {root_ca_cert_file}");
   println!();
@@ -405,7 +400,6 @@ async fn run_server(
       &gitea,
       k8s_url.as_deref(),
       vault_url.as_deref(),
-      site.socks5_proxy.is_some(),
       &site.root_ca_cert_file,
     );
     let site_backend_dispatcher = StaticBackendDispatcher::new(
@@ -419,7 +413,6 @@ async fn run_server(
         backend: site_backend_dispatcher,
         shasta_base_url: api_url,
         shasta_root_cert: root_cert,
-        socks5_proxy: site.socks5_proxy.clone(),
         vault_base_url: vault_url,
         gitea_base_url: gitea,
         k8s_api_url: k8s_url,

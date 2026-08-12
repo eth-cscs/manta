@@ -1,9 +1,9 @@
 //! Node CRUD handlers.
 //!
-//! - `GET    /api/v1/nodes`        → [`get_nodes`] — wraps
+//! - `GET    /api/v2/nodes`        → [`get_nodes`] — wraps
 //!   `service::node::get_nodes`.
-//! - `POST   /api/v1/nodes`        → [`add_node`].
-//! - `DELETE /api/v1/nodes/{id}`   → [`delete_node`].
+//! - `POST   /api/v2/nodes`        → [`add_node`].
+//! - `DELETE /api/v2/nodes/{id}`   → [`delete_node`].
 //!
 //! `get_nodes` accepts an xname expression query parameter and an
 //! optional `status` filter; the `include_siblings` flag fans out
@@ -20,7 +20,7 @@ use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
 use crate::service;
 
 // ---------------------------------------------------------------------------
-// GET /api/v1/nodes
+// GET /api/v2/nodes
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::queries::NodesQuery;
@@ -57,7 +57,7 @@ pub async fn get_nodes(
 }
 
 // ---------------------------------------------------------------------------
-// DELETE /api/v1/nodes/{id}
+// DELETE /api/v2/nodes/{id}
 // ---------------------------------------------------------------------------
 
 /// DELETE /nodes/{id} — remove a node from HSM by xname or NID.
@@ -87,7 +87,7 @@ pub async fn delete_node(
 }
 
 // ---------------------------------------------------------------------------
-// POST /api/v1/nodes
+// POST /api/v2/nodes
 // ---------------------------------------------------------------------------
 
 pub use manta_shared::types::api::node::AddNodeRequest;

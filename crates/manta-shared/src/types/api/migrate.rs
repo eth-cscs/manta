@@ -1,9 +1,9 @@
-//! Wire types for the `POST /api/v1/migrate/*` endpoints.
+//! Wire types for the `POST /api/v2/migrate/*` endpoints.
 
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-/// Request body for `POST /api/v1/migrate/nodes`.
+/// Request body for `POST /api/v2/migrate/nodes`.
 ///
 /// Paired with [`super::responses::MigrateNodesResponse`] on success.
 /// `target_hsm_names` and `parent_hsm_names` are length-matched: each
@@ -38,7 +38,7 @@ pub struct MigrateNodesRequest {
   pub create_hsm_group: bool,
 }
 
-/// Request body for `POST /api/v1/migrate/backup`.
+/// Request body for `POST /api/v2/migrate/backup`.
 ///
 /// Paired with [`super::responses::CompletedResponse`] on success.
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -49,7 +49,7 @@ pub struct MigrateBackupRequest {
   pub destination: Option<String>,
 }
 
-/// Request body for `POST /api/v1/migrate/restore`.
+/// Request body for `POST /api/v2/migrate/restore`.
 ///
 /// Paired with [`super::responses::CompletedResponse`] on success.
 /// Every `*_file` field is optional independently — supplying only

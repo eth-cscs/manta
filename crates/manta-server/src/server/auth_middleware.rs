@@ -1,4 +1,4 @@
-//! Defensive middleware for the `/api/v1/auth/*` sub-router.
+//! Defensive middleware for the `/api/v2/auth/*` sub-router.
 //!
 //! Two layers, applied in this order:
 //!
@@ -96,7 +96,7 @@ impl AuthRateLimiter {
   }
 }
 
-/// Per-source-IP rate-limit middleware for the `/api/v1/auth/*`
+/// Per-source-IP rate-limit middleware for the `/api/v2/auth/*`
 /// sub-router. Reads
 /// [`super::ServerState::auth_rate_limit_per_minute`]; when `None`,
 /// the middleware is a no-op (operators rate-limit at the proxy).

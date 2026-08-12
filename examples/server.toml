@@ -53,7 +53,6 @@ shutdown_grace_period_secs      = 30       # drain window after SIGTERM / Ctrl+C
 backend           = "csm"
 shasta_base_url   = "https://api.example.com/apis"
 root_ca_cert_file = "alps_root_cert.pem"
-# socks5_proxy    = "socks5h://127.0.0.1:1080"   # optional per-site SOCKS5
 
 [sites.alps.k8s]
 api_url = "https://10.0.0.10:6443"

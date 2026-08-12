@@ -4,7 +4,7 @@
 //! [`crate::service::analysis`] over the four CFS/BOS/IMS resource
 //! lists the caller can see. Exposes:
 //!
-//! - `GET /api/v1/analysis/images` — one row per IMS image, joined
+//! - `GET /api/v2/analysis/images` — one row per IMS image, joined
 //!   against CFS configurations, CFS sessions, and BOS session
 //!   templates. The row carries `safe_to_delete` and orphan hints
 //!   the CLI uses for cascading-delete preview.

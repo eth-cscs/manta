@@ -3,18 +3,18 @@
 //! Each leaf removes a resource (or batch of resources) via the
 //! corresponding `DELETE` endpoint:
 //!
-//! - [`node`]              — `DELETE /api/v1/nodes/{id}`
-//! - [`nodes`]             — `DELETE /api/v1/groups/{label}/members`
-//! - [`group`]             — `DELETE /api/v1/groups/{label}`
-//! - [`hardware`]          — `DELETE /api/v1/hardware-clusters/{target}/members`
-//! - [`boot_parameters`]   — `DELETE /api/v1/boot-parameters`
-//! - [`kernel_parameters`] — `DELETE /api/v1/kernel-parameters`
-//! - [`configurations_and_derivatives`] — `DELETE /api/v1/configurations`
+//! - [`node`]              — `DELETE /api/v2/nodes/{id}`
+//! - [`nodes`]             — `DELETE /api/v2/groups/{label}/members`
+//! - [`group`]             — `DELETE /api/v2/groups/{label}`
+//! - [`hardware`]          — `DELETE /api/v2/hardware-clusters/{target}/members`
+//! - [`boot_parameters`]   — `DELETE /api/v2/boot-parameters`
+//! - [`kernel_parameters`] — `DELETE /api/v2/kernel-parameters`
+//! - [`configurations_and_derivatives`] — `DELETE /api/v2/configurations`
 //!   (also cascades through CFS sessions / IMS images derived from
 //!   each configuration; the name reflects the cascade)
-//! - [`images`]            — `DELETE /api/v1/images?ids=…`
-//! - [`session`]           — `DELETE /api/v1/sessions/{name}` (cancel a CFS session)
-//! - [`redfish_endpoint`]  — `DELETE /api/v1/redfish-endpoints/{id}`
+//! - [`images`]            — `DELETE /api/v2/images?ids=…`
+//! - [`session`]           — `DELETE /api/v2/sessions/{name}` (cancel a CFS session)
+//! - [`redfish_endpoint`]  — `DELETE /api/v2/redfish-endpoints/{id}`
 //!
 //! `--dry-run` is supported on every leaf. Most leaves either forward
 //! the flag to the server (when the endpoint accepts `?dry_run=true`)

@@ -1,6 +1,6 @@
 //! Implements the `manta restore vcluster` command.
 //!
-//! Drives `POST /api/v1/migrate/restore` to reload BOS / CFS / HSM /
+//! Drives `POST /api/v2/migrate/restore` to reload BOS / CFS / HSM /
 //! IMS state from a previously-captured bundle. All four
 //! `--*-file` arguments are required (an IMS-only or BOS-only restore
 //! isn't supported by the server-side flow). Runs an optional

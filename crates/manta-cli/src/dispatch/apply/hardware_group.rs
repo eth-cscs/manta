@@ -2,7 +2,7 @@
 //!
 //! Pins (or unpins, with `--unpin-nodes`) hardware components matching
 //! `--pattern` to a target HSM cluster, moving them from `--parent-group`.
-//! Forwards to `POST /api/v1/hardware-clusters/{target}` with the
+//! Forwards to `POST /api/v2/hardware-clusters/{target}` with the
 //! request's `dry_run` flag, `create_target_hsm_group`, and
 //! `delete_empty_parent_hsm_group` flags honoured server-side. See
 //! [`super::super::add::hardware`] for the variant that *adds*

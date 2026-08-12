@@ -2,7 +2,7 @@
 //!
 //! Adds hardware components matching `--pattern` to a target HSM
 //! cluster, drawing the components from `--parent-group`. Forwards to
-//! `POST /api/v1/hardware-clusters/{target}/members`. The server
+//! `POST /api/v2/hardware-clusters/{target}/members`. The server
 //! honours the request's `dry_run` flag (no client-side
 //! short-circuit) and returns the projected component move set even
 //! on a real run; the leaf hands the result to

@@ -1,6 +1,6 @@
 //! Implements the `manta delete group` command.
 //!
-//! Removes an HSM group via `DELETE /api/v1/groups/{label}`.
+//! Removes an HSM group via `DELETE /api/v2/groups/{label}`.
 //! `--force` is forwarded as `?force=true` (server allows removal
 //! even when members remain). `--dry-run` prints what the request
 //! would be and returns without contacting the server (the endpoint

@@ -2,7 +2,7 @@
 //!
 //! [`InfraContext`] is the bundle of per-site connection data passed
 //! through the service layer for every request: backend dispatcher,
-//! API base URLs, TLS cert, optional vault/k8s URLs, SOCKS proxy.
+//! API base URLs, TLS cert, optional vault/k8s URLs.
 //! It depends on `StaticBackendDispatcher`, which is server-only —
 //! the CLI never instantiates this.
 //!
@@ -32,10 +32,10 @@
 //! `infra.backend.get_bootparameters(...)`). When a function needs to
 //! build a direct CSM HTTP client — e.g. for IMS customize jobs that
 //! aren't routed through the dispatcher — it uses
-//! `infra.shasta_base_url`, `infra.shasta_root_cert`, and
-//! `infra.socks5_proxy` together. Vault- and k8s-dependent paths
-//! gate on `infra.vault_base_url` / `infra.k8s_api_url` being
-//! `Some`; when either is `None` the handler returns 501.
+//! `infra.shasta_base_url` and `infra.shasta_root_cert` together.
+//! Vault- and k8s-dependent paths gate on `infra.vault_base_url` /
+//! `infra.k8s_api_url` being `Some`; when either is `None` the handler
+//! returns 501.
 
 use crate::dispatcher::StaticBackendDispatcher;
 
@@ -58,9 +58,6 @@ pub struct InfraContext<'a> {
   /// DER- or PEM-encoded root CA bytes for verifying TLS against
   /// `shasta_base_url`.
   pub shasta_root_cert: &'a [u8],
-  /// Optional per-site SOCKS5 proxy URL forwarded to every outbound
-  /// HTTP request for this site's backend.
-  pub socks5_proxy: Option<&'a str>,
   /// Optional Vault base URL; `None` makes Vault-dependent handlers
   /// return 501.
   pub vault_base_url: Option<&'a str>,
