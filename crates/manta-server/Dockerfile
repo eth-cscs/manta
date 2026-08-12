@@ -65,4 +65,4 @@ STOPSIGNAL SIGTERM
 # override the port in their mounted server.toml should `-p` the new
 # port instead.
 EXPOSE 8443
-ENTRYPOINT ["manta-server --allow-http"]
+ENTRYPOINT ["manta-server"]
