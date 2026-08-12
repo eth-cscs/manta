@@ -2,11 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0-beta.66] - 2026-08-12
+## [2.0.0-beta.67] - 2026-08-12
 
 ### Bug Fixes
 
 - Manta server Dockerfile entry point typo
+
+### Styling
+
+- Apply rustfmt [skip ci]
 
 ## [2.0.0-beta.65] - 2026-08-12
 
