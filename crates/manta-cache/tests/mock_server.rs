@@ -31,7 +31,7 @@ async fn mount_site(
 ) {
   for (endpoint, body) in [("available", labels), ("nodes", nodes)] {
     Mock::given(method("GET"))
-      .and(path(format!("/api/v1/groups/{endpoint}")))
+      .and(path(format!("/v2/groups/{endpoint}")))
       .and(header("X-Manta-Site", site))
       .and(header("Authorization", format!("Bearer {token}")))
       .respond_with(ResponseTemplate::new(200).set_body_json(body))
@@ -98,7 +98,7 @@ async fn refresh_collects_failures_and_keeps_healthy_sites() {
   )
   .await;
   Mock::given(method("GET"))
-    .and(path("/api/v1/groups/available"))
+    .and(path("/v2/groups/available"))
     .and(header("X-Manta-Site", "bad"))
     .respond_with(ResponseTemplate::new(500).set_body_json(json!({
       "error": "backend exploded"
@@ -134,7 +134,7 @@ async fn refresh_maps_undecodable_bodies_to_request_errors() {
   let server = MockServer::start().await;
 
   Mock::given(method("GET"))
-    .and(path("/api/v1/groups/available"))
+    .and(path("/v2/groups/available"))
     .respond_with(ResponseTemplate::new(200).set_body_string("not json"))
     .mount(&server)
     .await;
@@ -159,7 +159,7 @@ async fn refresh_marks_empty_error_bodies() {
   let server = MockServer::start().await;
 
   Mock::given(method("GET"))
-    .and(path("/api/v1/groups/available"))
+    .and(path("/v2/groups/available"))
     .respond_with(ResponseTemplate::new(401))
     .mount(&server)
     .await;

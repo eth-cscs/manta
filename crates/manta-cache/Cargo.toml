@@ -18,7 +18,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # The cache is an HTTP client of manta-server — it talks to the existing
-# `/api/v1/groups/*` endpoints. No compile-time dependency on
+# `/v2/groups/*` endpoints. No compile-time dependency on
 # manta-server (or manta-shared): see README.md / ROADMAP.md.
 reqwest   = { workspace = true }
 serde     = { workspace = true }

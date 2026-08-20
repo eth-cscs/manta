@@ -18,8 +18,8 @@
 //!
 //! The cache is an HTTP client of `manta-server`; it has no
 //! compile-time dependency on the server's internals. [`refresh`] fans
-//! out **two calls per site** — `GET /api/v1/groups/available` and
-//! `GET /api/v1/groups/nodes` — and folds the results into an [`Index`].
+//! out **two calls per site** — `GET /v2/groups/available` and
+//! `GET /v2/groups/nodes` — and folds the results into an [`Index`].
 //!
 //! A process that already holds the group data (an embedding
 //! `manta-server`, a fixture-driven test) can skip HTTP entirely and
