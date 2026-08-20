@@ -36,6 +36,18 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
+  /// Optional base URL of a `manta-cache-server`. When set and no site
+  /// was named (`--site` / `site`), commands that target an HSM group
+  /// or a plain xname list resolve their site through the cache before
+  /// dispatch (see [`crate::common::site_resolution`]). Unset = the
+  /// site must always be named explicitly, as before.
+  #[serde(default)]
+  pub cache_url: Option<String>,
+  /// Bearer token for the cache's `/api/v1` endpoints — the value of
+  /// the cache's `[server] api_token`. Only needed when the cache is
+  /// configured to require one.
+  #[serde(default)]
+  pub cache_api_token: Option<String>,
   /// When `true`, the CLI refuses every backend-mutating verb before
   /// any HTTP request leaves the process (see
   /// [`crate::common::read_only::read_only_gate`] and
@@ -98,6 +110,8 @@ mod tests {
       site: Some("alps".to_string()),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
+      cache_url: None,
+      cache_api_token: None,
       read_only: false,
       request_timeout_secs: None,
       power_poll_interval_secs: None,
@@ -114,6 +128,27 @@ mod tests {
       parsed.socks5_proxy.as_deref(),
       Some("socks5h://127.0.0.1:1080")
     );
+  }
+
+  #[test]
+  fn cache_keys_parse_and_default_to_none() {
+    let parsed: CliConfiguration = toml::from_str(
+      "log = \"info\"\nmanta_server_url = \"https://m:8443\"\n\
+       cache_url = \"https://cache.example.ch:8444\"\n\
+       cache_api_token = \"sekrit\"\n",
+    )
+    .unwrap();
+    assert_eq!(
+      parsed.cache_url.as_deref(),
+      Some("https://cache.example.ch:8444")
+    );
+    assert_eq!(parsed.cache_api_token.as_deref(), Some("sekrit"));
+
+    let minimal: CliConfiguration =
+      toml::from_str("log = \"info\"\nmanta_server_url = \"https://m:8443\"\n")
+        .unwrap();
+    assert!(minimal.cache_url.is_none());
+    assert!(minimal.cache_api_token.is_none());
   }
 
   #[test]

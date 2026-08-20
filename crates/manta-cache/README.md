@@ -1,6 +1,6 @@
 # manta-cache
 
-> **Status:** planning. This crate **does not exist yet** — the source tree under `crates/manta-cache/` is a placeholder holding this README and [ROADMAP.md](ROADMAP.md). The first cut of the cache lives as a module inside `manta-server` (or `manta-shared`); the crate is created when that module is extracted at Stage 2 of the roadmap.
+> **Status:** Stages 1–3 landed. This crate is the **core library** (built directly as a standalone workspace member, collapsing the roadmap's Stage 1 + Stage 2): `SiteDescriptor`, `Index` with synchronous lookups (`group_to_site`, `xname_to_site`, `groups`, `sites`, `group_members`), an async partial-failure-tolerant `refresh()`, and an HTTP-free constructor (`Index::from_snapshots`). The Stage-3 HTTP API ships as the sibling **`crates/manta-cache-server`** binary — a standalone shared lookup service (see the deployment-shape decision in [ROADMAP.md](ROADMAP.md)). The `manta-server` integration (Stage 4) is not built yet.
 
 A site-resolution cache for manta. It learns which **site** (CSM / OpenCHAMI cluster) each group and each compute node lives at, so the user does not have to name the site explicitly on every command.
 
@@ -58,6 +58,61 @@ Conceptually a list of `(site_name, group_label, member_xnames…)` triples, plu
 Both indexes are populated by walking the existing per-site `GET /v2/groups/available` and `GET /v2/groups/nodes` endpoints on each manta-server.
 
 The cache holds **routing information only**. It does not duplicate per-node state (power status, boot parameters, CFS components, IMS images), and it is not a replacement for HSM — the canonical group membership lives in CSM / OpenCHAMI.
+
+---
+
+## Production credentials
+
+The cache refreshes each site by calling that site's `manta-server` with a bearer token, configured per site in `cache-server.toml`:
+
+```toml
+[sites.alps]
+manta_server_url = "https://manta-server.example.ch:8443"
+token_file = "/run/secrets/manta-cache/alps-token"
+```
+
+`token_file` is the **only** form — there is deliberately no inline `token`. A Keycloak credential does not belong in a config file that gets templated, backed up, or committed, and a path is the one thing every deployment target can produce: a Kubernetes projected `Secret`, a systemd `LoadCredential=` (read it from `$CREDENTIALS_DIRECTORY`), or a plain bind mount.
+
+### Use a service account, one per site
+
+The token must be a **Keycloak service account**, not a person's login. A shared service refreshing as a named human inherits that person's group roles, stops working when their token expires or their account changes, and attributes every backend call to them.
+
+Create one service account per site and write its token into the site's `token_file`. Nothing enforces this — pointing `token_file` at a personal token still works, which is what keeps the [LIVE-TEST.md](LIVE-TEST.md) demo flow usable — but the server says so loudly, in the startup summary and under `credential.warnings` in `GET /api/v1/dump`:
+
+```
+[site: alps]
+  manta_server_url: https://manta-server.example.ch:8443
+  token_file:       /run/secrets/manta-cache/alps-token
+  credential:       service account 'manta-cache-alps', scoped to its own roles, expires 2027-08-05 (364 days)
+```
+
+### How much of a site the cache can see
+
+csm-rs derives the available groups from the token's own Keycloak realm roles, so **the service account's roles bound what the cache can index**:
+
+| Account holds | Cache indexes | Effect on users |
+|---|---|---|
+| `pa_admin` | every HSM group at the site | any group resolves without `--site` |
+| specific group roles | only those groups | other groups need an explicit `--site` |
+| no group roles | nothing | the site is reported as failed (see below) |
+
+Both of the first two are legitimate; which you want is a deployment decision. Scoped is the safer default and degrades gracefully — the CLI falls back to "site is required" for anything unresolvable, since the cache is an accelerator rather than a dependency. `credential.is_admin` on `GET /api/v1/dump` shows which is in force.
+
+A site that returns **no** groups is treated as a failed refresh, not a healthy empty one: it drops out of the index with an explanatory `last_error` rather than appearing fresh and resolving nothing.
+
+### Rotation and expiry
+
+The token file is re-read on **every** refresh, so rotation is a file write — no restart, no request drop. CSCS service-account tokens are minted for a year, which is exactly long enough to forget, so the cache surfaces the deadline in three places:
+
+- the startup summary line above,
+- `credential.expires_at` and `credential.expires_in_days` on `GET /api/v1/dump` — the field to point monitoring at. It counts down in whole days and goes **negative** once the credential has lapsed, so `expires_in_days < 0` is a correct alert from the first hour of an outage,
+- a `WARN` log line once fewer than 30 days remain, escalating to `ERROR` once it has lapsed. These are logged when the state first changes rather than on every refresh, so a month-long warning does not bury the log.
+
+### File permissions
+
+Secret files readable beyond their owner draw a startup warning naming the file and its mode. It is only ever a warning: Kubernetes projected `Secret` volumes default to `0644`, so refusing to start would break the likeliest deployment target over a mode the operator often cannot change. Where you do control it, `0600` is right.
+
+The cache's own inbound bearer (`[server] api_token`) can be kept out of the config file the same way, with `api_token_file`. Unlike the per-site tokens it is read once at startup, so rotating it needs a restart.
 
 ---
 

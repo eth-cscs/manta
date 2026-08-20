@@ -250,6 +250,8 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
+A third, optional binary — `manta-cache-server`, the site-resolution cache behind `cli.toml`'s `cache_url` — reads its own `cache-server.toml` from the same directory; its schema, API, roadmap, and a live-test runbook live in [`crates/manta-cache/`](crates/manta-cache/).
+
 The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream. The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
 
 **`cli.toml`**
@@ -263,14 +265,15 @@ site             = "alps"                                # optional: active site
 manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
 request_timeout_secs = 600                                   # optional: per-request HTTP timeout (seconds). Default 300 for REST calls; streams (SSE log tail, WS console) unlimited. Setting this also caps streams — pick a value larger than your worst-case session if you set it.
+cache_url            = "https://manta-cache.cscs.ch:8444"    # optional: manta-cache-server used to resolve the site when none is named and the command targets a group or plain xname list (see crates/manta-cache/ROADMAP.md). Unreachable cache = fall back to requiring --site.
+cache_api_token      = "shared-secret"                       # optional: only when the cache requires its [server] api_token
 ```
 
 Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which emits per-`/auth/*` events to its configured `[auditor.kafka]` stream.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
-(URLs, TLS certs, k8s, vault, per-site SOCKS proxies) live entirely
-in `server.toml`.
+(URLs, TLS certs, k8s, vault) live entirely in `server.toml`.
 
 **`server.toml`**
 

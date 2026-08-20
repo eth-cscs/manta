@@ -120,6 +120,21 @@ async fn run_cli(
     }
   }
 
+  // Stage-4 CLI-side pre-resolution: when no site was named, ask the
+  // configured manta-cache-server which site owns the command's group
+  // or xname target. Transport failures degrade back to the lazy
+  // `require_site` error; definitive negative answers abort here.
+  let site_name = match site_name {
+    Some(site) => Some(site),
+    None => {
+      common::site_resolution::resolve_via_cache(&configuration, &cli_matches)
+        .await
+        .map_err(|e| -> Box<dyn std::error::Error> {
+          format!("{e:#}").into()
+        })?
+    }
+  };
+
   let settings_hsm_group_name_opt = settings.get_string("hsm_group").ok();
   let manta_server_url = configuration.manta_server_url.as_str();
 
