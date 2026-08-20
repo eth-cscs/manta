@@ -662,7 +662,8 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --help 'Print help'
             cand hardware '[experimental] Rescale a group''s hardware allocation'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
-            cand boot 'Update boot parameters and runtime configuration'
+            cand boot 'Update boot parameters'
+            cand runtime-configuration 'Set the CFS runtime configuration on a set of nodes or a group'
             cand boot-parameters 'Update boot parameters for nodes'
             cand redfish-endpoints 'Update an existing Redfish endpoint'
             cand redfish-endpoint 'Update an existing Redfish endpoint'
@@ -759,15 +760,11 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --boot-image 'Image ID to boot the nodes'
             cand -b 'Configuration name used to build the boot image (uses the most recent matching image)'
             cand --boot-image-configuration 'Configuration name used to build the boot image (uses the most recent matching image)'
-            cand -r 'Configuration to apply to nodes after booting'
-            cand --runtime-configuration 'Configuration to apply to nodes after booting'
             cand -k 'Kernel parameters to assign to the nodes'
             cand --kernel-parameters 'Kernel parameters to assign to the nodes'
             cand -o 'Output format'
             cand --output 'Output format'
             cand --site 'Override the active site for this invocation'
-            cand -D 'Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)'
-            cand --disable 'Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -778,15 +775,11 @@ set edit:completion:arg-completer[manta] = {|@words|
             cand --boot-image 'Image ID to boot the nodes'
             cand -b 'Configuration name used to build the boot image (uses the most recent matching image)'
             cand --boot-image-configuration 'Configuration name used to build the boot image (uses the most recent matching image)'
-            cand -r 'Configuration to apply to nodes after booting'
-            cand --runtime-configuration 'Configuration to apply to nodes after booting'
             cand -k 'Kernel parameters to assign to all group members'
             cand --kernel-parameters 'Kernel parameters to assign to all group members'
             cand -o 'Output format'
             cand --output 'Output format'
             cand --site 'Override the active site for this invocation'
-            cand -D 'Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)'
-            cand --disable 'Stage the runtime configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false; requires --runtime-configuration)'
             cand -d 'Simulate the operation without making changes'
             cand --dry-run 'Simulate the operation without making changes'
             cand -h 'Print help (see more with ''--help'')'
@@ -802,6 +795,47 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;boot;help;group'= {
         }
         &'manta;apply;boot;help;help'= {
+        }
+        &'manta;apply;runtime-configuration'= {
+            cand --site 'Override the active site for this invocation'
+            cand -h 'Print help'
+            cand --help 'Print help'
+            cand nodes 'Set the runtime CFS configuration on a set of nodes'
+            cand group 'Set the runtime CFS configuration on all nodes in a group'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;apply;runtime-configuration;nodes'= {
+            cand -n 'CFS configuration to assign as the runtime desired configuration'
+            cand --configuration-name 'CFS configuration to assign as the runtime desired configuration'
+            cand --site 'Override the active site for this invocation'
+            cand -D 'Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)'
+            cand --disable 'Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)'
+            cand -d 'Simulate the operation without making changes'
+            cand --dry-run 'Simulate the operation without making changes'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+        }
+        &'manta;apply;runtime-configuration;group'= {
+            cand -n 'CFS configuration to assign as the runtime desired configuration'
+            cand --configuration-name 'CFS configuration to assign as the runtime desired configuration'
+            cand --site 'Override the active site for this invocation'
+            cand -D 'Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)'
+            cand --disable 'Stage the configuration without enabling CFS to apply it (sets the CFS component `enabled` flag to false)'
+            cand -d 'Simulate the operation without making changes'
+            cand --dry-run 'Simulate the operation without making changes'
+            cand -h 'Print help (see more with ''--help'')'
+            cand --help 'Print help (see more with ''--help'')'
+        }
+        &'manta;apply;runtime-configuration;help'= {
+            cand nodes 'Set the runtime CFS configuration on a set of nodes'
+            cand group 'Set the runtime CFS configuration on all nodes in a group'
+            cand help 'Print this message or the help of the given subcommand(s)'
+        }
+        &'manta;apply;runtime-configuration;help;nodes'= {
+        }
+        &'manta;apply;runtime-configuration;help;group'= {
+        }
+        &'manta;apply;runtime-configuration;help;help'= {
         }
         &'manta;apply;boot-parameters'= {
             cand -H 'Xnames of the nodes to update'
@@ -939,7 +973,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;help'= {
             cand hardware '[experimental] Rescale a group''s hardware allocation'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
-            cand boot 'Update boot parameters and runtime configuration'
+            cand boot 'Update boot parameters'
+            cand runtime-configuration 'Set the CFS runtime configuration on a set of nodes or a group'
             cand boot-parameters 'Update boot parameters for nodes'
             cand redfish-endpoints 'Update an existing Redfish endpoint'
             cand kernel-parameters 'Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)'
@@ -961,6 +996,14 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;apply;help;boot;nodes'= {
         }
         &'manta;apply;help;boot;group'= {
+        }
+        &'manta;apply;help;runtime-configuration'= {
+            cand nodes 'Set the runtime CFS configuration on a set of nodes'
+            cand group 'Set the runtime CFS configuration on all nodes in a group'
+        }
+        &'manta;apply;help;runtime-configuration;nodes'= {
+        }
+        &'manta;apply;help;runtime-configuration;group'= {
         }
         &'manta;apply;help;boot-parameters'= {
         }
@@ -1674,7 +1717,8 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;apply'= {
             cand hardware '[experimental] Rescale a group''s hardware allocation'
             cand sat-file 'Process a SAT file to create configurations, images, and session templates'
-            cand boot 'Update boot parameters and runtime configuration'
+            cand boot 'Update boot parameters'
+            cand runtime-configuration 'Set the CFS runtime configuration on a set of nodes or a group'
             cand boot-parameters 'Update boot parameters for nodes'
             cand redfish-endpoints 'Update an existing Redfish endpoint'
             cand kernel-parameters 'Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)'
@@ -1695,6 +1739,14 @@ set edit:completion:arg-completer[manta] = {|@words|
         &'manta;help;apply;boot;nodes'= {
         }
         &'manta;help;apply;boot;group'= {
+        }
+        &'manta;help;apply;runtime-configuration'= {
+            cand nodes 'Set the runtime CFS configuration on a set of nodes'
+            cand group 'Set the runtime CFS configuration on all nodes in a group'
+        }
+        &'manta;help;apply;runtime-configuration;nodes'= {
+        }
+        &'manta;help;apply;runtime-configuration;group'= {
         }
         &'manta;help;apply;boot-parameters'= {
         }

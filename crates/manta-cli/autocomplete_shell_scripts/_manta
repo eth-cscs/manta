@@ -1070,15 +1070,11 @@ _arguments "${_arguments_options[@]}" : \
 '--boot-image=[Image ID to boot the nodes]:IMAGE_ID:_default' \
 '-b+[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
 '--boot-image-configuration=[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
-'-r+[Configuration to apply to nodes after booting]:NAME:_default' \
-'--runtime-configuration=[Configuration to apply to nodes after booting]:NAME:_default' \
 '-k+[Kernel parameters to assign to the nodes]:VALUE:_default' \
 '--kernel-parameters=[Kernel parameters to assign to the nodes]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-D[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
-'--disable[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1094,15 +1090,11 @@ _arguments "${_arguments_options[@]}" : \
 '--boot-image=[Image ID to boot the nodes]:IMAGE_ID:_default' \
 '-b+[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
 '--boot-image-configuration=[Configuration name used to build the boot image (uses the most recent matching image)]:NAME:_default' \
-'-r+[Configuration to apply to nodes after booting]:NAME:_default' \
-'--runtime-configuration=[Configuration to apply to nodes after booting]:NAME:_default' \
 '-k+[Kernel parameters to assign to all group members]:VALUE:_default' \
 '--kernel-parameters=[Kernel parameters to assign to all group members]:VALUE:_default' \
 '-o+[Output format]:FORMAT:(table json)' \
 '--output=[Output format]:FORMAT:(table json)' \
 '--site=[Override the active site for this invocation]:SITE_NAME:_default' \
-'-D[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
-'--disable[Stage the runtime configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false; requires --runtime-configuration)]' \
 '-d[Simulate the operation without making changes]' \
 '--dry-run[Simulate the operation without making changes]' \
 '-h[Print help (see more with '\''--help'\'')]' \
@@ -1121,6 +1113,83 @@ _arguments "${_arguments_options[@]}" : \
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-apply-boot-help-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+        esac
+    ;;
+esac
+;;
+(runtime-configuration)
+_arguments "${_arguments_options[@]}" : \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-h[Print help]' \
+'--help[Print help]' \
+":: :_manta__subcmd__apply__subcmd__runtime-configuration_commands" \
+"*::: :->runtime-configuration" \
+&& ret=0
+
+    case $state in
+    (runtime-configuration)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-runtime-configuration-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+'-n+[CFS configuration to assign as the runtime desired configuration]:NAME:_default' \
+'--configuration-name=[CFS configuration to assign as the runtime desired configuration]:NAME:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-D[Stage the configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false)]' \
+'--disable[Stage the configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false)]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':VALUE -- Xnames, NIDs, or a hostlist expression.
+eg\: '\''x1003c1s7b0n0,x1003c1s7b0n1'\'', '\''nid001313,nid001314'\'',
+'\''x1003c1s7b0n\[0-1\],x1003c1s7b1n0'\'', '\''nid00131\[0-9\]'\'':_default' \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+'-n+[CFS configuration to assign as the runtime desired configuration]:NAME:_default' \
+'--configuration-name=[CFS configuration to assign as the runtime desired configuration]:NAME:_default' \
+'--site=[Override the active site for this invocation]:SITE_NAME:_default' \
+'-D[Stage the configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false)]' \
+'--disable[Stage the configuration without enabling CFS to apply it (sets the CFS component \`enabled\` flag to false)]' \
+'-d[Simulate the operation without making changes]' \
+'--dry-run[Simulate the operation without making changes]' \
+'-h[Print help (see more with '\''--help'\'')]' \
+'--help[Print help (see more with '\''--help'\'')]' \
+':GROUP_NAME -- Group name:_default' \
+&& ret=0
+;;
+(help)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help_commands" \
+"*::: :->help" \
+&& ret=0
+
+    case $state in
+    (help)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-runtime-configuration-help-command-$line[1]:"
         case $line[1] in
             (nodes)
 _arguments "${_arguments_options[@]}" : \
@@ -1336,6 +1405,30 @@ _arguments "${_arguments_options[@]}" : \
         words=($line[1] "${words[@]}")
         (( CURRENT += 1 ))
         curcontext="${curcontext%:*:*}:manta-apply-help-boot-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
+(runtime-configuration)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration_commands" \
+"*::: :->runtime-configuration" \
+&& ret=0
+
+    case $state in
+    (runtime-configuration)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-apply-help-runtime-configuration-command-$line[1]:"
         case $line[1] in
             (nodes)
 _arguments "${_arguments_options[@]}" : \
@@ -2640,6 +2733,30 @@ _arguments "${_arguments_options[@]}" : \
     ;;
 esac
 ;;
+(runtime-configuration)
+_arguments "${_arguments_options[@]}" : \
+":: :_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration_commands" \
+"*::: :->runtime-configuration" \
+&& ret=0
+
+    case $state in
+    (runtime-configuration)
+        words=($line[1] "${words[@]}")
+        (( CURRENT += 1 ))
+        curcontext="${curcontext%:*:*}:manta-help-apply-runtime-configuration-command-$line[1]:"
+        case $line[1] in
+            (nodes)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+(group)
+_arguments "${_arguments_options[@]}" : \
+&& ret=0
+;;
+        esac
+    ;;
+esac
+;;
 (boot-parameters)
 _arguments "${_arguments_options[@]}" : \
 && ret=0
@@ -3072,7 +3189,8 @@ _manta__subcmd__apply_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
-'boot:Update boot parameters and runtime configuration' \
+'boot:Update boot parameters' \
+'runtime-configuration:Set the CFS runtime configuration on a set of nodes or a group' \
 'boot-parameters:Update boot parameters for nodes' \
 'redfish-endpoints:Update an existing Redfish endpoint' \
 'redfish-endpoint:Update an existing Redfish endpoint' \
@@ -3172,7 +3290,8 @@ _manta__subcmd__apply__subcmd__help_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
-'boot:Update boot parameters and runtime configuration' \
+'boot:Update boot parameters' \
+'runtime-configuration:Set the CFS runtime configuration on a set of nodes or a group' \
 'boot-parameters:Update boot parameters for nodes' \
 'redfish-endpoints:Update an existing Redfish endpoint' \
 'kernel-parameters:Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)' \
@@ -3237,6 +3356,24 @@ _manta__subcmd__apply__subcmd__help__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta apply help redfish-endpoints commands' commands "$@"
 }
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration_commands() {
+    local commands; commands=(
+'nodes:Set the runtime CFS configuration on a set of nodes' \
+'group:Set the runtime CFS configuration on all nodes in a group' \
+    )
+    _describe -t commands 'manta apply help runtime-configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration__subcmd__group_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help runtime-configuration group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__help__subcmd__runtime-configuration__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply help runtime-configuration nodes commands' commands "$@"
+}
 (( $+functions[_manta__subcmd__apply__subcmd__help__subcmd__sat-file_commands] )) ||
 _manta__subcmd__apply__subcmd__help__subcmd__sat-file_commands() {
     local commands; commands=()
@@ -3256,6 +3393,49 @@ _manta__subcmd__apply__subcmd__kernel-parameters_commands() {
 _manta__subcmd__apply__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta apply redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration_commands() {
+    local commands; commands=(
+'nodes:Set the runtime CFS configuration on a set of nodes' \
+'group:Set the runtime CFS configuration on all nodes in a group' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply runtime-configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__group_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply runtime-configuration group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help_commands() {
+    local commands; commands=(
+'nodes:Set the runtime CFS configuration on a set of nodes' \
+'group:Set the runtime CFS configuration on all nodes in a group' \
+'help:Print this message or the help of the given subcommand(s)' \
+    )
+    _describe -t commands 'manta apply runtime-configuration help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__group_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply runtime-configuration help group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__help_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__help_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply runtime-configuration help help commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__help__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply runtime-configuration help nodes commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__nodes_commands] )) ||
+_manta__subcmd__apply__subcmd__runtime-configuration__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta apply runtime-configuration nodes commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__apply__subcmd__sat-file_commands] )) ||
 _manta__subcmd__apply__subcmd__sat-file_commands() {
@@ -3979,7 +4159,8 @@ _manta__subcmd__help__subcmd__apply_commands() {
     local commands; commands=(
 'hardware:\[experimental\] Rescale a group'\''s hardware allocation' \
 'sat-file:Process a SAT file to create configurations, images, and session templates' \
-'boot:Update boot parameters and runtime configuration' \
+'boot:Update boot parameters' \
+'runtime-configuration:Set the CFS runtime configuration on a set of nodes or a group' \
 'boot-parameters:Update boot parameters for nodes' \
 'redfish-endpoints:Update an existing Redfish endpoint' \
 'kernel-parameters:Replace the full kernel-parameters string on nodes (drops any existing parameters not listed)' \
@@ -4037,6 +4218,24 @@ _manta__subcmd__help__subcmd__apply__subcmd__kernel-parameters_commands() {
 _manta__subcmd__help__subcmd__apply__subcmd__redfish-endpoints_commands() {
     local commands; commands=()
     _describe -t commands 'manta help apply redfish-endpoints commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration_commands() {
+    local commands; commands=(
+'nodes:Set the runtime CFS configuration on a set of nodes' \
+'group:Set the runtime CFS configuration on all nodes in a group' \
+    )
+    _describe -t commands 'manta help apply runtime-configuration commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration__subcmd__group_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration__subcmd__group_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply runtime-configuration group commands' commands "$@"
+}
+(( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration__subcmd__nodes_commands] )) ||
+_manta__subcmd__help__subcmd__apply__subcmd__runtime-configuration__subcmd__nodes_commands() {
+    local commands; commands=()
+    _describe -t commands 'manta help apply runtime-configuration nodes commands' commands "$@"
 }
 (( $+functions[_manta__subcmd__help__subcmd__apply__subcmd__sat-file_commands] )) ||
 _manta__subcmd__help__subcmd__apply__subcmd__sat-file_commands() {
