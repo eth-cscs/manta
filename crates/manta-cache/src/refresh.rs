@@ -2,8 +2,8 @@
 //!
 //! One refresh is **two HTTP calls per site**, fanned out concurrently:
 //!
-//! - `GET /api/v1/groups/available` → the accessible group labels.
-//! - `GET /api/v1/groups/nodes` (unfiltered) → every accessible node,
+//! - `GET /v2/groups/available` → the accessible group labels.
+//! - `GET /v2/groups/nodes` (unfiltered) → every accessible node,
 //!   each carrying its xname and comma-separated `hsm` membership.
 //!
 //! Both calls send `X-Manta-Site: <name>` and `Authorization: Bearer
@@ -31,7 +31,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 /// Longest error-body snippet carried in [`CacheError::Status`].
 const ERROR_BODY_SNIPPET_CHARS: usize = 256;
 
-/// Subset of `GET /api/v1/groups/nodes`'s `NodeDetails` we consume.
+/// Subset of `GET /v2/groups/nodes`'s `NodeDetails` we consume.
 ///
 /// Deliberately a minimal mirror, not a re-export of
 /// `manta_shared::types::dto::NodeDetails`: depending on `manta-shared`
@@ -254,7 +254,7 @@ fn parse_hsm(hsm: &str) -> Vec<String> {
     .collect()
 }
 
-/// Normalise a manta-server base URL into `<scheme>://host[:port]/api/v1`.
+/// Normalise a manta-server base URL into `<scheme>://host[:port]/v2`.
 ///
 /// Mirrors the CLI's `MantaClient` (`http_client/client.rs`): a missing
 /// scheme defaults to `http://` for localhost-dev convenience. Production
@@ -266,7 +266,7 @@ fn normalize_base(url: &str) -> String {
   } else {
     format!("http://{url}")
   };
-  format!("{}/api/v1", with_scheme.trim_end_matches('/'))
+  format!("{}/v2", with_scheme.trim_end_matches('/'))
 }
 
 #[cfg(test)]
@@ -275,17 +275,14 @@ mod tests {
 
   #[test]
   fn normalize_base_adds_default_scheme_and_prefix() {
-    assert_eq!(
-      normalize_base("localhost:8443"),
-      "http://localhost:8443/api/v1"
-    );
+    assert_eq!(normalize_base("localhost:8443"), "http://localhost:8443/v2");
   }
 
   #[test]
   fn normalize_base_preserves_https_and_trims_slash() {
     assert_eq!(
       normalize_base("https://manta.example.ch:8443/"),
-      "https://manta.example.ch:8443/api/v1"
+      "https://manta.example.ch:8443/v2"
     );
   }
 

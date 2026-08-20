@@ -1067,7 +1067,7 @@ mod tests {
 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/available"))
+      .and(path("/v2/groups/available"))
       .respond_with(
         ResponseTemplate::new(200)
           .set_body_json(serde_json::json!(["compute"])),
@@ -1075,7 +1075,7 @@ mod tests {
       .mount(&server)
       .await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/nodes"))
+      .and(path("/v2/groups/nodes"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
         serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
       ))
@@ -1133,7 +1133,7 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     let server = MockServer::start().await;
-    for endpoint in ["/api/v1/groups/available", "/api/v1/groups/nodes"] {
+    for endpoint in ["/v2/groups/available", "/v2/groups/nodes"] {
       Mock::given(method("GET"))
         .and(path(endpoint))
         .respond_with(
@@ -1276,7 +1276,7 @@ mod tests {
     // the error rather than leaving the site flagged forever.
     server.reset().await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/available"))
+      .and(path("/v2/groups/available"))
       .respond_with(
         ResponseTemplate::new(200)
           .set_body_json(serde_json::json!(["compute", "gpu"])),
@@ -1284,7 +1284,7 @@ mod tests {
       .mount(&server)
       .await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/nodes"))
+      .and(path("/v2/groups/nodes"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
         serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute,gpu"}]),
       ))
@@ -1735,7 +1735,7 @@ mod tests {
 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/available"))
+      .and(path("/v2/groups/available"))
       .respond_with(
         ResponseTemplate::new(200)
           .set_body_json(serde_json::json!(["compute"])),
@@ -1743,7 +1743,7 @@ mod tests {
       .mount(&server)
       .await;
     Mock::given(method("GET"))
-      .and(path("/api/v1/groups/nodes"))
+      .and(path("/v2/groups/nodes"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
         serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
       ))
