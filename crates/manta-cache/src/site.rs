@@ -17,7 +17,7 @@ pub struct SiteDescriptor {
   /// Site identifier, sent verbatim as the `X-Manta-Site` header.
   pub name: String,
   /// Base URL of the manta-server hosting this site
-  /// (e.g. `https://manta-server.example.ch:8443`). The `/api/v1`
+  /// (e.g. `https://manta-server.example.ch:8443`). The `/v2`
   /// prefix is appended by the cache; a missing scheme defaults to
   /// `http://`.
   pub manta_server_url: String,

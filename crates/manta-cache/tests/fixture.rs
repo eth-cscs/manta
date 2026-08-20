@@ -1,6 +1,6 @@
 //! Offline test driving [`Index::from_snapshots`] with the checked-in
 //! prealps capture (`testdata/groups-prealps.json`, the verbatim
-//! payload of `GET /api/v1/groups` against the CSCS prealps test site).
+//! payload of `GET /v2/groups` against the CSCS prealps test site).
 //!
 //! The assertions mirror the fixture's "notable properties" documented
 //! in ROADMAP.md: the site-umbrella group, empty groups, and a node
@@ -11,7 +11,7 @@ use std::collections::BTreeMap;
 use manta_cache::{Index, NodeMembership, SiteSnapshot};
 use serde::Deserialize;
 
-/// Subset of the `GET /api/v1/groups` group object the test consumes;
+/// Subset of the `GET /v2/groups` group object the test consumes;
 /// serde ignores `description`, `exclusiveGroup`, and `tags`.
 #[derive(Deserialize)]
 struct Group {
