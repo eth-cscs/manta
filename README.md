@@ -273,8 +273,7 @@ Audit emission is server-side only — every CLI command goes through HTTP to `m
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
-(URLs, TLS certs, k8s, vault, per-site SOCKS proxies) live entirely
-in `server.toml`.
+(URLs, TLS certs, k8s, vault) live entirely in `server.toml`.
 
 **`server.toml`**
 
