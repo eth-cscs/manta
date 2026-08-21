@@ -87,7 +87,12 @@ jobs:
         RUSTDOCFLAGS: -D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags
       run: cargo doc --workspace --no-deps
     # Compile and run doctests (the `# Examples` blocks inside ///
-    # comments). Plain `cargo test --workspace` does NOT run these.
+    # comments) as their own step. The "Run tests" step above already
+    # covers them -- plain `cargo test --workspace` does run doctests
+    # for lib targets -- but keeping this explicit means a doctest
+    # failure is reported as a doctest failure rather than buried in
+    # the combined run, and it stays correct if the test step ever
+    # gains `--all-targets` (which suppresses doctests).
     - name: Run doctests
       run: cargo test --doc --workspace
     - name: Enforce anyhow boundary
