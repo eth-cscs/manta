@@ -357,7 +357,9 @@ The diagram captures three facts that trip up new contributors: the nest split b
 
 ## Request timeouts
 
-A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/server/routes.rs::build_router`, applied to every API route, configured from `[server].request_timeout_secs` (default 600s). When the timer fires, axum returns `408 REQUEST_TIMEOUT`.
+A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/server/routes.rs::build_router`, configured from `[server].request_timeout_secs` (default 600s). When the timer fires, axum returns `408 REQUEST_TIMEOUT`.
+
+**It covers the resource router only.** The layer is applied to the `api` sub-router (`/v2/*`, including the WebSocket routes merged into it); `/v2/auth/*` is a *separate* sub-router carrying the rate limiter and body redaction, and no timeout is applied to it. So a hung upstream Keycloak on `POST /v2/auth/token` is not bounded by this knob — the middleware diagram above shows the split. Treat that as a known gap rather than a design choice; the fix is to apply the layer on the outer `Router` before the nest split, or to the auth router as well.
 
 There's no per-route override on the server. Long-running work runs CLI-side:
 
