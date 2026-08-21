@@ -140,9 +140,12 @@ accordingly.
 
 ## Known limitations
 
-**No local signature verification.** `server::common::jwt_ops` decodes
-the JWT body without verifying its signature. This is documented
-inline at the top of that module. Consequences:
+**No local signature verification.** `manta_shared::common::jwt_ops`
+decodes the JWT body without verifying its signature. This is
+documented inline at the top of that module. (`manta-server`'s
+`server::common::jwt_ops` is a re-export shim over it, kept so
+existing call sites resolve — the caveat lives at the canonical
+path.) Consequences:
 
 - The `is_user_admin` role gate is **advisory** in the sense that a
   forged token passing the decode step is detected only at the first

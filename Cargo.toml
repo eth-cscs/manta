@@ -43,12 +43,23 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # Do NOT add a committed `[patch.crates-io]` block here — that breaks
 # `cargo metadata` everywhere the siblings aren't checked out.
 #
-# This branch carries code that depends on unreleased SatTrait
-# additions in manta-backend-dispatcher and csm-rs (see
-# `crates/manta-cli/src/dispatch/apply/sat_file/image_pipeline.rs`).
-# Until those additions ship in published versions, building manta
-# requires the sibling checkouts + the `.cargo/config.toml` override
-# above.
+# A normal build needs NO sibling checkouts: the pins below resolve
+# from crates.io and build the whole workspace, manta-server included
+# (verified 2026-08-21, `cargo check --workspace`, no checkouts and no
+# `.cargo/config.toml` present). An earlier note here claimed manta
+# could only be built with the siblings checked out, because
+# `apply/sat_file/image_pipeline.rs` needed unreleased SatTrait
+# additions; that shipped, and the CLI no longer links the backend
+# traits at all — it drives the image pipeline over HTTP against
+# manta-server.
+#
+# Only check a sibling out when actively editing unreleased sibling
+# code, and then check out the tag matching the pin below (`v1.0.0-
+# beta.N`), NOT the sibling's `main` — the mains have diverged and
+# mixing them produces ConsoleTrait signature mismatches that look
+# like missing methods. `ochami-rs` is under the `OpenCHAMI` GitHub
+# org; the other two are `eth-cscs`. See CLAUDE.md § Sibling-repo
+# dependencies.
 manta-backend-dispatcher = "1.0.0-beta.15"
 csm-rs                   = { version = "1.0.0-beta.23", features = ["commands-admin"] }
 ochami-rs                = "1.0.0-beta.17"

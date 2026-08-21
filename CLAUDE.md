@@ -1,37 +1,96 @@
-# Error handling convention
+# CLAUDE.md
 
-## Two-tier error type rule
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-This project uses two error types:
+## What this is
 
-- **`manta_backend_dispatcher::error::Error`** — structured error type for shared backend-touching code: everything under `crates/manta-server/src/server/`, `crates/manta-server/src/service/`, `crates/manta-server/src/backend_dispatcher/`, and `crates/manta-server/src/dispatcher.rs`.
-- **`anyhow::Error`** — allowed only in `crates/manta-cli/src/` (handlers and CLI-only command functions). CLI handlers terminate with `eprintln!` + `process::exit()`, so anyhow's ergonomics are appropriate there.
-
-`manta_shared::common::error::MantaError` is the third type. It's used by:
-- `manta-shared`'s remaining helpers (`common::config` loader)
-- `manta-server`'s internal helpers under `server/common/` (`audit`, `jwt_ops`, `kafka`)
-- `manta-cli`'s SAT-file Jinja2 renderer (`dispatch/apply/sat_file/render.rs`)
-
-Server code maps `MantaError` to `BackendError` at call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
-
-## The boundary rule
-
-Handlers under `crates/manta-server/src/server/handlers/` **must only call functions in `crates/manta-server/src/service/`** (which includes `service/infra_backend.rs`'s `InfraContext` methods) or shared helpers in `manta-shared`, never CLI functions. The service layer uses `manta_backend_dispatcher::error::Error` throughout; handlers convert these to HTTP responses via `to_handler_error`.
-
-Functions called exclusively from CLI entrypoints may use `anyhow::Error`.
-
-## Enforcement
-
-A CI step in `.github/workflows/ci.yml` greps for `use anyhow` in `crates/manta-server/src/{server,service,backend_dispatcher,dispatcher.rs}` and `crates/manta-shared/src/common/` and fails the build if found.
-
-# Workspace layout
-
-manta is a Cargo workspace:
+manta is a CLI + HTTP API frontend for HPC clusters running CSM (HPE Cray System Management) or OpenCHAMI. Cargo workspace, `edition = "2024"`, toolchain pinned to `1.92.0` in `rust-toolchain.toml`:
 
 ```
-crates/manta-shared/   (lib)  — wire types, common helpers, backend dispatcher
-crates/manta-cli/      (bin)  — terminal client
-crates/manta-server/   (bin)  — Axum HTTPS server
+crates/manta-shared/   (lib)        — wire types, common helpers, config/error/log
+crates/manta-cli/      (bin)        — terminal client (binary: `manta`)
+crates/manta-server/   (bin + lib)  — Axum HTTPS server + service layer
 ```
 
-Build a single crate with `cargo build -p manta-cli` or `cargo build -p manta-server`. The two binaries don't depend on each other; both depend on `manta-shared`.
+Dep graph: `manta-cli → manta-shared ← manta-server`. The two binaries do **not** depend on each other.
+
+The mental model that explains the whole layout: **the CLI never talks to a backend directly.** Every operation — including auth — is an HTTPS call from `manta` to a running `manta-server`, which holds the per-site credentials and routes to csm-rs/ochami-rs. The entire backend bridge (`StaticBackendDispatcher`, csm-rs, ochami-rs, axum) lives in `manta-server` only; the CLI just formats requests and responses.
+
+**`ARCHITECTURE.md` is the authoritative reference** — layer boundaries, the CLI dispatch tree, server request flow + middleware order, the step-by-step "adding a command" recipe, generated code, security model, request timeouts. Read it before any non-trivial change instead of relying on a summary here. `README.md` is the source of truth for config + deploy; `CLI.md`/`API.md`/`GUIDE.md` are user docs; `MIGRATING.md` explains why removed knobs were removed.
+
+## Commands
+
+```bash
+# Build
+cargo build --workspace               # both binaries + lib
+cargo build -p manta-cli              # one crate (the two binaries build independently)
+
+# Test
+cargo test --workspace                # unit + integration tests + doctests
+cargo test --workspace <name>         # single test by substring filter
+cargo test --doc --workspace          # doctests alone (CI runs this as its own step)
+
+# Lint / format — these are exactly what CI runs; match them before pushing
+cargo fmt -p manta-shared -p manta-cli -p manta-server -- --check
+cargo clippy --workspace --no-deps -- -D warnings
+RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags" cargo doc --workspace --no-deps
+```
+
+`manta-shared` is `#![deny(missing_docs)]`, so adding an undocumented public item there breaks `cargo doc`.
+
+**Check your toolchain before trusting a local lint result.** `rust-toolchain.toml` pins `1.92.0`, but that pin is only honoured when `cargo` resolves through rustup's shim. If `which -a cargo` shows a Homebrew (or other non-rustup) cargo first, the pin is silently ignored and you get a newer clippy than CI — which flags lints CI does not, in code you never touched. Fix with `rustup toolchain install 1.92.0` **and** a PATH order that puts rustup's shim first; until then, scope clippy to the crate you're touching (`cargo clippy -p <crate> --all-targets --no-deps -- -D warnings`) and don't "fix" workspace-wide lints the pinned toolchain never raised.
+
+## CI gates that are easy to trip (`.github/workflows/ci.yml`)
+
+- **anyhow boundary** — CI greps for `use anyhow` under `crates/manta-server/src/{server,service,backend_dispatcher,dispatcher.rs,config.rs}` and `crates/manta-shared/src/common/`, and fails if found. anyhow is allowed **only** in `crates/manta-cli/src/`. See "Error handling" below.
+- **Generated artifacts must be in sync** — three checked-in artifacts are gated on PRs (`ci.yml`'s "Verify generated artifacts are up to date" regenerates each and fails on any diff). They drift on *different* triggers, so it's easy to update one and forget another:
+  - `crates/manta-cli/man` + `crates/manta-cli/autocomplete_shell_scripts` — regenerated from the **clap surface** by `build.rs`, but **only when `MANTA_REGENERATE_DOCS=1` is set**. After changing anything under `crates/manta-cli/src/build/`, run `MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli`.
+  - `crates/manta-cli/openapi.json` — the **server's** OpenAPI spec, regenerated by `cargo run -p manta-server -- --emit-openapi > crates/manta-cli/openapi.json`. It drifts when you touch a `#[utoipa::path]` annotation, a route, or a wire-type's doc/shape in `manta-server` — **not** the clap surface — and also on every version bump (`info.version` tracks `CARGO_PKG_VERSION`). **This file is a build input, not just documentation:** `crates/manta-cli/build.rs` runs progenitor over it to generate the CLI's typed client into `$OUT_DIR`, so a stale spec means the CLI compiles against the wrong API shape. Details in ARCHITECTURE.md § Generated code.
+  
+  Commit the regenerated diff or the PR is rejected. (On push to main the same step auto-commits the regen with `[skip ci]`, so main self-heals; PRs do not.)
+- **cargo-machete** — fails on any declared-but-unused dependency.
+- **cargo-audit** against `Cargo.lock`; knowingly-accepted advisories live in `.cargo/audit.toml`.
+- Both Dockerfiles must still build.
+
+## Error handling (three types, partitioned by layer — CI-enforced)
+
+- **`manta_backend_dispatcher::error::Error`** (`BackendError`) — `manta-server`'s service + handler + dispatcher code.
+- **`manta_shared::common::error::MantaError`** — `manta-shared`'s pure helpers (`config` loader, `jwt_ops`) and binary-side helpers depending on it (CLI's SAT-file Jinja renderer; server's `audit`/`kafka`). Keeps `manta-shared` free of a compile-time dep on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
+- **`anyhow::Error`** — only in `crates/manta-cli/src/` (handlers + CLI helpers, which exit via `eprintln!` + `process::exit()`).
+
+**Boundary rule:** server handlers (`crates/manta-server/src/server/handlers/`) call only `service/` functions or `manta-shared` helpers — never CLI code. They map typed errors to HTTP via `to_handler_error` in `server/handlers/mod.rs`.
+
+## Sibling-repo dependencies
+
+`manta-backend-dispatcher`, `csm-rs`, and `ochami-rs` are sibling repos resolved from crates.io by default — **no committed `path` or `[patch.crates-io]`** (that breaks `cargo metadata` wherever the siblings aren't checked out).
+
+**A normal build needs no sibling checkouts.** The pinned registry versions build the whole workspace — including `manta-server` — straight from crates.io (last verified 2026-08-21 with `cargo check --workspace`). **The pins in `[workspace.dependencies]` of the root `Cargo.toml` are the source of truth; don't trust a version number quoted anywhere else, including here.** If you find "building manta requires the sibling checkouts" text anywhere, it is stale — that was a temporary state that ended once the unreleased `SatTrait` additions shipped, and no CLI code calls a backend trait any more. (`manta-backend-dispatcher` is still *compiled* for a `-p manta-cli` build — `manta-shared` depends on it for the type re-exports in `types::dto` — so a bad sibling beta can still break the CLI build. `csm-rs` and `ochami-rs` are genuinely absent from the CLI's tree.)
+
+**`Cargo.lock` is *not* tracked in git** (`.gitignore`), even though CI runs `cargo audit` against it. The sibling requirements are caret pre-release requirements, so a bare `cargo update` — or a fresh resolve on a new machine — can pull newer, mutually *incompatible* sibling betas. The symptom is `manta-server` failing with `ConsoleTrait`/`ShastaClient` missing-method or unresolved-import errors that look exactly like the sibling-checkout skew described below, but with no checkouts involved. Check the lock's resolved trio first; pin back with `cargo update -p <crate> --precise <version>` (downgrade `csm-rs` first — newer csm-rs betas hold mbd back).
+
+Only check out a sibling when you're **actively editing unreleased sibling code**; do it via an **uncommitted, gitignored** `.cargo/config.toml` with a `paths = [...]` override (it activates only when those checkouts exist). Two gotchas learned the hard way:
+
+- **Check out the ref matching the pinned release (the `v1.0.0-beta.N` tag), not each sibling's `main`.** The mains have diverged from the releases (e.g. an in-flight console-resize refactor across `feat/*resize` branches), so "all three on `main`" fails to compile with `ConsoleTrait` signature/assoc-type mismatches — these *look* like a missing-method error but are actually cross-sibling version skew, not a sign you're missing checkouts.
+- **`ochami-rs` lives under the `OpenCHAMI` GitHub org, not `eth-cscs`** (the other two are `eth-cscs`).
+
+## Config (full schema in README.md)
+
+Two **disjoint** TOML schemas, one per binary, in the platform config dir (override with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`):
+
+- `cli.toml` — `site` (optional; sent as the `X-Manta-Site` header, overridable per-invocation with `--site`), required `manta_server_url`, `hsm_group` (default group), `read_only`, and the timeout/poll knobs. **No `[sites]` block** — the CLI only knows the one server it talks to. `read_only = true` makes the CLI refuse mutating verbs locally before any request leaves the process (`common/read_only.rs`); it is a foot-gun guard, **not** a security control, and has no server-side counterpart.
+- `server.toml` — `[server]` (TLS, timeouts, auth rate limit) + a `[sites.<name>]` map. The server hosts **every** site at once; clients pick one per request via `X-Manta-Site`. Fails closed without TLS unless `--allow-http` **or** `[server].allow_http = true` is set (the two are OR-ed).
+
+## Work in flight (NOT on `main` — check before assuming)
+
+Two sizeable features live on unmerged draft PRs. `main` has none of their code, so **do not** write code or docs on `main` that assumes them; if a task touches one, switch to its branch first. Delete the row here when it merges.
+
+| Branch / PR | What it adds | How to tell it isn't merged yet |
+|---|---|---|
+| `feature/custom-error-codes` — PR #110 | Stable symbolic `MANTA_*` error codes: the append-only catalog `manta_shared::common::error_code::ErrorCode`, user-facing `ERRORS.md`, codes assigned only at chokepoints (`MantaError::error_code()`, `wire_conv::backend_error_code`, `ErrorResponse::new(code, msg)`), never renamed or reused. | `ls ERRORS.md` and `crates/manta-shared/src/common/error_code.rs` — neither exists on `main`. |
+| `manta-cache-stage-1-2` — PR #111 | `manta-cache` (site-resolution cache lib) + `manta-cache-server` (standalone lookup service), and CLI-side site resolution when no `site` is configured. Crate-local `crates/manta-cache/{README,ROADMAP,LIVE-TEST}.md` are the interim source of truth; the root README/ARCHITECTURE/API coverage is deliberately deferred until review settles. | `crates/manta-cache/` on `main` holds only `README.md`, `ROADMAP.md`, and a test fixture — no `Cargo.toml`, no `src/`, and it is not a workspace member. |
+
+Trap on that second one: `manta-cache-server` has **its own** `/api/v1` namespace (inbound) while calling manta-server at **`/v2`** (outbound). Classify every `/api/v1` hit by call direction, not by crate — both directions appear inside `manta-cache-server`, including in its test mocks.
+
+## Releasing
+
+`cargo-release` + `git-cliff`; commits must follow Conventional Commits (type→section map in `cliff.toml`). Bump `manta-shared`'s `=`-pinned version in the root `Cargo.toml` in lockstep with the workspace version.
