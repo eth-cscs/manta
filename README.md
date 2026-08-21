@@ -90,7 +90,7 @@ manta is a Cargo workspace with three crates:
 
 ```
 crates/
-├── manta-shared/   (lib)  — wire types, common helpers, backend dispatcher
+├── manta-shared/   (lib)  — wire types, common helpers (config loader, MantaError, logging)
 ├── manta-cli/      (bin)  — terminal client (binary: `manta`)
 └── manta-server/   (bin)  — Axum HTTPS server (binary: `manta-server`)
 ```
