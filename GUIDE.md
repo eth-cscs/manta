@@ -838,7 +838,6 @@ From local config file (~/.config/manta/cli.toml):
   Current site:  alps
   Current group: compute
   Read-only:     yes
-  SOCKS5 proxy:  (unset)
 
 From JWT token:
   Username: alice

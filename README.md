@@ -259,18 +259,29 @@ The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side
 ```toml
 log = "info"
 
-site             = "alps"                                # optional: active site (X-Manta-Site header); omit and pass --site per invocation
+site                 = "alps"                                # optional: active site (X-Manta-Site header); omit and pass --site per invocation
 manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
+hsm_group            = "nodes_free"                          # optional: default group used when a command takes no explicit group
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
+read_only            = false                                 # optional: refuse mutating verbs locally (see below)
 request_timeout_secs = 600                                   # optional: per-request HTTP timeout (seconds). Default 300 for REST calls; streams (SSE log tail, WS console) unlimited. Setting this also caps streams — pick a value larger than your worst-case session if you set it.
+
+# Optional CLI-side wait loops. Values shown are the built-in defaults;
+# delete a line to keep the default. Full annotations in examples/cli.toml.
+power_poll_interval_secs         = 3
+power_max_poll_attempts          = 300       # 300 x 3 s = 15 min
+sat_file_poll_interval_secs      = 10
+sat_file_poll_budget_secs        = 14400     # 4 hours
+sat_file_not_visible_budget_secs = 300       # 5 minutes
 ```
+
+`read_only = true` makes the CLI refuse every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) before any request leaves the process; `--dry-run` invocations are still allowed. Toggle it with `manta config set read-only` / `manta config unset read-only`. It is a local foot-gun guard, **not** a security control — there is no server-side counterpart.
 
 Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which emits per-`/auth/*` events to its configured `[auditor.kafka]` stream.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
-(URLs, TLS certs, k8s, vault, per-site SOCKS proxies) live entirely
-in `server.toml`.
+(URLs, TLS certs, k8s, vault) live entirely in `server.toml`.
 
 **`server.toml`**
 
