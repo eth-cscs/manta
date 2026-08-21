@@ -110,7 +110,7 @@ manta_server_url = "https://manta-server.example.com:8443"
 
 > The CLI struct has no `[sites]` table. Any `[sites.*]` block left
 > over from a v1 `config.toml` is silently ignored by the CLI but
-> belongs in your operator's `server.toml` — see [§2 Server setup](#2-server-setup).
+> belongs in your operator's `server.toml` — see [§2 Site operators](#2-site-operators-deploying-the-stack).
 
 > `manta_server_url` is **required**. Ask your site operator for the
 > URL — it's whatever they used as `listen_address`/`port` in the
@@ -681,31 +681,25 @@ unchanged. See
 [API.md → POST /sat-file/session-templates](API.md#post-sat-filesession-templates)
 for the response shape.
 
-### 5.10. `manta apply sat-file` runs server-side pre-flight validation
+### 5.10. Server-side SAT pre-flight validation — added, then removed
 
-`manta apply sat-file` now calls
-`POST /v2/sat-file/validate` between the operator
-preview-confirm step and the per-element apply loop. The server
-resolves the `configurations`, `images`, and `session_templates`
-sections against live CFS, IMS, and `cray-product-catalog` state
-before any state-changing call runs. Validation failure
-(`400 BadRequest`) aborts the run **before the pre-hook fires**,
-so no partial work happens.
+An earlier beta in this range added `POST /v2/sat-file/validate`,
+called between the operator preview-confirm step and the
+per-element apply loop, which resolved the SAT file against live
+CFS, IMS, and `cray-product-catalog` state before any
+state-changing call ran.
 
-For most users this is invisible: a valid SAT file behaves
-exactly as before. SAT files that previously made it past the
-local refs/cycle check but failed mid-apply on a live-state
-issue (an unknown product layer, a missing image reference)
-now fail earlier with a clearer error and no partial side
-effects. No script change is required as long as the SAT
-files actually validate.
+**That endpoint and its CLI call were removed again in
+`f9160d26`**, together with the backend's
+`SatTrait::validate_sat_file`. Nothing replaced it. This entry is
+kept because operators who upgraded through the intervening betas
+saw the pre-flight behaviour and may have built expectations on it.
 
-The `hardware:` section is **not** validated by this call —
-invalid `hardware[]` entries pass the pre-flight with `204`
-and only surface as failures during apply. This matches the
-underlying csm-rs validator's scope. See
-[API.md → POST /sat-file/validate](API.md#post-sat-filevalidate)
-for the endpoint contract.
+Current behaviour: validation is client-side only — dangling
+`image_ref` references and image cycles fail before anything is
+sent. Nothing checks the file against live backend state, so a SAT
+file can fail partway through the apply loop with earlier elements
+already applied. Plan for partial application on failure.
 
 ### 5.11. `--dry-run` on every mutating verb; `add group -d` reassigned
 
