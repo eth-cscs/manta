@@ -114,7 +114,7 @@ pub struct GetKernelParametersParams {
   /// Explicit comma-separated xnames; mutually exclusive with
   /// `group_name`.
   pub nodes: Option<String>,
-  /// Operator default from `cli.toml`'s `parent_group_group`, used
+  /// Operator default from `cli.toml`'s `hsm_group`, used
   /// when neither `group_name` nor `nodes` is supplied.
   pub settings_group_name: Option<String>,
 }

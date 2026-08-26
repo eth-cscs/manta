@@ -628,65 +628,6 @@ curl -k -X DELETE "$MANTA_HOST/v2/images?ids=uuid-1,uuid-2&dry_run=true" \
 
 ---
 
-## Summary
-
-### GET /summary
-
-Image-centric flat projection of every CFS configuration, CFS session, BOS session template, and IMS image the bearer token can see. One row per IMS image; orphan images (no producing session, no booting template) still produce a row with `null` in the optional columns. No query parameters in v1. Per-resource group-access scoping is preserved, so the summary cannot include rows you couldn't list via `/configurations`, `/sessions`, `/templates`, or `/images` directly.
-
-```bash
-curl -k "$MANTA_HOST/v2/summary" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H "Authorization: Bearer $MANTA_TOKEN"
-```
-
-**Response 200** — `Vec<BackendSummary>`, sorted by `image_id` ascending. Each row carries:
-
-| Field | Type | Description |
-|---|---|---|
-| `image_id` | string | IMS image id. Row anchor; always present. |
-| `name` | string | IMS image name. Always present. |
-| `configuration_name` | string \| null | CFS configuration the image was built with (`Image.configuration`). |
-| `session_name` | string \| null | First CFS session in name order whose `status.artifacts[*].result_id` contains this `image_id`. |
-| `session_result_id` | string \| null | Echo of `image_id` whenever `session_name` is set. |
-| `session_configuration_name` | string \| null | That session's `configuration.name`. Usually equals `configuration_name` but can drift if the image was re-tagged after the session completed. |
-| `bos_sessiontemplate` | string \| null | First BOS session template in name order whose `boot_sets[*].path` references this `image_id`. |
-| `bos_sessiontemplate_boot_image` | string \| null | Echo of `image_id` whenever `bos_sessiontemplate` is set. |
-
-If multiple sessions produced the same image, only the first in name order populates the `session_*` columns. Same rule for templates.
-
-Sample body:
-
-```jsonc
-[
-  {
-    "image_id": "img-abcd",
-    "name": "ncn-1.6-base",
-    "configuration_name": "ncn-1.6",
-    "session_name": "session-a",
-    "session_result_id": "img-abcd",
-    "session_configuration_name": "ncn-1.6",
-    "bos_sessiontemplate": "tmpl-ncn-1.6",
-    "bos_sessiontemplate_boot_image": "img-abcd"
-  },
-  {
-    "image_id": "img-orphan",
-    "name": "uploaded-by-hand",
-    "configuration_name": null,
-    "session_name": null,
-    "session_result_id": null,
-    "session_configuration_name": null,
-    "bos_sessiontemplate": null,
-    "bos_sessiontemplate_boot_image": null
-  }
-]
-```
-
-**Response 401** — missing or expired bearer token.
-**Response 500** — any of the four upstream fetches failed.
-
----
-
 ## Analysis
 
 Deletion-safety verdicts for cluster state that has its own retention/cleanup story. Currently scoped to IMS images; CFS configurations carry their verdict inline on `GET /configurations` and have no separate endpoint.
@@ -1646,13 +1587,12 @@ curl -k -X POST "$MANTA_HOST/v2/ephemeral-env" \
 
 The SAT (Shasta Artifact Template) workflow is split across per-element endpoints. `manta apply sat-file` walks the parsed SAT file into an ordered execution plan on the **client** side and dispatches one HTTP call per artifact:
 
-- `POST /sat-file/validate` — pre-flight check of the whole file against live CSM state; the CLI calls this once after the operator confirms the preview and before the per-element apply loop
 - `POST /sat-file/configurations` — one per `configurations[]` entry
 - `POST /sat-file/images/cfs-session` — start the CFS session for one `images[]` entry (CLI then monitors via `GET /sessions?name=…` or `GET /sessions/{name}/logs`)
 - `POST /sat-file/images/stamp` — once the session is terminal-complete, stamp the produced IMS image with provenance metadata
 - `POST /sat-file/session-templates` — one per `session_templates[]` entry
 
-There is no whole-file `POST /sat-file` apply endpoint; SAT files with a `hardware:` section are not supported by the current apply flow (and are also not checked by `POST /sat-file/validate` — see that section).
+There is no whole-file `POST /sat-file` apply endpoint, and no pre-flight validation endpoint either (`POST /sat-file/validate` was removed in `f9160d26`). SAT files with a `hardware:` section are not supported by the current apply flow.
 
 > All SAT endpoints require per-site Vault + Kubernetes config (see [Server configuration requirements](#server-configuration-requirements)).
 
@@ -1668,10 +1608,6 @@ sequenceDiagram
 
   CLI->>CLI: render Jinja2 → parse to Value → filter → build plan (topo-sorted)
   CLI-->>CLI: preview + confirm
-
-  CLI->>Srv: POST /sat-file/validate { sat_file }
-  Srv->>BE: SatTrait::validate_sat_file
-  Srv-->>CLI: 204 No Content (or 400 on validation failure → CLI aborts)
 
   loop per Configuration element
     CLI->>Srv: POST /sat-file/configurations { configuration, flags }
@@ -1708,50 +1644,6 @@ sequenceDiagram
   end
 
   CLI-->>CLI: assemble { configurations, images, session_templates, bos_sessions }
-```
-
-### POST /sat-file/validate
-
-Pre-flight validation of a whole SAT file against live CSM state. Read-only — no resources are created or modified. The CLI calls this once after the operator confirms the preview, before any per-element apply call runs; failures here abort the apply (and the pre-hook never fires).
-
-**Scope.** Validates the `configurations`, `images`, and `session_templates` sections — cross-references are resolved against CFS, IMS, and the `cray-product-catalog` ConfigMap. The `hardware` section is **not** validated; invalid `hardware[]` entries pass this endpoint with `204` and only surface later. This matches the underlying csm-rs validator and is tracked as a follow-up.
-
-**Request body**
-
-```json
-{
-  "sat_file": {
-    "configurations": [/* … */],
-    "images":         [/* … */],
-    "session_templates": [/* … */]
-  }
-}
-```
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `sat_file` | object | **yes** | The full parsed SAT document. Same shape the CLI carries internally (`serde_json::Value`); the server forwards it verbatim to csm-rs without re-parsing. |
-
-**Response `204`** — SAT file is valid. No body.
-
-**Response `400`** — `{ "error": "<csm-rs validator message>" }`. Validation failed; the body explains which configuration / image / session-template entry was rejected and why.
-
-**Response `403`** — caller is not authorized to target one or more HSM groups referenced by `images[]` / `session_templates[]`.
-
-**Response `501`** — per-site Vault or Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)).
-
-```bash
-curl -k -X POST "$MANTA_HOST/v2/sat-file/validate" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H "Authorization: Bearer $MANTA_TOKEN" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "sat_file": {
-      "configurations": [{ "name": "cfg-v1", "layers": [] }],
-      "images": [],
-      "session_templates": []
-    }
-  }'
 ```
 
 ### POST /sat-file/configurations
@@ -2082,8 +1974,8 @@ When either is missing for the active site, the affected endpoints return `501 N
 
 | Required site config | Used by |
 |---|---|
-| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file/validate`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
-| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file/validate`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s.authentication.vault].base_url` | `POST /sessions`, `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
+| `[sites.X.k8s].api_url` | `GET /sessions/{name}/logs`, `POST /sat-file/configurations`, `POST /sat-file/images/cfs-session`, `WS /nodes/{xname}/console`, `WS /sessions/{name}/console` |
 
 ## Troubleshooting
 

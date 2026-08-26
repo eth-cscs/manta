@@ -17,7 +17,10 @@ name = "manta-server"
 path = "src/main.rs"
 
 [dependencies]
-# Shared crate carries wire types, common helpers, and the backend dispatcher.
+# Shared crate carries wire types and common helpers (config loader,
+# MantaError, logging). The backend dispatcher itself is server-only —
+# `StaticBackendDispatcher` and the csm-rs/ochami-rs trait impls live in
+# this crate, not in manta-shared.
 manta-shared             = { workspace = true }
 manta-backend-dispatcher = { workspace = true }
 csm-rs                   = { workspace = true }

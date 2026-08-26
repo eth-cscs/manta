@@ -56,7 +56,7 @@ pub struct AppContext<'a> {
   /// URL of the manta HTTP server this CLI talks to. Required.
   pub manta_server_url: &'a str,
   /// Optional default group name from `cli.toml`'s
-  /// `parent_group`; threaded into the typed `*Params`'
+  /// `hsm_group`; threaded into the typed `*Params`'
   /// `settings_group_name` field by every command that builds one.
   pub settings_group_name_opt: Option<&'a str>,
   /// Optional per-request HTTP timeout (seconds) for outbound

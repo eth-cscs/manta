@@ -107,7 +107,7 @@ In CSM (and OpenCHAMI), every node belongs to one or more **HSM groups** — nam
 
 **What an HSM group actually is.** A group is a named bucket of xnames (e.g. `compute`, `gpu-cluster`, `nodes_free`) carrying a `label` (the name used in commands), a `description`, and the explicit member list. Membership is explicit — a node is in the group iff its xname appears on the member list; there is no implicit membership by hardware shape or hostname pattern. A single node can belong to several groups at once. Groups don't own state beyond their membership and metadata: CFS configurations, BOS session templates, kernel/boot parameters, and IMS images live in their own systems and *reference* groups when relevant.
 
-**How groups appear in manta commands.** Most read commands accept `-H/--group <name>` to scope a query — `manta get group-nodes compute`, `manta get sessions --group compute`, `manta get kernel-parameters --group compute`, `manta get boot-parameters --group compute`. Most write commands accept `--group <name>` to target every node in the group at once — `manta apply boot group compute`, `manta apply kernel-parameters "console=ttyS0" --group compute`, `manta power off group compute --graceful`. Each is shorthand for *"apply this change to every member of `compute`."* SAT files reference groups too: `session_templates[].bos_parameters.boot_sets[].node_groups` and `images[]` group selectors resolve against HSM groups by label, and the server's pre-flight (`POST /sat-file/validate`) checks that the caller is allowed to target every group the file mentions.
+**How groups appear in manta commands.** Most read commands accept `-H/--group <name>` to scope a query — `manta get group-nodes compute`, `manta get sessions --group compute`, `manta get kernel-parameters --group compute`, `manta get boot-parameters --group compute`. Most write commands accept `--group <name>` to target every node in the group at once — `manta apply boot group compute`, `manta apply kernel-parameters "console=ttyS0" --group compute`, `manta power off group compute --graceful`. Each is shorthand for *"apply this change to every member of `compute`."* SAT files reference groups too: `session_templates[].bos_parameters.boot_sets[].node_groups` and `images[]` group selectors resolve against HSM groups by label.
 
 **Authorization scope.** The manta server only lets a caller act on the groups its bearer token is authorized for. The authoritative list comes from `GET /v2/groups/available`, which the server consults internally for SAT-file and session-template paths. Applying against a group your token can't reach fails with `403 Forbidden` *before* anything is changed. To see what your token can do:
 
@@ -174,9 +174,7 @@ The SAT file is the primary deployment mechanism. A SAT file is a YAML document 
 
 The CLI renders Jinja2, parses the SAT file into a structured value, applies the `-i` / `-s` filters locally (drops top-level sections + prunes unreferenced configurations / images), and builds an ordered execution plan — configurations first (in SAT order), then images topologically sorted by `base.image_ref`, then session_templates — *before* sending anything to the server. Dangling `image_ref` references and image cycles fail client-side. You'll see the **filtered SAT file printed as YAML for review** and be asked to confirm — and a second time if `--create-bos-session` is set and the file still contains any `session_templates` after filtering. Use `--assume-yes` to skip the prompts in non-interactive runs.
 
-Once both confirms pass, the CLI calls `POST /sat-file/validate` to **pre-flight the whole file against live CSM state** — CFS configurations, IMS image references, and the `cray-product-catalog` ConfigMap are all checked. Validation failure aborts the run before the pre-hook fires, so no partial work happens. (The `hardware:` section is not checked here — see the note below.)
-
-The CLI then dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
+Once both confirms pass, the CLI dispatches the plan one element at a time, accumulating a `ref_name → image_id` lookup between calls so chained images and session_templates resolve. The final result is the same four-list summary (`configurations`, `images`, `session_templates`, `bos_sessions`) the user has always seen.
 
 Image builds are driven as three discrete HTTP steps per image — the CLI creates the CFS session, monitors it (streaming logs with `--watch-logs` or polling status every 10s otherwise), and then asks the server to stamp the produced IMS image with `manta.image_session.*` provenance. This means progress is visible from the CLI in real time rather than blocking on one long server call.
 
@@ -187,9 +185,7 @@ flowchart LR
   C --> D[filter + build plan<br/>topo-sort images<br/>validate refs]
   D --> E{preview<br/>+ confirm}
   E -->|no| X((cancel))
-  E -->|yes| V[POST /sat-file/validate<br/>against live CSM state]
-  V -->|400| X
-  V -->|204| F[POST /sat-file/configurations<br/>× N, in SAT order]
+  E -->|yes| F[POST /sat-file/configurations<br/>× N, in SAT order]
   F --> G[per image:<br/>cfs-session → monitor → stamp]
   G --> H[POST /sat-file/session-templates<br/>× N, in SAT order]
   H --> I[4-list summary]
@@ -785,7 +781,7 @@ flowchart TD
 
 For scripts, set `MANTA_CSM_TOKEN` from a secret-fetch step before the `manta` invocation. If the server rejects the token (e.g. expired), the CLI falls through to the cached file and then to an interactive prompt — see the flowchart above.
 
-> **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511-dry-run-on-every-mutating-verb-add-group--d-reassigned).
+> **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511---dry-run-on-every-mutating-verb-add-group--d-reassigned).
 
 ---
 
@@ -838,7 +834,6 @@ From local config file (~/.config/manta/cli.toml):
   Current site:  alps
   Current group: compute
   Read-only:     yes
-  SOCKS5 proxy:  (unset)
 
 From JWT token:
   Username: alice
