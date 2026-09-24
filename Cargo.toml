@@ -72,7 +72,6 @@ dialoguer          = { version = "0.12.0", features = ["password"], default-feat
 directories        = "6.0.0"
 futures            = { version = "0.3.31", default-features = false }
 minijinja          = { version = "2.4.0", features = ["custom_syntax"] }
-rdkafka            = "0.39"
 regex              = "1.6.0"
 reqwest            = { version = "0.12.15", default-features = false, features = ["blocking", "json", "rustls-tls", "socks", "stream"] }
 serde              = { version = "1.0.219", features = ["derive"] }

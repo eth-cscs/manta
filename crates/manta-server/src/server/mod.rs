@@ -13,15 +13,12 @@
 //!     requests into service-layer calls.
 //!   - [`routes`] — router registration (one entry per `/v2`
 //!     path).
-//!   - [`auth_middleware`] — defensive middleware applied to
-//!     `/v2/auth/*` (per-IP rate limit + body redaction).
 //!   - [`common`] — server-only helpers (per-request `InfraContext`,
-//!     Kafka audit producer, JWT claim extractors, Vault client).
+//!     JWT claim extractors, Vault client).
 //!   - [`api_doc`] — utoipa OpenAPI document served at
 //!     `GET /openapi.json` + `GET /docs`.
 
 pub mod api_doc;
-pub mod auth_middleware;
 pub mod common;
 pub mod handlers;
 pub mod routes;
@@ -36,7 +33,6 @@ use std::time::Duration;
 
 use crate::dispatcher::StaticBackendDispatcher;
 use crate::server::common::app_context::InfraContext;
-use crate::server::common::kafka::Kafka;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///
@@ -81,12 +77,6 @@ pub struct ServerState {
   /// How long a WebSocket console session may be idle before the server
   /// closes it.  Protects against leaked Kubernetes pod attachments.
   pub console_inactivity_timeout: Duration,
-  /// Kafka producer for security/audit events (currently used only by
-  /// `/v2/auth/*`). `None` disables audit emission.
-  pub auditor: Option<Kafka>,
-  /// Per-source-IP rate limit on `/v2/auth/*` (requests/minute).
-  /// `None` disables in-process rate limiting.
-  pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route (router-level
   /// `TimeoutLayer`). All long-running work (power transitions, SAT
   /// dispatch) runs CLI-side, so this is the only request-timeout

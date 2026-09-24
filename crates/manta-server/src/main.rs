@@ -193,24 +193,7 @@ fn print_startup_summary(
     "  console_inactivity_timeout_secs:  {}",
     configuration.server.console_inactivity_timeout_secs
   );
-  println!(
-    "  auth_rate_limit_per_minute:       {}",
-    configuration
-      .server
-      .auth_rate_limit_per_minute
-      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
-  );
   println!("  log_filter:                       {}", configuration.log);
-  println!();
-  println!("[auditor]");
-  match configuration.auditor.as_ref() {
-    Some(a) => {
-      println!("  Kafka audit forwarder enabled");
-      println!("  brokers: {:?}", a.kafka.brokers);
-      println!("  topic:   {}", a.kafka.topic);
-    }
-    None => println!("  disabled (no audit messages will be emitted)"),
-  }
   println!();
 }
 
@@ -420,15 +403,12 @@ async fn run_server(
     );
   }
 
-  let auditor = configuration.auditor.as_ref().map(|a| a.kafka.clone());
   let shutdown_grace_period = std::time::Duration::from_secs(
     configuration.server.shutdown_grace_period_secs,
   );
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
     console_inactivity_timeout,
-    auditor,
-    auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,

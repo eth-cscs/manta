@@ -29,7 +29,6 @@ use super::ServerState;
 use super::common::app_context::InfraContext;
 
 mod analysis;
-mod auth;
 mod boot_parameters;
 mod cluster;
 mod configuration;
@@ -50,7 +49,6 @@ mod session;
 mod template;
 
 pub use analysis::*;
-pub use auth::*;
 pub use boot_parameters::*;
 pub use cluster::*;
 pub use configuration::*;
@@ -172,8 +170,8 @@ pub struct SiteHeader {
 /// a configured [`super::SiteBackend`], so [`Self::infra`] inside the
 /// handler body is infallible.
 ///
-/// The unauthenticated `/auth/*` handlers and the health endpoint
-/// still use explicit extractors — they don't need a Bearer token.
+/// The health endpoint still uses explicit extractors — it doesn't
+/// need a Bearer token.
 ///
 /// # Example
 ///

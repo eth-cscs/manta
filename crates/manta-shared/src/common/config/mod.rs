@@ -291,7 +291,7 @@ root_ca_cert_file = "alps_root_cert.pem"
 /// Migration mapping shown when a legacy `config.toml` is detected.
 const CLI_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
-  copy these fields verbatim:        log, site, auditor, sites
+  copy these fields verbatim:        log, site, sites
   add CLI-only (now required):       manta_server_url = \"https://...\"
                                      (CLI talks only to the manta server)
   drop (no longer recognised):       sites.<X>.manta_server_url, audit_file
@@ -307,7 +307,6 @@ port = 8443
 cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute      = 60     # per source IP for /auth/*; omit to disable
 # Values shown for the two timeout knobs are the built-in defaults —
 # delete a line to fall back to the default, or change to override.
 request_timeout_secs            = 300    # global per-route timeout; returns 408 on expiry
@@ -319,12 +318,6 @@ shutdown_grace_period_secs      = 30     # drain window after SIGTERM / Ctrl+C; 
 # while this is unset. Must be an absolute path to an existing directory.
 # migrate_backup_root = "/var/lib/manta/migrate"
 
-# [auditor.kafka]                        # optional: enable Kafka audit emission
-# brokers            = ["kafka.example.com:9092"]
-# topic              = "manta-audit"
-# message_timeout_ms = 5000              # librdkafka per-message delivery deadline; default 5000
-# delivery_wait_secs = 0                 # how long produce_message blocks; 0 = fire-and-forget (default)
-
 [sites.<site_name>]
 backend = "csm"
 shasta_base_url = "https://api.example.com"
@@ -334,7 +327,7 @@ root_ca_cert_file = "/path/to/alps_root_cert.pem"
 /// Migration mapping shown when a legacy `config.toml` is detected.
 const SERVER_CONFIG_MIGRATION: &str = "\
 Migration from ~/.config/manta/config.toml:
-  copy these fields verbatim:        log, auditor, sites
+  copy these fields verbatim:        log, sites
   add new [server] section:          listen_address, port, cert, key,
                                      console_inactivity_timeout_secs
   drop (CLI-only):                   site, hsm_group, manta_server_url

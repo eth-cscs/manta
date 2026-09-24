@@ -130,8 +130,6 @@ impl TestFixture {
     let state = Arc::new(ServerState {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
-      auditor: None,
-      auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(30),
       migrate_backup_root: None,
