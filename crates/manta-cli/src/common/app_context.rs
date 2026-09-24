@@ -87,6 +87,9 @@ pub struct AppContext<'a> {
   /// backend-mutating verbs before any HTTP request leaves the
   /// process. `false` by default.
   pub read_only: bool,
+  /// Where and how the CLI logs in to obtain its bearer token —
+  /// `cli.toml`'s `oidc_*` keys with the CSCS defaults filled in.
+  pub oidc: crate::common::oidc::OidcSettings<'a>,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
@@ -147,6 +150,11 @@ mod tests {
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
       read_only: false,
+      oidc: crate::common::oidc::OidcSettings {
+        issuer_url: "https://issuer.example",
+        client_id: "test-client",
+        headless: false,
+      },
       settings,
       token: None,
       session: None,

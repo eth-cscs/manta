@@ -85,6 +85,19 @@ pub struct CliConfiguration {
   /// historical 5 min (300 s).
   #[serde(default)]
   pub sat_file_not_visible_budget_secs: Option<u64>,
+  /// Issuer URL of the Keycloak realm the CLI logs in to. `None` uses
+  /// the CSCS realm ([`crate::common::oidc::DEFAULT_OIDC_ISSUER_URL`]).
+  #[serde(default)]
+  pub oidc_issuer_url: Option<String>,
+  /// OIDC client id the CLI logs in as. `None` uses
+  /// [`crate::common::oidc::DEFAULT_OIDC_CLIENT_ID`].
+  #[serde(default)]
+  pub oidc_client_id: Option<String>,
+  /// When `true`, log in with the device-code flow (print a URL and a
+  /// code) instead of opening a browser. SSH sessions use it
+  /// automatically.
+  #[serde(default)]
+  pub oidc_headless: bool,
 }
 
 #[cfg(test)]
@@ -105,6 +118,9 @@ mod tests {
       sat_file_poll_interval_secs: None,
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
+      oidc_issuer_url: None,
+      oidc_client_id: None,
+      oidc_headless: false,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
@@ -181,5 +197,35 @@ mod tests {
     "#;
     let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
     assert!(!cfg.read_only);
+  }
+
+  #[test]
+  fn oidc_keys_default_when_absent() {
+    let toml_str = r#"
+      log = "info"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(cfg.oidc_issuer_url.is_none());
+    assert!(cfg.oidc_client_id.is_none());
+    assert!(!cfg.oidc_headless);
+  }
+
+  #[test]
+  fn oidc_keys_parse_when_present() {
+    let toml_str = r#"
+      log = "info"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+      oidc_issuer_url = "https://auth-tds.cscs.ch/auth/realms/cscs"
+      oidc_client_id = "manta-test"
+      oidc_headless = true
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert_eq!(
+      cfg.oidc_issuer_url.as_deref(),
+      Some("https://auth-tds.cscs.ch/auth/realms/cscs")
+    );
+    assert_eq!(cfg.oidc_client_id.as_deref(), Some("manta-test"));
+    assert!(cfg.oidc_headless);
   }
 }
