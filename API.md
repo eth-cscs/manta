@@ -8,8 +8,8 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 
 - **Base URL:** `https://<host>:8443/v2`
 - **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
-- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, `/docs`, and `/v2/auth/*`.
-- **Bootstrap a token:** `POST /v2/auth/token` with `{ "username": "...", "password": "..." }` → returns `{ "token": "..." }` from the configured backend.
+- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`.
+- **Getting a token:** the token is issued by the CSCS Keycloak, not by the server — one token for every site. The easiest way is to log in once with the `manta` CLI and reuse its cached token (see [Get a token](#get-a-token)).
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
 - **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
@@ -32,11 +32,11 @@ Every endpoint requires two headers:
 | Header | Description |
 |--------|-------------|
 | `X-Manta-Site` | Site name as configured in `server.toml` `[sites.X]` (e.g. `cscs_prod`) |
-| `Authorization` | `Bearer <shasta-token>` — **not** required for `/health`, `/openapi.json`, `/docs`, or `/v2/auth/*` |
+| `Authorization` | `Bearer <token>` (issued by the CSCS Keycloak) — **not** required for `/health`, `/openapi.json`, or `/docs` |
 
 ```
 X-Manta-Site: cscs_prod
-Authorization: Bearer <shasta-token>
+Authorization: Bearer <token>
 ```
 
 ## Base URL
@@ -1795,55 +1795,7 @@ curl -k -X POST "$MANTA_HOST/v2/sat-file/session-templates" \
 
 ## Authentication
 
-The CLI obtains a bearer token by exchanging Keycloak credentials through the server. These endpoints **do not** themselves require an `Authorization` header (they're the bootstrap), but they do require `X-Manta-Site` so the server can pick the right backend. They sit under `/v2/auth/*` behind a per-source-IP rate limiter (`[server].auth_rate_limit_per_minute`, default 60) and a body-redaction logging layer.
-
-### POST /auth/token
-
-Exchange username + password for a backend bearer token.
-
-**Request body**
-
-```json
-{ "username": "alice", "password": "..." }
-```
-
-**Response `200`**
-
-```json
-{ "token": "<backend-bearer-token>" }
-```
-
-**Response `401`** — `{ "error": "invalid credentials" }`. The body is intentionally generic regardless of whether the user was unknown or the password was wrong; detail is kept in server-side logs only.
-
-```bash
-curl -k -X POST "$MANTA_HOST/v2/auth/token" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"alice","password":"..."}'
-```
-
----
-
-### POST /auth/validate
-
-Check whether a bearer token is still accepted by the backend.
-
-**Request body**
-
-```json
-{ "token": "<backend-bearer-token>" }
-```
-
-**Response `200`** — no body. The token is currently valid.
-
-**Response `401`** — `{ "error": "invalid credentials" }`. The token is missing, malformed, or rejected by the backend.
-
-```bash
-curl -k -X POST "$MANTA_HOST/v2/auth/validate" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H 'Content-Type: application/json' \
-  -d "{\"token\":\"$MANTA_TOKEN\"}"
-```
+The server has no authentication endpoints and never sees credentials. Clients obtain a bearer token from the CSCS Keycloak themselves — the `manta` CLI does it with an OIDC login (see [README.md](README.md#configuration-files)) — and send it as `Authorization: Bearer <token>`. The same token works for every site; the server forwards it unchanged to the site's backend (CSM / OpenCHAMI API, Vault, k8s), which verifies it.
 
 ---
 
@@ -1984,11 +1936,10 @@ If a request fails before reaching the service layer, you'll get one of the code
 | Status | Most common cause |
 |---|---|
 | **400 Bad Request** | Missing/malformed `X-Manta-Site` header, missing JSON body, or body not parseable as the declared `request_body` type. |
-| **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), token expired, or `/auth/token` credentials rejected by the backend. |
+| **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), the token expired, or the site's backend does not accept tokens from the CSCS Keycloak. |
 | **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
 | **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
 | **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default **600**, i.e. 10 min — bumped from 300 in beta.55 after large multi-site fetches consistently grazed the 5-min ceiling). Most endpoints return well under a second; the 10-min ceiling exists for the few operations that legitimately fan out across the upstream backend (large bulk CFS component fetches, SAT-file applies, migrate-restore re-hydrations). `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so 408 there indicates an unhealthy backend. |
-| **429 Too Many Requests** | Per-source-IP rate limit on `/v2/auth/*`. Tune `[server].auth_rate_limit_per_minute` or wait one minute. |
 | **500 Internal Server Error** | Server-side failure (backend unreachable, bad config). Check `journalctl -u manta-server` (or wherever the server's stderr is logged) for the actual cause. |
 | **501 Not Implemented** | The endpoint needs Vault or Kubernetes settings that the active site does not provide — see [Server configuration requirements](#server-configuration-requirements). |
 
@@ -2001,7 +1952,7 @@ The recipes below assume:
 ```bash
 export MANTA_HOST=https://localhost:8443
 export MANTA_SITE=alps
-export MANTA_TOKEN=...   # see "Bootstrap a token" below
+export MANTA_TOKEN=...   # see "Get a token" below
 ```
 
 For a local server running plain HTTP (no `cert`/`key` configured), use `MANTA_HOST=http://localhost:8443` and drop the `-k` flag.
@@ -2014,33 +1965,17 @@ curl -k "$MANTA_HOST/openapi.json" | jq .info
 # Open in browser: $MANTA_HOST/docs
 ```
 
-### Bootstrap a token
+### Get a token
+
+Log in once with the CLI (any command that talks to the server triggers the login), then reuse the token it cached:
 
 ```bash
-curl -k -X POST "$MANTA_HOST/v2/auth/token" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"<user>","password":"<pass>"}'
-# → { "token": "..." }
+manta get groups >/dev/null   # logs in if needed and caches the token
+# Linux; on macOS the cache is ~/Library/Caches/local.cscs.manta/token.json
+export MANTA_TOKEN=$(jq -r .access_token ~/.cache/manta/token.json)
 ```
 
-Then export it for the recipes below:
-
-```bash
-export MANTA_TOKEN=$(curl -ks -X POST "$MANTA_HOST/v2/auth/token" \
-  -H "X-Manta-Site: $MANTA_SITE" -H 'Content-Type: application/json' \
-  -d '{"username":"<user>","password":"<pass>"}' | jq -r .token)
-```
-
-### Validate a token
-
-```bash
-curl -k -X POST "$MANTA_HOST/v2/auth/validate" \
-  -H "X-Manta-Site: $MANTA_SITE" \
-  -H 'Content-Type: application/json' \
-  -d "{\"token\":\"$MANTA_TOKEN\"}"
-# 200 OK = valid, 401 = rejected
-```
+The access token is short-lived; rerun the CLI to refresh the cache, then re-export.
 
 ### GET a resource
 
@@ -2092,4 +2027,4 @@ websocat -k --header "X-Manta-Site: $MANTA_SITE" \
 
 1. Bump the server log: `log = "debug"` in `server.toml`, restart.
 2. Re-issue the request; the server now logs which extractor rejected (site lookup vs. JSON parse vs. backend call) and the round-trip into csm-rs/ochami-rs.
-3. For auth failures, the server logs the user/site/source-IP and the backend error message — the client only sees a generic `invalid credentials` 401 on purpose.
+3. For a 401, check the token's `exp` and `iss` claims (`cut -d. -f2 <<<"$MANTA_TOKEN" | base64 -d 2>/dev/null | jq`): an expired token needs a fresh login, and a site that rejects a valid CSCS token does not trust that issuer yet.

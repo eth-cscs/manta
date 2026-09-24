@@ -60,35 +60,30 @@ lands.
 
 ## Security model — at a glance
 
-manta is a 3-tier system. The sequence below shows the bootstrap
-auth call and a subsequent authenticated request:
+manta is a 3-tier system. The sequence below shows the login and a
+subsequent authenticated request:
 
-*Sequence: bootstrap (auth) then a subsequent authenticated request.*
+*Sequence: login against the CSCS Keycloak, then an authenticated request.*
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant CLI as User CLI
+    participant K as CSCS Keycloak
     participant MS as manta-server
-    participant K as Keycloak / IdP
-    participant B as CSM / OCHAMI
+    participant B as CSM / OCHAMI / Vault
     participant Kf as Kafka (optional)
+
+    Note over CLI,K: once per token lifetime — manta-server not involved
+
+    CLI->>K: OIDC login (auth code + PKCE in a browser,<br/>or device code when headless)
+    K-->>CLI: access + refresh token (cached 0600)
 
     Note over MS: chokepoint — every CSM/OCHAMI call proxies through here
 
-    Note over MS: /v2/auth/* sub-router<br/>rate_limit + body-redaction layers
-
-    CLI->>MS: POST /v2/auth/token<br/>{username, password}
-    MS->>K: exchange credentials
-    K-->>MS: bearer token
-    MS-->>CLI: { token }
-    MS->>Kf: audit auth_attempt { actor, client, site, outcome }
-
-    Note over MS: /v2/* sub-router<br/>TimeoutLayer
-
-    CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer …
-    MS->>B: proxied call with bearer
-    B-->>MS: backend response (signature verified upstream)
+    CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer …<br/>X-Manta-Site: <any site>
+    MS->>B: proxied call with the same bearer
+    B-->>MS: backend response (signature verified upstream against the CSCS Keycloak)
     MS-->>CLI: 2xx / 4xx
     MS->>Kf: audit api_request { actor, action, targets, outcome }<br/>(mutating methods + console attach only)
 ```
@@ -99,20 +94,22 @@ For where the middleware layers sit in the request pipeline, see
 [ARCHITECTURE.md → Middleware layer stack](ARCHITECTURE.md#middleware-layer-stack).
 
 - **CLI side** (`manta` binary): a thin client that runs on operator
-  workstations. Holds the user's bearer token in a 0600 cache file
-  under the platform config dir. Never speaks to CSM/OCHAMI directly.
-- **Server side** (`manta-server` binary): the
-  credential-handling chokepoint. Receives user/password on
-  `POST /v2/auth/token`, exchanges them with the per-site backend,
-  returns the bearer token to the CLI. Subsequent authenticated
-  endpoints proxy backend calls using the user's token.
-- **Upstream** (CSM / OpenCHAMI / Keycloak): not part of this repo.
-  Signature verification of the bearer token happens here, at the
-  first backend round-trip.
+  workstations. Logs in to the CSCS Keycloak itself (OIDC) and holds
+  the resulting access + refresh token in a 0600 cache file
+  (`token.json`) under the platform cache dir. One token serves every
+  site. Never speaks to CSM/OCHAMI directly.
+- **Server side** (`manta-server` binary): the request chokepoint.
+  Never sees credentials — it has no auth endpoints — and proxies
+  backend calls using the user's bearer token unchanged.
+- **Upstream** (CSCS Keycloak / CSM / OpenCHAMI / Vault): not part of
+  this repo. Every site must trust the CSCS Keycloak issuer; signature
+  verification of the bearer token happens there, at the first backend
+  round-trip.
 
-Because `manta-server` sees every authentication attempt and holds
-per-site service-account tokens (for k8s, Vault, Gitea), **it is a
-single point of compromise** for every site it serves. Operate it
+Because every request through `manta-server` carries a bearer token
+valid on every site that trusts the CSCS Keycloak, and the server
+holds per-site service-account tokens (for k8s, Vault, Gitea), **it is
+a single point of compromise** for every site it serves. Operate it
 accordingly.
 
 ## Controls — what is enforced where
@@ -123,19 +120,19 @@ accordingly.
 |---|---|---|
 | TLS required by default | `manta-server` | Server fails closed without `cert` + `key`. Pass `--allow-http` only when TLS terminates upstream. |
 | HSTS on every response | `manta-server` | `Strict-Transport-Security: max-age=31536000; includeSubDomains`. No-op over plain HTTP per RFC 6797. |
-| Per-source-IP rate limit on `/v2/auth/*` | `manta-server` | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
-| Generic 401 on every auth failure | `manta-server` | `server::handlers::auth_token` returns identical `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
-| Audit trail of every mutation | `manta-server` | `server::audit::audit_requests` records one event per mutating `/v2` request and per console attach, with outcome, after the response; `/v2/auth/token` attempts via `server::audit::send_auth_audit`. Always logged on the `manta::audit` target, and produced to Kafka when `[auditor.kafka]` is set. Fail-open: a broker outage never fails a request. No token, password or raw body is ever recorded. See [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail). |
-| Body redaction on `/auth/*` log spans | `manta-server` | `server::auth_middleware::strip_body_for_logs`. |
+| No credentials on the server | `manta-server` | Login happens between the CLI and the CSCS Keycloak; the server has no auth endpoints. Brute-force protection and login auditing are the Keycloak's. |
+| PKCE, `state`, nonce and `at_hash` checks on login | `manta-cli` | `common::oidc`: the browser flow uses S256 PKCE on a loopback redirect, rejects a mismatched `state`, and verifies the ID token's nonce and `at_hash` against the realm's JWKS. Redirects are never followed on Keycloak calls. |
+| Audit trail of every mutation | `manta-server` | `server::audit::audit_requests` records one event per mutating `/v2` request and per console attach, with outcome, after the response. Always logged on the `manta::audit` target, and produced to Kafka when `[auditor.kafka]` is set. Fail-open: a broker outage never fails a request. No token, password or raw body is ever recorded. See [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail). |
 | CLI-side read-only guard | `manta-cli` | Refuses mutating verbs locally when `cli.toml` has `read_only = true`, before any HTTP request leaves the process. Client-side accident guard only — `manta-server` does not enforce this; see [GUIDE.md §13](GUIDE.md#13-read-only-access). |
-| 0600 mode on cached tokens | `manta-cli` | Token cache file written with `0600` perms under the platform config dir; never logged. |
+| 0600 mode on cached tokens | `manta-cli` | `token.json` written with `0600` perms in a `0700` platform cache dir; `TokenStore`'s `Debug` redacts every token, so tokens are never logged. |
 
 ### In ops (your deployment)
 
 | Control | Notes |
 |---|---|
-| TLS termination, WAF, reverse-proxy rate limit | First line of defence; manta-server's in-process limiter is belt-and-braces. |
-| Service-account scoping at CSM / Vault | Limit what the manta-server-issued tokens can do at the backend. |
+| TLS termination, WAF, reverse-proxy rate limit | First line of defence. |
+| Token lifetime and scope in the CSCS Keycloak | Short access-token lifetimes bound the replay window of a leaked token; the manta client's claims (`realm_access.roles`, audience) bound what it can do at each site. |
+| Service-account scoping at CSM / Vault | Limit what the server's per-site service-account tokens can do at the backend. |
 | Network segmentation | Treat manta-server as a privileged host. |
 | `[server].migrate_backup_root` set explicitly | Confines `POST /migrate/{backup,restore}` paths. Server returns `400` for those endpoints when unset, even for admin callers. |
 
@@ -160,16 +157,16 @@ path.) Consequences:
   verification automatically when it lands; no per-gate work needed.
 
 **Single point of compromise.** As noted above, owning `manta-server`
-gives an attacker visibility into every auth attempt and access to
-configured service-account tokens. Mitigations are split between
-code (rate limit, generic 401, body redaction) and ops (TLS
-termination upstream, service-account scoping, network segmentation).
+gives an attacker every live bearer token that passes through it —
+each valid on every site trusting the CSCS Keycloak until it expires —
+and access to configured service-account tokens. Mitigations are
+mostly ops: short token lifetimes in the Keycloak, TLS termination
+upstream, service-account scoping, network segmentation.
 
-**Deferred: forwarding the original client IP to Keycloak via
-`X-Forwarded-For`** on the upstream auth call. Tracked as a follow-up
-because the current `AuthenticationTrait::get_api_token` signature in
-`manta-backend-dispatcher` does not take a header argument; landing
-this requires a sibling-repo upgrade.
+**One token for every site.** A leaked access token (e.g. from a
+`MANTA_TOKEN` in a CI log) works against every site, not just one.
+Keep `MANTA_TOKEN` out of logs and rely on the Keycloak's token
+lifetime to bound the damage.
 
 ## Cryptography notes
 
@@ -179,10 +176,11 @@ this requires a sibling-repo upgrade.
 - **JWT decode:** `base64::prelude::BASE64_URL_SAFE_NO_PAD` with a
   fall-back to `BASE64_STANDARD`. No signature verification (see Known
   limitations).
-- **Password handling:** credentials submitted to `/v2/auth/token`
-  are deserialised into `serde` types, forwarded to the configured
-  backend, and dropped. They are not written to disk; they are not
-  emitted to any log span (see `strip_body_for_logs`).
+- **Password handling:** manta never sees a password. The user
+  authenticates to the CSCS Keycloak in a browser (or on another
+  device, for the device-code flow); the CLI receives only tokens.
+- **OIDC:** `openidconnect` for PKCE (S256) and ID-token verification
+  (signature against the realm's JWKS, nonce, `at_hash`).
 
 ## Out of scope for this document
 
