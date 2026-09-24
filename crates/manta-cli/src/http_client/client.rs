@@ -11,15 +11,12 @@
 //! (with default `Authorization` header set in the constructor).
 //!
 //! Bearer auth is wired once in the constructor via
-//! `reqwest::ClientBuilder::default_headers`; the only call sites that
-//! pass `None` are `common::authentication` (which is how we *obtain*
-//! or *validate* the token in the first place).
+//! `reqwest::ClientBuilder::default_headers`.
 
 use anyhow::Context;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
-use crate::openapi_client::types::{AuthTokenRequest, ValidateTokenRequest};
 
 /// Default per-request timeout applied to one-shot REST calls through
 /// the progenitor-generated `openapi` client when `cli.toml` does not
@@ -29,60 +26,6 @@ use crate::openapi_client::types::{AuthTokenRequest, ValidateTokenRequest};
 /// WebSocket consoles) keep the original `None == unlimited` semantics
 /// — see [`MantaClient::new_with_timeout`].
 pub const DEFAULT_API_TIMEOUT_SECS: u64 = 300;
-
-/// Marker error attached as anyhow context whenever an `/auth/*`
-/// HTTP call fails at the TCP/timeout layer (i.e., the manta server
-/// — and therefore the auth path through it — is unreachable, not
-/// "wrong credentials"). Lets [`crate::common::authentication`] tell
-/// the two cases apart so an unreachable server short-circuits
-/// instead of triggering the re-prompt loop.
-#[derive(Debug)]
-pub struct AuthServerUnreachable {
-  /// The base manta server URL (without `/v2`) that was tried.
-  /// Surfaced in the error message and recoverable by the loop via
-  /// `downcast_ref` if a caller needs to log it separately.
-  pub url: String,
-}
-
-impl std::fmt::Display for AuthServerUnreachable {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(
-      f,
-      "cannot reach manta server at {} for authentication. \
-       Is the server running, and is `manta_server_url` in your \
-       config correct?",
-      self.url,
-    )
-  }
-}
-
-impl std::error::Error for AuthServerUnreachable {}
-
-/// Marker error attached as anyhow context whenever an `/auth/*` HTTP
-/// call returns `404 Not Found` — the manta server is reachable but the
-/// `site` in your config isn't one it serves. Lets
-/// [`crate::common::authentication`] short-circuit the
-/// env → file → interactive-prompt cascade instead of asking for
-/// credentials that can never succeed against a site that doesn't exist.
-#[derive(Debug)]
-pub struct SiteNotFound {
-  /// The `X-Manta-Site` value the server rejected. Surfaced in the
-  /// error message and recoverable via `downcast_ref`.
-  pub site: String,
-}
-
-impl std::fmt::Display for SiteNotFound {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(
-      f,
-      "site '{}' is not configured on the manta server. \
-       Check the `site` value in your `cli.toml`.",
-      self.site,
-    )
-  }
-}
-
-impl std::error::Error for SiteNotFound {}
 
 /// Convert a `Result<ResponseValue<T>, Error<E>>` from the
 /// progenitor-generated client into an `anyhow::Result<T>`.
@@ -212,6 +155,13 @@ fn categorise_transport_error(rqe: &reqwest::Error) -> String {
 /// known timeout shape. Only the timeout-related cases are rewritten;
 /// everything else passes through as-is.
 fn categorise_server_error(status: u16, body: &str) -> String {
+  if status == 401 {
+    return format!(
+      "the token was rejected: it has expired, or this site does not \
+       accept tokens from the CSCS Keycloak. Run `manta config unset \
+       auth` to force a new login. Original body: {body}"
+    );
+  }
   if status == 408 {
     return format!(
       "manta-server per-route request timeout fired. \
@@ -249,6 +199,14 @@ mod into_anyhow_tests {
     assert!(msg.contains("server.toml"));
     // Original body is still surfaced for debug.
     assert!(msg.contains("Request Timeout"));
+  }
+
+  #[test]
+  fn categorise_server_401_explains_token_rejection() {
+    let msg = categorise_server_error(401, "invalid token");
+    assert!(msg.contains("token was rejected"));
+    assert!(msg.contains("manta config unset auth"));
+    assert!(msg.contains("invalid token"));
   }
 
   #[test]
@@ -347,30 +305,12 @@ pub struct MantaClient {
 }
 
 impl MantaClient {
-  /// Build a client pointing at `server_url` for the given `site_name`.
-  /// One-shot REST calls get a 5-minute timeout
-  /// ([`DEFAULT_API_TIMEOUT_SECS`]); streams (SSE / WebSockets) get no
-  /// timeout. To override either, use
-  /// [`MantaClient::new_with_timeout`].
-  ///
-  /// If `server_url` has no scheme, `http://` is prepended. This lets users
-  /// write `manta_server_url = "localhost:8080"` in their config without
-  /// triggering a "URL scheme is not allowed" error from reqwest.
-  ///
-  /// # Errors
-  ///
-  /// Propagates failures from [`MantaClient::new_with_timeout`].
-  pub fn new(server_url: &str, site_name: &str) -> anyhow::Result<Self> {
-    Self::new_with_timeout(server_url, site_name, None, None)
-  }
-
   /// Build a client from an `AppContext`, honouring its
   /// `request_timeout_secs` (loaded from `cli.toml`).
   ///
   /// `token` is wired as a default `Authorization: Bearer <t>` header
   /// on both the `openapi` client and the `raw` `reqwest::Client`
-  /// when `Some`. Pass `None` only for the auth path that *obtains*
-  /// the token (`common::authentication`).
+  /// when `Some`.
   ///
   /// # Errors
   ///
@@ -412,7 +352,9 @@ impl MantaClient {
   ///   `request_timeout_secs` applies here too, which will truncate
   ///   long streams; pick a value larger than your worst-case session.
   ///
-  /// URL scheme normalisation matches [`MantaClient::new`].
+  /// If `server_url` has no scheme, `http://` is prepended. This lets users
+  /// write `manta_server_url = "localhost:8080"` in their config without
+  /// triggering a "URL scheme is not allowed" error from reqwest.
   ///
   /// # Errors
   ///
@@ -480,101 +422,6 @@ impl MantaClient {
   /// SSE paths to derive their own URLs.
   pub fn base_url(&self) -> &str {
     &self.base_url
-  }
-
-  /// Strip `/v2` from `base_url` to get the server root URL used
-  /// in auth-error messages. Both [`Self::validate_token`] and
-  /// [`Self::exchange_credentials`] perform the same trim — centralised
-  /// here instead of duplicated at each call site.
-  fn auth_base_url(&self) -> String {
-    self.base_url.trim_end_matches("/v2").to_string()
-  }
-
-  /// Wrap a progenitor `Error<E>` from an `/auth/*` call into an
-  /// `anyhow::Error`, attaching a typed marker that lets the caller
-  /// tell "keep trying" failures apart from "stop now" ones:
-  ///
-  /// - [`SiteNotFound`] on a `404` — server is reachable but doesn't
-  ///   serve this site; no credential can fix that.
-  /// - [`AuthServerUnreachable`] on a TCP / timeout-layer failure —
-  ///   the manta server itself is unreachable.
-  ///
-  /// Anything else is wrapped plain (a genuine credential rejection,
-  /// which *should* fall through to the next attempt / re-prompt).
-  fn map_auth_error<E: std::fmt::Debug>(
-    &self,
-    err: progenitor_client::Error<E>,
-  ) -> anyhow::Error
-  where
-    progenitor_client::Error<E>: std::fmt::Display,
-  {
-    // A reachable server that doesn't serve this site answers 404.
-    // Tag either ErrorResponse or UnexpectedResponse 404s so the
-    // cascade short-circuits.
-    let status = match &err {
-      progenitor_client::Error::ErrorResponse(rv) => Some(rv.status()),
-      progenitor_client::Error::UnexpectedResponse(resp) => Some(resp.status()),
-      _ => None,
-    };
-    if status == Some(reqwest::StatusCode::NOT_FOUND) {
-      return anyhow::anyhow!("{err}").context(SiteNotFound {
-        site: self.site_name.clone(),
-      });
-    }
-    let unreachable = matches!(
-      &err,
-      progenitor_client::Error::CommunicationError(e) if e.is_connect() || e.is_timeout()
-    );
-    let message = format!("{err}");
-    if unreachable {
-      anyhow::anyhow!(message).context(AuthServerUnreachable {
-        url: self.auth_base_url(),
-      })
-    } else {
-      anyhow::anyhow!(message)
-    }
-  }
-
-  /// `POST /v2/auth/validate` — check whether the backend still
-  /// accepts `token`. Returns `Ok(())` on success; on the "abort
-  /// cascade" cases returns `Err` with [`AuthServerUnreachable`] or
-  /// [`SiteNotFound`] context so callers can distinguish them from
-  /// a plain credential rejection.
-  pub(crate) async fn validate_token(&self, token: &str) -> anyhow::Result<()> {
-    self
-      .openapi
-      .auth_validate(
-        self.site_name(),
-        &ValidateTokenRequest {
-          token: token.to_owned(),
-        },
-      )
-      .await
-      .map(|_| ())
-      .map_err(|e| self.map_auth_error(e))
-  }
-
-  /// `POST /v2/auth/token` — exchange Keycloak credentials for a
-  /// CSM bearer token. Returns `Err` with [`AuthServerUnreachable`]
-  /// or [`SiteNotFound`] context on cascade-abort cases; plain `Err`
-  /// on a credential rejection (wrong username/password).
-  pub(crate) async fn exchange_credentials(
-    &self,
-    username: &str,
-    password: &str,
-  ) -> anyhow::Result<String> {
-    let resp = self
-      .openapi
-      .auth_token(
-        self.site_name(),
-        &AuthTokenRequest {
-          username: username.to_owned(),
-          password: password.to_owned(),
-        },
-      )
-      .await
-      .map_err(|e| self.map_auth_error(e))?;
-    Ok(resp.into_inner().token)
   }
 
   /// Emit a `curl` equivalent of `builder` at DEBUG level so an operator
