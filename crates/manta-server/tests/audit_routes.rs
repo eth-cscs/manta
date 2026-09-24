@@ -67,7 +67,6 @@ fn router_with_timeout(
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: AuditLog::with_sinks(vec![sink]),
-    auth_rate_limit_per_minute: None,
     request_timeout,
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,

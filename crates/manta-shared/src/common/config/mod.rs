@@ -307,7 +307,6 @@ port = 8443
 cert = "/path/to/server.crt"
 key = "/path/to/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute      = 60     # per source IP for /auth/*; omit to disable
 # Values shown for the two timeout knobs are the built-in defaults —
 # delete a line to fall back to the default, or change to override.
 request_timeout_secs            = 300    # global per-route timeout; returns 408 on expiry

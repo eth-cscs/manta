@@ -15,7 +15,6 @@
 //! cert = "/etc/manta/tls/server.crt"
 //! key = "/etc/manta/tls/server.key"
 //! console_inactivity_timeout_secs = 1800
-//! auth_rate_limit_per_minute = 60
 //!
 //! [sites.alps]
 //! backend = "csm"
@@ -99,10 +98,6 @@ pub struct ServerSettings {
   /// How long a node-console WebSocket stays open without activity
   /// before the server tears it down.
   pub console_inactivity_timeout_secs: u64,
-  /// Per-source-IP rate limit for the `/v2/auth/*` endpoints,
-  /// in requests per minute. `None` disables in-process rate limiting
-  /// (operators are then expected to enforce it at the reverse proxy).
-  pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route, in seconds.
   /// When this elapses the server returns `408 REQUEST_TIMEOUT`. All
   /// long-running work (e.g. power transitions) now runs CLI-side,
@@ -245,7 +240,6 @@ mod tests {
         cert: Some("/etc/manta/tls/server.crt".to_string()),
         key: Some("/etc/manta/tls/server.key".to_string()),
         console_inactivity_timeout_secs: 1800,
-        auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 300,
         shutdown_grace_period_secs: 30,
         migrate_backup_root: None,

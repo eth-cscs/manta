@@ -193,13 +193,6 @@ fn print_startup_summary(
     "  console_inactivity_timeout_secs:  {}",
     configuration.server.console_inactivity_timeout_secs
   );
-  println!(
-    "  auth_rate_limit_per_minute:       {}",
-    configuration
-      .server
-      .auth_rate_limit_per_minute
-      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
-  );
   println!("  log_filter:                       {}", configuration.log);
   println!();
   println!("[auditor]");
@@ -440,7 +433,6 @@ async fn run_server(
     sites,
     console_inactivity_timeout,
     audit,
-    auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,
