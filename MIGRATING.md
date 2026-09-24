@@ -36,7 +36,7 @@ between-release deltas once you are on v2, see
 | Aspect | v1.x | v2 |
 |---|---|---|
 | **Binaries** | One — `manta` (CLI talks to CSM/OCHAMI direct) | Two — `manta` (CLI) and `manta-server` (HTTPS API in front of CSM/OCHAMI) |
-| **Auth target** | Each user's CLI authenticates to the backend directly | CLI authenticates to `manta-server`; the server holds the backend creds and tokens |
+| **Auth target** | Each user's CLI authenticates to the backend directly, one token per site | CLI logs in to the CSCS Keycloak directly and uses one token for every site; the server forwards it to the backend and holds the per-site infra creds (Vault, k8s) — see §5.14 |
 | **Config file** | Single `~/.config/manta/config.toml` mixing CLI + backend + (in some setups) server fields | Split into `cli.toml` (workstation) and `server.toml` (server host); the CLI strictly does not need backend URLs |
 | **CLI verbs** | `apply session`, `apply boot cluster`, `migrate vCluster backup`, `get cluster`, `get hardware cluster`, `power on/off/reset cluster`, `add-nodes-to-groups`, `remove-nodes-from-groups`, `apply hardware cluster`, `update boot-parameters`, `update redfish-endpoints`, `config gen-autocomplete`, … | Renamed and the old forms removed: `run session`, `apply boot group`, `backup vcluster`, `get group-nodes`, `get hardware group`, `power on/off/reset group`, `add nodes`, `delete nodes`, `apply hardware group`, `apply boot-parameters`, `apply redfish-endpoint`, `gen-autocomplete`, … The full mapping is in §1.4 below |
 | **CLI flags** | `--hsm-group`, `--target-cluster`, `--parent-cluster`, `--create-hsm-group`, … | `--group`, `--target-group`, `--parent-group`, `--create-group`, … Old flag names retained as visible clap aliases |
@@ -47,9 +47,10 @@ between-release deltas once you are on v2, see
 
 The most important conceptual change: **v1 dispatched directly to the
 backend from the CLI; v2 puts an HTTPS server (`manta-server`) between
-the user and the backend.** Tokens, vault paths, k8s service-account
+the user and the backend.** Vault paths, k8s service-account
 credentials, and TLS material all live on the server now, never on
-the workstation. Every CLI call goes out as
+the workstation; the workstation holds only the user's own CSCS
+Keycloak token. Every CLI call goes out as
 `HTTPS → manta-server → CSM/OCHAMI`.
 
 ---
@@ -85,11 +86,11 @@ the migration mapping when first run with no `cli.toml` present. The
 mapping is:
 
 ```
-copy these fields verbatim:        log, site, auditor
+copy these fields verbatim:        log, site
 add CLI-only (now required):       manta_server_url = "https://..."
                                    (CLI talks only to the manta server)
-drop (no longer recognised):       audit_file (audit emission is
-                                   server-side only)
+drop (no longer recognised):       audit_file, auditor (manta emits
+                                   no audit stream; see §5.14)
 do not copy (server-only fields):  [sites.*] (every backend connection
                                    bundle lives in server.toml now), the
                                    [server] section, and the old
@@ -118,19 +119,17 @@ manta_server_url = "https://manta-server.example.com:8443"
 
 ### 1.3 Re-authenticate
 
-v1 cached a CSM token directly. v2 caches a token issued by
-`manta-server` (which proxies the credential exchange to the
-backend). Existing token files in `~/.cache/manta/` should be
-cleared:
+v1 cached one CSM token per site. v2 caches a single token issued by
+the CSCS Keycloak, valid for every site (see §5.14). v1's per-site
+`<site>_auth` files in `~/.cache/manta/` are ignored; delete them if
+you no longer need them:
 
 ```bash
-manta config unset auth     # interactive picker, removes one token file
-# or
-rm -rf ~/.cache/manta/
+rm ~/.cache/manta/*_auth
 ```
 
-The first command you run on v2 will re-prompt for Keycloak
-credentials.
+The first command you run on v2 opens a browser to log in to the
+CSCS Keycloak (or prints a URL and a code when run over SSH).
 
 ### 1.4 Update muscle memory
 
@@ -289,7 +288,6 @@ port = 8443
 cert = "/etc/manta/server.crt"
 key = "/etc/manta/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute = 60   # per source IP for /auth/*; omit to disable
 
 [sites.alps]
 backend = "csm"                   # or "ochami"
@@ -307,12 +305,11 @@ If you had a v1 `config.toml` with all the backend fields on the same
 host, the migration mapping is:
 
 ```
-copy these fields verbatim:        log, auditor, sites
+copy these fields verbatim:        log, sites
 add new [server] section:          listen_address, port, cert, key,
                                    console_inactivity_timeout_secs
 drop (CLI-only):                   site, hsm_group, manta_server_url
-drop (no longer recognised):       audit_file (audit emission is
-                                   Kafka-only via [auditor.kafka])
+drop (no longer recognised):       audit_file, auditor (see §5.14)
 drop (no longer recognised):       sites.<X>.manta_server_url
 ```
 
@@ -324,12 +321,11 @@ production should use a real certificate or a wildcard from your
 site's CA. Without `cert`/`key`, the server runs plain HTTP — fine
 for `localhost` smoke tests, never for a deployment.
 
-### 2.4 Auth rate limiting
+### 2.4 Auth rate limiting (removed) — see §5.14
 
-`[server].auth_rate_limit_per_minute` enforces a per-source-IP token
-bucket on `/v2/auth/*`. Default is 60 req/min/IP; omit to
-disable in-process limiting and rely on your reverse proxy. The
-limiter is defence-in-depth — terminate at the proxy as well.
+`manta-server` no longer has auth endpoints, so there is nothing to
+rate-limit in process; brute-force protection is the CSCS Keycloak's.
+`[server].auth_rate_limit_per_minute` is ignored.
 
 ### 2.5 Logging
 
@@ -342,14 +338,14 @@ syntax: `log = "manta_server=debug,hyper=warn,info"`.
 
 The server prints its full effective configuration to stdout on
 startup so operators see exactly what got loaded — config file path,
-listen address, TLS state, auth rate limit, audit file, per-site
-backend URLs, k8s/vault URLs (no secrets ever logged).
+listen address, TLS state, per-site backend URLs, k8s/vault URLs
+(no secrets ever logged).
 
-### 2.6 Audit
+### 2.6 Audit (removed) — see §5.14
 
-`[auditor].kafka` if present streams every `/auth/*` outcome to a
-Kafka topic. Same field shape as v1's audit block. If you don't run
-Kafka, omit the section — auditing is silent.
+The Kafka auditor only ever recorded `/auth/*` attempts and was
+removed with those endpoints. Login attempts are recorded by the CSCS
+Keycloak; `[auditor.kafka]` is ignored.
 
 ### 2.7 Read-only access (removed) — see §5.12
 
@@ -480,8 +476,10 @@ the headline:
 
 - Base URL: `https://<host>:8443/v2`
 - Required headers: `X-Manta-Site: <site>` + `Authorization: Bearer <token>`
-- Auth bootstrap: `POST /v2/auth/token` with
-  `{"username":"...","password":"..."}` → returns `{"token":"..."}`
+- Auth: obtain a token from the CSCS Keycloak yourself (any OIDC
+  client), or reuse the one the `manta` CLI caches — see
+  [API.md → Get a token](API.md#get-a-token). The server has no auth
+  endpoints.
 - Error envelope: `{"error":"..."}` with conventional status codes
 - OpenAPI spec served at `/openapi.json`; Swagger UI at `/docs`
 
@@ -510,8 +508,9 @@ For a typical site with N workstation users + one server host:
 2. Install `manta-server` on the host (binary, distro package, or
    container). Confirm `manta-server --version`.
 3. Author `~/.config/manta/server.toml` per [§2.2](#22-author-servertoml).
-   Set TLS cert/key paths, backend URLs, k8s/vault URLs, audit
-   destination.
+   Set TLS cert/key paths, backend URLs, k8s/vault URLs. Make sure
+   every site's CSM API, Vault `jwt-manta-<site>` role and k8s trust
+   the CSCS Keycloak issuer (see §5.14).
 4. Start the service (systemd, docker, …). Tail the logs and confirm
    you see the `[server] effective configuration` and one
    `[site] configured` line per site.
@@ -525,7 +524,8 @@ For a typical site with N workstation users + one server host:
 2. Move (or copy) `~/.config/manta/config.toml` to
    `~/.config/manta/cli.toml` and edit per [§1.2](#12-convert-your-config-file).
    Add `manta_server_url` pointing at the operator's URL.
-3. `rm -rf ~/.cache/manta/` to flush v1 tokens.
+3. Run any command once to log in to the CSCS Keycloak; v1 token
+   files are ignored.
 4. Run `manta config show` — should print the loaded settings and
    the groups your token can access.
 5. Run any command you used regularly in v1; if it warns about a
@@ -802,6 +802,45 @@ Not Found` after the upgrade.
 4. **Verify.** `curl -k https://<host>:8443/v2/health` should
    return `200 OK`; `curl -k https://<host>:8443/api/v2/health`
    should return `404`.
+
+### 5.14. One CSCS-Keycloak token, obtained by the CLI (BREAKING)
+
+The CLI now logs in to the **CSCS Keycloak** itself and uses **one
+token for every site**. `manta-server` no longer takes part in
+authentication: it has no auth endpoints and forwards the bearer token
+unchanged to each site's backend.
+
+**What changed.**
+
+| Before | After |
+|---|---|
+| CLI prompts for username + password, sends them to `POST /v2/auth/token` | CLI runs an OIDC login against the CSCS Keycloak: a browser (auth code + PKCE), or a device code when headless / over SSH |
+| One cached token per site: `<cache_dir>/<site>_auth` | One cached token for all sites: `<cache_dir>/token.json`, refreshed silently while the refresh token is valid |
+| `MANTA_CSM_TOKEN` env var | `MANTA_TOKEN` env var (no alias) |
+| Cached / env tokens checked with `POST /v2/auth/validate` | No up-front check; a rejected token surfaces as `HTTP 401` on the first request |
+| `manta config unset auth` picks a per-site file to delete | Deletes `token.json` |
+| `POST /v2/auth/token`, `POST /v2/auth/validate` | Removed — `404 Not Found` |
+| `[server].auth_rate_limit_per_minute`, `[auditor.kafka]` | Removed — ignored if still present in `server.toml` |
+
+New optional `cli.toml` keys: `oidc_issuer_url` (default: the CSCS
+realm), `oidc_client_id` (default: the manta client) and
+`oidc_headless` (always use the device-code flow).
+
+**Migration.**
+
+1. **Operators.** Every site's CSM API gateway, Vault
+   `jwt-manta-<site>` auth role and k8s must accept tokens from the
+   CSCS Keycloak, and the manta client's access token must carry
+   `preferred_username`, `name` and `realm_access.roles` (including
+   `pa_admin` for admins and the HSM-group roles). Drop
+   `auth_rate_limit_per_minute` and `[auditor.kafka]` from
+   `server.toml` at your convenience.
+2. **CLI users.** Nothing to do — the next command logs you in. Old
+   `<site>_auth` files are ignored and can be deleted by hand.
+3. **Scripts.** Rename `MANTA_CSM_TOKEN` to `MANTA_TOKEN`. The token
+   must now come from the CSCS Keycloak, and it works for every site.
+4. **HTTP clients.** Stop calling `/v2/auth/*`; obtain the token from
+   the CSCS Keycloak.
 
 ---
 

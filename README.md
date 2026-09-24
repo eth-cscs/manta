@@ -10,7 +10,7 @@ Another CLI tool for [Alps](https://www.cscs.ch/science/computer-science-hpc/202
 
 A command-line + HTTP API frontend for HPC clusters running [CSM](https://github.com/Cray-HPE/cray-site-init) or [OpenCHAMI](https://www.openchami.org/). Two independent binaries from one Cargo workspace:
 
-- **`manta`** — interactive CLI. Forwards every operation (including auth) to a `manta-server` over HTTPS; never calls the backend directly.
+- **`manta`** — interactive CLI. Logs in to the CSCS Keycloak itself (one token for every site), then forwards every operation to a `manta-server` over HTTPS; never calls the backend directly.
 - **`manta-server`** — Axum HTTPS server. Holds the per-site backend credentials and exposes a Swagger-documented REST + WebSocket API at `https://<host>:8443/v2` (default port).
 
 **Get something running locally:**
@@ -181,7 +181,7 @@ The `manta-cli` image has `manta` as its ENTRYPOINT, so anything after the image
 ```bash
 docker run -it --network=host \
   -v "$CONFIG_DIR":/root/.config/manta \
-  -e MANTA_CSM_TOKEN \
+  -e MANTA_TOKEN \
   manta-cli get redfish-endpoints
 ```
 
@@ -200,7 +200,7 @@ docker run -p 8443:8443 \
 > ```bash
 > docker run -it --rm --network=host \
 >   -v "$CONFIG_DIR":/root/.config/manta \
->   -e MANTA_CSM_TOKEN \
+>   -e MANTA_TOKEN \
 >   manta-cli get sessions
 > ERROR | Get and filter sessions command not implemented for this backend
 > exit status 1
@@ -250,11 +250,11 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, auth rate limit) and the optional `[auditor.kafka]` for the server-side audit stream. The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
+The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`, the optional `oidc_*` login settings) — it has **no `[sites.*]` block**. Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, request timeout). The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
 
 **`cli.toml`**
 
-`manta_server_url` is required: the CLI no longer talks to CSM/OCHAMI backends directly — every operation (including auth) is forwarded to the named manta server. Run `manta-server` on a reachable host first.
+`manta_server_url` is required: the CLI no longer talks to CSM/OCHAMI backends directly — every operation is forwarded to the named manta server. Run `manta-server` on a reachable host first. Login is the one exception: the CLI gets its bearer token from the CSCS Keycloak itself (see **Authentication** below).
 
 ```toml
 log = "info"
@@ -273,11 +273,22 @@ power_max_poll_attempts          = 300       # 300 x 3 s = 15 min
 sat_file_poll_interval_secs      = 10
 sat_file_poll_budget_secs        = 14400     # 4 hours
 sat_file_not_visible_budget_secs = 300       # 5 minutes
+
+# Optional login settings. Defaults: the CSCS realm and the manta client.
+# oidc_issuer_url = "https://auth.cscs.ch/auth/realms/cscs"
+# oidc_client_id  = "PLACEHOLDER-manta-cli"
+# oidc_headless   = false                     # true: device-code login (URL + code) instead of a browser
 ```
 
 `read_only = true` makes the CLI refuse every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) before any request leaves the process; `--dry-run` invocations are still allowed. Toggle it with `manta config set read-only` / `manta config unset read-only`. It is a local foot-gun guard, **not** a security control — there is no server-side counterpart.
 
-Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which emits per-`/auth/*` events to its configured `[auditor.kafka]` stream.
+**Authentication.** The CLI logs in to the CSCS Keycloak directly and uses one bearer token for every site; `manta-server` never sees credentials, it only forwards the token to the site backends (CSM API, Vault, k8s), which must trust the CSCS Keycloak. The CLI resolves the token in this order:
+
+1. `MANTA_TOKEN` environment variable, used as-is (for scripts and CI).
+2. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
+3. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
+
+`manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to `MANTA_TOKEN` instead.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
@@ -294,12 +305,7 @@ port                            = 8443        # optional; default 8443 if cert+k
 cert                            = "/etc/manta/tls/server.crt"
 key                             = "/etc/manta/tls/server.key"
 console_inactivity_timeout_secs = 1800
-auth_rate_limit_per_minute      = 60      # per source IP for /v2/auth/*; omit to disable
 request_timeout_secs            = 300     # global per-route timeout (returns 408); default 300 (5 min)
-
-[auditor.kafka]
-brokers = ["kafka.cscs.ch:9095"]
-topic   = "manta-server-audit"
 
 [sites.alps]
 backend           = "csm"
