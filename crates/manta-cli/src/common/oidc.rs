@@ -42,8 +42,7 @@ pub const DEFAULT_OIDC_ISSUER_URL: &str =
 /// Default OIDC client id. Overridable with `oidc_client_id` in
 /// `cli.toml`.
 ///
-/// Registered on the TDS realm so far; the production realm does not
-/// have it yet.
+/// The same client id is used on the production and TDS realms.
 pub const DEFAULT_OIDC_CLIENT_ID: &str = "manta-cli";
 
 /// Loopback port the browser flow listens on. Must match the redirect
