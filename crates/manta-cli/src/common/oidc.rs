@@ -42,14 +42,15 @@ pub const DEFAULT_OIDC_ISSUER_URL: &str =
 /// Default OIDC client id. Overridable with `oidc_client_id` in
 /// `cli.toml`.
 ///
-/// PLACEHOLDER: the manta client is not registered in the CSCS realm
-/// yet. Replace with the real client id once it exists.
-pub const DEFAULT_OIDC_CLIENT_ID: &str = "PLACEHOLDER-manta-cli";
+/// Registered on the TDS realm so far; the production realm does not
+/// have it yet.
+pub const DEFAULT_OIDC_CLIENT_ID: &str = "manta-cli";
 
 /// Loopback port the browser flow listens on. Must match the redirect
 /// URI registered on the Keycloak client (`http://localhost:<port>`).
 ///
-/// PLACEHOLDER: confirm against the client registration once it exists.
+/// The TDS registration accepts `http://localhost:8765`; loopback IP
+/// redirects (`http://127.0.0.1:<port>`) are rejected.
 pub const REDIRECT_PORT: u16 = 8765;
 
 /// How long the browser flow waits for the redirect before giving up.

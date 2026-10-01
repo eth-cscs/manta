@@ -34,7 +34,7 @@ read_only = false
 # Issuer and client id default to the CSCS realm and the manta client;
 # override them only to point at another realm (e.g. TDS).
 # oidc_issuer_url = "https://auth.cscs.ch/auth/realms/cscs"
-# oidc_client_id  = "PLACEHOLDER-manta-cli"
+# oidc_client_id  = "manta-cli"
 #
 # Log in with the device-code flow (print a URL + code) instead of
 # opening a browser. SSH sessions use it automatically.
