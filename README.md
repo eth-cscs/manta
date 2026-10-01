@@ -276,7 +276,7 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 
 # Optional login settings. Defaults: the CSCS realm and the manta client.
 # oidc_issuer_url = "https://auth.cscs.ch/auth/realms/cscs"
-# oidc_client_id  = "PLACEHOLDER-manta-cli"
+# oidc_client_id  = "manta-cli"
 # oidc_headless   = false                     # true: device-code login (URL + code) instead of a browser
 ```
 
