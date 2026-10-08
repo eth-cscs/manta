@@ -780,7 +780,7 @@ flowchart TD
 
 For scripts, set `MANTA_TOKEN` from a secret-fetch step before the `manta` invocation. It is used as-is: nothing checks it up front, so an expired or rejected token surfaces as an `HTTP 401` on the first request rather than falling through to the cache. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh the access token silently.
 
-The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH, which is detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
+The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH or on a host without a graphical display, both detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
 
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511---dry-run-on-every-mutating-verb-add-group--d-reassigned).
 
