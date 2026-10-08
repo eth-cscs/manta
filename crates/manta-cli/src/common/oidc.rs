@@ -31,7 +31,7 @@ use openidconnect::{
   PkceCodeChallenge, RedirectUrl, Scope, TokenResponse as _,
 };
 use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpListener;
 
 /// Default issuer URL of the CSCS Keycloak realm. Overridable with
@@ -58,6 +58,10 @@ const BROWSER_LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
 /// Upper bound on the device-code wait, whatever `expires_in` the
 /// Keycloak sends (its default device-code lifespan is 10 minutes).
 const DEVICE_LOGIN_MAX_WAIT: Duration = Duration::from_secs(30 * 60);
+
+/// Longest request line the redirect listener reads; the real redirect
+/// is well under 1 KiB.
+const MAX_REQUEST_LINE: u64 = 8 * 1024;
 
 /// Per-request timeout for every call to the Keycloak.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
@@ -339,8 +343,10 @@ async fn login_via_browser(settings: &OidcSettings<'_>) -> Result<TokenStore> {
 }
 
 /// Accept connections on `listener` until one carries the OIDC
-/// redirect, answer it, and return the authorization code. Other
-/// requests (e.g. a browser's `/favicon.ico`) get a `404`.
+/// redirect, answer it, and return the authorization code. Any other
+/// request (e.g. a browser's `/favicon.ico`, or one without our
+/// `state`) gets a `404` and does not end the login; neither does a
+/// connection that fails or sends an unreadable request line.
 async fn wait_for_redirect(
   listener: &TcpListener,
   expected_state: &str,
@@ -348,20 +354,26 @@ async fn wait_for_redirect(
   loop {
     let (mut stream, _) = listener.accept().await?;
     let mut request_line = String::new();
-    BufReader::new(&mut stream)
+    let read = BufReader::new((&mut stream).take(MAX_REQUEST_LINE))
       .read_line(&mut request_line)
-      .await?;
+      .await;
+    if let Err(e) = read {
+      tracing::debug!("ignoring unreadable request on the redirect port: {e}");
+      continue;
+    }
 
     let outcome = parse_redirect(&request_line, expected_state);
-    let (status, body) = match &outcome {
-      Some(Ok(_)) => ("200 OK", SUCCESS_HTML.to_string()),
-      Some(Err(e)) => {
-        ("400 Bad Request", format!("Authentication failed: {e}"))
-      }
-      None => ("404 Not Found", String::new()),
+    let (status, content_type, body) = match &outcome {
+      Some(Ok(_)) => ("200 OK", "text/html", SUCCESS_HTML.to_string()),
+      Some(Err(e)) => (
+        "400 Bad Request",
+        "text/plain; charset=utf-8",
+        format!("Authentication failed: {e}"),
+      ),
+      None => ("404 Not Found", "text/plain; charset=utf-8", String::new()),
     };
     let response = format!(
-      "HTTP/1.1 {status}\r\nContent-Type: text/html\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+      "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
       body.len()
     );
     // Best effort: the code is already in hand even if the reply fails.
@@ -374,8 +386,10 @@ async fn wait_for_redirect(
 }
 
 /// Parse the request line of a redirect (`GET /?state=..&code=.. HTTP/1.1`).
-/// `None` when it is not the redirect at all; otherwise the code, or
-/// the error the Keycloak or a state mismatch produced.
+/// `None` when it is not our redirect: no `state`, or a different one.
+/// Otherwise the code, or the error the Keycloak returned (which, per
+/// RFC 6749 §4.1.2.1, also carries our `state`). Checking `state`
+/// first means no other local client can end the login.
 fn parse_redirect(
   request_line: &str,
   expected_state: &str,
@@ -391,13 +405,12 @@ fn parse_redirect(
       .map(|(_, v)| v.into_owned())
   };
 
+  if param("state")? != expected_state {
+    return None;
+  }
   if let Some(error) = param("error") {
     let description = param("error_description").unwrap_or(error);
     return Some(Err(anyhow!("Keycloak returned an error: {description}")));
-  }
-  let state = param("state")?;
-  if state != expected_state {
-    return Some(Err(anyhow!("state mismatch in the login redirect")));
   }
   Some(param("code").ok_or_else(|| anyhow!("login redirect carried no code")))
 }
@@ -743,15 +756,22 @@ mod tests {
   }
 
   #[test]
-  fn redirect_with_wrong_state_is_rejected() {
+  fn redirect_with_wrong_state_is_ignored() {
     let line = "GET /?state=evil&code=the-code HTTP/1.1\r\n";
-    let err = parse_redirect(line, "abc").unwrap().unwrap_err();
-    assert!(err.to_string().contains("state mismatch"));
+    assert!(parse_redirect(line, "abc").is_none());
+  }
+
+  #[test]
+  fn error_without_our_state_is_ignored() {
+    let line = "GET /?error=access_denied HTTP/1.1\r\n";
+    assert!(parse_redirect(line, "abc").is_none());
+    let line = "GET /?state=evil&error=access_denied HTTP/1.1\r\n";
+    assert!(parse_redirect(line, "abc").is_none());
   }
 
   #[test]
   fn redirect_error_is_surfaced() {
-    let line = "GET /?error=access_denied&error_description=User%20said%20no HTTP/1.1\r\n";
+    let line = "GET /?state=abc&error=access_denied&error_description=User%20said%20no HTTP/1.1\r\n";
     let err = parse_redirect(line, "abc").unwrap().unwrap_err();
     assert!(err.to_string().contains("User said no"), "got: {err}");
   }
@@ -759,6 +779,58 @@ mod tests {
   #[test]
   fn unrelated_request_is_not_the_redirect() {
     assert!(parse_redirect("GET /favicon.ico HTTP/1.1\r\n", "abc").is_none());
+  }
+
+  /// Send `request` on a fresh connection and return the response's
+  /// status line.
+  async fn send_to(addr: std::net::SocketAddr, request: &[u8]) -> String {
+    let mut stream = tokio::net::TcpStream::connect(addr).await.unwrap();
+    stream.write_all(request).await.unwrap();
+    let mut response = String::new();
+    stream.read_to_string(&mut response).await.unwrap();
+    response.lines().next().unwrap_or_default().to_string()
+  }
+
+  #[tokio::test]
+  async fn redirect_listener_survives_stray_requests() {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let client = tokio::spawn(async move {
+      let not_found = "HTTP/1.1 404 Not Found";
+      assert_eq!(
+        send_to(addr, b"GET /favicon.ico HTTP/1.1\r\n").await,
+        not_found
+      );
+      assert_eq!(
+        send_to(addr, b"GET /?error=x HTTP/1.1\r\n").await,
+        not_found
+      );
+      assert_eq!(
+        send_to(addr, b"GET /?state=evil&code=c HTTP/1.1\r\n").await,
+        not_found
+      );
+      // Not UTF-8: the read fails and the connection is dropped.
+      let mut bad = tokio::net::TcpStream::connect(addr).await.unwrap();
+      bad.write_all(b"\xff\xfe\r\n").await.unwrap();
+      drop(bad);
+      // No newline and kept open: only the length cap ends the read.
+      let mut long = tokio::net::TcpStream::connect(addr).await.unwrap();
+      long.write_all(&[b'a'; 16 * 1024]).await.unwrap();
+      let status =
+        send_to(addr, b"GET /?state=abc&code=the-code HTTP/1.1\r\n").await;
+      drop(long);
+      status
+    });
+
+    let code = tokio::time::timeout(
+      Duration::from_secs(10),
+      wait_for_redirect(&listener, "abc"),
+    )
+    .await
+    .expect("redirect listener hung")
+    .unwrap();
+    assert_eq!(code, "the-code");
+    assert_eq!(client.await.unwrap(), "HTTP/1.1 200 OK");
   }
 
   #[test]
