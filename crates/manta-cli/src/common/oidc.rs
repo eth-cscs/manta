@@ -55,6 +55,10 @@ pub const REDIRECT_PORT: u16 = 8765;
 /// How long the browser flow waits for the redirect before giving up.
 const BROWSER_LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
 
+/// Upper bound on the device-code wait, whatever `expires_in` the
+/// Keycloak sends (its default device-code lifespan is 10 minutes).
+const DEVICE_LOGIN_MAX_WAIT: Duration = Duration::from_secs(30 * 60);
+
 /// Per-request timeout for every call to the Keycloak.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -442,11 +446,14 @@ async fn login_via_device_code(
 
   let mut interval = Duration::from_secs(device.interval.unwrap_or(5));
   let deadline =
-    tokio::time::Instant::now() + Duration::from_secs(device.expires_in);
+    tokio::time::Instant::now() + device_login_window(device.expires_in);
 
   loop {
-    tokio::time::sleep(interval).await;
-    if tokio::time::Instant::now() > deadline {
+    // Never sleep past the deadline, however long the server's interval.
+    let remaining =
+      deadline.saturating_duration_since(tokio::time::Instant::now());
+    tokio::time::sleep(interval.min(remaining)).await;
+    if tokio::time::Instant::now() >= deadline {
       bail!("device code expired before the login completed");
     }
 
@@ -472,9 +479,17 @@ async fn login_via_device_code(
 
     match device_poll_step(&body)? {
       PollStep::Continue => {}
-      PollStep::SlowDown => interval += Duration::from_secs(5),
+      PollStep::SlowDown => {
+        interval = interval.saturating_add(Duration::from_secs(5));
+      }
     }
   }
+}
+
+/// How long to wait for a device-code login: the server's
+/// `expires_in`, capped at [`DEVICE_LOGIN_MAX_WAIT`].
+fn device_login_window(expires_in_secs: u64) -> Duration {
+  Duration::from_secs(expires_in_secs).min(DEVICE_LOGIN_MAX_WAIT)
 }
 
 /// What to do after a non-success poll of the token endpoint.
@@ -935,6 +950,37 @@ mod tests {
     assert_eq!(store.access_token, "device-access");
     assert_eq!(store.refresh_token.as_deref(), Some("device-refresh"));
     assert_eq!(polls.load(Ordering::SeqCst), 2);
+  }
+
+  #[test]
+  fn device_login_window_is_capped() {
+    assert_eq!(device_login_window(60), Duration::from_secs(60));
+    assert_eq!(device_login_window(u64::MAX), DEVICE_LOGIN_MAX_WAIT);
+  }
+
+  #[tokio::test]
+  async fn device_flow_huge_interval_still_gives_up_at_the_deadline() {
+    let issuer = stub_keycloak(|base, path, _| match path {
+      "/.well-known/openid-configuration" => (200, discovery_json(base, true)),
+      "/device" => (
+        200,
+        r#"{"device_code":"dev-code","user_code":"ABCD-EFGH","verification_uri":"https://kc/device","expires_in":1,"interval":18446744073709551615}"#
+          .to_string(),
+      ),
+      "/token" => (400, r#"{"error":"authorization_pending"}"#.to_string()),
+      _ => (404, "{}".to_string()),
+    })
+    .await;
+
+    let err = tokio::time::timeout(
+      Duration::from_secs(10),
+      login(&stub_settings(&issuer)),
+    )
+    .await
+    .expect("device login ignored its deadline")
+    .unwrap_err()
+    .to_string();
+    assert!(err.contains("device code expired"), "got: {err}");
   }
 
   #[tokio::test]
