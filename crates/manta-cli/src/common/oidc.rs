@@ -118,7 +118,7 @@ impl TokenStore {
   fn is_expired_at(&self, now: i64) -> bool {
     self
       .expires_at
-      .is_none_or(|exp| now + EXPIRY_GRACE_SECS >= exp)
+      .is_none_or(|exp| now.saturating_add(EXPIRY_GRACE_SECS) >= exp)
   }
 
   /// Read a token store from `path`.
@@ -170,7 +170,7 @@ impl TokenStore {
       access_token: resp.access_token,
       refresh_token: resp.refresh_token,
       id_token: resp.id_token,
-      expires_at: resp.expires_in.map(|s| now_secs() + s),
+      expires_at: resp.expires_in.map(expires_at),
     }
   }
 }
@@ -330,9 +330,7 @@ async fn login_via_browser(settings: &OidcSettings<'_>) -> Result<TokenStore> {
     access_token: token_response.access_token().secret().clone(),
     refresh_token: token_response.refresh_token().map(|t| t.secret().clone()),
     id_token: Some(id_token.to_string()),
-    expires_at: token_response
-      .expires_in()
-      .map(|d| now_secs() + i64::try_from(d.as_secs()).unwrap_or(i64::MAX / 2)),
+    expires_at: token_response.expires_in().map(|d| expires_at(d.as_secs())),
   })
 }
 
@@ -516,7 +514,13 @@ fn in_ssh_session() -> bool {
 pub(crate) fn now_secs() -> i64 {
   SystemTime::now()
     .duration_since(UNIX_EPOCH)
-    .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX / 2))
+    .map_or(0, |d| i64::try_from(d.as_secs()).unwrap_or(i64::MAX))
+}
+
+/// Absolute expiry for a Keycloak-supplied `expires_in`, saturating
+/// instead of overflowing on absurd values.
+fn expires_at(expires_in_secs: u64) -> i64 {
+  now_secs().saturating_add(i64::try_from(expires_in_secs).unwrap_or(i64::MAX))
 }
 
 fn http_client() -> Result<reqwest::Client> {
@@ -562,7 +566,7 @@ struct RawTokenResponse {
   access_token: String,
   refresh_token: Option<String>,
   id_token: Option<String>,
-  expires_in: Option<i64>,
+  expires_in: Option<u64>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -647,6 +651,37 @@ mod tests {
   #[test]
   fn unknown_expiry_counts_as_expired() {
     assert!(store(None).is_expired_at(0));
+  }
+
+  #[test]
+  fn huge_expires_in_saturates_instead_of_overflowing() {
+    assert_eq!(expires_at(u64::MAX), i64::MAX);
+    assert!(!store(Some(expires_at(u64::MAX))).is_expired_at(now_secs()));
+  }
+
+  #[test]
+  fn expiry_check_near_i64_max_does_not_overflow() {
+    assert!(store(Some(i64::MAX)).is_expired_at(i64::MAX));
+  }
+
+  #[test]
+  fn huge_expires_in_from_token_endpoint_saturates() {
+    let token: RawTokenResponse = serde_json::from_str(
+      r#"{"access_token":"a","expires_in":18446744073709551615}"#,
+    )
+    .unwrap();
+    let store = TokenStore::from_token_response(token);
+    assert_eq!(store.expires_at, Some(i64::MAX));
+  }
+
+  #[test]
+  fn negative_expires_in_from_token_endpoint_is_rejected() {
+    assert!(
+      serde_json::from_str::<RawTokenResponse>(
+        r#"{"access_token":"a","expires_in":-5}"#
+      )
+      .is_err()
+    );
   }
 
   #[test]
