@@ -8,14 +8,19 @@
 //!
 //! - **Browser** ([`login`], default): authorization code + PKCE (S256),
 //!   redirected to a loopback listener on
-//!   `http://localhost:`[`REDIRECT_PORT`]. The ID token's nonce and
-//!   `at_hash` are verified against the realm's JWKS.
+//!   `http://localhost:`[`REDIRECT_PORT`]. The ID token's signature
+//!   (against the realm's JWKS), nonce and `at_hash` are verified.
 //! - **Device code** ([`login`] when headless): prints a verification
 //!   URL + user code and polls the token endpoint. Used when
 //!   `oidc_headless = true`, inside an SSH session, without a graphical
 //!   display (outside macOS), or when no browser can be opened.
 //! - **Refresh** ([`refresh`]): exchanges a cached refresh token for a
 //!   new access token without user interaction.
+//!
+//! Only the browser flow goes through `openidconnect`. The device-code
+//! and refresh flows are hand-written on purpose: refresh needs no
+//! JWKS fetch, and the device-code poll loop bounds its wait against
+//! hostile `expires_in`/`interval` values (see [`device_login_window`]).
 //!
 //! The resulting [`TokenStore`] is cached as JSON by
 //! [`crate::common::authentication`].
@@ -466,11 +471,14 @@ async fn login_via_device_code(
     .context("failed to parse the device authorization response")?;
 
   eprintln!();
+  eprintln!("To log in to the CSCS Keycloak, open this URL in a browser:");
   if let Some(uri) = &device.verification_uri_complete {
-    eprintln!("To log in to the CSCS Keycloak, open this URL in a browser:");
     eprintln!("  {uri}");
+    eprintln!(
+      "and check that the page shows the code: {}",
+      device.user_code
+    );
   } else {
-    eprintln!("To log in to the CSCS Keycloak, open this URL in a browser:");
     eprintln!("  {}", device.verification_uri);
     eprintln!("and enter the code: {}", device.user_code);
   }
@@ -616,7 +624,8 @@ async fn discover(
     .context("failed to parse the OIDC discovery document")
 }
 
-#[derive(Deserialize, Debug)]
+// No `Debug`: it would print the tokens in clear.
+#[derive(Deserialize)]
 struct RawTokenResponse {
   access_token: String,
   refresh_token: Option<String>,
@@ -624,7 +633,8 @@ struct RawTokenResponse {
   expires_in: Option<u64>,
 }
 
-#[derive(Deserialize, Debug)]
+// No `Debug`: it would print the device code in clear.
+#[derive(Deserialize)]
 struct DeviceAuthResponse {
   device_code: String,
   user_code: String,
@@ -685,6 +695,8 @@ impl<'c> openidconnect::AsyncHttpClient<'c> for OidcHttp {
 mod tests {
   use super::*;
   use std::os::unix::fs::PermissionsExt;
+  use std::sync::Arc;
+  use std::sync::atomic::{AtomicUsize, Ordering};
 
   fn store(expires_at: Option<i64>) -> TokenStore {
     TokenStore {
@@ -915,10 +927,6 @@ mod tests {
   }
 
   // ---- flows against a stub Keycloak ----
-
-  use std::sync::Arc;
-  use std::sync::atomic::{AtomicUsize, Ordering};
-  use tokio::io::AsyncReadExt;
 
   /// Minimal Keycloak stand-in on an ephemeral port. `handler` gets
   /// `(base_url, path, request_body)` and returns `(status, json)`.
