@@ -94,8 +94,8 @@ pub struct CliConfiguration {
   #[serde(default)]
   pub oidc_client_id: Option<String>,
   /// When `true`, log in with the device-code flow (print a URL and a
-  /// code) instead of opening a browser. SSH sessions use it
-  /// automatically.
+  /// code) instead of opening a browser. SSH sessions, and hosts
+  /// without a graphical display (outside macOS), use it automatically.
   #[serde(default)]
   pub oidc_headless: bool,
 }

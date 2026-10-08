@@ -12,8 +12,8 @@
 //!   `at_hash` are verified against the realm's JWKS.
 //! - **Device code** ([`login`] when headless): prints a verification
 //!   URL + user code and polls the token endpoint. Used when
-//!   `oidc_headless = true`, inside an SSH session, or when no browser
-//!   can be opened.
+//!   `oidc_headless = true`, inside an SSH session, without a graphical
+//!   display (outside macOS), or when no browser can be opened.
 //! - **Refresh** ([`refresh`]): exchanges a cached refresh token for a
 //!   new access token without user interaction.
 //!
@@ -211,7 +211,8 @@ impl TokenStore {
 /// Discovery or any Keycloak call fails, the user denies access, or
 /// the login times out.
 pub async fn login(settings: &OidcSettings<'_>) -> Result<TokenStore> {
-  if settings.headless || in_ssh_session() {
+  if settings.headless || browser_unreachable(|v| std::env::var_os(v).is_some())
+  {
     tracing::debug!("headless login: using the device-code flow");
     return login_via_device_code(settings).await;
   }
@@ -551,11 +552,18 @@ fn device_poll_step(body: &[u8]) -> Result<PollStep> {
   }
 }
 
-/// `true` inside an SSH session, where a browser on the remote host
-/// could not reach the user anyway.
-fn in_ssh_session() -> bool {
-  std::env::var_os("SSH_CONNECTION").is_some()
-    || std::env::var_os("SSH_TTY").is_some()
+/// `true` when a browser started on this host could not reach the
+/// user: inside an SSH session, or (outside macOS, whose `open` needs
+/// no display) without `DISPLAY`/`WAYLAND_DISPLAY`. The display check
+/// catches `ssh host` + `sudo -i`, which drops the `SSH_*` variables,
+/// on a server where `webbrowser` would otherwise "succeed" in starting
+/// an invisible browser. `is_set` reports whether an env var is set.
+fn browser_unreachable(is_set: impl Fn(&str) -> bool) -> bool {
+  let in_ssh = is_set("SSH_CONNECTION") || is_set("SSH_TTY");
+  let no_display = cfg!(not(target_os = "macos"))
+    && !is_set("DISPLAY")
+    && !is_set("WAYLAND_DISPLAY");
+  in_ssh || no_display
 }
 
 pub(crate) fn now_secs() -> i64 {
@@ -729,6 +737,17 @@ mod tests {
       )
       .is_err()
     );
+  }
+
+  #[test]
+  fn browser_unreachable_detection() {
+    let env = |vars: &'static [&'static str]| move |v: &str| vars.contains(&v);
+    assert!(browser_unreachable(env(&["SSH_TTY", "DISPLAY"])));
+    assert!(browser_unreachable(env(&["SSH_CONNECTION", "DISPLAY"])));
+    assert!(!browser_unreachable(env(&["DISPLAY"])));
+    assert!(!browser_unreachable(env(&["WAYLAND_DISPLAY"])));
+    // No SSH variables and no display (e.g. after `sudo -i`).
+    assert_eq!(browser_unreachable(env(&[])), !cfg!(target_os = "macos"));
   }
 
   #[test]
