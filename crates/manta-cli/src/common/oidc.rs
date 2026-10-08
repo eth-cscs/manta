@@ -189,7 +189,7 @@ pub async fn login(settings: &OidcSettings<'_>) -> Result<TokenStore> {
     return login_via_device_code(settings).await;
   }
   match login_via_browser(settings).await {
-    Err(e) if e.downcast_ref::<BrowserUnavailable>().is_some() => {
+    Err(e) if e.is::<BrowserUnavailable>() => {
       tracing::debug!("{e}; falling back to the device-code flow");
       login_via_device_code(settings).await
     }
