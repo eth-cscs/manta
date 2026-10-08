@@ -145,6 +145,11 @@ impl TokenStore {
   /// Write the token store to `path` with `0600` permissions, creating
   /// the parent directory (`0700`) when missing.
   ///
+  /// The JSON goes to a fresh `0600` temp file that is then renamed over
+  /// `path`, so a concurrent reader or an interrupted write never sees
+  /// a torn cache, and an existing cache with looser permissions ends
+  /// up `0600` too.
+  ///
   /// # Errors
   ///
   /// The directory or file cannot be created or written.
@@ -160,17 +165,31 @@ impl TokenStore {
         .with_context(|| format!("could not create '{}'", dir.display()))?;
     }
     let json = serde_json::to_string_pretty(self)?;
-    let mut file = std::fs::File::options()
-      .write(true)
-      .create(true)
-      .truncate(true)
-      .mode(0o600)
-      .open(path)
+    let mut tmp_name = std::ffi::OsString::from(".");
+    tmp_name.push(path.file_name().unwrap_or_default());
+    tmp_name.push(format!(".{}.tmp", std::process::id()));
+    let tmp = path.with_file_name(tmp_name);
+
+    // A leftover from a crashed run with the same pid would make
+    // `create_new` fail.
+    let _ = std::fs::remove_file(&tmp);
+    let write = || -> std::io::Result<()> {
+      let mut file = std::fs::File::options()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(&tmp)?;
+      file.write_all(json.as_bytes())?;
+      file.sync_all()?;
+      std::fs::rename(&tmp, path)
+    };
+    write()
+      .inspect_err(|_| {
+        let _ = std::fs::remove_file(&tmp);
+      })
       .with_context(|| {
         format!("could not write token cache '{}'", path.display())
-      })?;
-    file.write_all(json.as_bytes())?;
-    Ok(())
+      })
   }
 
   fn from_token_response(resp: RawTokenResponse) -> Self {
@@ -730,6 +749,26 @@ mod tests {
       .mode()
       & 0o777;
     assert_eq!(dir_mode, 0o700);
+  }
+
+  #[test]
+  fn save_tightens_a_looser_existing_cache_and_leaves_no_temp_file() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("token.json");
+    std::fs::write(&path, "{}").unwrap();
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o644))
+      .unwrap();
+
+    store(Some(7)).save(&path).unwrap();
+
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600);
+    assert_eq!(TokenStore::load(&path).unwrap().expires_at, Some(7));
+    let entries: Vec<_> = std::fs::read_dir(dir.path())
+      .unwrap()
+      .map(|e| e.unwrap().file_name())
+      .collect();
+    assert_eq!(entries, ["token.json"]);
   }
 
   #[test]
