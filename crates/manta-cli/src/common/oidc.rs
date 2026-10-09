@@ -160,7 +160,7 @@ impl TokenStore {
   /// The directory or file cannot be created or written.
   pub fn save(&self, path: &Path) -> Result<()> {
     use std::io::Write;
-    use std::os::unix::fs::DirBuilderExt;
+    use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
 
     if let Some(dir) = path.parent() {
       std::fs::DirBuilder::new()
@@ -170,11 +170,11 @@ impl TokenStore {
         .with_context(|| format!("could not create '{}'", dir.display()))?;
     }
     let json = serde_json::to_string_pretty(self)?;
-    // Created 0600 on Unix, and deleted on drop if anything fails.
+    // Deleted on drop if anything fails; `persist` keeps the 0600.
     let write = || -> std::io::Result<()> {
-      let mut file = tempfile::NamedTempFile::new_in(
-        path.parent().unwrap_or(Path::new(".")),
-      )?;
+      let mut file = tempfile::Builder::new()
+        .permissions(std::fs::Permissions::from_mode(0o600))
+        .tempfile_in(path.parent().unwrap_or(Path::new(".")))?;
       file.write_all(json.as_bytes())?;
       file.as_file().sync_all()?;
       file.persist(path).map_err(|e| e.error)?;
