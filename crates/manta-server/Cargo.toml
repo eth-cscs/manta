@@ -44,7 +44,6 @@ rustls         = { version = "0.23", default-features = false, features = ["ring
 # Server-side helpers used by service/* and server/common/*
 base64             = { workspace = true }
 chrono             = { workspace = true }
-rdkafka            = { workspace = true }
 comfy-table        = "7.2.2"
 # Glob-pattern matching for service-layer filters like `get_images`
 # `--pattern`. Already a transitive workspace dep via csm-rs; promoting

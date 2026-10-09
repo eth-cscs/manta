@@ -19,7 +19,6 @@ key            = "/etc/manta/tls/server.key"
 # delete a line to fall back to the default, or change the value to
 # override.
 console_inactivity_timeout_secs = 1800     # idle WebSocket console drop
-auth_rate_limit_per_minute      = 60       # per source IP on /auth/*; omit to disable
 request_timeout_secs            = 600      # global per-route timeout; returns 408 on expiry
 shutdown_grace_period_secs      = 30       # drain window after SIGTERM / Ctrl+C
 
@@ -88,17 +87,3 @@ base_url = "https://vault.example.com"
 # backend           = "ochami"
 # shasta_base_url   = "https://ochami.example.com:8443"
 # root_ca_cert_file = "ochami_root_cert.pem"
-
-
-# ---------------------------------------------------------------
-# Audit emission (optional)
-# ---------------------------------------------------------------
-# When the `[auditor.kafka]` block is present, the server publishes
-# one event to the named topic per `/api/v1/auth/*` call. Absent =
-# audit emission disabled.
-
-# [auditor.kafka]
-# brokers            = ["kafka.example.com:9092"]
-# topic              = "manta-audit"
-# message_timeout_ms = 5000    # librdkafka per-message delivery deadline; default 5000
-# delivery_wait_secs = 0       # how long produce_message blocks; 0 = fire-and-forget (default)

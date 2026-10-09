@@ -11,6 +11,11 @@
 //! structured `tracing::debug` on entry and `tracing::warn` on the
 //! error path so an auth failure surfaces backend + user metadata at
 //! the dispatcher boundary.
+//!
+//! manta itself no longer calls either method: the CLI obtains its
+//! token from the CSCS Keycloak directly. The forwarding is kept so
+//! `tests/dispatcher_coverage.rs` keeps holding every trait method to
+//! an override.
 
 use super::*;
 

@@ -1,14 +1,12 @@
 //! Axum router registration: maps every `/v2/` path to its handler.
 //!
 //! The OpenAPI JSON spec is served at `GET /openapi.json` and the
-//! Swagger UI is served at `GET /docs`. The `/v2/auth/*`
-//! sub-router carries its own defensive layers (rate limit, body
-//! redaction) — see [`crate::server::auth_middleware`].
+//! Swagger UI is served at `GET /docs`.
 
 use std::sync::Arc;
 
 use axum::{
-  Extension, Router,
+  Router,
   http::StatusCode,
   middleware,
   routing::{delete, get, post, put},
@@ -19,9 +17,6 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use super::ServerState;
 use super::api_doc::ApiDoc;
-use super::auth_middleware::{
-  AuthRateLimiter, rate_limit, strip_body_for_logs,
-};
 use super::handlers;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
@@ -32,10 +27,6 @@ use super::handlers;
 ///   `TimeoutLayer`. `POST /power` now returns immediately with a
 ///   PCS transition id (the polling loop runs CLI-side), so it fits
 ///   well under the default timeout — no per-route override is needed.
-/// - `/v2/auth/*` — separate sub-router with two layered
-///   defences: per-IP rate limit (see [`AuthRateLimiter`]) and body
-///   redaction from any log span (see [`strip_body_for_logs`]). No
-///   Bearer-token extractor (these endpoints issue the token).
 /// - `/docs` + `/openapi.json` — Swagger UI and the spec from
 ///   [`ApiDoc`].
 /// - HSTS header injected on every response by an
@@ -185,20 +176,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       state.request_timeout,
     ));
 
-  // /v2/auth/* — credential-handling sub-router. No Bearer
-  // extractor (chicken-and-egg). Two layered defences applied:
-  // (1) per-IP rate limit, (2) body redaction from any log span.
-  let limiter = AuthRateLimiter::new();
-  let auth = Router::new()
-    .route("/token", post(handlers::auth_token))
-    .route("/validate", post(handlers::auth_validate))
-    .layer(middleware::from_fn(strip_body_for_logs))
-    .layer(middleware::from_fn_with_state(state.clone(), rate_limit))
-    .layer(Extension(limiter));
-
   Router::new()
     .nest("/v2", api)
-    .nest("/v2/auth", auth)
     .merge(SwaggerUi::new("/docs").url("/openapi.json", ApiDoc::openapi()))
     // HSTS on every response. Browsers ignore HSTS over plain HTTP
     // per RFC 6797, so this is a no-op when `allow_http = true`

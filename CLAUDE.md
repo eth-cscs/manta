@@ -14,7 +14,7 @@ crates/manta-server/   (bin + lib)  — Axum HTTPS server + service layer
 
 Dep graph: `manta-cli → manta-shared ← manta-server`. The two binaries do **not** depend on each other.
 
-The mental model that explains the whole layout: **the CLI never talks to a backend directly.** Every operation — including auth — is an HTTPS call from `manta` to a running `manta-server`, which holds the per-site credentials and routes to csm-rs/ochami-rs. The entire backend bridge (`StaticBackendDispatcher`, csm-rs, ochami-rs, axum) lives in `manta-server` only; the CLI just formats requests and responses.
+The mental model that explains the whole layout: **the CLI never talks to a backend directly.** Every operation is an HTTPS call from `manta` to a running `manta-server`, which holds the per-site infra credentials (Vault, k8s) and routes to csm-rs/ochami-rs. The one exception is login: the CLI gets a single bearer token (valid for every site) from the CSCS Keycloak itself over OIDC (`crates/manta-cli/src/common/oidc.rs`); the server has no auth endpoints and forwards the token unchanged. The entire backend bridge (`StaticBackendDispatcher`, csm-rs, ochami-rs, axum) lives in `manta-server` only; the CLI just formats requests and responses.
 
 **`ARCHITECTURE.md` is the authoritative reference** — layer boundaries, the CLI dispatch tree, server request flow + middleware order, the step-by-step "adding a command" recipe, generated code, security model, request timeouts. Read it before any non-trivial change instead of relying on a summary here. `README.md` is the source of truth for config + deploy; `CLI.md`/`API.md`/`GUIDE.md` are user docs; `MIGRATING.md` explains why removed knobs were removed.
 
@@ -55,7 +55,7 @@ RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags" 
 ## Error handling (three types, partitioned by layer — CI-enforced)
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — `manta-server`'s service + handler + dispatcher code.
-- **`manta_shared::common::error::MantaError`** — `manta-shared`'s pure helpers (`config` loader, `jwt_ops`) and binary-side helpers depending on it (CLI's SAT-file Jinja renderer; server's `audit`/`kafka`). Keeps `manta-shared` free of a compile-time dep on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
+- **`manta_shared::common::error::MantaError`** — `manta-shared`'s pure helpers (`config` loader, `jwt_ops`) and binary-side helpers depending on it (CLI's SAT-file Jinja renderer). Keeps `manta-shared` free of a compile-time dep on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend`.
 - **`anyhow::Error`** — only in `crates/manta-cli/src/` (handlers + CLI helpers, which exit via `eprintln!` + `process::exit()`).
 
 **Boundary rule:** server handlers (`crates/manta-server/src/server/handlers/`) call only `service/` functions or `manta-shared` helpers — never CLI code. They map typed errors to HTTP via `to_handler_error` in `server/handlers/mod.rs`.
@@ -77,8 +77,8 @@ Only check out a sibling when you're **actively editing unreleased sibling code*
 
 Two **disjoint** TOML schemas, one per binary, in the platform config dir (override with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`):
 
-- `cli.toml` — `site` (optional; sent as the `X-Manta-Site` header, overridable per-invocation with `--site`), required `manta_server_url`, `hsm_group` (default group), `read_only`, and the timeout/poll knobs. **No `[sites]` block** — the CLI only knows the one server it talks to. `read_only = true` makes the CLI refuse mutating verbs locally before any request leaves the process (`common/read_only.rs`); it is a foot-gun guard, **not** a security control, and has no server-side counterpart.
-- `server.toml` — `[server]` (TLS, timeouts, auth rate limit) + a `[sites.<name>]` map. The server hosts **every** site at once; clients pick one per request via `X-Manta-Site`. Fails closed without TLS unless `--allow-http` **or** `[server].allow_http = true` is set (the two are OR-ed).
+- `cli.toml` — `site` (optional; sent as the `X-Manta-Site` header, overridable per-invocation with `--site`), required `manta_server_url`, `hsm_group` (default group), `read_only`, the optional `oidc_issuer_url` / `oidc_client_id` / `oidc_headless` login knobs (defaults: CSCS realm, client id `manta-cli`, the same on prod and on the TDS realm `https://auth-tds.cscs.ch/auth/realms/cscs`; as of 2026-10 the client exists only on TDS), and the timeout/poll knobs. **No `[sites]` block** — the CLI only knows the one server it talks to. `read_only = true` makes the CLI refuse mutating verbs locally before any request leaves the process (`common/read_only.rs`); it is a foot-gun guard, **not** a security control, and has no server-side counterpart.
+- `server.toml` — `[server]` (TLS, timeouts) + a `[sites.<name>]` map. The server hosts **every** site at once; clients pick one per request via `X-Manta-Site`. Fails closed without TLS unless `--allow-http` **or** `[server].allow_http = true` is set (the two are OR-ed).
 
 ## Work in flight (NOT on `main` — check before assuming)
 

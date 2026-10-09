@@ -80,7 +80,7 @@ anyhow = { version = "1.0.44", default-features = false }
 # Cost of the duplication: a few MB of extra binary size and ~30s
 # extra cold compile. Revisit when (a) we do the sibling error
 # refactor, or (b) kube ecosystem catches up to reqwest 0.13.
-reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "json", "rustls", "socks", "stream"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["blocking", "form", "json", "rustls", "socks", "stream"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 serde_yaml = "0.9.34"
@@ -114,6 +114,14 @@ semver = "1.0"
 # Runtime support for the progenitor-generated API client. The generated
 # code in OUT_DIR (see build.rs) references types from this crate.
 progenitor-client = "0.14"
+# OIDC login against the CSCS Keycloak (`common::oidc`). Default features
+# off: they pull reqwest 0.12; requests go through manta-cli's reqwest
+# 0.13 via a small `AsyncHttpClient` adapter instead.
+openidconnect = { version = "4.0.1", default-features = false }
+webbrowser = "1.0.6"
+# Atomic 0600 write of the token cache (`TokenStore::save`). Already in
+# the build graph through self_update.
+tempfile = "3"
 
 # Server-only deps (axum, axum-server, utoipa*, tower-http, rustls,
 # rustls-pemfile) moved to crates/manta-server with the HTTP server itself.
@@ -122,7 +130,6 @@ progenitor-client = "0.14"
 assert_cmd = "2"
 base64 = "0.22"
 predicates = "3"
-tempfile = "3"
 toml = "0.9"
 
 # Build profiles ([profile.release], [profile.dist]) live at the workspace

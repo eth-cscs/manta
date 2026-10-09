@@ -145,7 +145,7 @@ Remove the default HSM group.
 
 ### config unset auth
 
-Remove the stored authentication token.
+Delete the cached authentication token (`token.json` in manta's cache directory). The next command that needs a token logs in to the CSCS Keycloak again. Legacy per-site `<site>_auth` files from older versions are left untouched.
 
 ---
 
