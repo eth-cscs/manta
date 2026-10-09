@@ -160,7 +160,7 @@ impl TokenStore {
   /// The directory or file cannot be created or written.
   pub fn save(&self, path: &Path) -> Result<()> {
     use std::io::Write;
-    use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+    use std::os::unix::fs::DirBuilderExt;
 
     if let Some(dir) = path.parent() {
       std::fs::DirBuilder::new()
@@ -170,31 +170,19 @@ impl TokenStore {
         .with_context(|| format!("could not create '{}'", dir.display()))?;
     }
     let json = serde_json::to_string_pretty(self)?;
-    let mut tmp_name = std::ffi::OsString::from(".");
-    tmp_name.push(path.file_name().unwrap_or_default());
-    tmp_name.push(format!(".{}.tmp", std::process::id()));
-    let tmp = path.with_file_name(tmp_name);
-
-    // A leftover from a crashed run with the same pid would make
-    // `create_new` fail.
-    let _ = std::fs::remove_file(&tmp);
+    // Created 0600 on Unix, and deleted on drop if anything fails.
     let write = || -> std::io::Result<()> {
-      let mut file = std::fs::File::options()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&tmp)?;
+      let mut file = tempfile::NamedTempFile::new_in(
+        path.parent().unwrap_or(Path::new(".")),
+      )?;
       file.write_all(json.as_bytes())?;
-      file.sync_all()?;
-      std::fs::rename(&tmp, path)
+      file.as_file().sync_all()?;
+      file.persist(path).map_err(|e| e.error)?;
+      Ok(())
     };
-    write()
-      .inspect_err(|_| {
-        let _ = std::fs::remove_file(&tmp);
-      })
-      .with_context(|| {
-        format!("could not write token cache '{}'", path.display())
-      })
+    write().with_context(|| {
+      format!("could not write token cache '{}'", path.display())
+    })
   }
 
   fn from_token_response(resp: RawTokenResponse) -> Self {
@@ -216,8 +204,7 @@ impl TokenStore {
 /// Discovery or any Keycloak call fails, the user denies access, or
 /// the login times out.
 pub async fn login(settings: &OidcSettings<'_>) -> Result<TokenStore> {
-  if settings.headless || browser_unreachable(|v| std::env::var_os(v).is_some())
-  {
+  if settings.headless || browser_unreachable() {
     tracing::debug!("headless login: using the device-code flow");
     return login_via_device_code(settings).await;
   }
@@ -565,8 +552,15 @@ fn device_poll_step(body: &[u8]) -> Result<PollStep> {
 /// no display) without `DISPLAY`/`WAYLAND_DISPLAY`. The display check
 /// catches `ssh host` + `sudo -i`, which drops the `SSH_*` variables,
 /// on a server where `webbrowser` would otherwise "succeed" in starting
-/// an invisible browser. `is_set` reports whether an env var is set.
-fn browser_unreachable(is_set: impl Fn(&str) -> bool) -> bool {
+/// an invisible browser.
+fn browser_unreachable() -> bool {
+  browser_unreachable_given(|v| std::env::var_os(v).is_some())
+}
+
+/// The logic of [`browser_unreachable`], with the environment injected
+/// (`is_set` reports whether an env var is set) so tests need not touch
+/// real env vars.
+fn browser_unreachable_given(is_set: impl Fn(&str) -> bool) -> bool {
   let in_ssh = is_set("SSH_CONNECTION") || is_set("SSH_TTY");
   let no_display = cfg!(not(target_os = "macos"))
     && !is_set("DISPLAY")
@@ -754,12 +748,18 @@ mod tests {
   #[test]
   fn browser_unreachable_detection() {
     let env = |vars: &'static [&'static str]| move |v: &str| vars.contains(&v);
-    assert!(browser_unreachable(env(&["SSH_TTY", "DISPLAY"])));
-    assert!(browser_unreachable(env(&["SSH_CONNECTION", "DISPLAY"])));
-    assert!(!browser_unreachable(env(&["DISPLAY"])));
-    assert!(!browser_unreachable(env(&["WAYLAND_DISPLAY"])));
+    assert!(browser_unreachable_given(env(&["SSH_TTY", "DISPLAY"])));
+    assert!(browser_unreachable_given(env(&[
+      "SSH_CONNECTION",
+      "DISPLAY"
+    ])));
+    assert!(!browser_unreachable_given(env(&["DISPLAY"])));
+    assert!(!browser_unreachable_given(env(&["WAYLAND_DISPLAY"])));
     // No SSH variables and no display (e.g. after `sudo -i`).
-    assert_eq!(browser_unreachable(env(&[])), !cfg!(target_os = "macos"));
+    assert_eq!(
+      browser_unreachable_given(env(&[])),
+      !cfg!(target_os = "macos")
+    );
   }
 
   #[test]

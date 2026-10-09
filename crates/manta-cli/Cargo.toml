@@ -119,6 +119,9 @@ progenitor-client = "0.14"
 # 0.13 via a small `AsyncHttpClient` adapter instead.
 openidconnect = { version = "4.0.1", default-features = false }
 webbrowser = "1.0.6"
+# Atomic 0600 write of the token cache (`TokenStore::save`). Already in
+# the build graph through self_update.
+tempfile = "3"
 
 # Server-only deps (axum, axum-server, utoipa*, tower-http, rustls,
 # rustls-pemfile) moved to crates/manta-server with the HTTP server itself.
@@ -127,7 +130,6 @@ webbrowser = "1.0.6"
 assert_cmd = "2"
 base64 = "0.22"
 predicates = "3"
-tempfile = "3"
 toml = "0.9"
 
 # Build profiles ([profile.release], [profile.dist]) live at the workspace
