@@ -319,11 +319,12 @@ shutdown_grace_period_secs      = 30     # drain window after SIGTERM / Ctrl+C; 
 # while this is unset. Must be an absolute path to an existing directory.
 # migrate_backup_root = "/var/lib/manta/migrate"
 
-# [auditor.kafka]                        # optional: enable Kafka audit emission
+# [auditor.kafka]                        # optional: also produce the audit trail to Kafka
 # brokers            = ["kafka.example.com:9092"]
 # topic              = "manta-audit"
-# message_timeout_ms = 5000              # librdkafka per-message delivery deadline; default 5000
-# delivery_wait_secs = 0                 # how long produce_message blocks; 0 = fire-and-forget (default)
+# message_timeout_ms = 5000              # how long a queued event retries delivery; default 5000
+# [auditor.kafka.properties]             # optional librdkafka passthrough (TLS/SASL settings)
+# "security.protocol" = "SASL_SSL"
 
 [sites.<site_name>]
 backend = "csm"

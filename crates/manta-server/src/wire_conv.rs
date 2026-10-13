@@ -6,7 +6,7 @@
 //! Manta uses two error types (see `CLAUDE.md`'s two-tier error rule):
 //!
 //! - `manta_shared::common::error::MantaError` — produced by shared
-//!   helpers (config loader, audit, JWT, kafka).
+//!   helpers (config loader, JWT, the audit Kafka sink).
 //! - `manta_backend_dispatcher::error::Error` — used everywhere in
 //!   the server's service / backend_dispatcher layers.
 //!

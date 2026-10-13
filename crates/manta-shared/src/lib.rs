@@ -8,8 +8,8 @@
 //! - [`common`] — bi-binary behavioural helpers: the [`common::config`]
 //!   loader (returns an untyped `::config::Config`),
 //!   [`common::error::MantaError`], and
-//!   [`common::log_ops::configure`]. Single-binary helpers (`audit`,
-//!   `kafka`, `jwt_ops`, the SAT-file Jinja renderer) and the typed
+//!   [`common::log_ops::configure`]. Single-binary helpers (the
+//!   server's `audit` trail, the SAT-file Jinja renderer) and the typed
 //!   config schemas (`CliConfiguration`, `ServerConfiguration`,
 //!   `Auditor`/`Kafka`) live with whichever binary uses them.
 //!

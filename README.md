@@ -277,7 +277,7 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 
 `read_only = true` makes the CLI refuse every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) before any request leaves the process; `--dry-run` invocations are still allowed. Toggle it with `manta config set read-only` / `manta config unset read-only`. It is a local foot-gun guard, **not** a security control — there is no server-side counterpart.
 
-Audit emission is server-side only — every CLI command goes through HTTP to `manta-server`, which emits per-`/auth/*` events to its configured `[auditor.kafka]` stream.
+Auditing is server-side only — every CLI command goes through HTTP to `manta-server`, which records one event per mutating request (see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail)) to its log and, when `[auditor.kafka]` is set, to Kafka. The CLI has no audit configuration.
 
 The CLI has no `[sites]` section: it only knows about the one
 `manta-server` it talks to. Per-site backend connection details
@@ -297,9 +297,15 @@ console_inactivity_timeout_secs = 1800
 auth_rate_limit_per_minute      = 60      # per source IP for /v2/auth/*; omit to disable
 request_timeout_secs            = 300     # global per-route timeout (returns 408); default 300 (5 min)
 
-[auditor.kafka]
+[auditor.kafka]                 # optional; without it the audit trail goes to the log only
 brokers = ["kafka.cscs.ch:9095"]
 topic   = "manta-server-audit"
+# message_timeout_ms = 5000     # how long a queued event retries delivery; default 5000
+# [auditor.kafka.properties]    # optional librdkafka passthrough, e.g. for TLS/SASL
+# "security.protocol" = "SASL_SSL"
+# "sasl.mechanism"    = "SCRAM-SHA-512"
+# "sasl.username"     = "manta"
+# "sasl.password"     = "..."
 
 [sites.alps]
 backend           = "csm"
