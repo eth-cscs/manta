@@ -12,6 +12,7 @@
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 pub use manta_shared::types::api::hw_cluster::{
@@ -34,9 +35,19 @@ pub use manta_shared::types::api::hw_cluster::{
 #[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<AddHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("hw_cluster.members.add")
+    .target("group", &target)
+    .target("group", &body.parent_cluster)
+    .detail("parent_cluster", &body.parent_cluster)
+    .detail("pattern", &body.pattern)
+    .detail("create_group", body.create_hsm_group)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "add_hw_component target={} parent={} dry_run={}",
     target,
@@ -99,9 +110,19 @@ pub async fn add_hw_component(
 #[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<DeleteHwComponentRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("hw_cluster.members.delete")
+    .target("group", &target)
+    .target("group", &body.parent_cluster)
+    .detail("parent_cluster", &body.parent_cluster)
+    .detail("pattern", &body.pattern)
+    .detail("delete_group", body.delete_hsm_group)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "delete_hw_component target={} parent={} dry_run={}",
     target,
@@ -164,9 +185,24 @@ pub async fn delete_hw_component(
 #[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<ApplyHwConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("hw_cluster.configuration.apply")
+    .target("group", &target)
+    .target("group", &body.parent_cluster)
+    .detail("parent_cluster", &body.parent_cluster)
+    .detail("pattern", &body.pattern)
+    .detail("mode", body.mode)
+    .detail("create_target_group", body.create_target_hsm_group)
+    .detail(
+      "delete_empty_parent_group",
+      body.delete_empty_parent_hsm_group,
+    )
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "apply_hw_configuration target={} parent={} dry_run={}",
     target,

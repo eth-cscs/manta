@@ -28,6 +28,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
   to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -50,10 +51,13 @@ pub use manta_shared::types::api::queries::ConsoleQuery;
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(xname): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note.action("console.node").target("node", &xname);
+
   // Read what we need from the borrowed infra, authorize the xname, and
   // clone the backend before the borrow ends.  The clone is cheap
   // (StaticBackendDispatcher is Arc-shaped); it is moved into the
@@ -128,10 +132,13 @@ pub async fn console_node_ws(
 #[tracing::instrument(skip_all, fields(session = %name))]
 pub async fn console_session_ws(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(name): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note.action("console.session").target("session", &name);
+
   // Validate vault/k8s presence, authorize the caller against the
   // session's target groups, check session liveness, then clone the
   // backend before the infra borrow ends.

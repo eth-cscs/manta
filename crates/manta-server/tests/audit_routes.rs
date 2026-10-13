@@ -232,3 +232,84 @@ async fn timed_out_mutation_is_still_audited() {
   assert_eq!(e.outcome.result, Verdict::TimedOut);
   assert_eq!(e.outcome.status, 408);
 }
+
+fn authed(
+  method: Method,
+  uri: &str,
+  body: Option<serde_json::Value>,
+) -> Request<Body> {
+  let builder = Request::builder()
+    .method(method)
+    .uri(uri)
+    .header(header::AUTHORIZATION, format!("Bearer {}", jwt()))
+    .header("X-Manta-Site", "test");
+  match body {
+    Some(b) => builder
+      .header(header::CONTENT_TYPE, "application/json")
+      .body(Body::from(b.to_string()))
+      .unwrap(),
+    None => builder.body(Body::empty()).unwrap(),
+  }
+}
+
+/// The handler's note survives the error path: the backend is
+/// unreachable, the request fails, the event still names the
+/// operation and its target.
+#[tokio::test]
+async fn handler_note_is_kept_when_the_operation_fails() {
+  let sink = Arc::new(Capture::default());
+  let response = router(sink.clone())
+    .oneshot(authed(Method::DELETE, "/v2/groups/g1?force=true", None))
+    .await
+    .unwrap();
+  assert!(!response.status().is_success(), "{}", response.status());
+  let e = &sink.take()[0];
+  assert_eq!(e.action, "group.delete");
+  assert_eq!(e.targets["group"], vec!["g1"]);
+  assert_eq!(e.details["force"], serde_json::json!(true));
+  assert_ne!(e.outcome.result, Verdict::Success);
+}
+
+#[tokio::test]
+async fn dry_run_and_list_targets_are_recorded() {
+  let sink = Arc::new(Capture::default());
+  router(sink.clone())
+    .oneshot(authed(
+      Method::DELETE,
+      "/v2/images?ids=a,%20b,&dry_run=true",
+      None,
+    ))
+    .await
+    .unwrap();
+  let e = &sink.take()[0];
+  assert_eq!(e.action, "image.delete");
+  assert_eq!(e.dry_run, Some(true));
+  assert_eq!(e.targets["image"], vec!["a", "b"]);
+}
+
+#[tokio::test]
+async fn redfish_credentials_never_reach_the_event() {
+  let sink = Arc::new(Capture::default());
+  router(sink.clone())
+    .oneshot(authed(
+      Method::POST,
+      "/v2/redfish-endpoints",
+      Some(serde_json::json!({
+        "id": "x3000c0s1b0",
+        "enabled": true,
+        "user": "root",
+        "password": "bmc-s3cret",
+        "use_ssdp": false,
+        "mac_required": false,
+        "rediscover_on_update": false,
+      })),
+    ))
+    .await
+    .unwrap();
+  let e = &sink.take()[0];
+  assert_eq!(e.action, "redfish_endpoint.add");
+  assert_eq!(e.targets["redfish_endpoint"], vec!["x3000c0s1b0"]);
+  let json = serde_json::to_string(e).unwrap();
+  assert!(!json.contains("bmc-s3cret"), "password leaked: {json}");
+  assert!(!json.contains("\"root\""), "BMC user leaked: {json}");
+}

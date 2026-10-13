@@ -10,6 +10,7 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 
 // ---------------------------------------------------------------------------
 // POST /v2/ephemeral-env — Create ephemeral CFS environment
@@ -36,8 +37,13 @@ pub struct CreateEphemeralEnvRequest {
 #[tracing::instrument(skip_all)]
 pub async fn create_ephemeral_env(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<CreateEphemeralEnvRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("ephemeral_env.create")
+    .target("image", &body.image_id);
+
   tracing::info!("create_ephemeral_env image_id={}", body.image_id);
   let infra = ctx.infra();
 

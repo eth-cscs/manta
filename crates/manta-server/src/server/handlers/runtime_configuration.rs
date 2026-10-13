@@ -8,6 +8,7 @@
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 pub use manta_shared::types::api::runtime_configuration::ApplyRuntimeConfigurationRequest;
@@ -30,8 +31,16 @@ pub use manta_shared::types::api::runtime_configuration::ApplyRuntimeConfigurati
 #[tracing::instrument(skip_all)]
 pub async fn apply_runtime_configuration(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<ApplyRuntimeConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("runtime_configuration.apply")
+    .target("hosts", &body.hosts_expression)
+    .target("configuration", &body.cfs_configuration_name)
+    .detail("enabled", body.enabled)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "apply_runtime_configuration cfs_configuration_name={} hosts={} enabled={} dry_run={}",
     body.cfs_configuration_name,

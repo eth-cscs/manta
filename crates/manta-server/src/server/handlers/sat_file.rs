@@ -49,6 +49,7 @@ use manta_backend_dispatcher::types::bos::session::{
 use manta_backend_dispatcher::types::cfs::session::CfsSessionGetResponse;
 use manta_backend_dispatcher::types::ims::Image;
 
+use crate::server::audit::AuditNote;
 use crate::service::authorization::validate_user_group_vec_access;
 
 use super::{
@@ -84,8 +85,15 @@ pub use manta_shared::types::api::sat_file::{
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_configuration(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<PostSatConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("sat_file.configuration.apply")
+    .targets("configuration", sat_element_name(&body.configuration))
+    .detail("overwrite", body.overwrite)
+    .dry_run(body.dry_run);
+
   tracing::info!("post_sat_configuration dry_run={}", body.dry_run);
   let infra = ctx.infra();
 
@@ -150,8 +158,14 @@ pub async fn post_sat_configuration(
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_image_cfs_session(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<CreateImageCfsSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("sat_file.image.build")
+    .targets("image", sat_element_name(&body.image))
+    .dry_run(body.dry_run);
+
   tracing::info!("post_sat_image_cfs_session dry_run={}", body.dry_run);
   let infra = ctx.infra();
 
@@ -213,8 +227,13 @@ pub async fn post_sat_image_cfs_session(
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_image_stamp(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<StampImageFromSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("sat_file.image.stamp")
+    .target("session", &body.cfs_session_name);
+
   tracing::info!("post_sat_image_stamp cfs_session={}", body.cfs_session_name);
   let infra = ctx.infra();
 
@@ -262,8 +281,15 @@ pub async fn post_sat_image_stamp(
 #[tracing::instrument(skip_all)]
 pub async fn post_sat_session_template(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<PostSatSessionTemplateRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("sat_file.session_template.apply")
+    .targets("template", sat_element_name(&body.session_template))
+    .detail("create_bos_session", body.create_bos_session)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "post_sat_session_template dry_run={} create_bos_session={}",
     body.dry_run,
@@ -353,6 +379,12 @@ fn mock_bos_session_for_template(
     include_disabled: None,
     status: None,
   }
+}
+
+/// `name` of a SAT-file element (configuration, image, session
+/// template), for the audit event.
+fn sat_element_name(element: &serde_json::Value) -> Option<&str> {
+  element.get("name").and_then(serde_json::Value::as_str)
 }
 
 #[cfg(test)]

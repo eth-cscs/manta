@@ -17,6 +17,7 @@ use utoipa::ToSchema;
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -82,8 +83,13 @@ pub struct DeleteBootParametersRequest {
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<DeleteBootParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("boot_parameters.delete")
+    .targets("node", &body.hosts);
+
   if body.hosts.is_empty() {
     return Err((
       StatusCode::BAD_REQUEST,
@@ -122,10 +128,17 @@ pub async fn delete_boot_parameters(
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(boot_params): Json<
     ::manta_backend_dispatcher::types::bss::BootParameters,
   >,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("boot_parameters.add")
+    .targets("node", &boot_params.hosts)
+    .detail("kernel", &boot_params.kernel)
+    .detail("params", &boot_params.params);
+
   tracing::info!("add_boot_parameters");
   let infra = ctx.infra();
 
@@ -162,8 +175,16 @@ pub async fn add_boot_parameters(
 #[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("boot_parameters.update")
+    .targets("node", &params.hosts)
+    .detail("kernel", &params.kernel)
+    .detail("initrd", &params.initrd)
+    .detail("params", &params.params);
+
   tracing::info!("update_boot_parameters");
   let infra = ctx.infra();
 
@@ -197,8 +218,19 @@ pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
 #[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<ApplyBootConfigRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("boot_config.apply")
+    .target("hosts", &body.hosts_expression)
+    .targets("image", body.boot_image_id.as_deref())
+    .detail("boot_image_configuration", &body.boot_image_configuration)
+    .detail("kernel_parameters", &body.kernel_parameters)
+    .detail("runtime_configuration", &body.runtime_configuration)
+    .detail("enabled", body.enabled)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "apply_boot_config hosts={} dry_run={}",
     body.hosts_expression,

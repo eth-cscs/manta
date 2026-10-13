@@ -16,6 +16,7 @@
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -52,8 +53,16 @@ pub use manta_shared::types::api::power::{
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("power.transition")
+    .target("hosts", &body.host_expression)
+    .detail("operation", body.action)
+    .detail("target_type", body.target_type)
+    .detail("force", body.force);
+
   tracing::info!(
     "post_power action={:?} target_type={:?}",
     body.action,
