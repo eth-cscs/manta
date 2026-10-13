@@ -10,7 +10,7 @@
 //! impls in [`crate::backend_dispatcher`] route the call to the active
 //! variant.
 
-use csm_rs::backend_connector::Csm;
+use csm_rs::backend_connector::{Csm, TokenExchange};
 use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
@@ -57,6 +57,11 @@ impl StaticBackendDispatcher {
   /// bytes of the backend's root CA — used to verify TLS to
   /// `base_url`.
   ///
+  /// `token_exchange` holds the client credentials the CSM variant
+  /// uses to exchange the caller's token at the site's Keycloak; a CSM
+  /// dispatcher without it fails every `exchange_api_token` call. The
+  /// OpenCHAMI variant ignores it.
+  ///
   /// Called once per configured site during server startup.
   ///
   /// # Errors
@@ -69,9 +74,16 @@ impl StaticBackendDispatcher {
     backend_type: &str,
     base_url: &str,
     root_cert: &[u8],
+    token_exchange: Option<TokenExchange>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert)?)),
+      "csm" => {
+        let csm = Csm::new(base_url, root_cert)?;
+        Ok(Self::CSM(match token_exchange {
+          Some(te) => csm.with_token_exchange(te),
+          None => csm,
+        }))
+      }
       "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
       _ => Err(Error::UnsupportedBackend(format!(
         "Backend '{backend_type}' not supported"

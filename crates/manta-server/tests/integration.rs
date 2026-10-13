@@ -45,9 +45,10 @@ use serde_json::{Value, json};
 use tower::ServiceExt as _;
 use wiremock::{
   Mock, MockServer, ResponseTemplate,
-  matchers::{method, path},
+  matchers::{bearer_token, body_string_contains, method, path},
 };
 
+use csm_rs::backend_connector::TokenExchange;
 use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server::{
   ServerState, SiteBackend,
@@ -62,6 +63,12 @@ use manta_server::server::{
 //   Satisfies reqwest::Certificate::from_pem(), which is called lazily at
 //   first backend HTTP call. The wiremock server speaks plain HTTP so TLS
 //   is never negotiated and this cert is never verified.
+//
+// SUBJECT_TOKEN: what the CLI sends (a CSCS Keycloak token, here an
+//   unsigned JWT for `msopena`, whose claims the audit trail records as
+//   the actor). The fixture's mock Keycloak exchanges it for TEST_TOKEN,
+//   so every test also proves the exchanged token, not the caller's,
+//   reaches the backend and the role checks.
 //
 // TEST_TOKEN: a real Keycloak JWT for the ALPS system.
 //   csm-rs reads only realm_access.roles (no sig/expiry validation), so
@@ -100,6 +107,14 @@ R7v/4/prpr1EL7t4ZwBOZhqkvJ4IL/Nv/SLiCjgg5b6b8WtVIHLosEd7ca5lhJ+v\n\
 ce8Dbp369gQPR3Eu\n\
 -----END CERTIFICATE-----\n";
 
+/// A CSCS-Keycloak-style JWT (unsigned: nothing in manta verifies it
+/// locally). Its claims are what the audit trail records as the actor.
+const SUBJECT_TOKEN: &str = "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJodHRwczovL2F1dGguY3Njcy5jaC9hdXRoL3JlYWxtcy9jc2NzIiwic3ViIjoiY3Njcy1zdWJqZWN0IiwicHJlZmVycmVkX3VzZXJuYW1lIjoibXNvcGVuYSIsIm5hbWUiOiJNYW51ZWwgU29wZW5hIn0.sig";
+
+/// Keycloak token endpoint, as csm-rs derives it from the site's base URL.
+const KEYCLOAK_TOKEN_PATH: &str =
+  "/keycloak/realms/shasta/protocol/openid-connect/token";
+
 const TEST_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJNSW5BOEFfUUd4RTJ3REI5RlNkTzRKelVYSE9wVWFqZXVVb3JXemx1QlQwIn0.eyJleHAiOjE3NzcyMzM2NTcsImlhdCI6MTc3NjYyODg1NywianRpIjoiYTVjNmIxNTgtZmZlNy00Y2UzLTljZWYtYjJkNWY1NjA4MTk1IiwiaXNzIjoiaHR0cHM6Ly9hcGkuY21uLmFscHMuY3Njcy5jaC9rZXljbG9hay9yZWFsbXMvc2hhc3RhIiwiYXVkIjpbInNoYXN0YSIsInN5c3RlbS1uZXh1cy1jbGllbnQiLCJhY2NvdW50Il0sInN1YiI6IjYxMTgwOGY4LWZlMTAtNDRkNi04Nzc4LWJhZTBiODVmZDk5MiIsInR5cCI6IkJlYXJlciIsImF6cCI6InNoYXN0YSIsInNlc3Npb25fc3RhdGUiOiIzZmI3YjcwMC0xMjZjLTQwNjktYWJjOC0yMDY5YzRhNjcyY2YiLCJyZWFsbV9hY2Nlc3MiOnsicm9sZXMiOlsicGFfYWRtaW4iLCJhbHBzIiwidGFwbXNfd2lsZGhvcm4iLCJkZWZhdWx0LXJvbGVzLXNoYXN0YSIsInRlbmFudC1hZG1pbiIsIm9mZmxpbmVfYWNjZXNzIiwiZm9yYSIsInVtYV9hdXRob3JpemF0aW9uIl19LCJyZXNvdXJjZV9hY2Nlc3MiOnsic2hhc3RhIjp7InJvbGVzIjpbImFkbWluIiwidXNlciJdfSwic3lzdGVtLW5leHVzLWNsaWVudCI6eyJyb2xlcyI6WyJueC1hZG1pbiJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJvcGVuaWQgcHJvZmlsZSBlbWFpbCIsInNpZCI6IjNmYjdiNzAwLTEyNmMtNDA2OS1hYmM4LTIwNjljNGE2NzJjZiIsImVtYWlsX3ZlcmlmaWVkIjpmYWxzZSwibmFtZSI6Ik1hbnVlbCBTb3BlbmEiLCJncm91cHMiOltdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJtc29wZW5hIiwiZ2l2ZW5fbmFtZSI6Ik1hbnVlbCIsImZhbWlseV9uYW1lIjoiU29wZW5hIiwiZW1haWwiOiJtYW51ZWwuc29wZW5hQGNzY3MuY2gifQ.n4TrFTbL0XZuwIS69uLqbtqDJalWa_6UXek1mcJkKe1rQZBw3tnpek7yVIVJf5yFvlMi7SeQpsQorzXqFvwc0YAYODJNvAibuTZVVIrxbUdWfH9QR92xhp3BLkwMQtLT_4VK_1vXo8rsmtvDYKvQOqhO6PCqD0s1h4gBXQRssRG5Doo451KNTkGSoiZRATMo7KlQIGGLAXv7M2avrXhxOuE_ERlFMDWaXfL2aPjdO-e3xF0ZoFUte-L0r91QQUyRauQ3Ce_Abo5k1RYB744zdCQDDvP9qZL6SgkXEcXfF5GMCqNpA4aM7rVhl6hK_Jin13HCgi2pB3RU06J3y3zNBQ";
 
 // ---------------------------------------------------------------------------
@@ -133,9 +148,31 @@ impl TestFixture {
   async fn setup() -> Self {
     let mock_server = MockServer::start().await;
 
-    let backend =
-      StaticBackendDispatcher::new("csm", &mock_server.uri(), TEST_ROOT_CERT)
-        .unwrap();
+    let backend = StaticBackendDispatcher::new(
+      "csm",
+      &mock_server.uri(),
+      TEST_ROOT_CERT,
+      Some(TokenExchange {
+        client_id: "cscs-token-exchanger".to_string(),
+        client_secret: "s3cret".to_string(),
+        subject_issuer: "cscs".to_string(),
+      }),
+    )
+    .unwrap();
+
+    // Mock site Keycloak: exchanges SUBJECT_TOKEN (and nothing else)
+    // for TEST_TOKEN.
+    Mock::given(method("POST"))
+      .and(path(KEYCLOAK_TOKEN_PATH))
+      .and(body_string_contains(format!(
+        "subject_token={SUBJECT_TOKEN}"
+      )))
+      .respond_with(
+        ResponseTemplate::new(200)
+          .set_body_json(json!({ "access_token": TEST_TOKEN })),
+      )
+      .mount(&mock_server)
+      .await;
 
     let mut sites = std::collections::HashMap::new();
     sites.insert(
@@ -169,10 +206,14 @@ impl TestFixture {
   }
 
   fn auth_get(&self, uri: &str) -> Request<Body> {
+    self.get_with_token(uri, SUBJECT_TOKEN)
+  }
+
+  fn get_with_token(&self, uri: &str, token: &str) -> Request<Body> {
     Request::builder()
       .method(Method::GET)
       .uri(uri)
-      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::AUTHORIZATION, format!("Bearer {token}"))
       .header("X-Manta-Site", "test")
       .body(Body::empty())
       .unwrap()
@@ -195,7 +236,7 @@ impl TestFixture {
     Request::builder()
       .method(Method::POST)
       .uri(uri)
-      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::AUTHORIZATION, format!("Bearer {SUBJECT_TOKEN}"))
       .header(header::CONTENT_TYPE, "application/json")
       .header("X-Manta-Site", "test")
       .body(Body::from(serde_json::to_string(&body).unwrap()))
@@ -206,7 +247,7 @@ impl TestFixture {
     Request::builder()
       .method(Method::DELETE)
       .uri(uri)
-      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::AUTHORIZATION, format!("Bearer {SUBJECT_TOKEN}"))
       .header("X-Manta-Site", "test")
       .body(Body::empty())
       .unwrap()
@@ -220,7 +261,7 @@ impl TestFixture {
     Request::builder()
       .method(Method::DELETE)
       .uri(uri)
-      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::AUTHORIZATION, format!("Bearer {SUBJECT_TOKEN}"))
       .header(header::CONTENT_TYPE, "application/json")
       .header("X-Manta-Site", "test")
       .body(Body::from(serde_json::to_string(&body).unwrap()))
@@ -231,7 +272,7 @@ impl TestFixture {
     Request::builder()
       .method(Method::PUT)
       .uri(uri)
-      .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+      .header(header::AUTHORIZATION, format!("Bearer {SUBJECT_TOKEN}"))
       .header(header::CONTENT_TYPE, "application/json")
       .header("X-Manta-Site", "test")
       .body(Body::from(serde_json::to_string(&body).unwrap()))
@@ -1360,7 +1401,7 @@ async fn delete_configurations_dry_run_audits_matched_names() {
   let req = Request::builder()
     .method(Method::DELETE)
     .uri("/v2/configurations?pattern=compute-*&dry_run=true")
-    .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+    .header(header::AUTHORIZATION, format!("Bearer {SUBJECT_TOKEN}"))
     .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap();
@@ -1378,4 +1419,110 @@ async fn delete_configurations_dry_run_audits_matched_names() {
   // Images are found through CFS sessions; none derive from it here.
   assert!(!e.targets.contains_key("image"), "{:?}", e.targets);
   assert!(e.produced.is_empty());
+}
+
+// ---------------------------------------------------------------------------
+// Token exchange (RequestCtx)
+// ---------------------------------------------------------------------------
+
+/// Number of token-exchange POSTs the mock Keycloak received.
+async fn exchange_count(srv: &MockServer) -> usize {
+  srv
+    .received_requests()
+    .await
+    .unwrap()
+    .iter()
+    .filter(|r| r.url.path() == KEYCLOAK_TOKEN_PATH)
+    .count()
+}
+
+/// Mount a Keycloak error answer for one specific subject token.
+async fn mock_exchange_error(
+  srv: &MockServer,
+  subject_token: &str,
+  status: u16,
+  error: &str,
+) {
+  Mock::given(method("POST"))
+    .and(path(KEYCLOAK_TOKEN_PATH))
+    .and(body_string_contains(format!(
+      "subject_token={subject_token}"
+    )))
+    .respond_with(ResponseTemplate::new(status).set_body_json(json!({
+      "error": error,
+      "error_description": "described by keycloak",
+    })))
+    .mount(srv)
+    .await;
+}
+
+#[tokio::test]
+async fn exchanged_token_not_callers_reaches_csm() {
+  let f = TestFixture::setup().await;
+  Mock::given(method("GET"))
+    .and(path("/smd/hsm/v2/groups"))
+    .and(bearer_token(TEST_TOKEN))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!([])))
+    .expect(1..)
+    .mount(&f.mock_server)
+    .await;
+
+  let resp = f.send(f.auth_get("/v2/groups")).await;
+  assert_eq!(resp.status(), StatusCode::OK);
+  f.mock_server.verify().await;
+}
+
+#[tokio::test]
+async fn token_is_exchanged_on_every_request() {
+  let f = TestFixture::setup().await;
+  mock_hsm_groups(&f.mock_server).await;
+
+  for _ in 0..2 {
+    let resp = f.send(f.auth_get("/v2/groups")).await;
+    assert_eq!(resp.status(), StatusCode::OK);
+  }
+  assert_eq!(exchange_count(&f.mock_server).await, 2);
+}
+
+#[tokio::test]
+async fn rejected_subject_token_is_401_and_skips_the_handler() {
+  let f = TestFixture::setup().await;
+  mock_hsm_groups(&f.mock_server).await;
+  mock_exchange_error(&f.mock_server, "expired", 400, "invalid_token").await;
+
+  let resp = f.send(f.get_with_token("/v2/groups", "expired")).await;
+  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+  let body = TestFixture::body_json(resp).await;
+  assert!(
+    body["error"]
+      .as_str()
+      .unwrap()
+      .contains("described by keycloak"),
+    "{body}"
+  );
+  // Only the exchange was attempted; no CSM call was made.
+  let requests = f.mock_server.received_requests().await.unwrap();
+  assert!(
+    requests.iter().all(|r| r.url.path() == KEYCLOAK_TOKEN_PATH),
+    "unexpected backend call after a failed exchange"
+  );
+}
+
+#[tokio::test]
+async fn refused_exchange_is_403() {
+  let f = TestFixture::setup().await;
+  mock_exchange_error(&f.mock_server, "not-linked", 403, "access_denied").await;
+
+  let resp = f.send(f.get_with_token("/v2/groups", "not-linked")).await;
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn wrong_exchange_client_secret_is_500_not_401() {
+  // A misconfigured server must not send every user back to log in.
+  let f = TestFixture::setup().await;
+  mock_exchange_error(&f.mock_server, "any", 401, "invalid_client").await;
+
+  let resp = f.send(f.get_with_token("/v2/groups", "any")).await;
+  assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);
 }

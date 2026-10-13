@@ -1,21 +1,17 @@
 //! [`AuthenticationTrait`] impl for [`StaticBackendDispatcher`].
 //!
-//! Forwards to the per-backend OIDC/Keycloak flow:
+//! - `exchange_api_token` is called on every request (from the
+//!   `RequestCtx` extractor): CSM exchanges the caller's CSCS Keycloak
+//!   token for a CSM token at the site's Keycloak; OpenCHAMI passes it
+//!   through for now.
+//! - `get_api_token` (username/password grant) is no longer called by
+//!   manta: the CLI obtains its token from the CSCS Keycloak directly.
+//!   The forwarding is kept so `tests/dispatcher_coverage.rs` keeps
+//!   holding every trait method to an override.
 //!
-//! - CSM: token exchange against the site's Keycloak realm (the
-//!   `shasta` client) via csm-rs's `get_api_token`.
-//! - Ochami: token exchange against the ochami-rs configured OIDC
-//!   provider; both methods are implemented on the Ochami side.
-//!
-//! Both branches are real (no `UnsupportedBackend`). The wrapper adds
-//! structured `tracing::debug` on entry and `tracing::warn` on the
-//! error path so an auth failure surfaces backend + user metadata at
-//! the dispatcher boundary.
-//!
-//! manta itself no longer calls either method: the CLI obtains its
-//! token from the CSCS Keycloak directly. The forwarding is kept so
-//! `tests/dispatcher_coverage.rs` keeps holding every trait method to
-//! an override.
+//! The wrapper adds structured `tracing::debug` on entry and
+//! `tracing::warn` on the error path so an auth failure surfaces the
+//! backend at the dispatcher boundary.
 
 use super::*;
 
@@ -47,19 +43,24 @@ impl AuthenticationTrait for StaticBackendDispatcher {
     result
   }
 
-  /// Validate `auth_token` against the IdP / introspection endpoint.
+  /// Exchange the caller's CSCS Keycloak token for the token this
+  /// site's backend accepts.
   ///
-  /// `Ok(())` means the token is currently accepted by the backend;
-  /// no claims are returned through this trait.
-  async fn validate_api_token(&self, auth_token: &str) -> Result<(), Error> {
+  /// Called once per request by the `RequestCtx` extractor; the
+  /// result replaces the caller's token for every backend, Vault and
+  /// role check made on its behalf.
+  async fn exchange_api_token(
+    &self,
+    subject_token: &str,
+  ) -> Result<String, Error> {
     let backend = self.backend_kind();
-    tracing::debug!(backend, "dispatch: validate_api_token");
-    let result = dispatch!(self, validate_api_token, auth_token);
+    tracing::debug!(backend, "dispatch: exchange_api_token");
+    let result = dispatch!(self, exchange_api_token, subject_token);
     if let Err(ref e) = result {
       tracing::warn!(
         backend,
         error = %e,
-        "dispatch: validate_api_token returned error from backend client"
+        "dispatch: exchange_api_token returned error from backend client"
       );
     }
     result

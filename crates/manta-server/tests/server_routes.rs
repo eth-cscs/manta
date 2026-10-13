@@ -28,12 +28,17 @@ use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/// Build a router backed by a stub CSM backend with no real URLs.
+/// Build a router backed by a stub backend with no real URLs.
 /// Backend methods are never called because all non-health tests
 /// either fail at auth or at Axum's request extraction layer first.
+///
+/// The stub is the OpenCHAMI dispatcher because its token exchange is
+/// a local pass-through, so requests get past `RequestCtx` without a
+/// Keycloak. The CSM exchange is covered in `tests/integration.rs`.
 fn router() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -61,7 +66,8 @@ fn router() -> axum::Router {
 /// reach the "requires vault/k8s" code paths.
 fn router_with_vault() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
