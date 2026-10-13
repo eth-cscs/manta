@@ -300,7 +300,14 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 ## Security model
 
-`manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. The server forwards it unchanged to the site's backend — the CSM / OpenCHAMI API, Vault's `jwt-manta-<site>` login, and k8s — so each site must trust the CSCS Keycloak issuer. There are no `/v2/auth/*` endpoints.
+`manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. There are no `/v2/auth/*` endpoints.
+
+The server does **not** forward that token to the backend. CSM does not accept CSCS tokens, so the `RequestCtx` extractor (`server/handlers/mod.rs`) calls `AuthenticationTrait::exchange_api_token` on the site's dispatcher for every request, before the handler runs:
+
+- **CSM** (csm-rs): an RFC 8693 token exchange (Keycloak's external-to-internal flow) at `<base>/keycloak/realms/shasta`, authenticated with the per-site `[sites.X.token_exchange]` client from `server.toml`; `subject_issuer` names the CSCS identity provider in the `shasta` realm. The site's Keycloak verifies the CSCS token and returns a CSM token for the same user. `main.rs` refuses to start a `csm` site without that table.
+- **OpenCHAMI** (ochami-rs): a pass-through for now; the real exchange (TokenSmith) comes later.
+
+`ctx.token` holds the exchanged token, so the CSM API calls, Vault's `jwt-manta-<site>` login and the role checks below all see the CSM identity without any handler or service knowing about the exchange. Nothing is cached: the exchanged token lives for one request. If the per-request exchange ever proves too costly (e.g. Keycloak keeping a user session per exchange), a per-(site, subject token) cache in `ServerState`, consulted in `RequestCtx`, is the one place to add it. Exchange failures map to `401` (Keycloak rejected the CSCS token: the CLI should log in again), `403` (exchange refused for this user) or `500` (bad client secret or other misconfiguration).
 
 After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including group-listing and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 14-field struct of CLI-side knobs (site, server URL, default group, read-only flag, Keycloak login settings, tuneable request and poll timeouts) plus the per-invocation token and `SessionContext`; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
@@ -310,7 +317,7 @@ Server-side authorization helpers live in `service::authorization`:
 - `validate_user_group_members_access` — every xname in the request must be a member of an accessible group.
 - `validate_ansible_limit_membership_access` — the same membership check applied to a comma-separated `ansible_limit` string.
 
-Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. That is sound only because every authorized path still makes a backend round-trip, and CSM/OpenCHAMI verifies the signature there (against the CSCS Keycloak) — a forged token is rejected at the first real call. The rule this imposes: **never add a code path that acts on a JWT claim and returns before the backend call happens** (a local cache, a short-circuit, a handler that only consults local roles). `is_user_admin` is exactly such a short-circuit, so any new use of it must still be followed by a backend call.
+Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. On CSM sites that is sound because the token is not the caller's: `RequestCtx` obtained it from the site's own Keycloak over TLS a moment earlier, and that Keycloak verified the caller's CSCS token before issuing it, so a forged token never reaches a handler. On OpenCHAMI sites the exchange is still a pass-through, so there the claims are trustworthy only because every authorized path still makes a backend round-trip, and the backend verifies the signature — a forged token is rejected at the first real call. Until OpenCHAMI has a real exchange, the rule this imposes stands: **never add a code path that acts on a JWT claim and returns before the backend call happens** (a local cache, a short-circuit, a handler that only consults local roles). `is_user_admin` is exactly such a short-circuit, so any new use of it must still be followed by a backend call.
 
 Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. Handlers that operate on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
 
@@ -318,11 +325,13 @@ Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. 
 
 The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::types::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in the pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
 
-manta-server is still a **chokepoint** for everyone using it: it never sees passwords, but every request carries a bearer token that works on every site that trusts the CSCS Keycloak, so an attacker who owns the server can replay live tokens until they expire. Login attempts, brute-force protection and their audit trail are the CSCS Keycloak's job now. Mitigations split between code and ops:
+manta-server is still a **chokepoint** for everyone using it: it never sees passwords, but every request carries a CSCS token that every site will exchange, and the server holds each site's exchange client secret, so an attacker who owns the server can turn any live CSCS token into a CSM token on every site until it expires. Login attempts, brute-force protection and their audit trail are the CSCS Keycloak's job now. Mitigations split between code and ops:
 
 | Layer | Where | Notes |
 |---|---|---|
-| No credentials on the server | code | Login happens between the CLI and the CSCS Keycloak; the server has no auth endpoints and never sees a password or refresh token. |
+| No user credentials on the server | code | Login happens between the CLI and the CSCS Keycloak; the server has no auth endpoints and never sees a password or refresh token. |
+| No stored backend tokens | code | The exchanged CSM token is used for one request and dropped; there is no token cache to leak. `TokenExchangeConfig`'s `Debug` redacts the client secret. |
+| Exchange client secret | **ops** | `[sites.X.token_exchange].client_secret` sits in `server.toml`: keep the file readable only by the manta-server user. It cannot live in Vault, because the Vault login itself needs the exchanged token. |
 | Token cache hygiene on the client | code | `token.json` is written `0600` in a `0700` cache dir; `TokenStore`'s `Debug` redacts every token. |
 | Audit trail of every mutation | code | `server::audit::audit_requests`; see [Audit trail](#audit-trail). Credentials are never recorded. |
 | TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence. |
@@ -343,7 +352,8 @@ flowchart TD
     Split -->|/v2/*| Aud[audit_requests<br/>one event per mutating request]
     Aud --> Panic[CatchPanicLayer<br/>handler panic → 500]
     Panic --> Tmo[TimeoutLayer<br/>request_timeout_secs]
-    Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
+    Tmo --> Ctx[RequestCtx extractor<br/>BearerToken + SiteName,<br/>token exchange at the site's Keycloak]
+    Ctx --> Hdlr[Resource handlers]
 
     Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
 ```

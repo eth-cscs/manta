@@ -1795,7 +1795,7 @@ curl -k -X POST "$MANTA_HOST/v2/sat-file/session-templates" \
 
 ## Authentication
 
-The server has no authentication endpoints and never sees credentials. Clients obtain a bearer token from the CSCS Keycloak themselves — the `manta` CLI does it with an OIDC login (see [README.md](README.md#configuration-files)) — and send it as `Authorization: Bearer <token>`. The same token works for every site; the server forwards it unchanged to the site's backend (CSM / OpenCHAMI API, Vault, k8s), which verifies it.
+The server has no authentication endpoints and never sees credentials. Clients obtain a bearer token from the CSCS Keycloak themselves — the `manta` CLI does it with an OIDC login (see [README.md](README.md#configuration-files)) — and send it as `Authorization: Bearer <token>`. The same token works for every site. On every request the server exchanges it at the site's Keycloak for a token that site accepts (a CSM token on CSM sites; OpenCHAMI sites pass it through for now) and uses that for the backend API and Vault. A token the site's Keycloak rejects returns `401`; an exchange it refuses returns `403`.
 
 ---
 

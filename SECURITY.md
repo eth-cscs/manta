@@ -99,16 +99,20 @@ For where the middleware layers sit in the request pipeline, see
   (`token.json`) under the platform cache dir. One token serves every
   site. Never speaks to CSM/OCHAMI directly.
 - **Server side** (`manta-server` binary): the request chokepoint.
-  Never sees credentials — it has no auth endpoints — and proxies
-  backend calls using the user's bearer token unchanged.
+  Never sees user credentials — it has no auth endpoints. On every
+  request it exchanges the user's CSCS token at the site's Keycloak
+  (RFC 8693, with a per-site exchange client secret from
+  `server.toml`) and proxies backend calls with the resulting CSM
+  token. Nothing is cached.
 - **Upstream** (CSCS Keycloak / CSM / OpenCHAMI / Vault): not part of
-  this repo. Every site must trust the CSCS Keycloak issuer; signature
-  verification of the bearer token happens there, at the first backend
-  round-trip.
+  this repo. Each CSM site's Keycloak trusts the CSCS Keycloak as an
+  identity provider and verifies the CSCS token's signature during
+  the exchange; CSM and Vault trust the site's own Keycloak.
 
 Because every request through `manta-server` carries a bearer token
-valid on every site that trusts the CSCS Keycloak, and the server
-holds per-site service-account tokens (for k8s, Vault, Gitea), **it is
+that every site will exchange, and the server holds each site's
+exchange client secret and per-site service-account tokens (for k8s,
+Vault, Gitea), **it is
 a single point of compromise** for every site it serves. Operate it
 accordingly.
 

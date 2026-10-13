@@ -835,9 +835,11 @@ The auth-attempt event went away with the `/v2/auth/*` endpoints
 ### 5.15. One CSCS-Keycloak token, obtained by the CLI (BREAKING)
 
 The CLI now logs in to the **CSCS Keycloak** itself and uses **one
-token for every site**. `manta-server` no longer takes part in
-authentication: it has no auth endpoints and forwards the bearer token
-unchanged to each site's backend.
+token for every site**. `manta-server` has no auth endpoints any more;
+on every request it exchanges the CSCS token at the site's Keycloak
+for a CSM token, so each CSM site needs a new
+`[sites.<name>.token_exchange]` table in `server.toml` (see
+[README.md](README.md); the server refuses to start without it).
 
 **What changed.**
 
@@ -845,7 +847,8 @@ unchanged to each site's backend.
 |---|---|
 | CLI prompts for username + password, sends them to `POST /v2/auth/token` | CLI runs an OIDC login against the CSCS Keycloak: a browser (auth code + PKCE), or a device code when headless / over SSH |
 | One cached token per site: `<cache_dir>/<site>_auth` | One cached token for all sites: `<cache_dir>/token.json`, refreshed silently while the refresh token is valid |
-| `MANTA_CSM_TOKEN` env var | `MANTA_TOKEN` env var (no alias) |
+| `MANTA_CSM_TOKEN` env var | `MANTA_TOKEN` env var (no alias); must hold a CSCS token, not a CSM one |
+| Server forwards the CSM token to CSM | Server exchanges the CSCS token for a CSM token per request: new required `[sites.<name>.token_exchange]` (`client_id`, `client_secret`, `subject_issuer`) for `csm` sites |
 | Cached / env tokens checked with `POST /v2/auth/validate` | No up-front check; a rejected token surfaces as `HTTP 401` on the first request |
 | `manta config unset auth` picks a per-site file to delete | Deletes `token.json` |
 | `POST /v2/auth/token`, `POST /v2/auth/validate` | Removed — `404 Not Found` |
