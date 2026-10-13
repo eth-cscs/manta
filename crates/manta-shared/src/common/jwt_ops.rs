@@ -148,6 +148,29 @@ pub fn is_user_admin(token: &str) -> bool {
   has_role(token, PA_ADMIN)
 }
 
+/// Extract a top-level string claim (e.g. `sub`) from a JWT token.
+///
+/// Returns `None` when the claim is absent or is not a string —
+/// unlike [`get_name`] / [`get_preferred_username`], there is no
+/// `"MISSING"` placeholder, so callers can tell absence apart.
+///
+/// # Errors
+///
+/// Returns [`MantaError::JwtMalformed`] when `token` does not parse
+/// as `header.payload.signature` Base64, or when the payload is not
+/// valid UTF-8 JSON.
+pub fn get_string_claim(
+  token: &str,
+  claim: &str,
+) -> Result<Option<String>, MantaError> {
+  Ok(
+    get_claims_from_jwt_token(token)?
+      .get(claim)
+      .and_then(Value::as_str)
+      .map(str::to_string),
+  )
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -319,5 +342,28 @@ mod tests {
     }));
     assert!(has_role(&token, "pa_admin"));
     assert!(!has_role(&token, "sample-role"));
+  }
+
+  // ---- get_string_claim ----
+
+  #[test]
+  fn get_string_claim_present() {
+    let token = make_jwt(&serde_json::json!({"sub": "f3a9-uuid"}));
+    assert_eq!(
+      get_string_claim(&token, "sub").unwrap().as_deref(),
+      Some("f3a9-uuid")
+    );
+  }
+
+  #[test]
+  fn get_string_claim_missing_or_non_string_is_none() {
+    let token = make_jwt(&serde_json::json!({"sub": 42}));
+    assert_eq!(get_string_claim(&token, "sub").unwrap(), None);
+    assert_eq!(get_string_claim(&token, "name").unwrap(), None);
+  }
+
+  #[test]
+  fn get_string_claim_malformed_token_errors() {
+    assert!(get_string_claim("not-a-jwt", "sub").is_err());
   }
 }

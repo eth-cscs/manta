@@ -31,7 +31,7 @@
 
 use std::collections::HashMap;
 
-use crate::server::common::audit::Auditor;
+use crate::server::audit::Auditor;
 use manta_backend_dispatcher::types::K8sDetails;
 use serde::{Deserialize, Serialize};
 
@@ -182,8 +182,8 @@ pub struct ServerConfiguration {
   /// Per-site backend connection details, keyed by site name. The
   /// `X-Manta-Site` header on each request picks which one to route to.
   pub sites: HashMap<String, Site>,
-  /// Optional Kafka audit forwarder (typically used for `/auth/*`
-  /// attempts). When `None`, the server emits no audit messages.
+  /// Optional Kafka destination for the audit trail. When `None`,
+  /// audit events go to the log (`manta::audit` target) only.
   pub auditor: Option<Auditor>,
 }
 

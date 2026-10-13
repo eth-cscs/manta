@@ -205,11 +205,17 @@ fn print_startup_summary(
   println!("[auditor]");
   match configuration.auditor.as_ref() {
     Some(a) => {
-      println!("  Kafka audit forwarder enabled");
-      println!("  brokers: {:?}", a.kafka.brokers);
-      println!("  topic:   {}", a.kafka.topic);
+      println!("  Kafka audit trail enabled");
+      println!("  brokers:            {:?}", a.kafka.brokers);
+      println!("  topic:              {}", a.kafka.topic);
+      println!("  message_timeout_ms: {}", a.kafka.message_timeout_ms);
+      // Keys only: values may hold credentials (sasl.password, ...).
+      println!(
+        "  properties:         {:?}",
+        a.kafka.properties.keys().collect::<Vec<_>>()
+      );
     }
-    None => println!("  disabled (no audit messages will be emitted)"),
+    None => println!("  Kafka disabled (audit events go to the log only)"),
   }
   println!();
 }
@@ -420,14 +426,20 @@ async fn run_server(
     );
   }
 
-  let auditor = configuration.auditor.as_ref().map(|a| a.kafka.clone());
+  let kafka_sink = configuration
+    .auditor
+    .as_ref()
+    .map(|a| a.kafka.build_sink())
+    .transpose()
+    .map_err(|e| format!("[auditor.kafka] in server.toml: {e}"))?;
+  let audit = server::audit::AuditLog::new(kafka_sink);
   let shutdown_grace_period = std::time::Duration::from_secs(
     configuration.server.shutdown_grace_period_secs,
   );
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
     console_inactivity_timeout,
-    auditor,
+    audit,
     auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
     shutdown_grace_period,

@@ -49,7 +49,7 @@ fn router() -> axum::Router {
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
-    auditor: None,
+    audit: manta_server::server::audit::AuditLog::default(),
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
@@ -78,7 +78,7 @@ fn router_with_vault() -> axum::Router {
   let state = Arc::new(ServerState {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
-    auditor: None,
+    audit: manta_server::server::audit::AuditLog::default(),
     auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),

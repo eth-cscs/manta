@@ -130,7 +130,7 @@ impl TestFixture {
     let state = Arc::new(ServerState {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
-      auditor: None,
+      audit: manta_server::server::audit::AuditLog::default(),
       auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(30),
