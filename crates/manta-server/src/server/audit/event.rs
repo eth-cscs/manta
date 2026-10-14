@@ -5,7 +5,8 @@
 //! what* and *how it ended*. The JSON produced by `serde` is the
 //! contract with whoever consumes the Kafka topic: add fields freely,
 //! but rename or remove one only together with a `SCHEMA_VERSION`
-//! bump.
+//! bump. A field with no value (`None`, an empty map) is left out of
+//! the JSON rather than written as `null` / `{}`.
 //!
 //! Nothing secret ever lands here by construction: there is no field
 //! for a token, a password or a raw request body. Handlers describe
@@ -70,10 +71,13 @@ impl Verdict {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct Actor {
   /// `preferred_username` claim — the login name.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub username: Option<String>,
   /// `name` claim — the display name.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub name: Option<String>,
   /// `sub` claim — the stable IdP subject id.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub subject: Option<String>,
 }
 
@@ -81,6 +85,7 @@ pub struct Actor {
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
 pub struct Client {
   /// TCP peer address of the connection (a reverse proxy, if any).
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub ip: Option<String>,
   /// Raw `X-Forwarded-For` header, recorded as-is and **not**
   /// trusted: any client can set it.
@@ -123,6 +128,7 @@ pub struct Emitter {
   /// `CARGO_PKG_VERSION` of the running binary.
   pub version: &'static str,
   /// Host (pod) name, when it can be determined.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub host: Option<String>,
 }
 
@@ -146,14 +152,16 @@ pub struct AuditEvent {
   /// From where.
   pub client: Client,
   /// Target site (`X-Manta-Site`), when supplied.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub site: Option<String>,
   /// The request as received.
   pub request: Request,
   /// How it ended.
   pub outcome: Outcome,
-  /// `true` when the caller asked for a dry run (nothing changed);
-  /// `None` when the operation has no dry-run mode or the handler
-  /// never ran.
+  /// `true` when the caller asked for a dry run (nothing changed),
+  /// `false` for a real run of an operation that has a dry-run mode;
+  /// absent when the operation has none or the handler never ran.
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub dry_run: Option<bool>,
   /// Objects the operation acts on, keyed by object kind (`group`,
   /// `node`, `hosts`, `image`, …). Values are as the caller supplied

@@ -199,6 +199,17 @@ mod tests {
   }
 
   #[test]
+  fn serialised_event_omits_empty_fields() {
+    let mut e = AuditLog::default().event(EventKind::ApiRequest, "x.y".into());
+    e.emitter.host = None;
+    let json = serde_json::to_string(&e).unwrap();
+    assert!(!json.contains("null"), "{json}");
+    for absent in ["\"dry_run\"", "\"site\"", "\"targets\"", "\"details\""] {
+      assert!(!json.contains(absent), "{absent} in {json}");
+    }
+  }
+
+  #[test]
   fn serialised_event_has_no_credential_fields() {
     let log = AuditLog::default();
     let json =

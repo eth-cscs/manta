@@ -440,12 +440,14 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
   "site": "alps",
   "request": { "method": "DELETE", "route": "/v2/groups/{label}", "path": "/v2/groups/zinal", "query": "force=true" },
   "outcome": { "result": "success", "status": 204, "duration_ms": 412 },  // success|denied|rejected|failed|timed_out
-  "dry_run": null,                           // true/false where the operation has a dry-run mode
+  "dry_run": false,                          // only where the operation has a dry-run mode
   "targets": { "group": ["zinal"] },         // keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
   "details": { "force": true },
   "emitter": { "service": "manta-server", "version": "2.0.0-beta.68", "host": "manta-server-7f9c" }
 }
 ```
+
+A field with no value is left out rather than written as `null` / `{}`: `dry_run` is absent for operations without a dry-run mode, `site` when no `X-Manta-Site` was sent, and so on. (A `--dry-run` the CLI short-circuits locally — `power`, `delete node`, … — never reaches the server and is not audited.)
 
 `actor` comes from the claims (`preferred_username`, `name`, `sub`) of the **inbound** `Authorization` header, read by the middleware itself. The signature is not verified locally, so the identity is authoritative when `outcome.result` is `success` (the backend accepted the token) and a claim otherwise. `client.forwarded_for` is the raw header, untrusted.
 
