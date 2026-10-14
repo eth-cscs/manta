@@ -237,6 +237,9 @@ pub async fn create_session(
   )
   .await
   .map_err(to_handler_error)?;
+  note
+    .produced("session", &session_name)
+    .produced("configuration", &config_name);
 
   Ok((
     StatusCode::CREATED,

@@ -129,6 +129,9 @@ pub async fn post_template_session(
     service::template::create_bos_session(&infra, &ctx.token, bos_session)
       .await
       .map_err(to_handler_error)?;
+  if let Some(session) = &created.name {
+    note.produced("session", session);
+  }
 
   Ok((StatusCode::CREATED, Json(serialize_or_500(&created)?)))
 }

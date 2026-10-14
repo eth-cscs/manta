@@ -103,6 +103,7 @@ pub async fn apply_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "apply_kernel_parameters xnames={:?} op={:?} dry_run={}",
@@ -206,6 +207,7 @@ pub async fn add_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "add_kernel_parameters xnames={:?} dry_run={}",
@@ -292,6 +294,7 @@ pub async fn delete_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "delete_kernel_parameters xnames={:?} dry_run={}",

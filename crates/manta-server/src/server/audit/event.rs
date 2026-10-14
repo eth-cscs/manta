@@ -165,9 +165,22 @@ pub struct AuditEvent {
   pub dry_run: Option<bool>,
   /// Objects the operation acts on, keyed by object kind (`group`,
   /// `node`, `hosts`, `image`, …). Values are as the caller supplied
-  /// them (a hosts expression is not expanded).
+  /// them (a hosts expression is not expanded; see [`Self::nodes`]).
   #[serde(skip_serializing_if = "BTreeMap::is_empty")]
   pub targets: BTreeMap<String, Vec<String>>,
+  /// Concrete node xnames the server resolved the request to, when it
+  /// expanded a hosts expression or a group itself (power, boot,
+  /// kernel parameters, runtime configuration, migrate). Recorded
+  /// before the operation runs, so it is present on dry runs and
+  /// failures too.
+  #[serde(skip_serializing_if = "Vec::is_empty")]
+  pub nodes: Vec<String>,
+  /// What the operation created or started, by kind (`transition`,
+  /// `session`, `configuration`, `image`, `hostname`) — the ids to
+  /// look the operation up by in the backend. Only on success, never
+  /// on a dry run.
+  #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+  pub produced: BTreeMap<String, String>,
   /// Further operation parameters a handler chose to record (e.g.
   /// `force`, the power action, the kernel parameters).
   #[serde(skip_serializing_if = "serde_json::Map::is_empty")]

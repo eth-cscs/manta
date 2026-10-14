@@ -81,6 +81,7 @@ pub async fn post_power(
   )
   .await
   .map_err(to_handler_error)?;
+  note.nodes(&xnames);
 
   let params = service::power::ApplyPowerParams {
     action: body.action,
@@ -90,6 +91,7 @@ pub async fn post_power(
   let result = service::power::apply_power(&infra, &ctx.token, &params)
     .await
     .map_err(to_handler_error)?;
+  note.produced("transition", &result.transition_id);
 
   Ok(Json(result))
 }

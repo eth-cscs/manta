@@ -248,6 +248,7 @@ pub async fn apply_boot_config(
   )
   .await
   .map_err(to_handler_error)?;
+  note.nodes(&changeset.xname_vec);
 
   if body.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&changeset)?)));

@@ -176,6 +176,7 @@ pub async fn migrate_nodes(
   )
   .await
   .map_err(to_handler_error)?;
+  note.nodes(&xnames);
 
   Ok(Json(serde_json::json!({
     "xnames": xnames,

@@ -441,7 +441,9 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
   "request": { "method": "DELETE", "route": "/v2/groups/{label}", "path": "/v2/groups/zinal", "query": "force=true" },
   "outcome": { "result": "success", "status": 204, "duration_ms": 412 },  // success|denied|rejected|failed|timed_out
   "dry_run": false,                          // only where the operation has a dry-run mode
-  "targets": { "group": ["zinal"] },         // keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
+  "targets": { "group": ["zinal"] },         // as the caller gave them; keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
+  "nodes": ["x1000c0s0b0n0"],                // xnames the server expanded a hosts expression/group to
+  "produced": { "transition": "4c1e…" },     // ids it created/started: transition, session, configuration, image, hostname
   "details": { "force": true },
   "emitter": { "service": "manta-server", "version": "2.0.0-beta.68", "host": "manta-server-7f9c" }
 }
@@ -451,7 +453,7 @@ A field with no value is left out rather than written as `null` / `{}`: `dry_run
 
 `actor` comes from the claims (`preferred_username`, `name`, `sub`) of the **inbound** `Authorization` header, read by the middleware itself. The signature is not verified locally, so the identity is authoritative when `outcome.result` is `success` (the backend accepted the token) and a claim otherwise. `client.forwarded_for` is the raw header, untrusted.
 
-**Handler enrichment.** A handler extracts `AuditNote` next to `RequestCtx` and, as its first statement, records the action, targets, dry-run flag and parameters — first, so the description is kept when a later call fails. Outside an audited request the note is inert. Values go in explicitly; there is no field for a token or raw body, and redfish handlers deliberately omit the BMC user/password.
+**Handler enrichment.** A handler extracts `AuditNote` next to `RequestCtx` and, as its first statement, records the action, targets, dry-run flag and parameters — first, so the description is kept when a later call fails. Two things are only known later and are added as they happen: `nodes(…)` once the handler has expanded a hosts expression or group (so a node-level search — "who powered off x1000c3s5b0n1?" — finds operations that named it only through a hostlist or group), and `produced(kind, id)` once the backend has created or started something (the PCS transition, CFS/BOS session, image…), never on a dry run. Outside an audited request the note is inert. Values go in explicitly; there is no field for a token or raw body, and redfish handlers deliberately omit the BMC user/password.
 
 **Delivery.** `AuditLog` fans each event out to its sinks: always a JSON line at INFO on the `manta::audit` tracing target, plus `kafka::KafkaSink` when `[auditor.kafka]` is set. The Kafka producer is built at startup (an invalid librdkafka setting fails the boot); `emit` only enqueues (`send_result`) and a spawned task logs a warning if the delivery report is an error, so a down broker costs log lines, not request latency (fail-open). After the graceful drain, `start_server` flushes the queue for up to `AUDIT_FLUSH_TIMEOUT` (5 s). `[auditor.kafka.properties]` is passed to librdkafka verbatim (TLS/SASL); `bootstrap.servers` and `message.timeout.ms` are owned by the typed fields and rejected there. Property values are never printed.
 

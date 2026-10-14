@@ -51,6 +51,7 @@ pub async fn create_ephemeral_env(
     crate::service::ephemeral_env::exec(&infra, &ctx.token, &body.image_id)
       .await
       .map_err(to_handler_error)?;
+  note.produced("hostname", &hostname);
 
   Ok((
     StatusCode::CREATED,

@@ -28,6 +28,8 @@ struct Note {
   action: Option<&'static str>,
   dry_run: Option<bool>,
   targets: BTreeMap<String, Vec<String>>,
+  nodes: Vec<String>,
+  produced: BTreeMap<String, String>,
   details: serde_json::Map<String, serde_json::Value>,
 }
 
@@ -88,6 +90,23 @@ impl AuditNote {
         .entry(kind.to_string())
         .or_default()
         .extend(values.into_iter().map(Into::into));
+    })
+  }
+
+  /// Record the node xnames the server resolved the targets to.
+  pub fn nodes<I, S>(&self, values: I) -> &Self
+  where
+    I: IntoIterator<Item = S>,
+    S: Into<String>,
+  {
+    self.with(|n| n.nodes.extend(values.into_iter().map(Into::into)))
+  }
+
+  /// Record the id of something the operation created or started
+  /// (`transition`, `session`, …). Call it only once that happened.
+  pub fn produced(&self, kind: &str, id: impl Into<String>) -> &Self {
+    self.with(|n| {
+      n.produced.insert(kind.to_string(), id.into());
     })
   }
 
@@ -232,6 +251,8 @@ pub async fn audit_requests(
   };
   event.dry_run = note.dry_run;
   event.targets = note.targets;
+  event.nodes = note.nodes;
+  event.produced = note.produced;
   event.details = note.details;
   state.audit.emit(&event);
 
@@ -305,7 +326,9 @@ mod tests {
       .target("group", "g1")
       .targets("node", ["x1", "x2"])
       .dry_run(false)
-      .detail("force", true);
+      .detail("force", true)
+      .nodes(["x1000c0s0b0n0", "x1000c0s0b0n1"])
+      .produced("transition", "t-1");
     let n = note.0.unwrap();
     let n = n.lock().unwrap();
     assert_eq!(n.action, Some("group.delete"));
@@ -313,5 +336,7 @@ mod tests {
     assert_eq!(n.targets["node"], vec!["x1", "x2"]);
     assert_eq!(n.dry_run, Some(false));
     assert_eq!(n.details["force"], serde_json::json!(true));
+    assert_eq!(n.nodes, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
+    assert_eq!(n.produced["transition"], "t-1");
   }
 }

@@ -131,6 +131,8 @@ impl AuditLog {
       },
       dry_run: None,
       targets: Default::default(),
+      nodes: Default::default(),
+      produced: Default::default(),
       details: Default::default(),
       emitter: self.emitter.clone(),
     }

@@ -192,6 +192,9 @@ pub async fn post_sat_image_cfs_session(
   )
   .await
   .map_err(to_handler_error)?;
+  if !body.dry_run {
+    note.produced("session", &session.name);
+  }
 
   Ok((StatusCode::CREATED, Json::<CfsSessionGetResponse>(session)))
 }
@@ -255,6 +258,9 @@ pub async fn post_sat_image_stamp(
   )
   .await
   .map_err(to_handler_error)?;
+  if let Some(id) = &image.id {
+    note.produced("image", id);
+  }
 
   Ok(Json::<Image>(image))
 }
@@ -318,6 +324,11 @@ pub async fn post_sat_session_template(
   )
   .await
   .map_err(to_handler_error)?;
+  if !body.dry_run
+    && let Some(name) = session.as_ref().and_then(|s| s.name.as_ref())
+  {
+    note.produced("session", name);
+  }
 
   // Dry-run + create_bos_session: the backend has returned a mock
   // template but no session (it never actually created one). Synthesise

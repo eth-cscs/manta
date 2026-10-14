@@ -60,6 +60,7 @@ pub async fn apply_runtime_configuration(
   )
   .await
   .map_err(to_handler_error)?;
+  note.nodes(&xnames);
 
   Ok((
     StatusCode::OK,
