@@ -435,6 +435,7 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
   "timestamp": "2026-10-13T09:12:44.101Z",
   "kind": "api_request",                     // | console_session | auth_attempt
   "action": "group.delete",                  // handler-chosen; "<METHOD> <route>" if the handler never ran
+  "summary": "alice @ alps: group delete zinal (force) → success",  // for humans, derived by AuditEvent::describe
   "actor": { "username": "alice", "name": "Alice A", "subject": "0b5e…" },
   "client": { "ip": "10.1.2.3", "forwarded_for": "192.0.2.7" },
   "site": "alps",
@@ -455,7 +456,7 @@ A field with no value is left out rather than written as `null` / `{}`: `dry_run
 
 **Handler enrichment.** A handler extracts `AuditNote` next to `RequestCtx` and, as its first statement, records the action, targets, dry-run flag and parameters — first, so the description is kept when a later call fails. Two things are only known later and are added as they happen: `nodes(…)` once the handler has expanded a hosts expression or group (so a node-level search — "who powered off x1000c3s5b0n1?" — finds operations that named it only through a hostlist or group), and `produced(kind, id)` once the backend has created or started something (the PCS transition, CFS/BOS session, image…), never on a dry run. Outside an audited request the note is inert. Values go in explicitly; there is no field for a token or raw body, and redfish handlers deliberately omit the BMC user/password.
 
-**Delivery.** `AuditLog` fans each event out to its sinks: always a JSON line at INFO on the `manta::audit` tracing target, plus `kafka::KafkaSink` when `[auditor.kafka]` is set. The Kafka producer is built at startup (an invalid librdkafka setting fails the boot); `emit` only enqueues (`send_result`) and a spawned task logs a warning if the delivery report is an error, so a down broker costs log lines, not request latency (fail-open). After the graceful drain, `start_server` flushes the queue for up to `AUDIT_FLUSH_TIMEOUT` (5 s). `[auditor.kafka.properties]` is passed to librdkafka verbatim (TLS/SASL); `bootstrap.servers` and `message.timeout.ms` are owned by the typed fields and rejected there. Property values are never printed.
+**Delivery.** `AuditLog` fans each event out to its sinks: always an INFO line on the `manta::audit` tracing target (the summary as the message, the full JSON in its `event` field), plus `kafka::KafkaSink` when `[auditor.kafka]` is set. The Kafka producer is built at startup (an invalid librdkafka setting fails the boot); `emit` only enqueues (`send_result`) and a spawned task logs a warning if the delivery report is an error, so a down broker costs log lines, not request latency (fail-open). After the graceful drain, `start_server` flushes the queue for up to `AUDIT_FLUSH_TIMEOUT` (5 s). `[auditor.kafka.properties]` is passed to librdkafka verbatim (TLS/SASL); `bootstrap.servers` and `message.timeout.ms` are owned by the typed fields and rejected there. Property values are never printed.
 
 ## Hooks
 

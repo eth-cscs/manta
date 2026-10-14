@@ -1114,6 +1114,10 @@ async fn post_power_on_nodes_happy_path() {
   assert_eq!(e.action, "power.on");
   assert_eq!(e.nodes, vec!["x3000c0s1b0n0"]);
   assert_eq!(e.produced["transition"], "abc-123");
+  assert_eq!(
+    e.summary,
+    "msopena @ test: power on x3000c0s1b0n0 (1 node) → success, transition abc-123"
+  );
 }
 
 // GET /v2/power/transitions/{id}

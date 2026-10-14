@@ -147,6 +147,10 @@ pub struct AuditEvent {
   /// `group.delete`; `"<METHOD> <route>"` when the handler did not
   /// name it (e.g. the request was rejected before the handler ran).
   pub action: String,
+  /// One human-readable line saying who did what, where, and how it
+  /// ended — see [`AuditEvent::describe`]. Derived from the other
+  /// fields when the event is emitted; for reading, not for parsing.
+  pub summary: String,
   /// Who did it.
   pub actor: Actor,
   /// From where.
@@ -189,9 +193,182 @@ pub struct AuditEvent {
   pub emitter: Emitter,
 }
 
+/// Most values of one target kind spelled out in a summary.
+const SUMMARY_MAX_VALUES: usize = 5;
+
+impl AuditEvent {
+  /// One line for humans, built from the structured fields:
+  ///
+  /// ```text
+  /// rjanalik @ alps: power off nid001288 (1 node, force) → success, transition 4c1e…
+  /// alice @ alps: image delete a b (dry run) → success
+  /// anonymous: DELETE /v2/groups/zinal → denied (401)
+  /// ```
+  ///
+  /// Every route gets one with no per-handler code: the verb is the
+  /// handler's `action` with its separators turned into spaces, or
+  /// method and path when no handler named it.
+  pub fn describe(&self) -> String {
+    use std::fmt::Write as _;
+
+    let who = self
+      .actor
+      .username
+      .as_deref()
+      .or(self.actor.subject.as_deref())
+      .unwrap_or("anonymous");
+    let mut line = match &self.site {
+      Some(site) => format!("{who} @ {site}:"),
+      None => format!("{who}:"),
+    };
+
+    if self.action.contains(' ') {
+      // Fallback `"<METHOD> <route>"`: show the concrete path instead.
+      let _ = write!(line, " {} {}", self.request.method, self.request.path);
+    } else {
+      let _ = write!(line, " {}", self.action.replace(['.', '_'], " "));
+      for values in self.targets.values() {
+        for v in values.iter().take(SUMMARY_MAX_VALUES) {
+          let _ = write!(line, " {v}");
+        }
+        if values.len() > SUMMARY_MAX_VALUES {
+          let _ =
+            write!(line, " (+{} more)", values.len() - SUMMARY_MAX_VALUES);
+        }
+      }
+    }
+
+    let mut notes = Vec::new();
+    match self.nodes.len() {
+      0 => {}
+      1 => notes.push("1 node".to_string()),
+      n => notes.push(format!("{n} nodes")),
+    }
+    if self.dry_run == Some(true) {
+      notes.push("dry run".to_string());
+    }
+    if self.details.get("force") == Some(&serde_json::Value::Bool(true)) {
+      notes.push("force".to_string());
+    }
+    if !notes.is_empty() {
+      let _ = write!(line, " ({})", notes.join(", "));
+    }
+
+    let result = serde_json::to_value(self.outcome.result)
+      .ok()
+      .and_then(|v| v.as_str().map(str::to_string))
+      .unwrap_or_default()
+      .replace('_', " ");
+    let _ = write!(line, " → {result}");
+    if self.outcome.result != Verdict::Success {
+      let _ = write!(line, " ({})", self.outcome.status);
+    }
+    for (kind, id) in &self.produced {
+      let _ = write!(line, ", {kind} {id}");
+    }
+    line
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  fn event(action: &str) -> AuditEvent {
+    AuditEvent {
+      schema_version: SCHEMA_VERSION,
+      event_id: "e".into(),
+      timestamp: "t".into(),
+      kind: EventKind::ApiRequest,
+      action: action.into(),
+      summary: String::new(),
+      actor: Actor {
+        username: Some("rjanalik".into()),
+        ..Actor::default()
+      },
+      client: Client::default(),
+      site: Some("alps".into()),
+      request: Request {
+        method: "POST".into(),
+        route: "/v2/power".into(),
+        path: "/v2/power".into(),
+        query: None,
+      },
+      outcome: Outcome {
+        result: Verdict::Success,
+        status: 200,
+        duration_ms: 1,
+      },
+      dry_run: None,
+      targets: BTreeMap::new(),
+      nodes: Vec::new(),
+      produced: BTreeMap::new(),
+      details: serde_json::Map::new(),
+      emitter: Emitter {
+        service: "manta-server",
+        version: "0",
+        host: None,
+      },
+    }
+  }
+
+  #[test]
+  fn describe_names_who_what_where_and_how_it_ended() {
+    let mut e = event("power.off");
+    e.targets.insert("hosts".into(), vec!["nid001288".into()]);
+    e.nodes = vec!["x1000c0s0b0n0".into()];
+    e.details.insert("force".into(), serde_json::json!(true));
+    e.produced.insert("transition".into(), "abc-123".into());
+    assert_eq!(
+      e.describe(),
+      "rjanalik @ alps: power off nid001288 (1 node, force) → success, \
+       transition abc-123"
+    );
+  }
+
+  #[test]
+  fn describe_marks_dry_runs_and_failures() {
+    let mut e = event("boot_parameters.delete");
+    e.dry_run = Some(true);
+    e.outcome = Outcome {
+      result: Verdict::TimedOut,
+      status: 408,
+      duration_ms: 1,
+    };
+    assert_eq!(
+      e.describe(),
+      "rjanalik @ alps: boot parameters delete (dry run) → timed out (408)"
+    );
+  }
+
+  #[test]
+  fn describe_truncates_long_target_lists() {
+    let mut e = event("image.delete");
+    e.targets
+      .insert("image".into(), (1..=7).map(|i| format!("i{i}")).collect());
+    assert_eq!(
+      e.describe(),
+      "rjanalik @ alps: image delete i1 i2 i3 i4 i5 (+2 more) → success"
+    );
+  }
+
+  #[test]
+  fn describe_falls_back_to_method_and_path() {
+    let mut e = event("DELETE /v2/groups/{label}");
+    e.actor = Actor::default();
+    e.site = None;
+    e.request.method = "DELETE".into();
+    e.request.path = "/v2/groups/zinal".into();
+    e.outcome = Outcome {
+      result: Verdict::Denied,
+      status: 401,
+      duration_ms: 1,
+    };
+    assert_eq!(
+      e.describe(),
+      "anonymous: DELETE /v2/groups/zinal → denied (401)"
+    );
+  }
 
   #[test]
   fn result_classifies_statuses() {

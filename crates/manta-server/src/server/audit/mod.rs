@@ -55,15 +55,17 @@ pub trait AuditSink: Send + Sync {
   fn flush(&self, _timeout: Duration) {}
 }
 
-/// Logs each event as one JSON line at INFO on [`AUDIT_TARGET`], so
-/// the container log keeps a copy even when Kafka is down or not
-/// configured.
+/// Logs each event at INFO on [`AUDIT_TARGET`] — its summary as the
+/// message, the full JSON in the `event` field — so the container log
+/// keeps a readable copy even when Kafka is down or not configured.
 struct TracingSink;
 
 impl AuditSink for TracingSink {
   fn emit(&self, event: &AuditEvent) {
     match serde_json::to_string(event) {
-      Ok(json) => tracing::info!(target: AUDIT_TARGET, "{json}"),
+      Ok(json) => {
+        tracing::info!(target: AUDIT_TARGET, event = %json, "{}", event.summary);
+      }
       Err(e) => tracing::warn!(
         target: AUDIT_TARGET,
         event_id = %event.event_id,
@@ -120,6 +122,7 @@ impl AuditLog {
         .to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
       kind,
       action,
+      summary: String::new(),
       actor: Default::default(),
       client: Default::default(),
       site: None,
@@ -138,10 +141,12 @@ impl AuditLog {
     }
   }
 
-  /// Hand `event` to every sink. Never blocks, never fails.
-  pub fn emit(&self, event: &AuditEvent) {
+  /// Fill in `event.summary` and hand the event to every sink. Never
+  /// blocks, never fails.
+  pub fn emit(&self, mut event: AuditEvent) {
+    event.summary = event.describe();
     for sink in &self.sinks {
-      sink.emit(event);
+      sink.emit(&event);
     }
   }
 
@@ -195,8 +200,12 @@ mod tests {
     let first = Arc::new(CaptureSink::default());
     let second = Arc::new(CaptureSink::default());
     let log = AuditLog::with_sinks(vec![first.clone(), second.clone()]);
-    log.emit(&log.event(EventKind::ApiRequest, "x.y".into()));
+    log.emit(log.event(EventKind::ApiRequest, "x.y".into()));
     assert_eq!(first.0.lock().unwrap().len(), 1);
+    assert_eq!(
+      first.0.lock().unwrap()[0].summary,
+      "anonymous: x y → success"
+    );
     assert_eq!(second.0.lock().unwrap().len(), 1);
   }
 

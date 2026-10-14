@@ -254,7 +254,7 @@ pub async fn audit_requests(
   event.nodes = note.nodes;
   event.produced = note.produced;
   event.details = note.details;
-  state.audit.emit(&event);
+  state.audit.emit(event);
 
   response
 }

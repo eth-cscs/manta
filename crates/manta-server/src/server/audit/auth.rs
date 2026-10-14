@@ -46,7 +46,7 @@ pub fn send_auth_audit(
     status: status.as_u16(),
     duration_ms: 0,
   };
-  audit.emit(&event);
+  audit.emit(event);
 }
 
 #[cfg(test)]

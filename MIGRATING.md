@@ -826,7 +826,8 @@ the auth-attempt event moved to the same shape.
   settings such as `security.protocol`. A setting librdkafka rejects
   now fails server startup instead of the first audited request.
 - **Logs.** Every event is also logged at INFO on the
-  `manta::audit` target. A `log` filter that silences that target
+  `manta::audit` target: its one-line `summary` as the message, the
+  full JSON in the `event` field. A `log` filter that silences that target
   (e.g. `log = "manta_server=info"`) drops the log copy only.
 
 ---
