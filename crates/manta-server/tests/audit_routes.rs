@@ -313,3 +313,29 @@ async fn redfish_credentials_never_reach_the_event() {
   assert!(!json.contains("bmc-s3cret"), "password leaked: {json}");
   assert!(!json.contains("\"root\""), "BMC user leaked: {json}");
 }
+
+/// One route, three operations: the action names the verb.
+#[tokio::test]
+async fn power_action_names_the_operation() {
+  for (op, action) in [
+    ("on", "power.on"),
+    ("off", "power.off"),
+    ("reset", "power.reset"),
+  ] {
+    let sink = Arc::new(Capture::default());
+    router(sink.clone())
+      .oneshot(authed(
+        Method::POST,
+        "/v2/power",
+        Some(serde_json::json!({
+          "action": op,
+          "host_expression": "nid001288",
+          "target_type": "nodes",
+          "force": false,
+        })),
+      ))
+      .await
+      .unwrap();
+    assert_eq!(sink.take()[0].action, action);
+  }
+}

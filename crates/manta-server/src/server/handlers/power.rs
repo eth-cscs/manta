@@ -57,9 +57,12 @@ pub async fn post_power(
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   note
-    .action("power.transition")
+    .action(match body.action {
+      PowerAction::On => "power.on",
+      PowerAction::Off => "power.off",
+      PowerAction::Reset => "power.reset",
+    })
     .target("hosts", &body.host_expression)
-    .detail("operation", body.action)
     .detail("target_type", body.target_type)
     .detail("force", body.force);
 
