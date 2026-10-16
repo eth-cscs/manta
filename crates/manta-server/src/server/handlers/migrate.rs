@@ -19,6 +19,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::error::Error as BackendError;
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 pub use manta_shared::types::api::migrate::{
@@ -131,8 +132,19 @@ fn require_backup_root(ctx: &RequestCtx) -> Result<&Path, BackendError> {
 #[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("migrate.nodes")
+    .target("hosts", &body.hosts_expression)
+    .targets("group", &body.parent_hsm_names)
+    .targets("group", &body.target_hsm_names)
+    .detail("from_groups", &body.parent_hsm_names)
+    .detail("to_groups", &body.target_hsm_names)
+    .detail("create_group", body.create_hsm_group)
+    .dry_run(body.dry_run);
+
   tracing::info!("migrate_nodes dry_run={}", body.dry_run);
   let infra = ctx.infra();
 
@@ -164,6 +176,7 @@ pub async fn migrate_nodes(
   )
   .await
   .map_err(to_handler_error)?;
+  note.nodes(&xnames);
 
   Ok(Json(serde_json::json!({
     "xnames": xnames,
@@ -189,8 +202,14 @@ pub async fn migrate_nodes(
 #[tracing::instrument(skip_all)]
 pub async fn migrate_backup(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<MigrateBackupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("migrate.backup")
+    .targets("template", body.bos.as_deref())
+    .detail("destination", &body.destination);
+
   tracing::info!("migrate_backup");
   let infra = ctx.infra();
 
@@ -238,8 +257,18 @@ pub async fn migrate_backup(
 #[tracing::instrument(skip_all)]
 pub async fn migrate_restore(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<MigrateRestoreRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("migrate.restore")
+    .detail("bos_file", &body.bos_file)
+    .detail("cfs_file", &body.cfs_file)
+    .detail("hsm_file", &body.hsm_file)
+    .detail("ims_file", &body.ims_file)
+    .detail("image_dir", &body.image_dir)
+    .detail("overwrite", body.overwrite);
+
   tracing::info!("migrate_restore overwrite={}", body.overwrite);
   let infra = ctx.infra();
 

@@ -2,7 +2,7 @@
 //!
 //! Used by the shared `config` loader and re-used by binary-side
 //! helpers that build on it: `manta-cli`'s SAT-file Jinja renderer and
-//! `manta-server`'s `audit`, `jwt_ops`, and `kafka` modules. Lets
+//! `manta-server`'s `audit` module (Kafka sink) and `jwt_ops`. Lets
 //! `manta-shared` (and therefore `manta-cli`) avoid pulling in
 //! `manta_backend_dispatcher::error::Error` for its own error surface.
 //!

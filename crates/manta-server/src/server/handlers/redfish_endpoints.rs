@@ -15,6 +15,7 @@ use axum::{
 };
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 use manta_shared::types::api::redfish_endpoints::{
   GetRedfishEndpointsParams, UpdateRedfishEndpointParams,
@@ -79,8 +80,13 @@ pub async fn get_redfish_endpoints(
 #[tracing::instrument(skip_all)]
 pub async fn delete_redfish_endpoint(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("redfish_endpoint.delete")
+    .target("redfish_endpoint", &id);
+
   tracing::info!("delete_redfish_endpoint id={}", id);
   let infra = ctx.infra();
 
@@ -109,8 +115,16 @@ pub async fn delete_redfish_endpoint(
 #[tracing::instrument(skip_all)]
 pub async fn add_redfish_endpoint(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(params): Json<UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("redfish_endpoint.add")
+    .target("redfish_endpoint", &params.id)
+    .detail("hostname", &params.hostname)
+    .detail("ip_address", &params.ip_address)
+    .detail("enabled", params.enabled);
+
   tracing::info!("add_redfish_endpoint");
   let infra = ctx.infra();
 
@@ -142,8 +156,16 @@ pub async fn add_redfish_endpoint(
 #[tracing::instrument(skip_all)]
 pub async fn update_redfish_endpoint(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(params): Json<UpdateRedfishEndpointParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("redfish_endpoint.update")
+    .target("redfish_endpoint", &params.id)
+    .detail("hostname", &params.hostname)
+    .detail("ip_address", &params.ip_address)
+    .detail("enabled", params.enabled);
+
   tracing::info!("update_redfish_endpoint");
   let infra = ctx.infra();
 

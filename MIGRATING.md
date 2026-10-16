@@ -342,14 +342,21 @@ syntax: `log = "manta_server=debug,hyper=warn,info"`.
 
 The server prints its full effective configuration to stdout on
 startup so operators see exactly what got loaded — config file path,
-listen address, TLS state, auth rate limit, audit file, per-site
+listen address, TLS state, auth rate limit, Kafka audit settings, per-site
 backend URLs, k8s/vault URLs (no secrets ever logged).
 
 ### 2.6 Audit
 
-`[auditor].kafka` if present streams every `/auth/*` outcome to a
-Kafka topic. Same field shape as v1's audit block. If you don't run
-Kafka, omit the section — auditing is silent.
+v1's CLI sent an audit message for a handful of commands. In v2 the
+server records **every** mutating request (plus console attaches and
+`/v2/auth/token` attempts) as a versioned JSON event — the CLI sends
+nothing and has no audit configuration. `[auditor.kafka]` keeps v1's
+`brokers` / `topic` keys and adds an optional
+`[auditor.kafka.properties]` table passed to librdkafka (TLS/SASL).
+The event shape is new and **not** compatible with v1's messages —
+see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail).
+Without Kafka, omit the section: events still go to the server log
+on the `manta::audit` target.
 
 ### 2.7 Read-only access (removed) — see §5.12
 
@@ -802,6 +809,26 @@ Not Found` after the upgrade.
 4. **Verify.** `curl -k https://<host>:8443/v2/health` should
    return `200 OK`; `curl -k https://<host>:8443/api/v2/health`
    should return `404`.
+
+### 5.14. Audit trail covers every mutation; new event shape
+
+`manta-server` used to audit only `/v2/auth/token` attempts. It now
+records one event per mutating `/v2` request and per console attach
+(schema in [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail));
+the auth-attempt event moved to the same shape.
+
+- **Kafka consumers.** The `{event, outcome, username, source_ip,
+  site}` auth message is gone; read `kind`, `actor`, `client`,
+  `site`, `outcome` instead.
+- **`server.toml`.** `[auditor.kafka].delivery_wait_secs` is no
+  longer read (emission never waits for the broker); delete it. New
+  optional `[auditor.kafka.properties]` table for librdkafka
+  settings such as `security.protocol`. A setting librdkafka rejects
+  now fails server startup instead of the first audited request.
+- **Logs.** Every event is also logged at INFO on the
+  `manta::audit` target: its one-line `summary` as the message, the
+  full JSON in the `event` field. A `log` filter that silences that target
+  (e.g. `log = "manta_server=info"`) drops the log copy only.
 
 ---
 

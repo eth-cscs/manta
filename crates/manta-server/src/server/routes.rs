@@ -19,6 +19,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use super::ServerState;
 use super::api_doc::ApiDoc;
+use super::audit::audit_requests;
 use super::auth_middleware::{
   AuthRateLimiter, rate_limit, strip_body_for_logs,
 };
@@ -29,7 +30,7 @@ use super::handlers;
 /// Structure:
 /// - `/v2/*` — the main resource router, with the global
 ///   [`ServerState::request_timeout`] applied as an outer
-///   `TimeoutLayer`. `POST /power` now returns immediately with a
+///   `TimeoutLayer`, and [`audit_requests`] outside that. `POST /power` now returns immediately with a
 ///   PCS transition id (the polling loop runs CLI-side), so it fits
 ///   well under the default timeout — no per-route override is needed.
 /// - `/v2/auth/*` — separate sub-router with two layered
@@ -183,6 +184,12 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .layer(TimeoutLayer::with_status_code(
       StatusCode::REQUEST_TIMEOUT,
       state.request_timeout,
+    ))
+    // Audit every mutating request and console attach. Layered after
+    // (= outside) the timeout so a timed-out request is still recorded.
+    .layer(middleware::from_fn_with_state(
+      state.clone(),
+      audit_requests,
     ));
 
   // /v2/auth/* — credential-handling sub-router. No Bearer

@@ -49,7 +49,11 @@ use wiremock::{
 };
 
 use manta_server::dispatcher::StaticBackendDispatcher;
-use manta_server::server::{ServerState, SiteBackend, routes::build_router};
+use manta_server::server::{
+  ServerState, SiteBackend,
+  audit::{AuditLog, AuditSink, event::AuditEvent},
+  routes::build_router,
+};
 
 // ---------------------------------------------------------------------------
 // Embedded credentials (CI-safe — no file-system dependency)
@@ -105,6 +109,24 @@ const TEST_TOKEN: &str = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJNSW
 struct TestFixture {
   mock_server: MockServer,
   router: axum::Router,
+  audit: Arc<AuditCapture>,
+}
+
+/// Audit sink that keeps every event, so a test can check what the
+/// handler recorded against a real (mocked) backend flow.
+#[derive(Default)]
+struct AuditCapture(std::sync::Mutex<Vec<AuditEvent>>);
+
+impl AuditSink for AuditCapture {
+  fn emit(&self, event: &AuditEvent) {
+    self.0.lock().unwrap().push(event.clone());
+  }
+}
+
+impl TestFixture {
+  fn audit_events(&self) -> Vec<AuditEvent> {
+    self.audit.0.lock().unwrap().clone()
+  }
 }
 
 impl TestFixture {
@@ -127,10 +149,11 @@ impl TestFixture {
         k8s_api_url: None,
       },
     );
+    let audit = Arc::new(AuditCapture::default());
     let state = Arc::new(ServerState {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
-      auditor: None,
+      audit: AuditLog::with_sinks(vec![audit.clone()]),
       auth_rate_limit_per_minute: None,
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(30),
@@ -142,6 +165,7 @@ impl TestFixture {
     TestFixture {
       mock_server,
       router,
+      audit,
     }
   }
 
@@ -1082,6 +1106,18 @@ async fn post_power_on_nodes_happy_path() {
   // transitionStatus / taskCounts here — those come from the polling
   // endpoint covered by `get_power_transition_happy_path`.
   assert!(body.get("transitionStatus").is_none());
+
+  // The audit event names the verb, the nodes the expression resolved
+  // to, and the PCS transition it started.
+  let events = fx.audit_events();
+  let e = &events[0];
+  assert_eq!(e.action, "power.on");
+  assert_eq!(e.nodes, vec!["x3000c0s1b0n0"]);
+  assert_eq!(e.produced["transition"], "abc-123");
+  assert_eq!(
+    e.summary,
+    "msopena @ test: power on x3000c0s1b0n0 (1 node) → success, transition abc-123"
+  );
 }
 
 // GET /v2/power/transitions/{id}

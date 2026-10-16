@@ -30,6 +30,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
   serialize_or_500, to_handler_error, validate_repo_list_lengths,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -106,9 +107,15 @@ pub async fn get_sessions(
 #[tracing::instrument(skip_all)]
 pub async fn delete_session(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(name): Path<String>,
   Query(q): Query<DeleteSessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("session.delete")
+    .target("session", &name)
+    .dry_run(q.dry_run);
+
   tracing::info!("delete_session name={} dry_run={}", name, q.dry_run);
   let infra = ctx.infra();
 
@@ -155,8 +162,17 @@ pub use manta_shared::types::api::session::CreateSessionRequest;
 #[tracing::instrument(skip_all)]
 pub async fn create_session(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<CreateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("session.create")
+    .targets("session", body.cfs_conf_sess_name.as_deref())
+    .targets("group", body.hsm_group.as_deref())
+    .targets("hosts", body.ansible_limit.as_deref())
+    .detail("repo_names", &body.repo_names)
+    .detail("playbook", &body.playbook_yaml_file_name);
+
   validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
   tracing::info!("create_session repos={:?}", body.repo_names);
   let infra = ctx.infra();
@@ -221,6 +237,9 @@ pub async fn create_session(
   )
   .await
   .map_err(to_handler_error)?;
+  note
+    .produced("session", &session_name)
+    .produced("configuration", &config_name);
 
   Ok((
     StatusCode::CREATED,

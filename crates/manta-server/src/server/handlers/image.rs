@@ -13,6 +13,7 @@ use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, parse_iso_datetime, to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -84,8 +85,17 @@ pub async fn get_images(
 #[tracing::instrument(skip_all)]
 pub async fn delete_images(
   ctx: RequestCtx,
+  note: AuditNote,
   Query(q): Query<DeleteImagesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("image.delete")
+    .targets(
+      "image",
+      q.ids.split(',').map(str::trim).filter(|s| !s.is_empty()),
+    )
+    .dry_run(q.dry_run);
+
   tracing::info!("delete_images ids={} dry_run={}", q.ids, q.dry_run);
   let infra = ctx.infra();
 
