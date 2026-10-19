@@ -174,9 +174,11 @@ pub struct AuditEvent {
   pub targets: BTreeMap<String, Vec<String>>,
   /// Concrete node xnames the server resolved the request to, when it
   /// expanded a hosts expression or a group itself (power, boot,
-  /// kernel parameters, runtime configuration, migrate). Recorded
-  /// before the operation runs, so it is present on dry runs and
-  /// failures too.
+  /// kernel parameters, runtime configuration, migrate). Power, boot
+  /// and kernel parameters record it before the operation runs, so it
+  /// is present on dry runs and failures too; runtime configuration
+  /// and migrate resolve and apply in one service call, so there it
+  /// is recorded only once that call succeeds.
   #[serde(skip_serializing_if = "Vec::is_empty")]
   pub nodes: Vec<String>,
   /// What the operation created or started, by kind (`transition`,
