@@ -221,8 +221,10 @@ mod tests {
   }
 
   /// The schema has no field that could hold a credential. Every
-  /// optional field is populated, so every key the schema can produce
-  /// is checked — a new `token`-like field fails here.
+  /// optional field that exists today is populated, so every key the
+  /// schema can emit is checked. A new always-present `token`-like
+  /// field fails here; a new *optional* one does only once it is
+  /// populated below too.
   #[test]
   fn schema_has_no_credential_field() {
     let mut e = AuditLog::default().event(EventKind::ApiRequest, "x.y".into());
