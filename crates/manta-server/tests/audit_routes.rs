@@ -231,6 +231,9 @@ async fn timed_out_mutation_is_still_audited() {
   let e = &sink.take()[0];
   assert_eq!(e.outcome.result, Verdict::TimedOut);
   assert_eq!(e.outcome.status, 408);
+  // The handler ran (and wrote its note) before the timeout fired.
+  assert_eq!(e.action, "group.delete");
+  assert_eq!(e.targets["group"], vec!["g1"]);
 }
 
 fn authed(

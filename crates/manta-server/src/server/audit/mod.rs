@@ -220,14 +220,46 @@ mod tests {
     }
   }
 
+  /// The schema has no field that could hold a credential. Every
+  /// optional field is populated, so every key the schema can produce
+  /// is checked — a new `token`-like field fails here.
   #[test]
-  fn serialised_event_has_no_credential_fields() {
-    let log = AuditLog::default();
-    let json =
-      serde_json::to_string(&log.event(EventKind::ApiRequest, "x.y".into()))
-        .unwrap();
-    for forbidden in ["token", "password", "authorization", "secret"] {
-      assert!(!json.contains(forbidden), "`{forbidden}` in {json}");
+  fn schema_has_no_credential_field() {
+    let mut e = AuditLog::default().event(EventKind::ApiRequest, "x.y".into());
+    e.actor = event::Actor {
+      username: Some("u".into()),
+      name: Some("n".into()),
+      subject: Some("s".into()),
+    };
+    e.client = event::Client {
+      ip: Some("i".into()),
+      forwarded_for: Some("f".into()),
+    };
+    e.site = Some("s".into());
+    e.request.query = Some("q".into());
+    e.dry_run = Some(true);
+    e.emitter.host = Some("h".into());
+
+    fn keys(v: &serde_json::Value, out: &mut Vec<String>) {
+      if let Some(map) = v.as_object() {
+        for (k, v) in map {
+          out.push(k.clone());
+          keys(v, out);
+        }
+      }
+    }
+    let mut all = Vec::new();
+    keys(&serde_json::to_value(&e).unwrap(), &mut all);
+    for key in ["forwarded_for", "query", "dry_run", "host", "subject"] {
+      assert!(
+        all.iter().any(|k| k == key),
+        "`{key}` not populated: {all:?}"
+      );
+    }
+    for key in &all {
+      for forbidden in ["token", "password", "authorization", "secret"] {
+        assert!(!key.contains(forbidden), "schema field `{key}`");
+      }
     }
   }
 }
