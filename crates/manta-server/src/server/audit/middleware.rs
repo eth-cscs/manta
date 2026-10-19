@@ -79,17 +79,20 @@ impl AuditNote {
     })
   }
 
-  /// Add several objects of `kind`.
+  /// Add several objects of `kind`. No values, no entry.
   pub fn targets<I, S>(&self, kind: &str, values: I) -> &Self
   where
     I: IntoIterator<Item = S>,
     S: Into<String>,
   {
     self.with(|n| {
-      n.targets
-        .entry(kind.to_string())
-        .or_default()
-        .extend(values.into_iter().map(Into::into));
+      let mut values = values.into_iter().map(Into::into).peekable();
+      if values.peek().is_some() {
+        n.targets
+          .entry(kind.to_string())
+          .or_default()
+          .extend(values);
+      }
     })
   }
 
@@ -325,6 +328,7 @@ mod tests {
       .action("group.delete")
       .target("group", "g1")
       .targets("node", ["x1", "x2"])
+      .targets("image", Vec::<String>::new())
       .dry_run(false)
       .detail("force", true)
       .nodes(["x1000c0s0b0n0", "x1000c0s0b0n1"])
@@ -334,6 +338,7 @@ mod tests {
     assert_eq!(n.action, Some("group.delete"));
     assert_eq!(n.targets["group"], vec!["g1"]);
     assert_eq!(n.targets["node"], vec!["x1", "x2"]);
+    assert!(!n.targets.contains_key("image"), "empty list left an entry");
     assert_eq!(n.dry_run, Some(false));
     assert_eq!(n.details["force"], serde_json::json!(true));
     assert_eq!(n.nodes, vec!["x1000c0s0b0n0", "x1000c0s0b0n1"]);
