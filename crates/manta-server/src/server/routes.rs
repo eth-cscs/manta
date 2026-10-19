@@ -13,7 +13,7 @@ use axum::{
   middleware,
   routing::{delete, get, post, put},
 };
-use tower_http::timeout::TimeoutLayer;
+use tower_http::{catch_panic::CatchPanicLayer, timeout::TimeoutLayer};
 use utoipa::OpenApi as _;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -30,8 +30,9 @@ use super::handlers;
 /// Structure:
 /// - `/v2/*` — the main resource router, with the global
 ///   [`ServerState::request_timeout`] applied as an outer
-///   `TimeoutLayer`, and [`audit_requests`] outside that. `POST /power` now returns immediately with a
-///   PCS transition id (the polling loop runs CLI-side), so it fits
+///   `TimeoutLayer`, a `CatchPanicLayer` outside it, and
+///   [`audit_requests`] outside both. `POST /power` returns
+///   immediately with a PCS transition id (the polling loop runs CLI-side), so it fits
 ///   well under the default timeout — no per-route override is needed.
 /// - `/v2/auth/*` — separate sub-router with two layered
 ///   defences: per-IP rate limit (see [`AuthRateLimiter`]) and body
@@ -185,8 +186,12 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       StatusCode::REQUEST_TIMEOUT,
       state.request_timeout,
     ))
+    // A panicking handler becomes a 500 here instead of tearing down
+    // the request future, so the audit layer below still records it.
+    .layer(CatchPanicLayer::new())
     // Audit every mutating request and console attach. Layered after
-    // (= outside) the timeout so a timed-out request is still recorded.
+    // (= outside) the timeout and panic catcher so a timed-out or
+    // panicked request is still recorded.
     .layer(middleware::from_fn_with_state(
       state.clone(),
       audit_requests,

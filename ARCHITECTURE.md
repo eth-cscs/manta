@@ -341,7 +341,8 @@ flowchart TD
     HSTS --> Split{nest path}
 
     Split -->|/v2/*| Aud[audit_requests<br/>one event per mutating request]
-    Aud --> Tmo[TimeoutLayer<br/>request_timeout_secs]
+    Aud --> Panic[CatchPanicLayer<br/>handler panic → 500]
+    Panic --> Tmo[TimeoutLayer<br/>request_timeout_secs]
     Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
 
     Split -->|/v2/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
@@ -424,7 +425,7 @@ Only the CLI has a first-class SOCKS5 knob — `cli.toml`'s optional top-level `
 
 Only `manta-server` audits — it is the chokepoint every CLI command passes through, so the CLI emits nothing. Code: `crates/manta-server/src/server/audit/`.
 
-**What is recorded.** `audit_requests` is layered on the `/v2` router, *outside* the `TimeoutLayer`, and emits one event per request whose method is not GET/HEAD/OPTIONS, plus every console attach (`…/console`, a GET upgrade to an interactive shell). It emits after the response is known, so each event has both the attempt and the outcome; a timed-out request is recorded as `timed_out`. Reads are not audited; neither are 404/405 (no route or method matched). `/v2/auth/token` sits outside the middleware (no bearer yet) and emits its own `auth_attempt` event via `send_auth_audit`. The coverage rule is pinned by `tests/audit_routes.rs`, which walks the OpenAPI spec.
+**What is recorded.** `audit_requests` is layered on the `/v2` router, *outside* the `TimeoutLayer` and a `CatchPanicLayer`, and emits one event per request whose method is not GET/HEAD/OPTIONS, plus every console attach (`…/console`, a GET upgrade to an interactive shell). It emits after the response is known, so each event has both the attempt and the outcome; a timed-out request is recorded as `timed_out`, a handler panic as a `failed` 500. Reads are not audited; neither are 404/405 (no route or method matched). `/v2/auth/token` sits outside the middleware (no bearer yet) and emits its own `auth_attempt` event via `send_auth_audit`. The coverage rule is pinned by `tests/audit_routes.rs`, which walks the OpenAPI spec.
 
 **Event shape** (`event::AuditEvent`, `schema_version` 1 — add fields freely; rename/remove only with a version bump):
 
