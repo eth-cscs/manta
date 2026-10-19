@@ -205,6 +205,9 @@ impl AuditEvent {
   /// anonymous: DELETE /v2/groups/zinal → denied (401)
   /// ```
   ///
+  /// Control characters are escaped (`\n` → `\\n`): the line is
+  /// logged as plain text and its values are caller-controlled.
+  ///
   /// Every route gets one with no per-handler code: the verb is the
   /// handler's `action` with its separators turned into spaces, or
   /// method and path when no handler named it.
@@ -266,7 +269,21 @@ impl AuditEvent {
     for (kind, id) in &self.produced {
       let _ = write!(line, ", {kind} {id}");
     }
+    // Most of the line is caller-controlled (unverified token claims,
+    // path segments, body strings), and the summary is a plain-text
+    // log message: escape control characters so a `\n` cannot forge
+    // a second log line.
     line
+      .chars()
+      .flat_map(|c| {
+        let escaped: Vec<char> = if c.is_control() {
+          c.escape_default().collect()
+        } else {
+          vec![c]
+        };
+        escaped
+      })
+      .collect()
   }
 }
 
@@ -338,6 +355,20 @@ mod tests {
     assert_eq!(
       e.describe(),
       "rjanalik @ alps: boot parameters delete (dry run) → timed out (408)"
+    );
+  }
+
+  #[test]
+  fn describe_escapes_control_characters() {
+    let mut e = event("group.delete");
+    e.actor.username = Some("x\nINFO forged".into());
+    e.targets
+      .insert("group".into(), vec!["g\r\u{1b}[31m".into()]);
+    let line = e.describe();
+    assert!(!line.chars().any(char::is_control), "{line:?}");
+    assert_eq!(
+      line,
+      "x\\nINFO forged @ alps: group delete g\\r\\u{1b}[31m → success"
     );
   }
 
