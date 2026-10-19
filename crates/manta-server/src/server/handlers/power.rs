@@ -62,8 +62,13 @@ pub async fn post_power(
       PowerAction::Off => "power.off",
       PowerAction::Reset => "power.reset",
     })
-    .target("hosts", &body.host_expression)
-    .detail("target_type", body.target_type)
+    .target(
+      match body.target_type {
+        PowerTargetType::Nodes => "hosts",
+        PowerTargetType::Cluster => "group",
+      },
+      &body.host_expression,
+    )
     .detail("force", body.force);
 
   tracing::info!(

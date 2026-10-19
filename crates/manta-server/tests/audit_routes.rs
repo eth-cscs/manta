@@ -339,3 +339,28 @@ async fn power_action_names_the_operation() {
     assert_eq!(sink.take()[0].action, action);
   }
 }
+
+/// `target_type` decides the target kind, so a search on
+/// `targets.group` finds power operations on a whole group.
+#[tokio::test]
+async fn power_on_a_group_targets_the_group() {
+  for (target_type, kind) in [("nodes", "hosts"), ("cluster", "group")] {
+    let sink = Arc::new(Capture::default());
+    router(sink.clone())
+      .oneshot(authed(
+        Method::POST,
+        "/v2/power",
+        Some(serde_json::json!({
+          "action": "off",
+          "host_expression": "zinal",
+          "target_type": target_type,
+          "force": false,
+        })),
+      ))
+      .await
+      .unwrap();
+    let e = &sink.take()[0];
+    assert_eq!(e.targets[kind], vec!["zinal"], "{target_type}");
+    assert_eq!(e.targets.len(), 1, "{target_type}: {:?}", e.targets);
+  }
+}
