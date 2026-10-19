@@ -179,23 +179,8 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
       "/hardware-clusters/{target}/configuration",
       post(handlers::apply_hw_configuration),
     )
-    .merge(build_ws_routes())
-    // Apply the global request timeout to every route in the api
-    // sub-router.
-    .layer(TimeoutLayer::with_status_code(
-      StatusCode::REQUEST_TIMEOUT,
-      state.request_timeout,
-    ))
-    // A panicking handler becomes a 500 here instead of tearing down
-    // the request future, so the audit layer below still records it.
-    .layer(CatchPanicLayer::new())
-    // Audit every mutating request and console attach. Layered after
-    // (= outside) the timeout and panic catcher so a timed-out or
-    // panicked request is still recorded.
-    .layer(middleware::from_fn_with_state(
-      state.clone(),
-      audit_requests,
-    ));
+    .merge(build_ws_routes());
+  let api = with_api_layers(api, &state);
 
   // /v2/auth/* — credential-handling sub-router. No Bearer
   // extractor (chicken-and-egg). Two layered defences applied:
@@ -221,6 +206,30 @@ pub fn build_router(state: Arc<ServerState>) -> Router {
     .with_state(state)
 }
 
+/// The `/v2` resource router's layers, innermost first.
+fn with_api_layers(
+  api: Router<Arc<ServerState>>,
+  state: &Arc<ServerState>,
+) -> Router<Arc<ServerState>> {
+  api
+    // Apply the global request timeout to every route in the api
+    // sub-router.
+    .layer(TimeoutLayer::with_status_code(
+      StatusCode::REQUEST_TIMEOUT,
+      state.request_timeout,
+    ))
+    // A panicking handler becomes a 500 here instead of tearing down
+    // the request future, so the audit layer below still records it.
+    .layer(CatchPanicLayer::new())
+    // Audit every mutating request and console attach. Layered after
+    // (= outside) the timeout and panic catcher so a timed-out or
+    // panicked request is still recorded.
+    .layer(middleware::from_fn_with_state(
+      state.clone(),
+      audit_requests,
+    ))
+}
+
 /// Inject `Strict-Transport-Security: max-age=31536000; includeSubDomains`
 /// on every outgoing response. Cheap; the header is constant.
 async fn add_hsts_header(
@@ -244,4 +253,54 @@ fn build_ws_routes() -> Router<Arc<ServerState>> {
       "/sessions/{name}/console",
       get(handlers::console_session_ws),
     )
+}
+
+#[cfg(test)]
+mod tests {
+  use std::collections::HashMap;
+  use std::time::Duration;
+
+  use axum::{body::Body, http::Request};
+  use tower::ServiceExt as _;
+
+  use super::*;
+  use crate::server::audit::{AuditLog, CaptureSink, event::Verdict};
+
+  /// A handler panic is turned into a 500 *inside* the audit layer, so
+  /// the request is still recorded.
+  #[tokio::test]
+  async fn panicking_handler_is_audited_as_failed() {
+    let sink = Arc::new(CaptureSink::default());
+    let state = Arc::new(ServerState {
+      sites: HashMap::new(),
+      console_inactivity_timeout: Duration::from_secs(1),
+      audit: AuditLog::with_sinks(vec![sink.clone()]),
+      auth_rate_limit_per_minute: None,
+      request_timeout: Duration::from_secs(60),
+      shutdown_grace_period: Duration::from_secs(1),
+      migrate_backup_root: None,
+    });
+    let api = Router::new().route(
+      "/boom",
+      axum::routing::delete(|| async {
+        panic!("handler bug");
+        #[allow(unreachable_code)]
+        ()
+      }),
+    );
+    let app = Router::new()
+      .nest("/v2", with_api_layers(api, &state))
+      .with_state(state);
+
+    let response = app
+      .oneshot(Request::delete("/v2/boom").body(Body::empty()).unwrap())
+      .await
+      .unwrap();
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    let events = sink.0.lock().unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].outcome.result, Verdict::Failed);
+    assert_eq!(events[0].request.route, "/v2/boom");
+  }
 }
