@@ -169,7 +169,10 @@ pub struct AuditEvent {
   pub dry_run: Option<bool>,
   /// Objects the operation acts on, keyed by object kind (`group`,
   /// `node`, `hosts`, `image`, …). Values are as the caller supplied
-  /// them (a hosts expression is not expanded; see [`Self::nodes`]).
+  /// them (a hosts expression is not expanded; see [`Self::nodes`]),
+  /// except where the caller selected by pattern: `configuration.delete`
+  /// records the configurations, sessions, templates and images it
+  /// matched.
   #[serde(skip_serializing_if = "BTreeMap::is_empty")]
   pub targets: BTreeMap<String, Vec<String>>,
   /// Concrete node xnames the server resolved the request to, when it

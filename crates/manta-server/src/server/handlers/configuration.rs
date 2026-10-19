@@ -121,6 +121,19 @@ pub async fn delete_configurations(
   )
   .await
   .map_err(to_handler_error)?;
+  // The caller gave a pattern / date range; record what it matched,
+  // so a search for a configuration (or a derived image) finds this.
+  note
+    .targets("configuration", &candidates.configuration_names)
+    .targets(
+      "session",
+      candidates.cfs_sessions_to_delete.iter().map(|s| &s.name),
+    )
+    .targets(
+      "template",
+      candidates.bos_sessiontemplate_tuples.iter().map(|t| &t.0),
+    )
+    .targets("image", &candidates.image_ids);
 
   if q.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&candidates)?)));

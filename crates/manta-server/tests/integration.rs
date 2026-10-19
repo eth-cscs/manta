@@ -1325,3 +1325,58 @@ async fn get_power_transition_happy_path() {
   assert_eq!(body["transitionStatus"], "completed");
   assert_eq!(body["taskCounts"]["succeeded"], 1);
 }
+
+// DELETE /v2/configurations?pattern=…&dry_run=true
+//
+// The caller selects by pattern; the audit event records what the
+// pattern matched, so a search on `targets.configuration` finds it.
+#[tokio::test]
+async fn delete_configurations_dry_run_audits_matched_names() {
+  let fx = TestFixture::setup().await;
+  mock_hsm_groups(&fx.mock_server).await;
+  mock_cfs_v2_configurations(&fx.mock_server).await;
+  mock_cfs_v2_sessions(&fx.mock_server).await;
+  mock_ims_images(&fx.mock_server).await;
+  mock_bss_bootparameters(&fx.mock_server).await;
+  // A derivative of `compute-config` (without one the service refuses
+  // to proceed), booting an image no node boots from (`mid123`).
+  mock_get(
+    &fx.mock_server,
+    "/bos/v2/sessiontemplates",
+    json!([{
+      "name": "compute-template",
+      "enable_cfs": true,
+      "cfs": { "configuration": "compute-config" },
+      "boot_sets": {
+        "compute": {
+          "node_groups": ["compute"],
+          "path": "s3://boot-images/mid123/manifest.json"
+        }
+      }
+    }]),
+  )
+  .await;
+  mock_cfs_v2_components(&fx.mock_server).await;
+
+  let req = Request::builder()
+    .method(Method::DELETE)
+    .uri("/v2/configurations?pattern=compute-*&dry_run=true")
+    .header(header::AUTHORIZATION, format!("Bearer {TEST_TOKEN}"))
+    .header("X-Manta-Site", "test")
+    .body(Body::empty())
+    .unwrap();
+  let resp = fx.send(req).await;
+  let status = resp.status();
+  let body = TestFixture::body_json(resp).await;
+  assert_eq!(status, StatusCode::OK, "{body}");
+
+  let events = fx.audit_events();
+  let e = &events[0];
+  assert_eq!(e.action, "configuration.delete");
+  assert_eq!(e.dry_run, Some(true));
+  assert_eq!(e.targets["configuration"], vec!["compute-config"]);
+  assert_eq!(e.targets["template"], vec!["compute-template"]);
+  // Images are found through CFS sessions; none derive from it here.
+  assert!(!e.targets.contains_key("image"), "{:?}", e.targets);
+  assert!(e.produced.is_empty());
+}

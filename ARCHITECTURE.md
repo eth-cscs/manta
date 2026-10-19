@@ -443,7 +443,7 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
   "request": { "method": "DELETE", "route": "/v2/groups/{label}", "path": "/v2/groups/zinal", "query": "force=true" },
   "outcome": { "result": "success", "status": 204, "duration_ms": 412 },  // success|denied|rejected|failed|timed_out
   "dry_run": false,                          // only where the operation has a dry-run mode
-  "targets": { "group": ["zinal"] },         // as the caller gave them; keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
+  "targets": { "group": ["zinal"] },         // as the caller gave them (configuration.delete: what its pattern matched); keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
   "nodes": ["x1000c0s0b0n0"],                // xnames the server expanded a hosts expression/group to
   "produced": { "transition": "4c1e…" },     // ids it created/started: transition, session, configuration, image, hostname
   "details": { "force": true },
