@@ -54,7 +54,7 @@ manta-shared = { workspace = true }
 
 # --- END MANTA DEPENDENCIES ---
 
-nodeset = "0.5.0"
+nodeset = "0.6"
 chrono = { version = "0.4.41", default-features = false }
 anyhow = { version = "1.0.44", default-features = false }
 # --- reqwest version split (workspace 0.12 vs manta-cli 0.13) ---
@@ -96,12 +96,12 @@ toml_edit = "0.22.27" # used to edit manta configuration file
 clap = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete = "4.5.66"
 clap_mangen = "0.3.0"
-comfy-table = "7.2.2"
+comfy-table = "8.0"
 crossterm = { version = "0.29.0", default-features = false }               # terminal colors and raw mode
-execute = "0.2.13"
+execute = "0.3"
 is_executable = "1.0.1"
 config = { version = "0.15.19", features = ["toml"], default-features = false }
-tokio-tungstenite = "0.29"
+tokio-tungstenite = "0.30"
 # `manta upgrade` self-update plumbing. Only `self_update::get_target()`
 # (cross-platform target-triple detection) is used; the download, extraction
 # and `fs::rename` over the current binary are done in `dispatch/upgrade.rs`
@@ -125,7 +125,7 @@ assert_cmd = "2"
 base64 = "0.22"
 predicates = "3"
 tempfile = "3"
-toml = "0.9"
+toml = "1.1"
 
 # Build profiles ([profile.release], [profile.dist]) live at the workspace
 # root so they apply to every member.

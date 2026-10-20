@@ -116,7 +116,7 @@ fn print_counter_table(
   table.set_header(vec![header, value_header]);
   for (name, count) in counters {
     table
-      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
+      .load_style(comfy_table::presets::ASCII_FULL_CONDENSED)
       .add_row(vec![
         Cell::new(name),
         Cell::new(count).set_alignment(comfy_table::CellAlignment::Center),
@@ -164,7 +164,7 @@ pub fn print_summary(node_details_list: Vec<NodeDetails>) {
     ["FAILED", "ON", "OFF", "READY", "STANDBY", "UNCONFIGURED"]
   {
     table
-      .load_preset(comfy_table::presets::ASCII_FULL_CONDENSED)
+      .load_style(comfy_table::presets::ASCII_FULL_CONDENSED)
       .add_row(vec![
         Cell::new(power_status),
         Cell::new(power_status_counters.get(power_status).unwrap_or(&0))
