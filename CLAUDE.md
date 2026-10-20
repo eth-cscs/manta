@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-manta is a CLI + HTTP API frontend for HPC clusters running CSM (HPE Cray System Management) or OpenCHAMI. Cargo workspace, `edition = "2024"`, toolchain pinned to `1.92.0` in `rust-toolchain.toml`:
+manta is a CLI + HTTP API frontend for HPC clusters running CSM (HPE Cray System Management) or OpenCHAMI. Cargo workspace, `edition = "2024"`, toolchain pinned in `rust-toolchain.toml` (that file lists the CI workflows and Dockerfiles that must be bumped in lockstep with it):
 
 ```
 crates/manta-shared/   (lib)        — wire types, common helpers, config/error/log
@@ -38,7 +38,7 @@ RUSTDOCFLAGS="-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags" 
 
 `manta-shared` is `#![deny(missing_docs)]`, so adding an undocumented public item there breaks `cargo doc`.
 
-**Check your toolchain before trusting a local lint result.** `rust-toolchain.toml` pins `1.92.0`, but that pin is only honoured when `cargo` resolves through rustup's shim. If `which -a cargo` shows a Homebrew (or other non-rustup) cargo first, the pin is silently ignored and you get a newer clippy than CI — which flags lints CI does not, in code you never touched. Fix with `rustup toolchain install 1.92.0` **and** a PATH order that puts rustup's shim first; until then, scope clippy to the crate you're touching (`cargo clippy -p <crate> --all-targets --no-deps -- -D warnings`) and don't "fix" workspace-wide lints the pinned toolchain never raised.
+**Check your toolchain before trusting a local lint result.** `rust-toolchain.toml` pins an exact version, but that pin is only honoured when `cargo` resolves through rustup's shim. If `which -a cargo` shows a Homebrew (or other non-rustup) cargo first, the pin is silently ignored and you get whatever clippy that cargo ships, possibly newer than CI's — which flags lints CI does not, in code you never touched. Fix with `rustup toolchain install <pinned version>` **and** a PATH order that puts rustup's shim first; until then, scope clippy to the crate you're touching (`cargo clippy -p <crate> --all-targets --no-deps -- -D warnings`) and don't "fix" workspace-wide lints the pinned toolchain never raised.
 
 ## CI gates that are easy to trip (`.github/workflows/ci.yml`)
 
