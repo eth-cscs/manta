@@ -3,7 +3,7 @@
 //! Sets a CFS configuration as the `desired_configuration` on every
 //! CFS component matching a hosts expression, and writes the
 //! component's `enabled` flag in the same call. This is a narrow
-//! subset of [`super::boot_parameters::persist_boot_config`] — the
+//! subset of `super::boot_parameters::persist_boot_config` — the
 //! latter also touches BSS boot parameters; this one only writes CFS
 //! component state.
 

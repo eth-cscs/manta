@@ -653,9 +653,9 @@ pub fn parse_hw_pattern(
 
   let mut hw_component_count: HashMap<String, isize> = HashMap::new();
 
-  for chunk in pattern_elements.chunks_exact(2) {
-    if let Ok(count) = chunk[1].parse::<isize>() {
-      hw_component_count.insert(chunk[0].to_string(), count);
+  for [hw_component, count] in pattern_elements.as_chunks::<2>().0 {
+    if let Ok(count) = count.parse::<isize>() {
+      hw_component_count.insert(hw_component.to_string(), count);
     } else {
       return Err(Error::InvalidPattern(
         "Error in pattern. Please make sure to \

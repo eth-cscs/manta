@@ -138,7 +138,7 @@ pub async fn exec(
   // 4. Display the filtered SAT file as YAML and confirm.
   let preview = serde_yaml::to_string(&sat_file)
     .context("Failed to serialize filtered SAT value for preview")?;
-  println!("{}\n{}", "#### SAT file content ####".blue(), &preview,);
+  println!("{}\n{}", "#### SAT file content ####".blue(), preview,);
   if !common::confirm::confirm(
     "Please review the rendered SAT file above and confirm to proceed.",
     opts.assume_yes,
