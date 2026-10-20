@@ -47,7 +47,7 @@ jobs:
       # Same Rust pin as CI so rustdoc output is reproducible.
       - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: "1.92.0"
+          toolchain: "1.99.1"
           components: rustfmt, clippy
 
       # rdkafka needs these to build (mirrors the CI workflow).

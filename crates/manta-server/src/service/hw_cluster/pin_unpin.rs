@@ -429,9 +429,9 @@ pub fn parse_hw_pattern_usize(
 
   let mut hw_component_count: HashMap<String, usize> = HashMap::new();
 
-  for chunk in pattern_element_vec.chunks_exact(2) {
-    if let Ok(count) = chunk[1].parse::<usize>() {
-      hw_component_count.insert(chunk[0].to_string(), count);
+  for [hw_component, count] in pattern_element_vec.as_chunks::<2>().0 {
+    if let Ok(count) = count.parse::<usize>() {
+      hw_component_count.insert(hw_component.to_string(), count);
     } else {
       return Err(Error::InvalidPattern(
         "Error in pattern. Please make sure to follow \

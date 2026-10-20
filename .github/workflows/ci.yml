@@ -38,7 +38,7 @@ jobs:
     # tripped on diffs that local fmt didn't predict.
     - uses: dtolnay/rust-toolchain@stable
       with:
-        toolchain: "1.92.0"
+        toolchain: "1.99.1"
         components: rustfmt, clippy
     # System libs that several transitive C-based deps need to build:
     #   - cmake               for librdkafka-sys (rdkafka, used by manta-shared::kafka)

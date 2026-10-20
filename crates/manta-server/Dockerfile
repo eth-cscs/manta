@@ -18,10 +18,11 @@
 # MANTA_SERVER_CONFIG, or any of these flags: --port, --listen-address,
 # --cert, --key.
 
-# 1.88 is the effective MSRV: edition 2024 lands in 1.85, but the
-# `aws-sdk-sts` crate (pulled in transitively via csm-rs) requires
-# 1.88. Bump in lockstep with the CLI Dockerfile.
-FROM rust:1.88-bookworm AS builder
+# Same version as rust-toolchain.toml. `COPY . .` brings that file
+# into the build, so rustup would install the pinned toolchain anyway;
+# matching the image tag just skips the extra download. Bump in
+# lockstep with rust-toolchain.toml and the CLI Dockerfile.
+FROM rust:1.99.1-bookworm AS builder
 # cmake + libcurl4-openssl-dev are needed to build librdkafka, which
 # the audit subsystem depends on. Matches the apt step in CI.
 RUN apt-get update \
