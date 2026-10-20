@@ -8,7 +8,7 @@
 # rustfmt.
 #
 # Bump in lockstep with:
-#   - the rust:N-bookworm builder image in crates/manta-cli/Dockerfile
+#   - the rust:N-trixie builder image in crates/manta-cli/Dockerfile
 #     and crates/manta-server/Dockerfile
 #   - the `toolchain:` input of dtolnay/rust-toolchain in
 #     .github/workflows/ci.yml and .github/workflows/docs.yml
