@@ -276,9 +276,9 @@ jobs:
           cache-from: type=gha,scope=manta-${{ matrix.image }}
           cache-to: type=gha,scope=manta-${{ matrix.image }},mode=max
       # Smoke-test: the binary inside the image must at least produce
-      # `--help` without crashing. Catches missing runtime libs
-      # (librdkafka1, ca-certificates, …) that wouldn't surface from a
-      # successful `cargo build` step.
+      # `--help` without crashing. Catches a shared library the binary
+      # links but the slim runtime image lacks, which wouldn't surface
+      # from a successful `cargo build` step.
       - name: Smoke-test --help
         if: github.event_name == 'pull_request'
         run: docker run --rm manta-${{ matrix.image }}:ci --help
