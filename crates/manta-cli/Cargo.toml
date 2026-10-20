@@ -102,12 +102,14 @@ execute = "0.2.13"
 is_executable = "1.0.1"
 config = { version = "0.15.19", features = ["toml"], default-features = false }
 tokio-tungstenite = "0.29"
-# `manta upgrade` self-update plumbing. `self_update` provides cross-platform
-# target-triple detection (`get_target()`) and the atomic binary-replacement
-# helper. cargo-dist publishes Unix archives as `.tar.xz`, which `self_update`
-# doesn't decode natively, so we pull in `xz2` + `tar` to extract the
-# downloaded archive ourselves.
-self_update = { version = "0.44", default-features = false, features = ["reqwest", "rustls"] }
+# `manta upgrade` self-update plumbing. Only `self_update::get_target()`
+# (cross-platform target-triple detection) is used; the download, extraction
+# and `fs::rename` over the current binary are done in `dispatch/upgrade.rs`
+# with our own reqwest client plus `xz2` + `tar` (cargo-dist publishes Unix
+# archives as `.tar.xz`). `self_update` 1.x refuses to compile without an
+# HTTP client feature, hence `reqwest` + `rustls`; keep its `s3` and `zip`
+# features off (they pull quick-xml and zip, both with RustSec advisories).
+self_update = { version = "1.3", default-features = false, features = ["reqwest", "rustls"] }
 xz2 = "0.1"
 tar = "0.4"
 semver = "1.0"
