@@ -10,23 +10,14 @@
 
 [advisories]
 ignore = [
-  # rustls-webpki 0.101.7 is pulled in by the AWS SDK chain
-  # (csm-rs -> aws-config -> aws-smithy-http-client -> hyper-rustls
-  # 0.24.2 -> rustls 0.21.12 -> rustls-webpki 0.101.7). Our own
-  # TLS surface (axum-server, reqwest, the rustls dep in
-  # crates/manta-server/Cargo.toml) is on rustls 0.23.40 and is NOT
-  # affected. The vulnerable code path is reachable only when the
-  # server makes outbound calls to AWS S3 via csm-rs. Fix has to land
-  # in aws-smithy-http-client; no newer version is on crates.io yet.
-  "RUSTSEC-2026-0098", # Name constraints for URI names incorrectly accepted
-  "RUSTSEC-2026-0099", # Name constraints accepted for wildcard certs
-  "RUSTSEC-2026-0104", # Reachable panic in CRL parsing
-
-  # paste 1.0.15 is unmaintained. Pulled in by utoipa-axum 0.2.0
-  # (currently the latest published version). Not a vulnerability,
-  # just a maintenance warning; cargo-audit reports it as a warning
-  # and the build does not fail on it today. Listed here for
-  # documentation — drop when utoipa-axum cuts a release that no
-  # longer depends on paste.
-  "RUSTSEC-2024-0436",
+  # zip 3.0.0 is a build-dependency of utoipa-swagger-ui 9.0.2
+  # (manta-server), whose build script unpacks the Swagger UI release
+  # archive it bundles. All three advisories are about extracting an
+  # attacker-controlled archive; this one is a fixed upstream asset,
+  # unpacked at build time, and zip is not in either binary. Patched
+  # in zip >= 9.0.0, but no utoipa-swagger-ui release requires it yet
+  # (10.0.1, the latest, still pins zip ^8.6). Drop these once one does.
+  "RUSTSEC-2026-0367", # SUID/SGID bits preserved on extraction
+  "RUSTSEC-2026-0368", # symlink targets escape the destination
+  "RUSTSEC-2026-0369", # permissions applied through symlinks
 ]
