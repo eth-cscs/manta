@@ -329,6 +329,11 @@ shutdown_grace_period_secs      = 30     # drain window after SIGTERM / Ctrl+C; 
 backend = "csm"
 shasta_base_url = "https://api.example.com"
 root_ca_cert_file = "/path/to/alps_root_cert.pem"
+
+[sites.<site_name>.token_exchange]       # required for backend = "csm"
+client_id      = "cscs-token-exchanger"
+client_secret  = "..."
+subject_issuer = "cscs"
 "#;
 
 /// Migration mapping shown when a legacy `config.toml` is detected.

@@ -53,6 +53,15 @@ backend           = "csm"
 shasta_base_url   = "https://api.example.com/apis"
 root_ca_cert_file = "alps_root_cert.pem"
 
+# Token exchange at the site's Keycloak (RFC 8693): every request's
+# CSCS token is swapped there for a CSM token. Required for
+# backend = "csm" — the server refuses to start without it; `ochami`
+# sites ignore it. Keep this file readable only by manta-server.
+[sites.alps.token_exchange]
+client_id      = "cscs-token-exchanger"   # Keycloak client allowed to exchange tokens
+client_secret  = "..."                    # its secret
+subject_issuer = "cscs"                   # alias of the CSCS identity provider in the shasta realm
+
 [sites.alps.k8s]
 api_url = "https://10.0.0.10:6443"
 
@@ -75,6 +84,11 @@ base_url = "https://vault.example.com"
 # shasta_base_url   = "https://api.prealps.example.com/apis"
 # root_ca_cert_file = "prealps_root_cert.pem"
 #
+# [sites.prealps.token_exchange]
+# client_id      = "cscs-token-exchanger"
+# client_secret  = "..."
+# subject_issuer = "cscs"
+#
 # [sites.prealps.k8s]
 # api_url = "https://10.0.0.20:6443"
 # [sites.prealps.k8s.authentication.vault]
@@ -82,6 +96,7 @@ base_url = "https://vault.example.com"
 
 
 # OpenCHAMI-backed sites are simpler — no k8s/Vault block, no
+# token_exchange (the token is passed through for now), no
 # manta-server-side credential fetching.
 # [sites.ochami-dev]
 # backend           = "ochami"
