@@ -289,6 +289,7 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 3. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
 
 `manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to `MANTA_TOKEN` instead.
+
 Auditing is server-side only — every CLI command goes through HTTP to `manta-server`, which records one event per mutating request (see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail)) to its log and, when `[auditor.kafka]` is set, to Kafka. The CLI has no audit configuration.
 
 The CLI has no `[sites]` section: it only knows about the one
