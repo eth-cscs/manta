@@ -54,7 +54,7 @@ pub const DEFAULT_OIDC_CLIENT_ID: &str = "manta-cli";
 /// Loopback port the browser flow listens on. Must match the redirect
 /// URI registered on the Keycloak client (`http://localhost:<port>`).
 ///
-/// The TDS registration accepts `http://localhost:8765`; loopback IP
+/// The `manta-cli` client accepts `http://localhost:8765`; loopback IP
 /// redirects (`http://127.0.0.1:<port>`) are rejected.
 pub const REDIRECT_PORT: u16 = 8765;
 
