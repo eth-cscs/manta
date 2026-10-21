@@ -1,8 +1,9 @@
 //! OIDC login against the CSCS Keycloak.
 //!
 //! manta-cli obtains its bearer token directly from the CSCS Keycloak —
-//! `manta-server` takes no part in authentication and simply forwards
-//! the token to the site backends. One token serves every site.
+//! `manta-server` takes no part in the login. It exchanges the token on
+//! every request at the site's Keycloak for one the site accepts. One
+//! token serves every site.
 //!
 //! Three flows, all against the public client [`OidcSettings::client_id`]:
 //!

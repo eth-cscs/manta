@@ -71,6 +71,7 @@ sequenceDiagram
     participant CLI as User CLI
     participant K as CSCS Keycloak
     participant MS as manta-server
+    participant SK as Site Keycloak (shasta realm)
     participant B as CSM / OCHAMI / Vault
     participant Kf as Kafka (optional)
 
@@ -81,9 +82,12 @@ sequenceDiagram
 
     Note over MS: chokepoint — every CSM/OCHAMI call proxies through here
 
-    CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer …<br/>X-Manta-Site: <any site>
-    MS->>B: proxied call with the same bearer
-    B-->>MS: backend response (signature verified upstream against the CSCS Keycloak)
+    CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer <CSCS token><br/>X-Manta-Site: <any site>
+    MS->>SK: token exchange (RFC 8693, per-site client secret)
+    SK-->>MS: CSM token (CSCS token verified against the CSCS Keycloak)
+    Note over MS,SK: every request, nothing cached;<br/>OpenCHAMI sites: pass-through for now
+    MS->>B: proxied call with the CSM token
+    B-->>MS: backend response (signature verified against the site's Keycloak)
     MS-->>CLI: 2xx / 4xx
     MS->>Kf: audit api_request { actor, action, targets, outcome }<br/>(mutating methods + console attach only)
 ```
@@ -149,9 +153,14 @@ documented inline at the top of that module. (`manta-server`'s
 existing call sites resolve — the caveat lives at the canonical
 path.) Consequences:
 
-- The `is_user_admin` role gate is **advisory** in the sense that a
+- On CSM sites the role gate reads the token `manta-server` obtained
+  from the site's Keycloak a moment earlier, in the per-request token
+  exchange, and that Keycloak verified the caller's CSCS token before
+  issuing it — a forged token never reaches the gate.
+- On OpenCHAMI sites the exchange is still a pass-through, so there
+  the `is_user_admin` role gate is **advisory** in the sense that a
   forged token passing the decode step is detected only at the first
-  backend round-trip, where CSM/OCHAMI rejects it.
+  backend round-trip, where OpenCHAMI rejects it.
 - The role gate is still useful as **defence in depth**: it reduces
   the blast radius of a token whose signature does verify but whose
   user's permissions should be tighter than what the backend would
@@ -161,9 +170,10 @@ path.) Consequences:
   verification automatically when it lands; no per-gate work needed.
 
 **Single point of compromise.** As noted above, owning `manta-server`
-gives an attacker every live bearer token that passes through it —
-each valid on every site trusting the CSCS Keycloak until it expires —
-and access to configured service-account tokens. Mitigations are
+gives an attacker every live CSCS token that passes through it —
+each exchangeable for a CSM token on every site, with the exchange
+client secrets the server holds, until it expires — and access to
+configured service-account tokens. Mitigations are
 mostly ops: short token lifetimes in the Keycloak, TLS termination
 upstream, service-account scoping, network segmentation.
 

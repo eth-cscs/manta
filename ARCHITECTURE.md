@@ -221,8 +221,8 @@ The two schemas are disjoint:
 
 | Schema | Fields |
 |---|---|
-| `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
-| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional `[sites.X.k8s]` block). |
+| `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`, optional `oidc_issuer_url` / `oidc_client_id` / `oidc_headless` (CSCS-Keycloak login). **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
+| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, `[sites.X.token_exchange]` — required for `csm` sites, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 

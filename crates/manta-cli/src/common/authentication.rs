@@ -2,8 +2,9 @@
 //!
 //! The bearer token is issued by the CSCS Keycloak and obtained by the
 //! CLI directly (see [`crate::common::oidc`]); `manta-server` takes no
-//! part in authentication. One token serves every site, so nothing
-//! here depends on the selected site.
+//! part in the login (it exchanges the token per request for one the
+//! site accepts). One token serves every site, so nothing here depends
+//! on the selected site.
 //!
 //! ## Resolution order
 //!
