@@ -15,12 +15,15 @@
 //!     path).
 //!   - [`auth_middleware`] — defensive middleware applied to
 //!     `/v2/auth/*` (per-IP rate limit + body redaction).
+//!   - [`audit`] — audit trail of every mutating request (middleware,
+//!     event schema, Kafka + log sinks).
 //!   - [`common`] — server-only helpers (per-request `InfraContext`,
-//!     Kafka audit producer, JWT claim extractors, Vault client).
+//!     JWT claim extractors, Vault client).
 //!   - [`api_doc`] — utoipa OpenAPI document served at
 //!     `GET /openapi.json` + `GET /docs`.
 
 pub mod api_doc;
+pub mod audit;
 pub mod auth_middleware;
 pub mod common;
 pub mod handlers;
@@ -35,8 +38,8 @@ use manta_backend_dispatcher::error::Error;
 use std::time::Duration;
 
 use crate::dispatcher::StaticBackendDispatcher;
+use crate::server::audit::AuditLog;
 use crate::server::common::app_context::InfraContext;
-use crate::server::common::kafka::Kafka;
 
 /// All per-site connection data the server needs to talk to backend APIs.
 ///
@@ -81,9 +84,9 @@ pub struct ServerState {
   /// How long a WebSocket console session may be idle before the server
   /// closes it.  Protects against leaked Kubernetes pod attachments.
   pub console_inactivity_timeout: Duration,
-  /// Kafka producer for security/audit events (currently used only by
-  /// `/v2/auth/*`). `None` disables audit emission.
-  pub auditor: Option<Kafka>,
+  /// Audit trail every mutating request is recorded to (always the
+  /// log; Kafka too when `[auditor.kafka]` is configured).
+  pub audit: AuditLog,
   /// Per-source-IP rate limit on `/v2/auth/*` (requests/minute).
   /// `None` disables in-process rate limiting.
   pub auth_rate_limit_per_minute: Option<u32>,
@@ -149,6 +152,9 @@ async fn log_requests(
   response
 }
 
+/// How long shutdown waits for queued audit events to reach Kafka.
+pub const AUDIT_FLUSH_TIMEOUT: Duration = Duration::from_secs(5);
+
 /// Start the HTTP or HTTPS server.
 ///
 /// Builds the router via [`routes::build_router`], wraps it with the
@@ -161,6 +167,9 @@ async fn log_requests(
 /// When `cert_path` and `key_path` are both `Some`, the server
 /// listens with TLS (`https://`). When both are `None`, it listens
 /// as plain HTTP. Mixing one of the two is rejected.
+///
+/// After the drain, audit events still queued for Kafka get up to
+/// [`AUDIT_FLUSH_TIMEOUT`] to be delivered.
 ///
 /// # Errors
 ///
@@ -179,6 +188,7 @@ pub async fn start_server(
 ) -> Result<(), Error> {
   // Read shutdown-grace before `state` is moved into the router.
   let shutdown_grace_period = state.shutdown_grace_period;
+  let audit = state.audit.clone();
 
   // Both `request_timeout` and `power_timeout` are now applied **inside**
   // `build_router` so the per-route `/power` override actually wins —
@@ -232,6 +242,16 @@ pub async fn start_server(
         "--cert and --key must be provided together".to_string(),
       ));
     }
+  }
+
+  // The drain is over: deliver audit events still queued for Kafka.
+  // `flush` blocks, so keep it off the async workers.
+  if let Err(e) = tokio::task::spawn_blocking(move || {
+    audit.flush(AUDIT_FLUSH_TIMEOUT);
+  })
+  .await
+  {
+    tracing::warn!("audit flush at shutdown did not complete: {e}");
   }
 
   Ok(())

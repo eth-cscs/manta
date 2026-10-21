@@ -16,6 +16,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, resolve_xnames_from_request,
   serialize_or_500, to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -80,8 +81,19 @@ pub use manta_shared::types::api::kernel_parameters::{
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("kernel_parameters.apply")
+    .targets("hosts", body.xnames_expression.as_deref())
+    .targets("group", body.hsm_group.as_deref())
+    .detail("operation", body.operation)
+    .detail("params", &body.params)
+    .detail("overwrite", body.overwrite)
+    .detail("project_sbps", body.project_sbps)
+    .dry_run(body.dry_run);
+
   let infra = ctx.infra();
 
   let xnames = resolve_xnames_from_request(
@@ -91,6 +103,7 @@ pub async fn apply_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "apply_kernel_parameters xnames={:?} op={:?} dry_run={}",
@@ -174,8 +187,18 @@ pub use manta_shared::types::api::kernel_parameters::AddKernelParametersRequest;
 #[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<AddKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("kernel_parameters.add")
+    .targets("hosts", body.xnames_expression.as_deref())
+    .targets("group", body.hsm_group.as_deref())
+    .detail("params", &body.params)
+    .detail("overwrite", body.overwrite)
+    .detail("project_sbps", body.project_sbps)
+    .dry_run(body.dry_run);
+
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     &infra,
@@ -184,6 +207,7 @@ pub async fn add_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "add_kernel_parameters xnames={:?} dry_run={}",
@@ -252,8 +276,16 @@ pub use manta_shared::types::api::kernel_parameters::DeleteKernelParametersReque
 #[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<DeleteKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("kernel_parameters.delete")
+    .targets("hosts", body.xnames_expression.as_deref())
+    .targets("group", body.hsm_group.as_deref())
+    .detail("params", &body.params)
+    .dry_run(body.dry_run);
+
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     &infra,
@@ -262,6 +294,7 @@ pub async fn delete_kernel_parameters(
     body.hsm_group.as_deref(),
   )
   .await?;
+  note.nodes(&xnames);
 
   tracing::info!(
     "delete_kernel_parameters xnames={:?} dry_run={}",

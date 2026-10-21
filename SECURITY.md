@@ -82,7 +82,7 @@ sequenceDiagram
     MS->>K: exchange credentials
     K-->>MS: bearer token
     MS-->>CLI: { token }
-    MS->>Kf: audit { outcome, username, source_ip, site }
+    MS->>Kf: audit auth_attempt { actor, client, site, outcome }
 
     Note over MS: /v2/* sub-router<br/>TimeoutLayer
 
@@ -90,6 +90,7 @@ sequenceDiagram
     MS->>B: proxied call with bearer
     B-->>MS: backend response (signature verified upstream)
     MS-->>CLI: 2xx / 4xx
+    MS->>Kf: audit api_request { actor, action, targets, outcome }<br/>(mutating methods + console attach only)
 ```
 
 For the user-facing read-only flow specifically, see
@@ -124,7 +125,7 @@ accordingly.
 | HSTS on every response | `manta-server` | `Strict-Transport-Security: max-age=31536000; includeSubDomains`. No-op over plain HTTP per RFC 6797. |
 | Per-source-IP rate limit on `/v2/auth/*` | `manta-server` | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
 | Generic 401 on every auth failure | `manta-server` | `server::handlers::auth_token` returns identical `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
-| Audit event per auth attempt | `manta-server` | When `[auditor.kafka]` is configured, `server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }`. Credentials are never logged. |
+| Audit trail of every mutation | `manta-server` | `server::audit::audit_requests` records one event per mutating `/v2` request and per console attach, with outcome, after the response; `/v2/auth/token` attempts via `server::audit::send_auth_audit`. Always logged on the `manta::audit` target, and produced to Kafka when `[auditor.kafka]` is set. Fail-open: a broker outage never fails a request. No token, password or raw body is ever recorded. See [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail). |
 | Body redaction on `/auth/*` log spans | `manta-server` | `server::auth_middleware::strip_body_for_logs`. |
 | CLI-side read-only guard | `manta-cli` | Refuses mutating verbs locally when `cli.toml` has `read_only = true`, before any HTTP request leaves the process. Client-side accident guard only — `manta-server` does not enforce this; see [GUIDE.md §13](GUIDE.md#13-read-only-access). |
 | 0600 mode on cached tokens | `manta-cli` | Token cache file written with `0600` perms under the platform config dir; never logged. |

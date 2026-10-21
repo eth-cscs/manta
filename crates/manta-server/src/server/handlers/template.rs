@@ -16,6 +16,7 @@ use axum::{
 use super::{
   ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -84,9 +85,19 @@ pub use manta_shared::types::api::template::{
 #[tracing::instrument(skip_all)]
 pub async fn post_template_session(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<PostTemplateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("template.session.create")
+    .target("template", &name)
+    .target("hosts", &body.limit)
+    .targets("session", body.session_name.as_deref())
+    .detail("operation", body.operation)
+    .detail("include_disabled", body.include_disabled)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "post_template_session template={} op={:?} dry_run={}",
     name,
@@ -118,6 +129,9 @@ pub async fn post_template_session(
     service::template::create_bos_session(&infra, &ctx.token, bos_session)
       .await
       .map_err(to_handler_error)?;
+  if let Some(session) = &created.name {
+    note.produced("session", session);
+  }
 
   Ok((StatusCode::CREATED, Json(serialize_or_500(&created)?)))
 }

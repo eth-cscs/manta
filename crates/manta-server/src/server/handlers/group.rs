@@ -17,6 +17,7 @@ use axum::{
 };
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -93,9 +94,15 @@ pub async fn get_groups(
 #[tracing::instrument(skip_all)]
 pub async fn delete_group(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(label): Path<String>,
   Query(q): Query<DeleteGroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("group.delete")
+    .target("group", &label)
+    .detail("force", q.force);
+
   tracing::info!("delete_group label={} force={}", label, q.force);
   let infra = ctx.infra();
 
@@ -132,8 +139,11 @@ pub async fn delete_group(
 #[tracing::instrument(skip_all)]
 pub async fn create_group(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(group): Json<::manta_backend_dispatcher::types::Group>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note.action("group.create").target("group", &group.label);
+
   tracing::info!("create_group");
   let infra = ctx.infra();
 
@@ -177,9 +187,15 @@ pub use manta_shared::types::api::group::{
 #[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<AddNodesToGroupRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("group.members.add")
+    .target("group", &name)
+    .target("hosts", &body.hosts_expression);
+
   tracing::info!(
     "add_nodes_to_group group={} hosts={}",
     name,
@@ -230,9 +246,16 @@ pub async fn add_nodes_to_group(
 #[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<DeleteGroupMembersRequest>,
 ) -> Result<StatusCode, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("group.members.delete")
+    .target("group", &name)
+    .target("hosts", &body.xnames_expression)
+    .dry_run(body.dry_run);
+
   tracing::info!(
     "delete_group_members group={} xnames_expression={} dry_run={}",
     name,

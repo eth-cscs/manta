@@ -91,14 +91,21 @@ base_url = "https://vault.example.com"
 
 
 # ---------------------------------------------------------------
-# Audit emission (optional)
+# Audit trail (optional Kafka destination)
 # ---------------------------------------------------------------
-# When the `[auditor.kafka]` block is present, the server publishes
-# one event to the named topic per `/api/v1/auth/*` call. Absent =
-# audit emission disabled.
+# The server records one JSON event per mutating request (and per
+# console attach and /v2/auth/token attempt). Every event is always
+# logged on the `manta::audit` tracing target; when the
+# `[auditor.kafka]` block is present it is also produced to the named
+# topic. A broker outage is logged and never fails a request.
 
 # [auditor.kafka]
 # brokers            = ["kafka.example.com:9092"]
 # topic              = "manta-audit"
-# message_timeout_ms = 5000    # librdkafka per-message delivery deadline; default 5000
-# delivery_wait_secs = 0       # how long produce_message blocks; 0 = fire-and-forget (default)
+# message_timeout_ms = 5000    # how long a queued event retries delivery before it is dropped; default 5000
+# [auditor.kafka.properties]   # optional librdkafka passthrough, typically transport security
+# "security.protocol" = "SASL_SSL"
+# "ssl.ca.location"   = "/etc/manta/kafka-ca.pem"
+# "sasl.mechanism"    = "SCRAM-SHA-512"
+# "sasl.username"     = "manta"
+# "sasl.password"     = "..."

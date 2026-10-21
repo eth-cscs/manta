@@ -28,7 +28,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use crate::server::common::audit;
+use crate::server::audit;
 use axum::{
   Json,
   extract::{ConnectInfo, State},
@@ -111,13 +111,12 @@ pub async fn auth_token(
         "auth_token: token issued"
       );
       audit::send_auth_audit(
-        state.auditor.as_ref(),
-        "success",
+        &state.audit,
+        true,
         &req.username,
         &source_ip,
         &site_name,
-      )
-      .await;
+      );
       Ok(Json(AuthTokenResponse { token }))
     }
     Err(e) => {
@@ -129,13 +128,12 @@ pub async fn auth_token(
         e
       );
       audit::send_auth_audit(
-        state.auditor.as_ref(),
-        "failure",
+        &state.audit,
+        false,
         &req.username,
         &source_ip,
         &site_name,
-      )
-      .await;
+      );
       Err(generic_invalid_credentials())
     }
   }

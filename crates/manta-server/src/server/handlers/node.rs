@@ -17,6 +17,7 @@ use axum::{
 };
 
 use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use crate::server::audit::AuditNote;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -74,8 +75,11 @@ pub async fn get_nodes(
 #[tracing::instrument(skip_all)]
 pub async fn delete_node(
   ctx: RequestCtx,
+  note: AuditNote,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note.action("node.delete").target("node", &id);
+
   tracing::info!("delete_node id={}", id);
   let infra = ctx.infra();
 
@@ -107,8 +111,15 @@ pub use manta_shared::types::api::node::AddNodeRequest;
 #[tracing::instrument(skip_all)]
 pub async fn add_node(
   ctx: RequestCtx,
+  note: AuditNote,
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("node.add")
+    .target("node", &body.id)
+    .target("group", &body.group)
+    .detail("enabled", body.enabled);
+
   tracing::info!("add_node id={} group={}", body.id, body.group);
   let infra = ctx.infra();
 

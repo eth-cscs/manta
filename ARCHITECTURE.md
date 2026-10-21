@@ -30,7 +30,7 @@ A fourth directory, `crates/manta-cache/`, exists in the tree but is **not** a w
 
 The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/mod.rs`, `dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
 
-`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `confirm`, `multi_line`); the SAT-file Jinja renderer lives next to its caller at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs`. `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `jwt_ops`, `kafka`, `vault`) and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `confirm`, `multi_line`); the SAT-file Jinja renderer lives next to its caller at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs`. `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `jwt_ops`, `vault`), the audit trail under `crates/manta-server/src/server/audit/`, and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
 
 ---
 
@@ -151,7 +151,7 @@ Genuinely bi-binary helpers:
 | `log_ops` | Logger initialisation; both binaries call `log_ops::configure(...)` on startup |
 | `jwt_ops` | JWT **claim extraction** for the audit + authorization paths. Canonical home since the move out of the server; `crates/manta-server/src/server/common/jwt_ops.rs` is now a thin `pub use` shim kept so existing call sites resolve — new code should use `manta_shared::common::jwt_ops` directly. **These helpers do not verify the JWT signature** (see [Security model](#security-model)). |
 
-CLI-only modules live under `crates/manta-cli/src/common/` (`app_context::AppContext`, `authentication`, `clap_ext` ArgMatches extension trait, `config::CliConfiguration`, `confirm` y/n prompt, `hooks` pre-/post-hook runner, `multi_line` table-cell wrapper, `read_only` local mutating-verb gate, `session::SessionContext` per-invocation JWT + reachable-groups snapshot). The SAT-file Jinja renderer + the run-session local-git-repo helpers live next to their callers at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs` and `crates/manta-cli/src/dispatch/run/session/local_git_repo.rs`. Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `audit`, `kafka`, `vault`, plus `jwt_ops` — a re-export shim over `manta_shared::common::jwt_ops`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
+CLI-only modules live under `crates/manta-cli/src/common/` (`app_context::AppContext`, `authentication`, `clap_ext` ArgMatches extension trait, `config::CliConfiguration`, `confirm` y/n prompt, `hooks` pre-/post-hook runner, `multi_line` table-cell wrapper, `read_only` local mutating-verb gate, `session::SessionContext` per-invocation JWT + reachable-groups snapshot). The SAT-file Jinja renderer + the run-session local-git-repo helpers live next to their callers at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs` and `crates/manta-cli/src/dispatch/run/session/local_git_repo.rs`. Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `vault`, plus `jwt_ops` — a re-export shim over `manta_shared::common::jwt_ops`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
 
 ### `crates/manta-server/src/server/`
 
@@ -162,9 +162,10 @@ Axum HTTPS server. Key files:
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
 | `routes.rs` | Registers REST endpoints (including the two `/v2/auth/*` endpoints) + 2 WebSocket upgrades under `/v2/`; serves `GET /openapi.json` and `GET /docs` |
 | `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (analysis, auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, runtime_configuration, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
+| `audit/` | Audit trail: `audit_requests` middleware, `AuditNote` handler extractor, `AuditLog` + sinks (log, Kafka), event schema. See [Audit trail](#audit-trail). |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/v2` server base path |
 
-The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention. The crate lints `#![warn(missing_docs)]`; CI's `cargo doc` step still surfaces undocumented public items.
+The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`, `audit_routes.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention. The crate lints `#![warn(missing_docs)]`; CI's `cargo doc` step still surfaces undocumented public items.
 
 `crates/manta-server/src/wire_conv.rs` holds backend⇄wire-type conversions that can't live in either `manta-shared` or `manta-backend-dispatcher` due to Rust's orphan rule. Currently a single free function `to_backend(MantaError) → BackendError`, used at server call sites that propagate `manta-shared`'s `MantaError` via `?`.
 
@@ -322,7 +323,7 @@ This means manta-server is a **single point of compromise** for everyone using i
 |---|---|---|
 | Per-source-IP rate limit on `/v2/auth/*` | code | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
 | Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
-| Audit event per auth attempt | code | `manta_server::server::common::audit::send_auth_audit` emits `{ outcome, username, source_ip, site }` to the configured Kafka producer. Credentials are never logged. |
+| Audit trail of every mutation | code | `server::audit::audit_requests` + `send_auth_audit`; see [Audit trail](#audit-trail). Credentials are never recorded. |
 | Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
 | TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence; manta-server's in-process limiter is belt-and-braces. |
 | Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
@@ -339,7 +340,9 @@ flowchart TD
     Req[Inbound HTTPS request] --> HSTS[HSTS header injector<br/>add_hsts_header]
     HSTS --> Split{nest path}
 
-    Split -->|/v2/*| Tmo[TimeoutLayer<br/>request_timeout_secs]
+    Split -->|/v2/*| Aud[audit_requests<br/>one event per mutating request]
+    Aud --> Panic[CatchPanicLayer<br/>handler panic → 500]
+    Panic --> Tmo[TimeoutLayer<br/>request_timeout_secs]
     Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
 
     Split -->|/v2/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
@@ -420,7 +423,41 @@ Only the CLI has a first-class SOCKS5 knob — `cli.toml`'s optional top-level `
 
 ## Audit trail
 
-Only `manta-server` emits Kafka audit events. Configuration lives under `[auditor.kafka]` in `server.toml` and currently covers `/v2/auth/*` attempts via `send_auth_audit`. Every CLI command goes through HTTP to the server, so the server-side request log + auth-audit stream together cover what the CLI used to record locally. The producer is a lazily-initialised `FutureProducer` in a `OnceLock`; messages are fire-and-forget with a 5-second timeout. Audit calls are made via `common::kafka`.
+Only `manta-server` audits — it is the chokepoint every CLI command passes through, so the CLI emits nothing. Code: `crates/manta-server/src/server/audit/`.
+
+**What is recorded.** `audit_requests` is layered on the `/v2` router, *outside* the `TimeoutLayer` and a `CatchPanicLayer`, and emits one event per request whose method is not GET/HEAD/OPTIONS, plus every console attach (`…/console`, a GET upgrade to an interactive shell). It emits after the response is known, so each event has both the attempt and the outcome; a timed-out request is recorded as `timed_out`, a handler panic as a `failed` 500. Reads are not audited; neither are 404/405 (no route or method matched). `/v2/auth/token` sits outside the middleware (no bearer yet) and emits its own `auth_attempt` event via `send_auth_audit`. The coverage rule is pinned by `tests/audit_routes.rs`, which walks the OpenAPI spec.
+
+**Event shape** (`event::AuditEvent`, `schema_version` 1 — add fields freely; rename/remove only with a version bump):
+
+```jsonc
+{
+  "schema_version": 1,
+  "event_id": "0d6c…",                       // v4 UUID, also the Kafka key
+  "timestamp": "2026-10-13T09:12:44.101Z",
+  "kind": "api_request",                     // | console_session | auth_attempt
+  "action": "group.delete",                  // handler-chosen; "<METHOD> <route>" if the handler never ran
+  "summary": "alice @ alps: group delete zinal (force) → success",  // for humans, derived by AuditEvent::describe
+  "actor": { "username": "alice", "name": "Alice A", "subject": "0b5e…" },
+  "client": { "ip": "10.1.2.3", "forwarded_for": "192.0.2.7" },
+  "site": "alps",
+  "request": { "method": "DELETE", "route": "/v2/groups/{label}", "path": "/v2/groups/zinal", "query": "force=true" },
+  "outcome": { "result": "success", "status": 204, "duration_ms": 412 },  // success|denied|rejected|failed|timed_out
+  "dry_run": false,                          // only where the operation has a dry-run mode
+  "targets": { "group": ["zinal"] },         // as the caller gave them (configuration.delete: what its pattern matched); keys: node, group, hosts, image, session, template, configuration, redfish_endpoint
+  "nodes": ["x1000c0s0b0n0"],                // xnames the server expanded a hosts expression/group to
+  "produced": { "transition": "4c1e…" },     // ids it created/started: transition, session, configuration, image, hostname
+  "details": { "force": true },
+  "emitter": { "service": "manta-server", "version": "2.0.0-beta.68", "host": "manta-server-7f9c" }
+}
+```
+
+A field with no value is left out rather than written as `null` / `{}`: `dry_run` is absent for operations without a dry-run mode, `site` when no `X-Manta-Site` was sent, and so on. (A `--dry-run` the CLI short-circuits locally — `power`, `delete node`, … — never reaches the server and is not audited.)
+
+`actor` comes from the claims (`preferred_username`, `name`, `sub`) of the **inbound** `Authorization` header, read by the middleware itself. The signature is not verified locally, so the identity is authoritative when `outcome.result` is `success` (the backend accepted the token) and a claim otherwise. `client.forwarded_for` is the raw header, untrusted.
+
+**Handler enrichment.** A handler extracts `AuditNote` next to `RequestCtx` and, as its first statement, records the action, targets, dry-run flag and parameters — first, so the description is kept when a later call fails. Two things are only known later and are added as they happen: `nodes(…)` once the handler has expanded a hosts expression or group (before the operation runs for power, boot and kernel parameters; only on success for runtime configuration and migrate, whose services resolve and apply in one call) (so a node-level search — "who powered off x1000c3s5b0n1?" — finds operations that named it only through a hostlist or group), and `produced(kind, id)` once the backend has created or started something (the PCS transition, CFS/BOS session, image…), never on a dry run. Outside an audited request the note is inert. Values go in explicitly; there is no field for a token or raw body, and redfish handlers deliberately omit the BMC user/password.
+
+**Delivery.** `AuditLog` fans each event out to its sinks: always an INFO line on the `manta::audit` tracing target (the summary as the message, with control characters escaped since its values are caller-controlled; the full JSON in its `event` field), plus `kafka::KafkaSink` when `[auditor.kafka]` is set. The Kafka producer is built at startup (an invalid librdkafka setting fails the boot); `emit` only enqueues (`send_result`) and a spawned task logs a warning if the delivery report is an error, so a down broker costs log lines, not request latency (fail-open). After the graceful drain, `start_server` flushes the queue for up to `AUDIT_FLUSH_TIMEOUT` (5 s). `[auditor.kafka.properties]` is passed to librdkafka verbatim (TLS/SASL); `bootstrap.servers` and `message.timeout.ms` are owned by the typed fields and rejected there. Property values are never printed.
 
 ## Hooks
 
@@ -437,4 +474,5 @@ The CLI's `apply sat-file`, `backup vcluster`, and `restore vcluster` commands s
 5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm to the corresponding `impl <Trait> for StaticBackendDispatcher` block, which lives in that trait's **sibling file** under `crates/manta-server/src/backend_dispatcher/` (e.g. `sat.rs`, `group.rs`) — `mod.rs` holds only the shared imports, the `dispatch!` macro, and the `mod` declarations, so a brand-new trait also needs its `mod` line added there.
 6. If the command should also be reachable via the HTTP API, add a handler in the appropriate `crates/manta-server/src/server/handlers/<resource>.rs` (with a `#[utoipa::path(...)]` annotation; `handlers/mod.rs` re-exports the resource module's public items, so the handler is automatically reachable as `handlers::<fn_name>`). Register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.
 7. **Regenerate the OpenAPI spec** — `cargo run -p manta-server -- --emit-openapi > crates/manta-cli/openapi.json`. This is not a docs chore: it is what makes the new endpoint appear as a method on the CLI's generated client (`client.openapi.<operation_id>(...)`), and CI rejects a PR whose spec is out of date. If you also touched anything under `crates/manta-cli/src/build/`, run `MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli` too. See [Generated code](#generated-code).
-8. If the new verb is a **top-level** verb, classify it in `crates/manta-cli/src/common/read_only.rs` (`MUTATING_VERBS` or the test-only `READ_ONLY_VERBS`) — a unit test fails otherwise.
+8. If the new handler **mutates**, it is audited automatically; extract `note: AuditNote` and record its `action` (`<resource>.<verb>`), targets and dry-run flag as the first statement of the body. See [Audit trail](#audit-trail).
+9. If the new verb is a **top-level** verb, classify it in `crates/manta-cli/src/common/read_only.rs` (`MUTATING_VERBS` or the test-only `READ_ONLY_VERBS`) — a unit test fails otherwise.

@@ -15,6 +15,7 @@ use super::{
   ErrorResponse, RequestCtx, SiteHeader, parse_iso_datetime, serialize_or_500,
   to_handler_error,
 };
+use crate::server::audit::AuditNote;
 use crate::service;
 use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 
@@ -86,8 +87,16 @@ pub async fn get_configurations(
 #[tracing::instrument(skip_all)]
 pub async fn delete_configurations(
   ctx: RequestCtx,
+  note: AuditNote,
   Query(q): Query<DeleteConfigurationsQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  note
+    .action("configuration.delete")
+    .detail("pattern", &q.pattern)
+    .detail("since", &q.since)
+    .detail("until", &q.until)
+    .dry_run(q.dry_run);
+
   tracing::info!("delete_configurations dry_run={}", q.dry_run);
   let infra = ctx.infra();
 
@@ -112,6 +121,19 @@ pub async fn delete_configurations(
   )
   .await
   .map_err(to_handler_error)?;
+  // The caller gave a pattern / date range; record what it matched,
+  // so a search for a configuration (or a derived image) finds this.
+  note
+    .targets("configuration", &candidates.configuration_names)
+    .targets(
+      "session",
+      candidates.cfs_sessions_to_delete.iter().map(|s| &s.name),
+    )
+    .targets(
+      "template",
+      candidates.bos_sessiontemplate_tuples.iter().map(|t| &t.0),
+    )
+    .targets("image", &candidates.image_ids);
 
   if q.dry_run {
     return Ok((StatusCode::OK, Json(serialize_or_500(&candidates)?)));
