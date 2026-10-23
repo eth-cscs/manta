@@ -100,6 +100,24 @@ pub fn get_preferred_username(token: &str) -> Result<String, MantaError> {
   }
 }
 
+/// Extract the `exp` claim (expiry, seconds since the Unix epoch)
+/// from a JWT token.
+///
+/// Returns `None` when the claim is absent or not an integer.
+///
+/// # Errors
+///
+/// Returns [`MantaError::JwtMalformed`] when `token` does not parse
+/// as `header.payload.signature` Base64, or when the payload is not
+/// valid UTF-8 JSON.
+pub fn get_expiration(token: &str) -> Result<Option<i64>, MantaError> {
+  Ok(
+    get_claims_from_jwt_token(token)?
+      .get("exp")
+      .and_then(Value::as_i64),
+  )
+}
+
 /// Extract the `realm_access.roles` claim from a JWT token.
 ///
 /// Returns an empty `Vec` when the claim is absent or is not a JSON
@@ -208,6 +226,20 @@ mod tests {
     }));
     let bearer_token = format!("Bearer {token}");
     assert_eq!(get_name(&bearer_token).unwrap(), "Bob Jones");
+  }
+
+  // ---- get_expiration ----
+
+  #[test]
+  fn get_expiration_present() {
+    let token = make_jwt(&serde_json::json!({"exp": 1_777_233_657}));
+    assert_eq!(get_expiration(&token).unwrap(), Some(1_777_233_657));
+  }
+
+  #[test]
+  fn get_expiration_missing_returns_none() {
+    let token = make_jwt(&serde_json::json!({"name": "Alice"}));
+    assert_eq!(get_expiration(&token).unwrap(), None);
   }
 
   // ---- get_preferred_username ----

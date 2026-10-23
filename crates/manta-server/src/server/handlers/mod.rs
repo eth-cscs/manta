@@ -22,6 +22,7 @@ use axum::{
   response::IntoResponse,
 };
 use manta_backend_dispatcher::error::Error as BackendError;
+use manta_backend_dispatcher::interfaces::authentication::AuthenticationTrait as _;
 use serde::Serialize;
 use utoipa::{IntoParams, ToSchema};
 
@@ -29,7 +30,6 @@ use super::ServerState;
 use super::common::app_context::InfraContext;
 
 mod analysis;
-mod auth;
 mod boot_parameters;
 mod cluster;
 mod configuration;
@@ -50,7 +50,6 @@ mod session;
 mod template;
 
 pub use analysis::*;
-pub use auth::*;
 pub use boot_parameters::*;
 pub use cluster::*;
 pub use configuration::*;
@@ -170,10 +169,13 @@ pub struct SiteHeader {
 /// individual extractors when all three are needed (the typical case).
 /// Extraction also validates that the `X-Manta-Site` value resolves to
 /// a configured [`super::SiteBackend`], so [`Self::infra`] inside the
-/// handler body is infallible.
+/// handler body is infallible, and exchanges the caller's token for
+/// the site's backend token ([`Self::token`]). A rejected exchange
+/// fails the request before the handler runs (401 when Keycloak
+/// rejects the caller's token, 403 when it refuses the exchange).
 ///
-/// The unauthenticated `/auth/*` handlers and the health endpoint
-/// still use explicit extractors — they don't need a Bearer token.
+/// The health endpoint still uses explicit extractors — it doesn't
+/// need a Bearer token.
 ///
 /// # Example
 ///
@@ -188,7 +190,10 @@ pub struct RequestCtx {
   /// Shared server state (backend dispatcher, per-site config, TLS
   /// material, optional Vault + k8s URLs).
   pub state: Arc<ServerState>,
-  /// Bearer token extracted from the inbound `Authorization` header.
+  /// Token for the site's backend: the caller's `Authorization`
+  /// bearer token (from the CSCS Keycloak) after the backend's
+  /// `exchange_api_token`. For CSM this is a CSM token, so CSM calls,
+  /// the Vault login and the role checks all see the CSM identity.
   pub token: String,
   /// Site name extracted from the inbound `X-Manta-Site` header;
   /// used to pick the right `[sites.X]` entry from `state`.
@@ -202,7 +207,7 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     parts: &mut Parts,
     state: &Arc<ServerState>,
   ) -> Result<Self, Self::Rejection> {
-    let BearerToken(token) =
+    let BearerToken(subject_token) =
       BearerToken::from_request_parts(parts, state).await?;
     let SiteName(site_name) =
       SiteName::from_request_parts(parts, state).await?;
@@ -210,7 +215,17 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     // per-handler `ctx.infra()` call below cannot fail. Returning the
     // 404-mapped error from extraction is the same shape the handler
     // would have produced.
-    state.infra_context(&site_name).map_err(to_handler_error)?;
+    let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
+    // Exchange on every request; nothing is cached, so the backend
+    // token lives only as long as this request. Should the exchange
+    // ever prove too costly (e.g. a Keycloak session per call), a
+    // per-(site, subject token) cache in `ServerState`, used here, is
+    // the one place to add it.
+    let token = infra
+      .backend
+      .exchange_api_token(&subject_token)
+      .await
+      .map_err(to_handler_error)?;
     Ok(Self {
       state: Arc::clone(state),
       token,
@@ -260,7 +275,8 @@ fn format_with_causes(e: &(dyn std::error::Error + 'static)) -> String {
 /// - `Conflict`, `ConfigurationAlreadyExistsError` → 409
 /// - `BadRequest`, `InvalidPattern`, `UnsupportedBackend`,
 ///   `InvalidNodeId` → 400
-/// - `AuthenticationTokenNotFound`, `JwtMalformed` → 401
+/// - `AuthenticationTokenNotFound`, `JwtMalformed`, `Unauthorized` → 401
+/// - `Forbidden` → 403
 /// - `InsufficientResources` → 422
 /// - `CsmError { status, .. }` → that backend status (verbatim) when
 ///   it's a valid HTTP code, else 502 Bad Gateway
@@ -291,7 +307,9 @@ pub fn to_handler_error(e: BackendError) -> (StatusCode, Json<ErrorResponse>) {
     | BackendError::UnsupportedBackend(_)
     | BackendError::InvalidNodeId(_) => StatusCode::BAD_REQUEST,
     BackendError::AuthenticationTokenNotFound(_)
-    | BackendError::JwtMalformed(_) => StatusCode::UNAUTHORIZED,
+    | BackendError::JwtMalformed(_)
+    | BackendError::Unauthorized(_) => StatusCode::UNAUTHORIZED,
+    BackendError::Forbidden(_) => StatusCode::FORBIDDEN,
     BackendError::InsufficientResources(_) => StatusCode::UNPROCESSABLE_ENTITY,
     // Backend HTTP errors carry the originating status code (CSM or
     // ochami). Propagate it verbatim when it's a valid HTTP status, so
