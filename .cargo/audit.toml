@@ -10,14 +10,15 @@
 
 [advisories]
 ignore = [
-  # zip 3.0.0 is a build-dependency of utoipa-swagger-ui 9.0.2
-  # (manta-server), whose build script unpacks the Swagger UI release
-  # archive it bundles. All three advisories are about extracting an
-  # attacker-controlled archive; this one is a fixed upstream asset,
-  # unpacked at build time, and zip is not in either binary. Patched
-  # in zip >= 9.0.0, but no utoipa-swagger-ui release requires it yet
-  # (10.0.1, the latest, still pins zip ^8.6). Drop these once one does.
-  "RUSTSEC-2026-0367", # SUID/SGID bits preserved on extraction
-  "RUSTSEC-2026-0368", # symlink targets escape the destination
-  "RUSTSEC-2026-0369", # permissions applied through symlinks
+  # Both come from openidconnect 4.0.1 (manta-cli), which uses rsa,
+  # p256 and p384 only to verify the ID token's signature against the
+  # realm's public JWKS keys during the browser login. manta-cli is a
+  # public client: it holds no private key and never signs. Both
+  # advisories are timing leaks of secret values; signature
+  # verification handles only public ones (key, signature, token).
+  "RUSTSEC-2023-0071", # rsa: Marvin attack, leaks the private key through
+                       # timing. No patched release exists (patched = []).
+  "RUSTSEC-2026-0387", # crypto-bigint 0.5: secret-dependent timing.
+                       # Fixed in 0.7.6; drop once an openidconnect release
+                       # pulls it in (RustCrypto elliptic-curve 0.14).
 ]

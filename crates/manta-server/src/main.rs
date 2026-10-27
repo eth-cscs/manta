@@ -193,13 +193,6 @@ fn print_startup_summary(
     "  console_inactivity_timeout_secs:  {}",
     configuration.server.console_inactivity_timeout_secs
   );
-  println!(
-    "  auth_rate_limit_per_minute:       {}",
-    configuration
-      .server
-      .auth_rate_limit_per_minute
-      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
-  );
   println!("  log_filter:                       {}", configuration.log);
   println!();
   println!("[auditor]");
@@ -408,10 +401,25 @@ async fn run_server(
       vault_url.as_deref(),
       &site.root_ca_cert_file,
     );
+    // The CSCS token works on no CSM site, so a CSM site without
+    // the exchange config could only ever answer 403. Fail at startup.
+    if site.backend == BackendTechnology::Csm && site.token_exchange.is_none() {
+      return Err(
+        format!(
+          "[sites.{name}] uses backend = \"csm\" but has no \
+           [sites.{name}.token_exchange] table. CSM does not accept the \
+           CSCS Keycloak token, so manta-server must exchange it at the \
+           site's Keycloak; set client_id, client_secret and \
+           subject_issuer there (see README)."
+        )
+        .into(),
+      );
+    }
     let site_backend_dispatcher = StaticBackendDispatcher::new(
       site.backend.as_str(),
       &api_url,
       &root_cert,
+      site.token_exchange.as_ref().map(Into::into),
     )?;
     sites.insert(
       name.clone(),
@@ -440,7 +448,6 @@ async fn run_server(
     sites,
     console_inactivity_timeout,
     audit,
-    auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,

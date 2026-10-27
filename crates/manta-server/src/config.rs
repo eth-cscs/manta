@@ -15,12 +15,16 @@
 //! cert = "/etc/manta/tls/server.crt"
 //! key = "/etc/manta/tls/server.key"
 //! console_inactivity_timeout_secs = 1800
-//! auth_rate_limit_per_minute = 60
 //!
 //! [sites.alps]
 //! backend = "csm"
 //! shasta_base_url = "https://api.alps.cscs.ch"
 //! root_ca_cert_file = "/etc/manta/alps-ca.pem"
+//!
+//! [sites.alps.token_exchange]
+//! client_id = "cscs-token-exchanger"
+//! client_secret = "…"
+//! subject_issuer = "cscs"
 //! ```
 //!
 //! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
@@ -74,6 +78,49 @@ pub struct Site {
   /// Path (absolute or relative to the config dir) of the backend's
   /// root CA certificate, used to verify TLS to `shasta_base_url`.
   pub root_ca_cert_file: String,
+  /// How to exchange the caller's CSCS Keycloak token for a token this
+  /// site accepts. Required for `csm` sites (the server refuses to
+  /// start without it); ignored for `ochami` sites, whose exchange
+  /// passes the token through for now.
+  pub token_exchange: Option<TokenExchangeConfig>,
+}
+
+/// `[sites.X.token_exchange]`: client credentials for the RFC 8693
+/// token exchange at the site's Keycloak (`shasta` realm), which turns
+/// the caller's CSCS Keycloak token into a CSM token.
+///
+/// The Keycloak URL is derived from `shasta_base_url`
+/// (`<base>/keycloak`).
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TokenExchangeConfig {
+  /// Keycloak client allowed to exchange tokens, e.g.
+  /// `cscs-token-exchanger`.
+  pub client_id: String,
+  /// Secret of the confidential `client_id`.
+  pub client_secret: String,
+  /// Alias of the CSCS identity provider in the `shasta` realm, e.g.
+  /// `cscs`.
+  pub subject_issuer: String,
+}
+
+impl std::fmt::Debug for TokenExchangeConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("TokenExchangeConfig")
+      .field("client_id", &self.client_id)
+      .field("client_secret", &"<redacted>")
+      .field("subject_issuer", &self.subject_issuer)
+      .finish()
+  }
+}
+
+impl From<&TokenExchangeConfig> for csm_rs::backend_connector::TokenExchange {
+  fn from(c: &TokenExchangeConfig) -> Self {
+    Self {
+      client_id: c.client_id.clone(),
+      client_secret: c.client_secret.clone(),
+      subject_issuer: c.subject_issuer.clone(),
+    }
+  }
 }
 
 /// Server-only settings — TLS, listen address, console behaviour. Lives
@@ -99,10 +146,6 @@ pub struct ServerSettings {
   /// How long a node-console WebSocket stays open without activity
   /// before the server tears it down.
   pub console_inactivity_timeout_secs: u64,
-  /// Per-source-IP rate limit for the `/v2/auth/*` endpoints,
-  /// in requests per minute. `None` disables in-process rate limiting
-  /// (operators are then expected to enforce it at the reverse proxy).
-  pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route, in seconds.
   /// When this elapses the server returns `408 REQUEST_TIMEOUT`. All
   /// long-running work (e.g. power transitions) now runs CLI-side,
@@ -230,7 +273,47 @@ mod tests {
       shasta_base_url: "https://api.example.com".to_string(),
       k8s: None,
       root_ca_cert_file: "cert.pem".to_string(),
+      token_exchange: Some(TokenExchangeConfig {
+        client_id: "cscs-token-exchanger".to_string(),
+        client_secret: "s3cret".to_string(),
+        subject_issuer: "cscs".to_string(),
+      }),
     }
+  }
+
+  #[test]
+  fn token_exchange_is_optional_in_toml() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "ochami"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+    "#,
+    )
+    .unwrap();
+    assert!(site.token_exchange.is_none());
+  }
+
+  #[test]
+  fn token_exchange_parses_and_redacts_the_secret() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "csm"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+
+      [token_exchange]
+      client_id = "cscs-token-exchanger"
+      client_secret = "s3cret"
+      subject_issuer = "cscs"
+    "#,
+    )
+    .unwrap();
+    let te = site.token_exchange.expect("token_exchange parsed");
+    assert_eq!(te.client_id, "cscs-token-exchanger");
+    assert_eq!(te.client_secret, "s3cret");
+    assert_eq!(te.subject_issuer, "cscs");
+    assert!(!format!("{te:?}").contains("s3cret"));
   }
 
   #[test]
@@ -245,7 +328,6 @@ mod tests {
         cert: Some("/etc/manta/tls/server.crt".to_string()),
         key: Some("/etc/manta/tls/server.key".to_string()),
         console_inactivity_timeout_secs: 1800,
-        auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 300,
         shutdown_grace_period_secs: 30,
         migrate_backup_root: None,

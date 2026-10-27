@@ -28,12 +28,17 @@ use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/// Build a router backed by a stub CSM backend with no real URLs.
+/// Build a router backed by a stub backend with no real URLs.
 /// Backend methods are never called because all non-health tests
 /// either fail at auth or at Axum's request extraction layer first.
+///
+/// The stub is the OpenCHAMI dispatcher because its token exchange is
+/// a local pass-through, so requests get past `RequestCtx` without a
+/// Keycloak. The CSM exchange is covered in `tests/integration.rs`.
 fn router() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -50,7 +55,6 @@ fn router() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
-    auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -62,7 +66,8 @@ fn router() -> axum::Router {
 /// reach the "requires vault/k8s" code paths.
 fn router_with_vault() -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -79,7 +84,6 @@ fn router_with_vault() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
-    auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -119,26 +123,6 @@ fn post_json(uri: &str, body: &str) -> Request<Body> {
     .header("X-Manta-Site", "test")
     .body(Body::from(body.to_string()))
     .unwrap()
-}
-
-/// Build an **unauthenticated** POST to a public `/auth/*` endpoint
-/// for an arbitrary `X-Manta-Site`. No Bearer token (these endpoints
-/// are how a token is obtained). The `ConnectInfo` extension is
-/// injected so `auth_token`'s `ConnectInfo<SocketAddr>` extractor
-/// resolves under `oneshot` (which doesn't set it) and the handler
-/// body — where the site lookup lives — actually runs.
-fn post_auth(uri: &str, site: &str, body: &str) -> Request<Body> {
-  let mut req = Request::builder()
-    .method(Method::POST)
-    .uri(uri)
-    .header(header::CONTENT_TYPE, "application/json")
-    .header("X-Manta-Site", site)
-    .body(Body::from(body.to_string()))
-    .unwrap();
-  req.extensions_mut().insert(axum::extract::ConnectInfo(
-    "127.0.0.1:65000".parse::<std::net::SocketAddr>().unwrap(),
-  ));
-  req
 }
 
 // ---------------------------------------------------------------------------
@@ -510,8 +494,6 @@ async fn all_post_routes_are_registered() {
     "/v2/sat-file/session-templates",
     "/v2/hardware-clusters/my-cluster/members",
     "/v2/hardware-clusters/my-cluster/configuration",
-    "/v2/auth/token",
-    "/v2/auth/validate",
   ] {
     assert_route_exists(Method::POST, uri).await;
   }
@@ -650,81 +632,23 @@ async fn console_session_without_auth_returns_401() {
 }
 
 // ---------------------------------------------------------------------------
-// Auth endpoints — unknown site is reported as 404 (issue #102)
-//
-// The public `/auth/*` endpoints used to collapse every failure
-// (including "site not configured") into a generic 401. They now 404
-// on an unknown `X-Manta-Site`, matching every authenticated endpoint,
-// so the CLI can fail fast instead of prompting for credentials that
-// can never succeed. A *known* site must NOT 404 — the backend call is
-// attempted and its failure stays a generic 401.
+// Auth endpoints are gone — the CLI obtains its token from the CSCS
+// Keycloak directly, so the server no longer handles credentials.
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn auth_token_unknown_site_returns_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/token",
-      "nonexistent-site",
-      r#"{"username":"alice","password":"hunter2"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-  let body = body_string(resp.into_body()).await;
-  assert!(
-    body.contains("nonexistent-site"),
-    "404 body should name the missing site, got: {body}"
-  );
-}
-
-#[tokio::test]
-async fn auth_validate_unknown_site_returns_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/validate",
-      "nonexistent-site",
-      r#"{"token":"some-token"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-  let body = body_string(resp.into_body()).await;
-  assert!(
-    body.contains("nonexistent-site"),
-    "404 body should name the missing site, got: {body}"
-  );
-}
-
-#[tokio::test]
-async fn auth_token_known_site_is_not_404() {
-  // Site "test" exists; the stub backend at http://stub.invalid can't
-  // be reached, so the credential exchange fails — but as a generic
-  // 401, never a 404 (which is reserved for unknown sites).
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/token",
-      "test",
-      r#"{"username":"alice","password":"hunter2"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn auth_validate_known_site_is_not_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/validate",
-      "test",
-      r#"{"token":"some-token"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+async fn auth_routes_are_not_registered() {
+  for uri in ["/v2/auth/token", "/v2/auth/validate"] {
+    let req = Request::builder()
+      .method(Method::POST)
+      .uri(uri)
+      .header(header::CONTENT_TYPE, "application/json")
+      .header("X-Manta-Site", "test")
+      .body(Body::from("{}"))
+      .unwrap();
+    let resp = router().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND, "{uri} still routed");
+  }
 }
 
 // ---------------------------------------------------------------------------
