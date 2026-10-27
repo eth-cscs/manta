@@ -92,7 +92,7 @@ uuid = { version = "1.16.0", features = ["fast-rng", "v4"] }
 git2 = { version = "0.21", default-features = false, features = ["vendored-openssl"] }
 dialoguer = { version = "0.12.0", features = ["password"], default-features = false }
 futures = { version = "0.3.31", default-features = false }
-toml_edit = "0.22.27" # used to edit manta configuration file
+toml_edit = "0.25" # used to edit manta configuration file
 clap = { version = "4.5.60", features = ["wrap_help"] }
 clap_complete = "4.5.66"
 clap_mangen = "0.3.0"

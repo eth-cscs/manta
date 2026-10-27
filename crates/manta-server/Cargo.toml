@@ -36,7 +36,7 @@ futures           = { workspace = true }
 
 # OpenAPI + Swagger UI
 utoipa            = { workspace = true }
-utoipa-swagger-ui = { version = "9", features = ["axum"] }
+utoipa-swagger-ui = { version = "10", features = ["axum"] }
 
 # TLS bootstrap
 rustls         = { version = "0.23", default-features = false, features = ["ring"] }

@@ -60,9 +60,9 @@ manta-shared             = { path = "crates/manta-shared", version = "=2.0.0-bet
 # like missing methods. `ochami-rs` is under the `OpenCHAMI` GitHub
 # org; the other two are `eth-cscs`. See CLAUDE.md § Sibling-repo
 # dependencies.
-manta-backend-dispatcher = "1.0.0-beta.15"
-csm-rs                   = { version = "1.0.0-beta.23", features = ["commands-admin"] }
-ochami-rs                = "1.0.0-beta.17"
+manta-backend-dispatcher = "1.0.0-beta.16"
+csm-rs                   = { version = "1.0.0-beta.24", features = ["commands-admin"] }
+ochami-rs                = "1.0.0-beta.19"
 
 base64             = { version = "0.22", default-features = false }
 chrono             = { version = "0.4.41", default-features = false }
@@ -80,10 +80,10 @@ thiserror          = "2.0.12"
 tokio              = { version = "1.45", features = ["rt", "rt-multi-thread", "sync", "macros", "io-util", "io-std", "net", "signal", "time"] }
 tokio-util         = "0.7.4"
 toml               = "1.1"
-toml_edit          = "0.22.27"
+toml_edit          = "0.25"
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-utoipa             = { version = "5.5", features = ["axum_extras", "uuid"] }
+utoipa             = { version = "6", features = ["axum_extras", "uuid"] }
 uuid               = { version = "1.16.0", features = ["fast-rng", "v4"] }
 
 [profile.release]
