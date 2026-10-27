@@ -5108,10 +5108,10 @@
           "members": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Member"
               },
               {
-                "$ref": "#/components/schemas/Member"
+                "type": "null"
               }
             ]
           },
