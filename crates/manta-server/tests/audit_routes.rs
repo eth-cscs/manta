@@ -50,7 +50,8 @@ fn router_with_timeout(
   request_timeout: std::time::Duration,
 ) -> axum::Router {
   let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
+      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -67,7 +68,6 @@ fn router_with_timeout(
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: AuditLog::with_sinks(vec![sink]),
-    auth_rate_limit_per_minute: None,
     request_timeout,
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -99,8 +99,8 @@ fn request(method: Method, uri: &str) -> Request<Body> {
     .unwrap()
 }
 
-/// Every operation in the spec (outside `/auth/*`, which audits
-/// itself) produces an event iff it mutates or attaches a console.
+/// Every operation in the spec produces an event iff it mutates or
+/// attaches a console.
 #[tokio::test]
 async fn exactly_mutating_operations_and_consoles_are_audited() {
   let spec = serde_json::to_value(ApiDoc::openapi()).unwrap();

@@ -1,0 +1,38 @@
+[package]
+name        = "manta-cache"
+description = "Site-resolution cache for manta — maps HSM groups and node xnames to the CSM/OpenCHAMI site they live at."
+# Not published yet: nothing depends on this crate (Stage 1 ships the
+# core library only; manta-server integration lands at Stage 4). Keeping
+# it out of the release pipeline avoids the cargo-release entanglement
+# documented in manta-shared's Cargo.toml. Flip to `true` once a
+# published crate depends on it.
+publish     = false
+version.workspace      = true
+edition.workspace      = true
+authors.workspace      = true
+license-file           = "LICENSE"
+repository.workspace   = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# The cache is an HTTP client of manta-server — it talks to the existing
+# `/v2/groups/*` endpoints. No compile-time dependency on
+# manta-server (or manta-shared): see README.md / ROADMAP.md.
+reqwest   = { workspace = true }
+serde     = { workspace = true }
+thiserror = { workspace = true }
+# `future::join_all` for the per-site refresh fan-out. Runtime-
+# agnostic, so the library doesn't pull in tokio as a hard dependency.
+futures   = { workspace = true }
+tracing   = { workspace = true }
+
+[dev-dependencies]
+# Needed only for `#[tokio::test]` on the async refresh path.
+tokio      = { workspace = true }
+# Parses the checked-in `GET /groups` capture in `tests/fixture.rs`.
+serde_json = { workspace = true }
+# Local mock manta-server for offline tests of the refresh() HTTP path
+# (`tests/mock_server.rs`).
+wiremock   = "0.6"

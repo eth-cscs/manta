@@ -36,6 +36,18 @@ pub struct CliConfiguration {
   /// Optional SOCKS5 proxy used to reach `manta_server_url`. Per-site
   /// proxying for backend traffic is the server's concern.
   pub socks5_proxy: Option<String>,
+  /// Optional base URL of a `manta-cache-server`. When set and no site
+  /// was named (`--site` / `site`), commands that target an HSM group
+  /// or a plain xname list resolve their site through the cache before
+  /// dispatch (see [`crate::common::site_resolution`]). Unset = the
+  /// site must always be named explicitly, as before.
+  #[serde(default)]
+  pub cache_url: Option<String>,
+  /// Bearer token for the cache's `/api/v1` endpoints — the value of
+  /// the cache's `[server] api_token`. Only needed when the cache is
+  /// configured to require one.
+  #[serde(default)]
+  pub cache_api_token: Option<String>,
   /// When `true`, the CLI refuses every backend-mutating verb before
   /// any HTTP request leaves the process (see
   /// [`crate::common::read_only::read_only_gate`] and
@@ -85,6 +97,19 @@ pub struct CliConfiguration {
   /// historical 5 min (300 s).
   #[serde(default)]
   pub sat_file_not_visible_budget_secs: Option<u64>,
+  /// Issuer URL of the Keycloak realm the CLI logs in to. `None` uses
+  /// the CSCS realm ([`crate::common::oidc::DEFAULT_OIDC_ISSUER_URL`]).
+  #[serde(default)]
+  pub oidc_issuer_url: Option<String>,
+  /// OIDC client id the CLI logs in as. `None` uses
+  /// [`crate::common::oidc::DEFAULT_OIDC_CLIENT_ID`].
+  #[serde(default)]
+  pub oidc_client_id: Option<String>,
+  /// When `true`, log in with the device-code flow (print a URL and a
+  /// code) instead of opening a browser. SSH sessions, and hosts
+  /// without a graphical display (outside macOS), use it automatically.
+  #[serde(default)]
+  pub oidc_headless: bool,
 }
 
 #[cfg(test)]
@@ -98,6 +123,8 @@ mod tests {
       site: Some("alps".to_string()),
       manta_server_url: "https://manta-server.cscs.ch:8443".to_string(),
       socks5_proxy: Some("socks5h://127.0.0.1:1080".to_string()),
+      cache_url: None,
+      cache_api_token: None,
       read_only: false,
       request_timeout_secs: None,
       power_poll_interval_secs: None,
@@ -105,6 +132,9 @@ mod tests {
       sat_file_poll_interval_secs: None,
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
+      oidc_issuer_url: None,
+      oidc_client_id: None,
+      oidc_headless: false,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: CliConfiguration = toml::from_str(&toml_str).unwrap();
@@ -114,6 +144,27 @@ mod tests {
       parsed.socks5_proxy.as_deref(),
       Some("socks5h://127.0.0.1:1080")
     );
+  }
+
+  #[test]
+  fn cache_keys_parse_and_default_to_none() {
+    let parsed: CliConfiguration = toml::from_str(
+      "log = \"info\"\nmanta_server_url = \"https://m:8443\"\n\
+       cache_url = \"https://cache.example.ch:8444\"\n\
+       cache_api_token = \"sekrit\"\n",
+    )
+    .unwrap();
+    assert_eq!(
+      parsed.cache_url.as_deref(),
+      Some("https://cache.example.ch:8444")
+    );
+    assert_eq!(parsed.cache_api_token.as_deref(), Some("sekrit"));
+
+    let minimal: CliConfiguration =
+      toml::from_str("log = \"info\"\nmanta_server_url = \"https://m:8443\"\n")
+        .unwrap();
+    assert!(minimal.cache_url.is_none());
+    assert!(minimal.cache_api_token.is_none());
   }
 
   #[test]
@@ -181,5 +232,35 @@ mod tests {
     "#;
     let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
     assert!(!cfg.read_only);
+  }
+
+  #[test]
+  fn oidc_keys_default_when_absent() {
+    let toml_str = r#"
+      log = "info"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert!(cfg.oidc_issuer_url.is_none());
+    assert!(cfg.oidc_client_id.is_none());
+    assert!(!cfg.oidc_headless);
+  }
+
+  #[test]
+  fn oidc_keys_parse_when_present() {
+    let toml_str = r#"
+      log = "info"
+      manta_server_url = "https://manta-server.cscs.ch:8443"
+      oidc_issuer_url = "https://auth-tds.cscs.ch/auth/realms/cscs"
+      oidc_client_id = "manta-test"
+      oidc_headless = true
+    "#;
+    let cfg: CliConfiguration = toml::from_str(toml_str).unwrap();
+    assert_eq!(
+      cfg.oidc_issuer_url.as_deref(),
+      Some("https://auth-tds.cscs.ch/auth/realms/cscs")
+    );
+    assert_eq!(cfg.oidc_client_id.as_deref(), Some("manta-test"));
+    assert!(cfg.oidc_headless);
   }
 }

@@ -29,8 +29,6 @@ pub enum EventKind {
   ApiRequest,
   /// An interactive console attach (node or CFS session) over WebSocket.
   ConsoleSession,
-  /// A `/v2/auth/token` credential exchange.
-  AuthAttempt,
 }
 
 /// How the request ended, derived from the response status.

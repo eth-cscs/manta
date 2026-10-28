@@ -13,12 +13,10 @@
 //! - [`AuditLog`] — fans each event out to its [`AuditSink`]s: always
 //!   a `tracing` line on the [`AUDIT_TARGET`] target, plus Kafka
 //!   ([`kafka::KafkaSink`]) when `[auditor.kafka]` is configured.
-//! - [`send_auth_audit`] — the `/v2/auth/token` attempt event.
 //!
 //! Auditing is fail-open: a broker outage is logged and never fails or
 //! slows the request.
 
-mod auth;
 pub mod event;
 pub mod kafka;
 mod middleware;
@@ -27,7 +25,6 @@ use std::{sync::Arc, time::Duration};
 
 use serde::{Deserialize, Serialize};
 
-pub use auth::send_auth_audit;
 pub use middleware::{AuditNote, audit_requests};
 
 use event::{AuditEvent, Emitter, EventKind};
