@@ -30,10 +30,11 @@ const CONFIG_SAMPLE: &str = r#"log = "info"
 
 [sites.alps]
 manta_server_url = "https://manta-server.example.com:8443"
-# The site's Keycloak service-account token. Re-read on every refresh,
-# so rotating the secret needs no restart. There is deliberately no
-# inline form: this is a real credential and does not belong in a
-# config file.
+# A CSCS Keycloak service-account token; manta-server exchanges it for
+# the site's own token, so every site can point at the same file.
+# Re-read on every refresh, so rotating the secret needs no restart.
+# There is deliberately no inline form: this is a real credential and
+# does not belong in a config file.
 token_file = "/run/secrets/manta-cache/alps-token"
 "#;
 
@@ -171,8 +172,10 @@ pub struct SiteConfig {
   /// Base URL of the manta-server hosting the site (scheme + host +
   /// port; `/api/v1` is appended by the cache).
   pub manta_server_url: String,
-  /// Path to the file holding this site's Keycloak service-account
-  /// bearer token.
+  /// Path to the file holding the CSCS Keycloak service-account bearer
+  /// token this site is refreshed with. manta-server exchanges it per
+  /// request for a token the site accepts, so one account (one file)
+  /// can serve every site.
   ///
   /// A path rather than an inline value, deliberately and without an
   /// inline alternative (ROADMAP Stage 5): a real credential must not
@@ -259,7 +262,7 @@ fn migration_hint(error: &str) -> &'static str {
     || error.contains("missing field `token_file`")
   {
     "\n\nNote: `[sites.<name>] token` was removed — per-site credentials \
-     are now file-based only. Write the site's Keycloak service-account \
+     are now file-based only. Write the CSCS Keycloak service-account \
      token to a file (mode 0600) and point `token_file` at it, then \
      delete the inline `token` line."
   } else {

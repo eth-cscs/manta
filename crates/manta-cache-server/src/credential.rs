@@ -1,7 +1,8 @@
 //! Advisory facts about a bearer credential, read from its own claims.
 //!
-//! The cache refreshes each site with a Keycloak service-account token
-//! (ROADMAP Stage 5). Nothing here *enforces* that — a token is an
+//! The cache refreshes each site with a CSCS Keycloak service-account
+//! token (ROADMAP Stage 5), which the site's manta-server exchanges for
+//! a token the site accepts. Nothing here *enforces* that — a token is an
 //! opaque bearer string as far as the refresh is concerned, and pointing
 //! `token_file` at a personal token still works, which is what keeps the
 //! [LIVE-TEST](../../manta-cache/LIVE-TEST.md) demo flow usable. What
@@ -39,6 +40,11 @@ use serde::Serialize;
 /// this cache can index. Same value as
 /// `manta_shared::common::jwt_ops::PA_ADMIN`, duplicated for the reason
 /// in the module docs.
+///
+/// Read off the CSCS token the cache holds. The site actually decides
+/// on the token manta-server exchanges it for, which this module never
+/// sees, so the flag is right only as far as the site's Keycloak maps
+/// the role through the exchange.
 const PA_ADMIN: &str = "pa_admin";
 
 /// Prefix Keycloak gives the `preferred_username` of a service account:
@@ -157,7 +163,7 @@ impl CredentialInfo {
     match self.kind {
       CredentialKind::User => out.push(format!(
         "refreshing as personal account '{}' — production should use a \
-         per-site Keycloak service account, whose roles and lifetime do \
+         CSCS Keycloak service account, whose roles and lifetime do \
          not follow one person",
         self.principal.as_deref().unwrap_or("<unknown>")
       )),

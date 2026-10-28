@@ -73,11 +73,11 @@ token_file = "/run/secrets/manta-cache/alps-token"
 
 `token_file` is the **only** form — there is deliberately no inline `token`. A Keycloak credential does not belong in a config file that gets templated, backed up, or committed, and a path is the one thing every deployment target can produce: a Kubernetes projected `Secret`, a systemd `LoadCredential=` (read it from `$CREDENTIALS_DIRECTORY`), or a plain bind mount.
 
-### Use a service account, one per site
+### Use a CSCS Keycloak service account
 
-The token must be a **Keycloak service account**, not a person's login. A shared service refreshing as a named human inherits that person's group roles, stops working when their token expires or their account changes, and attributes every backend call to them.
+The token must be a **CSCS Keycloak service account**, not a person's login. manta-server exchanges it on every request for a token the site accepts (`[sites.X.token_exchange]` in its `server.toml`), exactly as it does for a user's token, so one account serves every site. A shared service refreshing as a named human inherits that person's group roles, stops working when their token expires or their account changes, and attributes every backend call to them.
 
-Create one service account per site and write its token into the site's `token_file`. Nothing enforces this — pointing `token_file` at a personal token still works, which is what keeps the [LIVE-TEST.md](LIVE-TEST.md) demo flow usable — but the server says so loudly, in the startup summary and under `credential.warnings` in `GET /api/v1/dump`:
+Write its token into a file and point each site's `token_file` at it (one file for all sites is fine; separate accounts per site remain possible). Nothing enforces this — pointing `token_file` at a personal token still works, which is what keeps the [LIVE-TEST.md](LIVE-TEST.md) demo flow usable — but the server says so loudly, in the startup summary and under `credential.warnings` in `GET /api/v1/dump`:
 
 ```
 [site: alps]
@@ -88,7 +88,7 @@ Create one service account per site and write its token into the site's `token_f
 
 ### How much of a site the cache can see
 
-csm-rs derives the available groups from the token's own Keycloak realm roles, so **the service account's roles bound what the cache can index**:
+csm-rs derives the available groups from the realm roles of the token it is handed — the one manta-server obtains by exchanging the service account's CSCS token at the site — so **the service account's roles, as the site maps them, bound what the cache can index**:
 
 | Account holds | Cache indexes | Effect on users |
 |---|---|---|
@@ -96,7 +96,7 @@ csm-rs derives the available groups from the token's own Keycloak realm roles, s
 | specific group roles | only those groups | other groups need an explicit `--site` |
 | no group roles | nothing | the site is reported as failed (see below) |
 
-Both of the first two are legitimate; which you want is a deployment decision. Scoped is the safer default and degrades gracefully — the CLI falls back to "site is required" for anything unresolvable, since the cache is an accelerator rather than a dependency. `credential.is_admin` on `GET /api/v1/dump` shows which is in force.
+Both of the first two are legitimate; which you want is a deployment decision. Scoped is the safer default: a group the cache does not know fails with "pass --site" rather than resolving to a guess. `credential.is_admin` on `GET /api/v1/dump` reports whether the CSCS token carries `pa_admin`; the site decides on the exchanged token, which the cache never sees, so treat it as a hint and confirm with the indexed group count.
 
 A site that returns **no** groups is treated as a failed refresh, not a healthy empty one: it drops out of the index with an explanatory `last_error` rather than appearing fresh and resolving nothing.
 
