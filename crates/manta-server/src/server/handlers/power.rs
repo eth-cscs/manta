@@ -15,8 +15,12 @@
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  to_handler_error,
+};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -38,7 +42,7 @@ pub use manta_shared::types::api::power::{
 /// as JSON. Callers can hand the `transitionID` to
 /// [`get_power_transition`].
 #[utoipa::path(post, path = "/power", tag = "power",
-  params(SiteHeader),
+  params(OptionalSiteHeader),
   request_body = PowerRequest,
   security(("bearerAuth" = [])),
   responses(
@@ -52,7 +56,7 @@ pub use manta_shared::types::api::power::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -76,6 +80,12 @@ pub async fn post_power(
     body.action,
     body.target_type
   );
+  let ctx = ctx
+    .resolve(match body.target_type {
+      PowerTargetType::Nodes => Target::nodes(&[&body.host_expression]),
+      PowerTargetType::Cluster => Target::group(Some(&body.host_expression)),
+    })
+    .await?;
   let infra = ctx.infra();
 
   let xnames = service::power::resolve_target_xnames(

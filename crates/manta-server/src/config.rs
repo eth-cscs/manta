@@ -35,6 +35,12 @@
 //! client_id = "…"
 //! client_secret = "…"
 //! scope = "smd.read bss.read smd.write bss.write"
+//!
+//! # Optional: resolve the site through manta-cache-server when a
+//! # request carries no X-Manta-Site header.
+//! [site_resolution]
+//! url = "https://manta-cache.example.com:8444"
+//! api_token_file = "/run/secrets/manta/cache-api-token"
 //! ```
 //!
 //! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
@@ -279,6 +285,27 @@ pub struct ServerConfiguration {
   /// Optional Kafka destination for the audit trail. When `None`,
   /// audit events go to the log (`manta::audit` target) only.
   pub auditor: Option<Auditor>,
+  /// Optional `manta-cache-server` used to pick the site for requests
+  /// that carry no `X-Manta-Site` header. When `None`, such requests
+  /// are rejected with 400 exactly as before.
+  pub site_resolution: Option<SiteResolutionConfig>,
+}
+
+/// `[site_resolution]`: where to ask which site owns a group or an
+/// xname list when a request names no site.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SiteResolutionConfig {
+  /// Base URL of `manta-cache-server` (e.g.
+  /// `https://manta-cache.example.com:8444`). A missing scheme
+  /// defaults to `http://`; `/api/v1` is appended.
+  pub url: String,
+  /// Path of a file holding the cache's `[server] api_token`, sent as
+  /// `Authorization: Bearer …` on every lookup. Omit when the cache
+  /// serves lookups without a token. Read once at startup.
+  pub api_token_file: Option<String>,
+  /// PEM CA certificate to trust for the cache's TLS, in addition to
+  /// the system roots (absolute, or relative to the config dir).
+  pub root_ca_cert_file: Option<String>,
 }
 
 #[cfg(test)]
@@ -480,6 +507,7 @@ mod tests {
       },
       sites,
       auditor: None,
+      site_resolution: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: ServerConfiguration = toml::from_str(&toml_str).unwrap();

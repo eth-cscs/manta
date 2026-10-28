@@ -211,6 +211,22 @@ fn print_startup_summary(
     None => println!("  Kafka disabled (audit events go to the log only)"),
   }
   println!();
+  println!("[site_resolution]");
+  match configuration.site_resolution.as_ref() {
+    Some(r) => {
+      println!("  url:               {}", r.url);
+      println!(
+        "  api_token_file:    {}",
+        r.api_token_file.as_deref().unwrap_or("<none>")
+      );
+      println!(
+        "  root_ca_cert_file: {}",
+        r.root_ca_cert_file.as_deref().unwrap_or("<system roots>")
+      );
+    }
+    None => println!("  disabled (requests without X-Manta-Site are rejected)"),
+  }
+  println!();
 }
 
 /// Print one `[site: <name>]` block on stdout, matching the format
@@ -446,6 +462,11 @@ async fn run_server(
   let shutdown_grace_period = std::time::Duration::from_secs(
     configuration.server.shutdown_grace_period_secs,
   );
+  let site_resolver = configuration
+    .site_resolution
+    .as_ref()
+    .map(server::site_resolution::SiteResolver::new)
+    .transpose()?;
   let server_state = std::sync::Arc::new(server::ServerState {
     sites,
     console_inactivity_timeout,
@@ -453,6 +474,7 @@ async fn run_server(
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,
+    site_resolver,
   });
 
   server::start_server(

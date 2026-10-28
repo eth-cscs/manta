@@ -57,6 +57,7 @@ async fn router() -> axum::Router {
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
+    site_resolver: None,
   });
   build_router(state)
 }
@@ -84,6 +85,7 @@ async fn router_with_vault() -> axum::Router {
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
+    site_resolver: None,
   });
   build_router(state)
 }

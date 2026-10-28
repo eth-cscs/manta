@@ -13,10 +13,11 @@
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, resolve_xnames_from_request,
-  serialize_or_500, to_handler_error,
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  resolve_xnames_from_request, serialize_or_500, to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -67,7 +68,7 @@ pub use manta_shared::types::api::kernel_parameters::{
 
 /// `POST /v2/kernel-parameters/apply` — add, replace, or delete kernel parameters on nodes.
 #[utoipa::path(post, path = "/kernel-parameters/apply", tag = "kernel-parameters",
-  params(SiteHeader),
+  params(OptionalSiteHeader),
   request_body = ApplyKernelParametersRequest,
   security(("bearerAuth" = [])),
   responses(
@@ -80,7 +81,7 @@ pub use manta_shared::types::api::kernel_parameters::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -94,6 +95,14 @@ pub async fn apply_kernel_parameters(
     .detail("project_sbps", body.project_sbps)
     .dry_run(body.dry_run);
 
+  let ctx = ctx
+    .resolve(Target::group(body.hsm_group.as_deref()).or_else(|| {
+      body
+        .xnames_expression
+        .as_deref()
+        .and_then(|x| Target::nodes(&[x]))
+    }))
+    .await?;
   let infra = ctx.infra();
 
   let xnames = resolve_xnames_from_request(

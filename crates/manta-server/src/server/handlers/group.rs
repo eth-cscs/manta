@@ -16,8 +16,12 @@ use axum::{
   response::IntoResponse,
 };
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  to_handler_error,
+};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -49,7 +53,7 @@ pub async fn get_available_groups(
 
 /// GET /groups — list HSM groups, optionally filtered by name.
 #[utoipa::path(get, path = "/groups", tag = "groups",
-  params(GroupQuery, SiteHeader),
+  params(GroupQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "List of groups", body = Vec<manta_backend_dispatcher::types::Group>),
@@ -59,9 +63,10 @@ pub async fn get_available_groups(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<GroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx.resolve(Target::group(q.name.as_deref())).await?;
   let infra = ctx.infra();
 
   let params = service::group::GetGroupParams {

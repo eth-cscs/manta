@@ -7,7 +7,10 @@
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, OptionalSiteHeader, SiteResolvingCtx, to_handler_error,
+};
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -18,7 +21,7 @@ pub use manta_shared::types::api::queries::ClusterQuery;
 
 /// GET /groups/nodes — list nodes in a group with optional status filter.
 #[utoipa::path(get, path = "/groups/nodes", tag = "groups",
-  params(ClusterQuery, SiteHeader),
+  params(ClusterQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "List of group nodes", body = Vec<manta_shared::types::dto::NodeDetails>),
@@ -28,9 +31,10 @@ pub use manta_shared::types::api::queries::ClusterQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups_nodes(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx.resolve(Target::group(q.hsm_group.as_deref())).await?;
   let infra = ctx.infra();
 
   let params = service::cluster::GetClusterParams {
@@ -50,7 +54,7 @@ pub async fn get_groups_nodes(
 /// then delegates to the canonical handler. Old path kept for one
 /// release.
 #[utoipa::path(get, path = "/clusters", tag = "clusters",
-  params(ClusterQuery, SiteHeader),
+  params(ClusterQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "[DEPRECATED] use /groups/nodes — list of group nodes", body = Vec<manta_shared::types::dto::NodeDetails>),
@@ -60,7 +64,7 @@ pub async fn get_groups_nodes(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_clusters_deprecated(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   q: Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::warn!(

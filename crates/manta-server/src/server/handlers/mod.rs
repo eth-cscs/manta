@@ -1,7 +1,8 @@
 //! Top-level Axum handlers module.
 //!
 //! `mod.rs` keeps:
-//! - request extractors (`BearerToken`, `SiteName`, `RequestCtx`, `SiteHeader`)
+//! - request extractors (`BearerToken`, `SiteName`, `RequestCtx`,
+//!   `SiteResolvingCtx`, `SiteHeader`, `OptionalSiteHeader`)
 //! - the `ErrorResponse` body type + error mappers (`to_handler_error`,
 //!   `serialize_or_500`)
 //! - guard helpers (`require_vault`, `require_k8s_url`,
@@ -27,7 +28,9 @@ use serde::Serialize;
 use utoipa::{IntoParams, ToSchema};
 
 use super::ServerState;
+use super::audit::AuditNote;
 use super::common::app_context::InfraContext;
+use super::site_resolution::{ResolveError, ResolvedSite, Target};
 
 mod analysis;
 mod boot_parameters;
@@ -225,6 +228,19 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
       BearerToken::from_request_parts(parts, state).await?;
     let SiteName(site_name) =
       SiteName::from_request_parts(parts, state).await?;
+    Self::bind(Arc::clone(state), &subject_token, site_name).await
+  }
+}
+
+impl RequestCtx {
+  /// Validate `site_name` and exchange the caller's token for that
+  /// site's backend token — the part of extraction that runs once the
+  /// site is known, shared with [`SiteResolvingCtx::resolve`].
+  async fn bind(
+    state: Arc<ServerState>,
+    subject_token: &str,
+    site_name: String,
+  ) -> Result<Self, (StatusCode, Json<ErrorResponse>)> {
     // Validate the site resolves to a configured backend NOW, so the
     // per-handler `ctx.infra()` call below cannot fail. Returning the
     // 404-mapped error from extraction is the same shape the handler
@@ -237,18 +253,16 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     // on every request.
     let token = infra
       .backend
-      .exchange_api_token(&subject_token)
+      .exchange_api_token(subject_token)
       .await
       .map_err(to_handler_error)?;
     Ok(Self {
-      state: Arc::clone(state),
+      state,
       token,
       site_name,
     })
   }
-}
 
-impl RequestCtx {
   /// Borrow the per-site infrastructure (backend, base URLs, root
   /// cert, optional Vault + k8s URLs). Infallible — the site was
   /// validated during extraction; a missing site would have failed
@@ -258,6 +272,113 @@ impl RequestCtx {
       .state
       .infra_context(&self.site_name)
       .expect("site validated during RequestCtx extraction")
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SiteResolvingCtx — RequestCtx for the endpoints whose site may be
+// resolved from the request's target instead of `X-Manta-Site`.
+// ---------------------------------------------------------------------------
+
+/// Optional-header twin of [`SiteHeader`], for the endpoints that
+/// extract [`SiteResolvingCtx`]: without the header the server asks
+/// `manta-cache-server` which site owns the request's group or xname
+/// list, and echoes the answer in the `X-Manta-Site` response header.
+#[derive(IntoParams)]
+#[into_params(parameter_in = Header)]
+#[allow(dead_code)]
+pub struct OptionalSiteHeader {
+  /// Name of the target cluster. When omitted, the server resolves it
+  /// from the request's group or plain xname list via its
+  /// site-resolution cache and returns it in the `X-Manta-Site`
+  /// response header.
+  #[param(required = false, rename = "X-Manta-Site")]
+  pub x_manta_site: Option<String>,
+}
+
+/// [`RequestCtx`] before the site is known. Extracted like
+/// `RequestCtx` but with an optional `X-Manta-Site` header and no
+/// token exchange; the handler parses its query/body, then calls
+/// [`Self::resolve`] with the request's target to get the real
+/// `RequestCtx`. Only the endpoints whose target identifies a site
+/// (a group or a plain xname list) use it; everything else keeps the
+/// mandatory header via `RequestCtx`.
+pub struct SiteResolvingCtx {
+  state: Arc<ServerState>,
+  subject_token: String,
+  site_name: Option<String>,
+  resolved: Option<ResolvedSite>,
+  note: AuditNote,
+}
+
+impl FromRequestParts<Arc<ServerState>> for SiteResolvingCtx {
+  type Rejection = (StatusCode, Json<ErrorResponse>);
+
+  async fn from_request_parts(
+    parts: &mut Parts,
+    state: &Arc<ServerState>,
+  ) -> Result<Self, Self::Rejection> {
+    let BearerToken(subject_token) =
+      BearerToken::from_request_parts(parts, state).await?;
+    let site_name = parts
+      .headers
+      .get("X-Manta-Site")
+      .and_then(|v| v.to_str().ok())
+      .map(str::to_string);
+    Ok(Self {
+      state: Arc::clone(state),
+      subject_token,
+      site_name,
+      resolved: parts.extensions.get::<ResolvedSite>().cloned(),
+      note: parts
+        .extensions
+        .get::<AuditNote>()
+        .cloned()
+        .unwrap_or_default(),
+    })
+  }
+}
+
+impl SiteResolvingCtx {
+  /// Settle the site, then validate it and exchange the token exactly
+  /// as [`RequestCtx`] extraction does.
+  ///
+  /// An explicit `X-Manta-Site` always wins and the cache is never
+  /// consulted. Otherwise `target` is looked up in the cache; the
+  /// resolved site is echoed in the `X-Manta-Site` response header
+  /// and recorded on the audit event.
+  ///
+  /// # Errors
+  ///
+  /// [`ResolveError`]'s statuses (400 no target / not configured, 404
+  /// unknown group, 409 split xname list, 503 cache unusable), then
+  /// whatever `RequestCtx` extraction would return.
+  pub async fn resolve(
+    self,
+    target: Option<Target>,
+  ) -> Result<RequestCtx, (StatusCode, Json<ErrorResponse>)> {
+    let site_name = match self.site_name {
+      Some(site) => site,
+      None => {
+        let target =
+          target.ok_or_else(|| ResolveError::NoTarget.into_handler_error())?;
+        let resolver = self
+          .state
+          .site_resolver
+          .as_ref()
+          .ok_or_else(|| ResolveError::NotConfigured.into_handler_error())?;
+        let site = resolver
+          .resolve(&target)
+          .await
+          .map_err(ResolveError::into_handler_error)?;
+        if let Some(resolved) = &self.resolved {
+          resolved.set(&site);
+        }
+        self.note.detail("site_resolved_from", target.describe());
+        site
+      }
+    };
+    RequestCtx::bind(self.state, &self.subject_token, site_name).await
   }
 }
 
