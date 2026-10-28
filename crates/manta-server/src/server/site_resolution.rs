@@ -569,6 +569,55 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn resolve_sends_the_token_file_as_bearer() {
+    use wiremock::matchers::{header, method};
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(method("GET"))
+      .and(header("Authorization", "Bearer s3cret"))
+      .respond_with(
+        wiremock::ResponseTemplate::new(200)
+          .set_body_json(serde_json::json!({ "site": "alps" })),
+      )
+      .expect(1)
+      .mount(&server)
+      .await;
+    let dir = tempfile::tempdir().unwrap();
+    let token_path = dir.path().join("token");
+    // Trailing newline, as `echo` writes it: trimmed on read.
+    std::fs::write(&token_path, "s3cret\n").unwrap();
+    let resolver = SiteResolver::new(&SiteResolutionConfig {
+      url: server.uri(),
+      api_token_file: Some(token_path.display().to_string()),
+      root_ca_cert_file: None,
+    })
+    .unwrap();
+    let site = resolver
+      .resolve(&Target::Group("g".to_owned()))
+      .await
+      .unwrap();
+    assert_eq!(site, "alps");
+  }
+
+  #[test]
+  fn new_rejects_a_missing_or_empty_token_file() {
+    let config = |path: String| SiteResolutionConfig {
+      url: "http://localhost:8081".to_owned(),
+      api_token_file: Some(path),
+      root_ca_cert_file: None,
+    };
+    let err =
+      SiteResolver::new(&config("/nonexistent/token".to_owned())).unwrap_err();
+    assert!(err.contains("api_token_file"), "{err}");
+
+    let dir = tempfile::tempdir().unwrap();
+    let empty = dir.path().join("empty");
+    std::fs::write(&empty, "\n").unwrap();
+    let err =
+      SiteResolver::new(&config(empty.display().to_string())).unwrap_err();
+    assert!(err.contains("is empty"), "{err}");
+  }
+
+  #[tokio::test]
   async fn resolve_reports_an_unreachable_cache_as_unavailable() {
     let resolver = SiteResolver::new(&SiteResolutionConfig {
       // Port 9 (discard) on loopback: nothing listens there.

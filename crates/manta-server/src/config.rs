@@ -416,6 +416,40 @@ mod tests {
   }
 
   #[test]
+  fn site_resolution_parses_and_is_optional() {
+    let cfg: ServerConfiguration = toml::from_str(
+      r#"
+      log = "info"
+      [server]
+      console_inactivity_timeout_secs = 1800
+      [sites]
+      [site_resolution]
+      url = "https://manta-cache.example.com:8444"
+      api_token_file = "/run/secrets/cache-token"
+    "#,
+    )
+    .unwrap();
+    let r = cfg.site_resolution.expect("[site_resolution] parsed");
+    assert_eq!(r.url, "https://manta-cache.example.com:8444");
+    assert_eq!(
+      r.api_token_file.as_deref(),
+      Some("/run/secrets/cache-token")
+    );
+    assert!(r.root_ca_cert_file.is_none());
+
+    let cfg: ServerConfiguration = toml::from_str(
+      r#"
+      log = "info"
+      [server]
+      console_inactivity_timeout_secs = 1800
+      [sites]
+    "#,
+    )
+    .unwrap();
+    assert!(cfg.site_resolution.is_none());
+  }
+
+  #[test]
   fn token_exchange_may_be_absent_in_toml() {
     let site: Site = toml::from_str(
       r#"
