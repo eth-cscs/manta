@@ -250,7 +250,7 @@ Manta reads two TOML files, one per binary: `cli.toml` for the CLI and `server.t
 
 Override the path with `MANTA_CLI_CONFIG` / `MANTA_SERVER_CONFIG`.
 
-A third, optional binary — `manta-cache-server`, the site-resolution cache behind `cli.toml`'s `cache_url` — reads its own `cache-server.toml` from the same directory; its schema, API, roadmap, and a live-test runbook live in [`crates/manta-cache/`](crates/manta-cache/).
+A third, optional binary — `manta-cache-server`, the site-resolution cache behind `server.toml`'s `[site_resolution]` — reads its own `cache-server.toml` from the same directory; its schema, API, roadmap, and a live-test runbook live in [`crates/manta-cache/`](crates/manta-cache/).
 
 The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side knobs (`site`, `hsm_group`, `manta_server_url`, optional `socks5_proxy`, the optional `oidc_*` login settings) — it has **no `[sites.*]` block** and no Kafka audit block (audit emission is server-side only). Every per-site backend connection detail (URLs, TLS certs, k8s, vault) lives in `server.toml`, alongside the `[server]` block (TLS, listen address, console timeout, request timeout) and the optional `[auditor.kafka]` for the server-side audit stream. The server has no per-site SOCKS5 proxy knob — it's expected to sit in a network position where backend URLs are directly reachable.
 
@@ -261,7 +261,7 @@ The two schemas are **disjoint**: the CLI's `cli.toml` carries only the CLI-side
 ```toml
 log = "info"
 
-site                 = "alps"                                # optional: active site (X-Manta-Site header); omit and pass --site per invocation
+site                 = "alps"                                # optional: active site (X-Manta-Site header); omit and pass --site per invocation, or let manta-server resolve it (see [site_resolution] below)
 manta_server_url     = "https://manta-server.cscs.ch:8443"   # required
 hsm_group            = "nodes_free"                          # optional: default group used when a command takes no explicit group
 socks5_proxy         = "socks5h://127.0.0.1:1080"            # optional: reaches manta-server
@@ -325,6 +325,11 @@ topic   = "manta-server-audit"
 # "sasl.username"     = "manta"
 # "sasl.password"     = "..."
 
+[site_resolution]                                # optional; resolve the site of requests without X-Manta-Site
+url               = "https://manta-cache.cscs.ch:8444"            # manta-cache-server; no scheme = http://
+api_token_file    = "/run/secrets/manta/cache-api-token"         # optional: the cache's [server] api_token
+root_ca_cert_file = "/etc/manta/certs/cache_root_cert.pem"       # optional: extra CA for the cache's TLS
+
 [sites.alps]
 backend           = "csm"
 shasta_base_url   = "https://api.alps.cscs.ch"
@@ -358,6 +363,8 @@ scope         = "smd.read bss.read smd.write bss.write"
 - `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer. Hydra accepts each CSCS token only once (it rejects a reused `jti` until the token expires), which is why the CLI sends a new token on every request.
 
 Errors: a CSCS token the identity provider rejects (e.g. the site does not trust the CSCS Keycloak) → `401`; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`; an error status of the identity provider itself (e.g. `503`) is passed through.
+
+`[site_resolution]` lets clients omit the site. A request without `X-Manta-Site` to an endpoint whose request names a group or a plain xname list (`get nodes`, `get group-nodes`, `get sessions --group/--xnames`, `power … group/nodes`, `apply boot group/nodes`, `apply boot-parameters`, `apply kernel-parameters`, `console node`) has its site looked up in `manta-cache-server`, and the answer is returned in the `X-Manta-Site` response header (the CLI keeps it for the rest of the command and prints `site '<name>' resolved by manta-server`). An explicit site always wins and is never looked up. Anything short of one named site fails the request rather than guessing: unknown group → `404`, xnames on several sites → `409`, hostlist expressions / NIDs / no target → `400`, cache unreachable → `503`, cache rejecting `api_token_file` → `500`. Without `[site_resolution]`, a missing header is `400`, as before. Every other endpoint still requires the header.
 
 The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
 

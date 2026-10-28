@@ -1,6 +1,6 @@
 # manta-cache
 
-> **Status:** Stages 1–3 landed. This crate is the **core library** (built directly as a standalone workspace member, collapsing the roadmap's Stage 1 + Stage 2): `SiteDescriptor`, `Index` with synchronous lookups (`group_to_site`, `xname_to_site`, `groups`, `sites`, `group_members`), an async partial-failure-tolerant `refresh()`, and an HTTP-free constructor (`Index::from_snapshots`). The Stage-3 HTTP API ships as the sibling **`crates/manta-cache-server`** binary — a standalone shared lookup service (see the deployment-shape decision in [ROADMAP.md](ROADMAP.md)). The `manta-server` integration (Stage 4) is not built yet.
+> **Status:** Stages 1–3 landed. This crate is the **core library** (built directly as a standalone workspace member, collapsing the roadmap's Stage 1 + Stage 2): `SiteDescriptor`, `Index` with synchronous lookups (`group_to_site`, `xname_to_site`, `groups`, `sites`, `group_members`), an async partial-failure-tolerant `refresh()`, and an HTTP-free constructor (`Index::from_snapshots`). The Stage-3 HTTP API ships as the sibling **`crates/manta-cache-server`** binary — a standalone shared lookup service (see the deployment-shape decision in [ROADMAP.md](ROADMAP.md)). `manta-server` consults it (Stage 4): a request that carries no `X-Manta-Site` but names a group or plain xname list is resolved through the cache when `server.toml` configures `[site_resolution]` (see the root README and API.md § Site resolution).
 
 A site-resolution cache for manta. It learns which **site** (CSM / OpenCHAMI cluster) each group and each compute node lives at, so the user does not have to name the site explicitly on every command.
 
@@ -46,7 +46,7 @@ Most of this friction is structurally unnecessary. Group membership at each site
 - `manta power on group gpu-cluster` resolves the site from the group label alone.
 - `manta power reset nodes x3000c0s1b0n0` resolves the site from the node's group membership.
 
-manta-cache is the component that maintains that mapping and exposes lookups against it.
+manta-cache is the component that maintains that mapping and exposes lookups against it. `manta-server` is the one that asks: the CLI simply leaves the site out, and the server looks it up from the group or node list in the request.
 
 ## What's actually cached
 

@@ -133,3 +133,18 @@ base_url = "https://vault.example.com"
 # "sasl.mechanism"    = "SCRAM-SHA-512"
 # "sasl.username"     = "manta"
 # "sasl.password"     = "..."
+
+# ---------------------------------------------------------------
+# Site resolution (optional)
+# ---------------------------------------------------------------
+# Lets clients omit `X-Manta-Site` on the endpoints whose request names
+# a group or a plain xname list: manta-server asks manta-cache-server
+# which site owns the target and returns it in the `X-Manta-Site`
+# response header. Anything short of one named site fails the request
+# (404 unknown group, 409 split xname list, 503 cache down). Without
+# this block a missing header is a 400, as before.
+
+# [site_resolution]
+# url               = "https://manta-cache.example.com:8444"   # no scheme = http://
+# api_token_file    = "/run/secrets/manta/cache-api-token"    # the cache's [server] api_token, if it sets one
+# root_ca_cert_file = "/etc/manta/certs/cache_root_cert.pem"  # extra CA for the cache's TLS

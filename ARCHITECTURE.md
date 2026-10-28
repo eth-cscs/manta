@@ -162,8 +162,9 @@ Axum HTTPS server. Key files:
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
 | `routes.rs` | Registers REST endpoints + 2 WebSocket upgrades under `/v2/`; serves `GET /openapi.json` and `GET /docs` |
-| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (analysis, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, runtime_configuration, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
+| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`/`SiteResolvingCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (analysis, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, runtime_configuration, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `audit/` | Audit trail: `audit_requests` middleware, `AuditNote` handler extractor, `AuditLog` + sinks (log, Kafka), event schema. See [Audit trail](#audit-trail). |
+| `site_resolution.rs` | `SiteResolver` (manta-cache-server lookup client built from `[site_resolution]`), `Target`, `ResolveError` → HTTP status, the `ResolvedSite` slot and the `echo_resolved_site` middleware. See [Configuration files](#configuration-files). |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/v2` server base path |
 
 The `manta-server` crate is **both a library and a binary**. `crates/manta-server/src/lib.rs` declares six top-level modules as `pub mod` (`backend_dispatcher`, `config`, `dispatcher`, `server`, `service`, `wire_conv`); the server-only `common` modules live one level deeper as `server::common`. `src/main.rs` is a thin bootstrap that calls into the library. Integration tests in `crates/manta-server/tests/` (`server_routes.rs`, `integration.rs`, `audit_routes.rs`) import via `use manta_server::...` — they exercise the public API in a separate compilation unit per Rust convention. The crate lints `#![warn(missing_docs)]`; CI's `cargo doc` step still surfaces undocumented public items.
@@ -222,9 +223,11 @@ The two schemas are disjoint:
 | Schema | Fields |
 |---|---|
 | `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`, optional `oidc_issuer_url` / `oidc_client_id` / `oidc_headless` (CSCS-Keycloak login). **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
-| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, required `[sites.X.token_exchange]`, optional `[sites.X.k8s]` block). |
+| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, optional `[site_resolution]` (manta-cache-server URL + token file), `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, required `[sites.X.token_exchange]`, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
+
+**Site resolution.** With `[site_resolution]` configured, a handful of endpoints whose request names a group or a plain xname list accept a request without the header (the list is in API.md § Site resolution). Those handlers extract `SiteResolvingCtx` instead of `RequestCtx`: same bearer extraction, optional header, **no** token exchange yet. Once the handler has parsed its query/body it calls `ctx.resolve(target)`, which keeps an explicit header as-is (the cache is never consulted) or asks `manta-cache-server` through `server/site_resolution.rs::SiteResolver`, then validates the site and exchanges the token exactly as `RequestCtx` extraction does (`RequestCtx::bind`). It has to be a call from inside the handler, not extraction, because for `POST /power`, `/boot-config`, `/kernel-parameters/apply` and `PUT /boot-parameters` the target is in the JSON body. Every answer short of one named site fails the request (`ResolveError`: 400 / 404 / 409 / 500 / 503) — a guessed site could aim a destructive command at the wrong cluster. The resolved site is written into a per-request `ResolvedSite` slot; the innermost `echo_resolved_site` middleware copies it into the `X-Manta-Site` **response** header, the audit layer takes the event's `site` from there, and the CLI (`MantaClient::into_anyhow_pinning_site`) adopts it for the command's follow-up calls, such as power-transition polling. On the CLI side only the commands built with `MantaClient::from_app_ctx_resolving` omit the header; all others still fail locally with "No site selected". `manta-cache-server` refreshes by calling these same endpoints, always with an explicit header, so resolution never recurses.
 
 Loaders live in `manta-shared::common::config`: `get_cli_configuration()` and `get_server_configuration()`. Both fail fast with `MantaError::NotFound` if the file is missing; the error message includes a minimal sample and (if a legacy unified `config.toml` is detected in the same config directory) a field-by-field migration mapping. There is no auto-create wizard and no migration subcommand.
 
@@ -354,8 +357,11 @@ flowchart TD
     Split -->|/v2/*| Aud[audit_requests<br/>one event per mutating request]
     Aud --> Panic[CatchPanicLayer<br/>handler panic → 500]
     Panic --> Tmo[TimeoutLayer<br/>request_timeout_secs]
-    Tmo --> Ctx[RequestCtx extractor<br/>BearerToken + SiteName,<br/>token exchange at the site's Keycloak]
+    Tmo --> Echo[echo_resolved_site<br/>resolved site → X-Manta-Site response header]
+    Echo --> Ctx[RequestCtx extractor<br/>BearerToken + SiteName,<br/>token exchange at the site's Keycloak]
     Ctx --> Hdlr[Resource handlers]
+    Echo --> RCtx[SiteResolvingCtx extractor<br/>BearerToken + optional site]
+    RCtx --> RHdlr[Site-resolving handlers<br/>ctx.resolve: manta-cache lookup,<br/>then the same exchange]
 
     Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
 ```
@@ -458,7 +464,7 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
 }
 ```
 
-A field with no value is left out rather than written as `null` / `{}`: `dry_run` is absent for operations without a dry-run mode, `site` when no `X-Manta-Site` was sent, and so on. (A `--dry-run` the CLI short-circuits locally — `power`, `delete node`, … — never reaches the server and is not audited.)
+A field with no value is left out rather than written as `null` / `{}`: `dry_run` is absent for operations without a dry-run mode, `site` when no `X-Manta-Site` was sent and none was resolved (a resolved site is taken from the response header, with `details.site_resolved_from` naming the group or xnames it came from), and so on. (A `--dry-run` the CLI short-circuits locally — `power`, `delete node`, … — never reaches the server and is not audited.)
 
 `actor` comes from the claims (`preferred_username`, `name`, `sub`) of the **inbound** `Authorization` header, read by the middleware itself. The signature is not verified locally, so the identity is authoritative when `outcome.result` is `success` (the backend accepted the token) and a claim otherwise. `client.forwarded_for` is the raw header, untrusted.
 

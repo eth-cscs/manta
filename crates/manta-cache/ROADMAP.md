@@ -1,6 +1,6 @@
 # manta-cache — roadmap
 
-> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered, Stage 5 delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** and **dump** endpoints are live; the **CLI-side pre-resolution integration is built** (`cache_url` in `cli.toml` — see Stage 4); and Stage 5 moved the refresh onto **per-site service accounts**. What remains: the conflict policy, the descoped site-CRUD question, and the optional stale-window/persistence items. The full chain was verified live against prealps on 2026-07-19 — see [LIVE-TEST.md](LIVE-TEST.md) for the reproducible walkthrough.
+> **Status:** Stages 1 + 2 delivered (collapsed), Stage 3 delivered, Stage 4 mostly delivered, Stage 5 delivered. The core library exists as the standalone `manta-cache` crate (Stage 1 was implemented directly as the crate — no compile-time dependency on `manta-server`, so the intermediate module step bought nothing); the Stage-3 HTTP wrapper exists as the `crates/manta-cache-server` binary (standalone shared service, per the decision recorded in Stage 3 below); the Stage-4 management **refresh** and **dump** endpoints are live; the integration is now **server-side**: `manta-server` asks the cache when a request carries no `X-Manta-Site` (`[site_resolution]` in `server.toml` — see Stage 4; it replaced the earlier CLI-side pre-resolution once the token exchange gave users one token for every site); and Stage 5 moved the refresh onto **service accounts** (a CSCS Keycloak one since the exchange). What remains: the conflict policy, the descoped site-CRUD question, and the optional stale-window/persistence items. The CLI-side chain was verified live against prealps on 2026-07-19; the server-side one is not live-verified yet — see [LIVE-TEST.md](LIVE-TEST.md) for the walkthrough.
 
 For background — what manta is, what a "site" means, what HSM groups are, and why a cache helps — see the sibling [README.md](README.md).
 
@@ -108,7 +108,16 @@ The final stage delivers the user-visible payoff and the operability surface nee
 
 The originally-drafted **site CRUD** (`POST /sites`, `PUT /sites/{name}`, `DELETE /sites/{name}`, with mutations persisted back to the config file) is **descoped to an open question** rather than implemented: in the deployment the standalone-service decision implies, configuration is declarative and often a read-only mount, and a service writing service-account credentials back into its own TOML is the part of this draft most likely to be wrong. Revisit with the maintainer if runtime site management is needed at all.
 
-**Integration — decided (2026-07, with the maintainer): CLI-side pre-resolution.** The pre-Stage-3 draft had `manta-server` consult the cache when `X-Manta-Site` was absent, but that founders on per-site tokens: a CSM token is issued by one site's Keycloak, and the CLI chooses which cached token to attach *based on the site* — the very thing being resolved. Even a perfect server-side resolution would see the request arrive bearing the wrong site's credential. Instead, the **`manta` CLI consults the cache service before dispatch**:
+**Integration — decided (2026-10): server-side resolution.** The CLI-side design below was chosen only because of per-site tokens. The CSCS-Keycloak login + per-request token exchange (`[sites.X.token_exchange]`) removed that obstacle: the CLI holds one CSCS token, and `manta-server` exchanges it for the site's token *after* it knows the site. So the pre-Stage-3 draft became viable, and resolution moved into `manta-server`:
+
+1. Explicit `X-Manta-Site` (`--site` / `cli.toml` `site`) — honored as before; the cache is not consulted.
+2. Otherwise, on the endpoints whose request names a group or a plain xname list (root API.md § Site resolution), the handler extracts `SiteResolvingCtx`, parses its query/body and calls `resolve(target)`: group → `GET /api/v1/lookup/group/{label}`, xnames → `GET /api/v1/lookup/nodes?xnames=…`. Then the site is validated and the token exchanged as for any request.
+3. The resolved site is echoed in the `X-Manta-Site` response header; the CLI adopts it for the command's follow-up calls (e.g. power-transition polling) and the audit event records it.
+4. Every other endpoint still requires the header.
+
+Failure semantics changed with the move, by decision: **no degradation**. Anything short of one named site fails the request with a "pass --site" message — unknown group `404`, split/partly-unknown xname list `409`, no resolvable target or no `[site_resolution]` `400`, cache unreachable `503`, cache rejecting manta-server's `api_token_file` `500`. The command scope is the same as the CLI-side table below. `manta-server` reads `[site_resolution]` (`url`, `api_token_file`, `root_ca_cert_file`); the CLI's `cache_url` / `cache_api_token` keys are gone. Code: `manta-server`'s `server/site_resolution.rs` and `SiteResolvingCtx` in `server/handlers/mod.rs`; CLI side `MantaClient::from_app_ctx_resolving` / `into_anyhow_pinning_site`.
+
+**Superseded — Integration (2026-07, with the maintainer): CLI-side pre-resolution.** The pre-Stage-3 draft had `manta-server` consult the cache when `X-Manta-Site` was absent, but that founders on per-site tokens: a CSM token is issued by one site's Keycloak, and the CLI chooses which cached token to attach *based on the site* — the very thing being resolved. Even a perfect server-side resolution would see the request arrive bearing the wrong site's credential. Instead, the **`manta` CLI consults the cache service before dispatch**:
 
 1. Explicit `--site` / `cli.toml` `site` — honored as today; the cache is not consulted.
 2. The command names a group → `GET /api/v1/lookup/group/{label}` on the cache → site.
@@ -117,7 +126,7 @@ The originally-drafted **site CRUD** (`POST /sites`, `PUT /sites/{name}`, `DELET
 
 From the resolved site onward everything is unchanged: the right per-site token cache, the right `X-Manta-Site` header, per-user authorisation in the `manta-server` handler. The CLI grows two `cli.toml` keys (`cache_url`, optional `cache_api_token`) and degrades gracefully — cache unreachable means "site required", exactly today's behaviour. `manta-server` needs **no change** for this design.
 
-> **✅ CLI-side pre-resolution delivered** (`manta-cli`'s `common/site_resolution.rs`, hooked into `run_cli` before `AppContext` is built). Scope notes:
+> **CLI-side pre-resolution was delivered** (`manta-cli`'s `common/site_resolution.rs`, hooked into `run_cli` before `AppContext` is built) **and later removed** in favour of the server-side resolution above. Scope notes, kept for the record:
 >
 > - The clap tree has no uniform target-argument id, so the resolver uses a **closed per-command table**: `power on/off/reset group|nodes`, `get nodes`, `get group-nodes`, `get sessions` (via its `--group`/`--xnames` filters), `apply boot group|nodes`, `apply boot-parameters`, `apply kernel-parameters`, `console node`. Commands outside the table simply follow the old no-site path; extend the table in `extract_target` as commands earn support.
 > - Only **plain xname lists** resolve. Hostlist bracket expressions and NIDs are skipped (the cache indexes xnames; expansion is server-side), falling back to requiring `--site`.
@@ -126,7 +135,7 @@ From the resolved site onward everything is unchanged: the right per-site token 
 
 **Security stance (decided 2026-07).** The lookup endpoints serve read-only routing metadata — site names, group labels, xnames; no member lists, credentials, or per-node state — considered non-sensitive inside the deployment perimeter. They are open by default, gated by the optional shared `api_token`, and protected primarily by network placement. Three deliberate caveats: the management endpoints always require the token (above); `GET /api/v1/dump` is management-gated **because** it serves the group member lists this stance excludes, so the "no member lists" justification stays literally true of everything open; and TLS on the cache matters for **integrity** more than secrecy — a tampered resolution answer could steer a destructive command at the wrong cluster, so production deployments should still terminate the cache behind TLS.
 
-**Lifecycle.** (The pre-Stage-3 draft had `manta-server` instantiating the cache in-process; superseded.) The standalone `manta-cache-server` owns its own lifecycle — initial refresh before its listener binds, optional periodic refresh, on-demand management refresh. `manta-server` is not involved; the CLI treats the cache as an optional accelerator and falls back to explicit `--site` when it is absent.
+**Lifecycle.** (The pre-Stage-3 draft had `manta-server` instantiating the cache in-process; superseded.) The standalone `manta-cache-server` owns its own lifecycle — initial refresh before its listener binds, optional periodic refresh, on-demand management refresh. `manta-server` only calls its lookup endpoints, per site-less request, and never at startup. The cache's refresh calls `manta-server` with an explicit `X-Manta-Site` on every request, so a refresh never triggers a resolution.
 
 **Cross-cutting concerns** decided in this stage:
 
@@ -134,7 +143,7 @@ From the resolved site onward everything is unchanged: the right per-site token 
 - **TTL / freshness**. The force half exists (`POST /refresh/{site}` re-syncs a known-mutated site without waiting for the timer); an optional per-site stale window remains open.
 - **Persistence**. Decide whether to persist the index to disk (sqlite / JSON snapshot) so restarts skip the cross-site fan-out. May be in scope for Stage 4 or punted to a follow-up.
 
-**Acceptance.** An operator can run a `manta` command that names only a group or only a node list, with no `--site`, and it reaches the right cluster (via the CLI-side pre-resolution above). Failure modes (cross-site xname list, unknown group) produce clear errors naming the per-xname resolutions. The refresh half of runtime management is already delivered; site CRUD is not part of the acceptance unless the open question above resolves in its favour.
+**Acceptance.** An operator can run a `manta` command that names only a group or only a node list, with no `--site`, and it reaches the right cluster (via the server-side resolution above). Failure modes (cross-site xname list, unknown group) produce clear errors naming the per-xname resolutions. The refresh half of runtime management is already delivered; site CRUD is not part of the acceptance unless the open question above resolves in its favour.
 
 ## Stage 5 — Production credentials (service accounts)
 
@@ -199,16 +208,15 @@ This section describes the end-to-end test path that exercises the cache against
 
 ### Integration shape under test
 
-Per the CLI-side pre-resolution decision (Stage 4 above), the cache is consulted by the **`manta` CLI** before it dispatches to `manta-server`. The flow is:
+Per the server-side resolution decision (Stage 4 above), the cache is consulted by **`manta-server`**. The flow is:
 
-1. The operator runs a command with no `--site` and no `site` in `cli.toml` (e.g. `manta power off group compute` or a command naming xnames).
-2. The CLI asks the cache: group label → `GET /api/v1/lookup/group/{label}`; xname list → `GET /api/v1/lookup/nodes?xnames=…`.
-3. With the resolved site in hand, the CLI proceeds exactly as if `--site <resolved>` had been given: right per-site token cache, right `X-Manta-Site` header. A split or unknown resolution is a client-side error before any `manta-server` call.
-4. `manta-server` behaves as today — it still receives an explicit site header on every request.
+1. The operator runs a command with no `--site` and no `site` in `cli.toml` (e.g. `manta power off group compute` or a command naming xnames); the CLI sends the request without `X-Manta-Site`.
+2. `manta-server` asks the cache: group label → `GET /api/v1/lookup/group/{label}`; xname list → `GET /api/v1/lookup/nodes?xnames=…`.
+3. With the resolved site, the server validates it, exchanges the token for that site and runs the handler; the response carries `X-Manta-Site: <resolved>`, which the CLI keeps for follow-up calls. A split or unknown resolution fails the request before any backend call.
 
 ### Local test setup
 
-**Step-by-step runbook: [LIVE-TEST.md](LIVE-TEST.md)** (three-terminal setup, config snippets, and the walkthrough below as concrete commands; verified 2026-07-19 against prealps).
+**Step-by-step runbook: [LIVE-TEST.md](LIVE-TEST.md)** (three-terminal setup, config snippets, and the walkthrough below as concrete commands; the CLI-side variant was verified 2026-07-19 against prealps, the server-side one not yet).
 
 The integration can be exercised against a locally running `manta-cache-server` + `manta-server` pointed at the real CSCS test sites. The cache runs its initial refresh before its listener binds, so both prerequisites below must be satisfied **before** `manta-cache-server` is launched — otherwise the affected sites fail their refresh and are simply absent from the index (reported in the startup warnings, recoverable via `POST /api/v1/refresh`).
 
@@ -258,7 +266,7 @@ These are the decisions the roadmap deliberately punts on until the stage that a
 | ~~Service-account token sourcing (config / env / Vault) + rotation~~ | ~~Stage 3~~ | **Resolved (2026-08): `token_file` only**, one Keycloak service account per site; inline `token` removed. The file is re-read every refresh, so rotation needs no restart, and every deployment target (k8s projected Secret, systemd `LoadCredential=`, bind mount) can produce a path. See Stage 5. |
 | Service-account group coverage: `pa_admin` vs scoped roles | Deployment-time, per site | Not a code decision — csm-rs derives available groups from the token's realm roles, so the account's roles bound what the cache can index. Scoped is safe (unresolvable groups fall back to explicit `--site`); `pa_admin` makes the cache resolve the whole site. `/dump`'s `credential.is_admin` shows which is in force. |
 | Conflict policy when label / xname spans sites | Stage 4 | Only matters once an integration layer needs to *resolve* something to a single site. Stage 1 ships documented deterministic rules (see `Index`'s "Conflict handling" doc), not a policy — and the built `Index` does not retain that a collision happened, so surfacing candidates *in a lookup answer* needs library support. `GET /api/v1/dump` makes collisions observable in the meantime by re-scanning the snapshots. |
-| ~~Integration architecture: server-side vs CLI-side resolution~~ | ~~Stage 4~~ | **Resolved (2026-07): CLI-side pre-resolution** — per-site Keycloak tokens make server-side resolution self-defeating (the request would carry the wrong site's credential); see Stage 4. |
+| ~~Integration architecture: server-side vs CLI-side resolution~~ | ~~Stage 4~~ | **Resolved (2026-07): CLI-side pre-resolution**, because per-site Keycloak tokens made server-side resolution self-defeating. **Re-decided (2026-10): server-side**, once the CSCS-token exchange gave the CLI one token for every site; see Stage 4. |
 | Site CRUD endpoints (runtime add/update/delete + config persistence) | Stage 4, if at all | Descoped from the original draft: declarative/read-only config deployments sit badly with a service rewriting its own TOML (and tokens). Needs a maintainer decision on whether runtime site management is wanted. |
 | Persistence (in-memory vs on-disk snapshot) | Stage 4 | A cold start is a few HTTP calls per site; tolerable until the deployment shape pushes back. |
 | Refresh cadence (pull-on-demand vs periodic background) | Stage 4 | Depends on the deployment shape and traffic pattern. |
