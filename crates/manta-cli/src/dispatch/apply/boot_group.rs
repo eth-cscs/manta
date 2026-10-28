@@ -32,13 +32,13 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
-  let client = MantaClient::from_app_ctx(ctx)?;
+  let client = MantaClient::from_app_ctx_resolving(ctx)?;
 
   let groups = client
     .openapi
-    .get_groups(Some(p.hsm_group_name), client.site_name())
+    .get_groups(Some(p.hsm_group_name), client.site_hint())
     .await
-    .into_anyhow()
+    .into_anyhow_pinning_site(&client)
     .await?;
   let group = groups
     .into_iter()
@@ -52,7 +52,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_boot_config(
-      client.site_name(),
+      client.site_hint(),
       &ApplyBootConfigRequest {
         hosts_expression: xnames.join(","),
         boot_image_id: p.boot_image.map(str::to_string),

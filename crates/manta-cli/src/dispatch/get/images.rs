@@ -67,7 +67,7 @@ pub async fn exec(
   let params = parse_images_params(cli_args);
 
   let client = MantaClient::from_app_ctx(ctx)?;
-  let site = client.site_name();
+  let site = client.site_name()?;
 
   let since = wire_datetime(params.since);
   let until = wire_datetime(params.until);

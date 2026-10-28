@@ -65,7 +65,7 @@ pub async fn exec(
     .openapi
     .apply_hw_configuration(
       target,
-      client.site_name(),
+      client.site_name()?,
       &ApplyHwConfigurationRequest {
         parent_cluster: parent.to_string(),
         pattern: pattern.to_string(),

@@ -49,7 +49,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   let groups = client
     .openapi
-    .get_groups(params.effective_group(), client.site_name())
+    .get_groups(params.effective_group(), Some(client.site_name()?))
     .await
     .into_anyhow()
     .await?;

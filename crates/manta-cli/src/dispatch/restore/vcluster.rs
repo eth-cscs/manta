@@ -99,7 +99,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .migrate_restore(client.site_name(), &req)
+    .migrate_restore(client.site_name()?, &req)
     .await
     .into_anyhow()
     .await?;

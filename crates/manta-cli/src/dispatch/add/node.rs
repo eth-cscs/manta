@@ -52,7 +52,7 @@ pub async fn exec(ctx: &AppContext<'_>, p: ExecParams<'_>) -> Result<()> {
 
   client
     .openapi
-    .add_node(client.site_name(), &req)
+    .add_node(client.site_name()?, &req)
     .await
     .into_anyhow()
     .await?;

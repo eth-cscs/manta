@@ -40,7 +40,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .delete_boot_parameters(client.site_name(), &req)
+    .delete_boot_parameters(client.site_name()?, &req)
     .await
     .into_anyhow()
     .await?;

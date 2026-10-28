@@ -158,7 +158,7 @@ async fn run_session(
   let client = MantaClient::from_app_ctx(ctx)?;
   let created = client
     .openapi
-    .create_session(client.site_name(), &req)
+    .create_session(client.site_name()?, &req)
     .await
     .into_anyhow()
     .await?;

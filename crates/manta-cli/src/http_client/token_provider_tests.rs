@@ -179,7 +179,7 @@ fn provider(issuer: &str, cache: PathBuf, interactive: bool) -> TokenProvider {
 fn client(server: &MockServer, provider: TokenProvider) -> MantaClient {
   MantaClient::new_with_timeout(
     &server.uri(),
-    SITE,
+    Some(SITE),
     None,
     Some(Arc::new(provider)),
   )
@@ -189,7 +189,7 @@ fn client(server: &MockServer, provider: TokenProvider) -> MantaClient {
 async fn list_groups(client: &MantaClient) -> anyhow::Result<Vec<String>> {
   client
     .openapi
-    .get_available_groups(client.site_name())
+    .get_available_groups(client.site_name()?)
     .await
     .into_anyhow()
     .await
@@ -450,7 +450,8 @@ async fn without_a_provider_no_token_is_sent() {
     .mount(&server)
     .await;
   let client =
-    MantaClient::new_with_timeout(&server.uri(), SITE, None, None).unwrap();
+    MantaClient::new_with_timeout(&server.uri(), Some(SITE), None, None)
+      .unwrap();
 
   list_groups(&client).await.unwrap();
 

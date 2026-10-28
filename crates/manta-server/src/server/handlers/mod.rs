@@ -292,8 +292,11 @@ pub struct OptionalSiteHeader {
   /// from the request's group or plain xname list via its
   /// site-resolution cache and returns it in the `X-Manta-Site`
   /// response header.
+  // `String`, not `Option<String>`: `required = false` already makes
+  // the header optional, and `Option` would also mark it nullable,
+  // which progenitor turns into `Option<Option<&str>>`.
   #[param(required = false, rename = "X-Manta-Site")]
-  pub x_manta_site: Option<String>,
+  pub x_manta_site: String,
 }
 
 /// [`RequestCtx`] before the site is known. Extracted like

@@ -78,7 +78,7 @@ pub async fn exec(
 
   client
     .openapi
-    .update_redfish_endpoint(client.site_name(), &req)
+    .update_redfish_endpoint(client.site_name()?, &req)
     .await
     .into_anyhow()
     .await?;

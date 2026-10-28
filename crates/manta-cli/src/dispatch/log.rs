@@ -56,7 +56,7 @@ pub async fn handle_log(
       None,
       None,
       None,
-      client.site_name(),
+      Some(client.site_name()?),
     )
     .await
     .into_anyhow()
@@ -80,7 +80,7 @@ pub async fn handle_log(
         None,
         None,
         Some(user_input),
-        client.site_name(),
+        Some(client.site_name()?),
       )
       .await
       .into_anyhow()

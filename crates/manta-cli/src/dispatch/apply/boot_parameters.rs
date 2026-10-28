@@ -61,12 +61,12 @@ pub async fn exec(
     initrd: p.initrd.unwrap_or_default().to_string(),
   };
 
-  let client = MantaClient::from_app_ctx(ctx)?;
+  let client = MantaClient::from_app_ctx_resolving(ctx)?;
   client
     .openapi
-    .update_boot_parameters(client.site_name(), &params)
+    .update_boot_parameters(client.site_hint(), &params)
     .await
-    .into_anyhow()
+    .into_anyhow_pinning_site(&client)
     .await?;
 
   action_result::print("Boot parameters updated", p.output)?;

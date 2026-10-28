@@ -72,7 +72,7 @@ impl SessionContext {
   pub async fn build(client: &MantaClient) -> anyhow::Result<Self> {
     let accessible_groups = client
       .openapi
-      .get_available_groups(client.site_name())
+      .get_available_groups(client.site_name()?)
       .await
       .into_anyhow()
       .await

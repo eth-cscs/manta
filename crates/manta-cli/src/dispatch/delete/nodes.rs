@@ -54,7 +54,7 @@ pub async fn exec(
     .openapi
     .delete_group_members(
       target_hsm_name,
-      client.site_name(),
+      client.site_name()?,
       &DeleteGroupMembersRequest {
         xnames_expression: hosts_expression.to_string(),
         dry_run: Some(dryrun),

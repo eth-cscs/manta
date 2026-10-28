@@ -84,7 +84,7 @@ pub async fn dispatch_plan(
     futures::future::try_join_all(config_reqs.iter().map(|req| async move {
       client
         .openapi
-        .post_sat_configuration(client.site_name(), req)
+        .post_sat_configuration(client.site_name()?, req)
         .await
         .into_anyhow()
         .await
@@ -131,7 +131,7 @@ pub async fn dispatch_plan(
     futures::future::try_join_all(st_reqs.iter().map(|req| async move {
       client
         .openapi
-        .post_sat_session_template(client.site_name(), req)
+        .post_sat_session_template(client.site_name()?, req)
         .await
         .into_anyhow()
         .await

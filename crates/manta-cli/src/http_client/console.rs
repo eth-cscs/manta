@@ -117,13 +117,17 @@ impl MantaClient {
       HeaderValue::from_str(&format!("Bearer {token}"))
         .context("Invalid token header value")?,
     );
-    req.headers_mut().insert(
-      "X-Manta-Site",
-      HeaderValue::from_str(self.site_name())
-        .context("Invalid site-name header value")?,
-    );
+    // Omitted when unknown: the node console resolves the site from
+    // its xname and echoes it on the upgrade response.
+    if let Some(site) = self.site_hint() {
+      req.headers_mut().insert(
+        "X-Manta-Site",
+        HeaderValue::from_str(site)
+          .context("Invalid site-name header value")?,
+      );
+    }
 
-    let (ws_stream, _) =
+    let (ws_stream, response) =
       tokio_tungstenite::connect_async(req).await.map_err(|e| {
         // tungstenite reports connect-level failures as `Io(io_err)`;
         // surface those as the same "cannot reach manta server"
@@ -142,11 +146,25 @@ impl MantaClient {
             )
         );
         if unreachable {
-          anyhow::Error::new(e).context(self.unreachable_server_msg())
-        } else {
-          anyhow::Error::new(e).context("WebSocket connection failed")
+          return anyhow::Error::new(e).context(self.unreachable_server_msg());
         }
+        // A refused upgrade carries the server's `{"error": …}` body
+        // (e.g. why the site could not be resolved); surface it.
+        if let tokio_tungstenite::tungstenite::Error::Http(resp) = &e {
+          let status = resp.status().as_u16();
+          let body = resp
+            .body()
+            .as_deref()
+            .map(String::from_utf8_lossy)
+            .unwrap_or_default();
+          return anyhow::anyhow!(
+            "HTTP {status}: {}",
+            super::client::extract_error_body(&body, status)
+          );
+        }
+        anyhow::Error::new(e).context("WebSocket connection failed")
       })?;
+    self.pin_site(response.headers());
 
     let (mut ws_sink, mut ws_source) = ws_stream.split();
 

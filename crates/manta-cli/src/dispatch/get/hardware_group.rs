@@ -52,7 +52,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   let json = client
     .openapi
-    .get_groups_hardware(hsm, client.site_name())
+    .get_groups_hardware(hsm, client.site_name()?)
     .await
     .into_anyhow()
     .await?;

@@ -54,7 +54,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   let json = client
     .openapi
-    .get_hardware_nodes_list(&params.host_expression, client.site_name())
+    .get_hardware_nodes_list(&params.host_expression, client.site_name()?)
     .await
     .into_anyhow()
     .await?;

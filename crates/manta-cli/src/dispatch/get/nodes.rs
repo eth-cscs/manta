@@ -54,17 +54,17 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
   let status_summary = cli_args.get_flag("summary-status");
 
-  let client = MantaClient::from_app_ctx(ctx)?;
+  let client = MantaClient::from_app_ctx_resolving(ctx)?;
   let node_details_list = client
     .openapi
     .get_nodes(
       Some(params.include_siblings),
       params.status_filter.as_deref(),
       &params.host_expression,
-      client.site_name(),
+      client.site_hint(),
     )
     .await
-    .into_anyhow()
+    .into_anyhow_pinning_site(&client)
     .await?;
 
   output::node::render_node_details(

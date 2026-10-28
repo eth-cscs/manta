@@ -52,7 +52,7 @@ pub async fn exec(
       params.ipaddress.as_deref(),
       params.macaddr.as_deref(),
       params.uuid.as_deref(),
-      client.site_name(),
+      client.site_name()?,
     )
     .await
     .into_anyhow()

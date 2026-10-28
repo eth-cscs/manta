@@ -33,7 +33,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
-    .delete_images(Some(dry_run), &ids, client.site_name())
+    .delete_images(Some(dry_run), &ids, client.site_name()?)
     .await
     .into_anyhow()
     .await?;
