@@ -330,10 +330,11 @@ backend = "csm"
 shasta_base_url = "https://api.example.com"
 root_ca_cert_file = "/path/to/alps_root_cert.pem"
 
-[sites.<site_name>.token_exchange]       # required for backend = "csm"
+[sites.<site_name>.token_exchange]       # required
 client_id      = "cscs-token-exchanger"
 client_secret  = "..."
-subject_issuer = "cscs"
+subject_issuer = "cscs"                  # backend = "csm" only
+# scope = "smd.read bss.read"            # backend = "ochami" only
 "#;
 
 /// Migration mapping shown when a legacy `config.toml` is detected.

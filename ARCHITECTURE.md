@@ -222,7 +222,7 @@ The two schemas are disjoint:
 | Schema | Fields |
 |---|---|
 | `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`, optional `oidc_issuer_url` / `oidc_client_id` / `oidc_headless` (CSCS-Keycloak login). **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
-| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, `[sites.X.token_exchange]` — required for `csm` sites, optional `[sites.X.k8s]` block). |
+| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, required `[sites.X.token_exchange]`, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 
@@ -302,10 +302,12 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 `manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. There are no `/v2/auth/*` endpoints.
 
-The server does **not** forward that token to the backend. CSM does not accept CSCS tokens, so the `RequestCtx` extractor (`server/handlers/mod.rs`) calls `AuthenticationTrait::exchange_api_token` on the site's dispatcher for every request, before the handler runs:
+The server does **not** forward that token to the backend. No site accepts CSCS tokens, so the `RequestCtx` extractor (`server/handlers/mod.rs`) calls `AuthenticationTrait::exchange_api_token` on the site's dispatcher for every request, before the handler runs:
 
-- **CSM** (csm-rs): an RFC 8693 token exchange (Keycloak's external-to-internal flow) at `<base>/keycloak/realms/shasta`, authenticated with the per-site `[sites.X.token_exchange]` client from `server.toml`; `subject_issuer` names the CSCS identity provider in the `shasta` realm. The site's Keycloak verifies the CSCS token and returns a CSM token for the same user. `main.rs` refuses to start a `csm` site without that table.
-- **OpenCHAMI** (ochami-rs): a pass-through for now; the real exchange (TokenSmith) comes later.
+- **CSM** (csm-rs): an RFC 8693 token exchange (Keycloak's external-to-internal flow) at `<base>/keycloak/realms/shasta`, authenticated with the per-site `[sites.X.token_exchange]` client from `server.toml`; `subject_issuer` names the CSCS identity provider in the `shasta` realm. The site's Keycloak verifies the CSCS token and returns a CSM token for the same user.
+- **OpenCHAMI** (ochami-rs): an RFC 7523 JWT bearer grant at `<base>/hydra/oauth2/token`, authenticated with the same table, which here holds `scope`. Hydra verifies the CSCS token against a trust relationship for the CSCS Keycloak's issuer and returns a token with the same `sub`. It carries no `preferred_username` or `realm_access`.
+
+`main.rs` refuses to start a site without that table.
 
 `ctx.token` holds the exchanged token, so the CSM API calls, Vault's `jwt-manta-<site>` login and the role checks below all see the CSM identity without any handler or service knowing about the exchange. Nothing is cached: the exchanged token lives for one request. If the per-request exchange ever proves too costly (e.g. Keycloak keeping a user session per exchange), a per-(site, subject token) cache in `ServerState`, consulted in `RequestCtx`, is the one place to add it. Exchange failures map to `401` (Keycloak rejected the CSCS token: the CLI should log in again), `403` (exchange refused for this user) or `500` (bad client secret or other misconfiguration).
 
@@ -317,7 +319,7 @@ Server-side authorization helpers live in `service::authorization`:
 - `validate_user_group_members_access` — every xname in the request must be a member of an accessible group.
 - `validate_ansible_limit_membership_access` — the same membership check applied to a comma-separated `ansible_limit` string.
 
-Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. On CSM sites that is sound because the token is not the caller's: `RequestCtx` obtained it from the site's own Keycloak over TLS a moment earlier, and that Keycloak verified the caller's CSCS token before issuing it, so a forged token never reaches a handler. On OpenCHAMI sites the exchange is still a pass-through, so there the claims are trustworthy only because every authorized path still makes a backend round-trip, and the backend verifies the signature — a forged token is rejected at the first real call. Until OpenCHAMI has a real exchange, the rule this imposes stands: **never add a code path that acts on a JWT claim and returns before the backend call happens** (a local cache, a short-circuit, a handler that only consults local roles). `is_user_admin` is exactly such a short-circuit, so any new use of it must still be followed by a backend call.
+Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. That is sound because the token is not the caller's: `RequestCtx` obtained it from the site's own identity provider over TLS a moment earlier, and that provider verified the caller's CSCS token before issuing it, so a forged token never reaches a handler.
 
 Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. Handlers that operate on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
 
@@ -330,7 +332,7 @@ manta-server is still a **chokepoint** for everyone using it: it never sees pass
 | Layer | Where | Notes |
 |---|---|---|
 | No user credentials on the server | code | Login happens between the CLI and the CSCS Keycloak; the server has no auth endpoints and never sees a password or refresh token. |
-| No stored backend tokens | code | The exchanged CSM token is used for one request and dropped; there is no token cache to leak. `TokenExchangeConfig`'s `Debug` redacts the client secret. |
+| No stored backend tokens | code | The exchanged token is used for one request and dropped; there is no token cache to leak. `TokenExchangeConfig`'s `Debug` redacts the client secret. |
 | Exchange client secret | **ops** | `[sites.X.token_exchange].client_secret` sits in `server.toml`: keep the file readable only by the manta-server user. It cannot live in Vault, because the Vault login itself needs the exchanged token. |
 | Token cache hygiene on the client | code | `token.json` is written `0600` in a `0700` cache dir; `TokenStore`'s `Debug` redacts every token. |
 | Audit trail of every mutation | code | `server::audit::audit_requests`; see [Audit trail](#audit-trail). Credentials are never recorded. |

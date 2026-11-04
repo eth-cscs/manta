@@ -518,7 +518,7 @@ For a typical site with N workstation users + one server host:
 3. Author `~/.config/manta/server.toml` per [§2.2](#22-author-servertoml).
    Set TLS cert/key paths, backend URLs, k8s/vault URLs, audit
    destination, and a `[sites.<name>.token_exchange]` table for every
-   `csm` site; the site's Keycloak must be set up for the exchange
+   site; the site's identity provider must be set up for the exchange
    (see §5.15).
 4. Start the service (systemd, docker, …). Tail the logs and confirm
    you see the `[server] effective configuration` and one
@@ -837,8 +837,8 @@ The auth-attempt event went away with the `/v2/auth/*` endpoints
 
 The CLI now logs in to the **CSCS Keycloak** itself and uses **one
 token for every site**. `manta-server` has no auth endpoints any more;
-on every request it exchanges the CSCS token at the site's Keycloak
-for a CSM token, so each CSM site needs a new
+on every request it exchanges the CSCS token at the site's identity
+provider (Keycloak on CSM, Hydra on OpenCHAMI), so each site needs a new
 `[sites.<name>.token_exchange]` table in `server.toml` (see
 [README.md](README.md); the server refuses to start without it).
 
@@ -850,6 +850,7 @@ for a CSM token, so each CSM site needs a new
 | One cached token per site: `<cache_dir>/<site>_auth` | One cached token for all sites: `<cache_dir>/token.json`, refreshed silently while the refresh token is valid |
 | `MANTA_CSM_TOKEN` env var | `MANTA_TOKEN` env var (no alias); must hold a CSCS token, not a CSM one |
 | Server forwards the CSM token to CSM | Server exchanges the CSCS token for a CSM token per request: new required `[sites.<name>.token_exchange]` (`client_id`, `client_secret`, `subject_issuer`) for `csm` sites |
+| Server forwards the caller's token to OpenCHAMI | Server exchanges the CSCS token at Hydra per request: new required `[sites.<name>.token_exchange]` (`client_id`, `client_secret`, `scope`) for `ochami` sites |
 | Cached / env tokens checked with `POST /v2/auth/validate` | No up-front check; a rejected token surfaces as `HTTP 401` on the first request |
 | `manta config unset auth` picks a per-site file to delete | Deletes `token.json` |
 | `POST /v2/auth/token`, `POST /v2/auth/validate` | Removed — `404 Not Found` |
@@ -872,6 +873,12 @@ realm), `oidc_client_id` (default: the manta client) and
    (`jwt-manta-<site>`) and k8s keep trusting the site's Keycloak —
    they never see the CSCS token. Drop `auth_rate_limit_per_minute`
    from `server.toml` at your convenience.
+
+   Add the same table to every `ochami` site, with `client_id`,
+   `client_secret` and `scope`. The exchange goes to
+   `<shasta_base_url>/hydra/oauth2/token`. The Hydra client needs the
+   `urn:ietf:params:oauth:grant-type:jwt-bearer` grant type, and Hydra
+   needs a trust relationship for the CSCS Keycloak's issuer.
 2. **CLI users.** Nothing to do — the next command logs you in. Old
    `<site>_auth` files are ignored and can be deleted by hand.
 3. **Scripts.** Rename `MANTA_CSM_TOKEN` to `MANTA_TOKEN`. The token

@@ -282,7 +282,7 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 
 `read_only = true` makes the CLI refuse every backend-mutating verb (`add`, `apply`, `backup`, `delete`, `migrate`, `power`, `restore`, `run`) before any request leaves the process; `--dry-run` invocations are still allowed. Toggle it with `manta config set read-only` / `manta config unset read-only`. It is a local foot-gun guard, **not** a security control — there is no server-side counterpart.
 
-**Authentication.** The CLI logs in to the CSCS Keycloak directly and uses one bearer token for every site; `manta-server` never sees user credentials. CSM does not accept the CSCS token, so on every request the server exchanges it at the site's Keycloak for a CSM token (see `[sites.<name>.token_exchange]` below) and uses that for the CSM API and Vault. The CLI resolves the token in this order:
+**Authentication.** The CLI logs in to the CSCS Keycloak directly and uses one bearer token for every site; `manta-server` never sees user credentials. No site accepts the CSCS token as is, so on every request the server exchanges it at the site's identity provider (see `[sites.<name>.token_exchange]` below): the site's Keycloak for a CSM token, or the site's Hydra for an OpenCHAMI token. It uses the exchanged token for the backend API and, on CSM, Vault. The CLI resolves the token in this order:
 
 1. `MANTA_TOKEN` environment variable, used as-is (for scripts and CI). It must be a CSCS Keycloak token; a CSM token is rejected by the exchange.
 2. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
@@ -324,7 +324,7 @@ backend           = "csm"
 shasta_base_url   = "https://api.alps.cscs.ch"
 root_ca_cert_file = "/etc/manta/certs/alps_root_cert.pem"
 
-[sites.alps.token_exchange]                      # required for backend = "csm"
+[sites.alps.token_exchange]                      # required for every site
 client_id      = "cscs-token-exchanger"          # Keycloak client allowed to exchange tokens
 client_secret  = "…"                             # its secret; keep server.toml readable only by manta-server
 subject_issuer = "cscs"                          # alias of the CSCS identity provider in the shasta realm
@@ -334,9 +334,24 @@ api_url = "https://10.0.0.10:6443"
 
 [sites.alps.k8s.authentication.vault]
 base_url = "https://vault.cscs.ch:8200"          # also used by sat-file/session handlers
+
+[sites.basodino]
+backend           = "ochami"
+shasta_base_url   = "https://basodino-mgmt.cscs.ch:8443"
+root_ca_cert_file = "/etc/manta/certs/basodino_root_cert.pem"
+
+[sites.basodino.token_exchange]                  # required for every site
+client_id     = "…"                              # Hydra client allowed to use the JWT bearer grant
+client_secret = "…"                              # its secret; keep server.toml readable only by manta-server
+scope         = "smd.read bss.read smd.write bss.write"
 ```
 
-`[sites.X.token_exchange]` configures the RFC 8693 token exchange at the site's Keycloak, `<shasta_base_url without /apis>/keycloak/realms/shasta`. On every request manta-server swaps the caller's CSCS token for a CSM token there and uses the CSM token for the CSM API, the Vault login and the role checks; nothing is cached. It is **required** for `csm` sites: the server refuses to start without it. `ochami` sites ignore it (their exchange is a pass-through for now). Errors: a CSCS token Keycloak rejects (expired, untrusted) → `401`, so the CLI logs in again; an exchange Keycloak refuses for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`.
+`[sites.X.token_exchange]` configures the token exchange, and is **required**: the server refuses to start without it. On every request manta-server swaps the caller's CSCS token for a token the site accepts and uses that for the backend API and the role checks; nothing is cached.
+
+- `csm` sites use an RFC 8693 token exchange at the site's Keycloak, `<shasta_base_url without /apis>/keycloak/realms/shasta`, and need `subject_issuer`. The exchanged token also does the Vault login.
+- `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer.
+
+Errors: a CSCS token the identity provider rejects (expired, untrusted) → `401`, so the CLI logs in again; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`.
 
 The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
 

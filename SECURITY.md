@@ -85,7 +85,7 @@ sequenceDiagram
     CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer <CSCS token><br/>X-Manta-Site: <any site>
     MS->>SK: token exchange (RFC 8693, per-site client secret)
     SK-->>MS: CSM token (CSCS token verified against the CSCS Keycloak)
-    Note over MS,SK: every request, nothing cached;<br/>OpenCHAMI sites: pass-through for now
+    Note over MS,SK: every request, nothing cached;<br/>OpenCHAMI sites: JWT bearer grant at the site's Hydra instead
     MS->>B: proxied call with the CSM token
     B-->>MS: backend response (signature verified against the site's Keycloak)
     MS-->>CLI: 2xx / 4xx
@@ -153,14 +153,11 @@ documented inline at the top of that module. (`manta-server`'s
 existing call sites resolve — the caveat lives at the canonical
 path.) Consequences:
 
-- On CSM sites the role gate reads the token `manta-server` obtained
-  from the site's Keycloak a moment earlier, in the per-request token
-  exchange, and that Keycloak verified the caller's CSCS token before
-  issuing it — a forged token never reaches the gate.
-- On OpenCHAMI sites the exchange is still a pass-through, so there
-  the `is_user_admin` role gate is **advisory** in the sense that a
-  forged token passing the decode step is detected only at the first
-  backend round-trip, where OpenCHAMI rejects it.
+- The role gate reads the token `manta-server` obtained from the
+  site's identity provider (Keycloak on CSM, Hydra on OpenCHAMI) a
+  moment earlier, in the per-request token exchange, and that provider
+  verified the caller's CSCS token before issuing it — a forged token
+  never reaches the gate.
 - The role gate is still useful as **defence in depth**: it reduces
   the blast radius of a token whose signature does verify but whose
   user's permissions should be tighter than what the backend would
