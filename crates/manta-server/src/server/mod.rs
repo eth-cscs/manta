@@ -24,6 +24,7 @@ pub mod api_doc;
 pub mod audit;
 pub mod common;
 pub mod handlers;
+pub mod hydra_token_cache;
 pub mod routes;
 
 use std::collections::HashMap;
@@ -84,6 +85,9 @@ pub struct ServerState {
   /// Audit trail every mutating request is recorded to (always the
   /// log; Kafka too when `[auditor.kafka]` is configured).
   pub audit: AuditLog,
+  /// TEMPORARY: Hydra tokens of OpenCHAMI sites, reused because Hydra
+  /// exchanges a CSCS token only once. See [`hydra_token_cache`].
+  pub hydra_tokens: hydra_token_cache::HydraTokenCache,
   /// Global request timeout applied to every HTTP route (router-level
   /// `TimeoutLayer`). All long-running work (power transitions, SAT
   /// dispatch) runs CLI-side, so this is the only request-timeout

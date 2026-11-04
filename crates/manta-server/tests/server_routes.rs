@@ -37,7 +37,12 @@ use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 /// get past `RequestCtx`. The CSM exchange is covered in
 /// `tests/integration.rs`.
 async fn router() -> axum::Router {
-  let backend = common::stub_ochami_backend().await;
+  router_with(common::stub_ochami_backend().await)
+}
+
+fn router_with(
+  backend: manta_server::dispatcher::StaticBackendDispatcher,
+) -> axum::Router {
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -54,6 +59,7 @@ async fn router() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
+    hydra_tokens: Default::default(),
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -81,6 +87,7 @@ async fn router_with_vault() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
+    hydra_tokens: Default::default(),
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -888,4 +895,51 @@ async fn post_with_manta_read_only_role_is_not_refused_by_role_gate() {
     !body.contains("manta-read-only"),
     "response body must not reference the manta-read-only role: {body}"
   );
+}
+
+/// Hydra refuses a second exchange of one CSCS token, and the CLI sends
+/// one token on several requests.
+#[tokio::test]
+async fn ochami_site_exchanges_one_token_once_across_requests() {
+  use base64::prelude::*;
+  use wiremock::{
+    Mock, MockServer, ResponseTemplate,
+    matchers::{method, path},
+  };
+
+  let jwt = |subject: &str| {
+    let exp = chrono::Utc::now().timestamp() + 300;
+    let claims = serde_json::json!({ "exp": exp, "sub": subject }).to_string();
+    format!("e30.{}.sig", BASE64_URL_SAFE_NO_PAD.encode(claims))
+  };
+  let hydra = MockServer::start().await;
+  Mock::given(method("POST"))
+    .and(path(common::HYDRA_TOKEN_PATH))
+    .respond_with(
+      ResponseTemplate::new(200)
+        .set_body_json(serde_json::json!({ "access_token": jwt("hydra") })),
+    )
+    .expect(1)
+    .mount(&hydra)
+    .await;
+  let app = router_with(common::ochami_backend(&hydra.uri()));
+  let token = jwt("caller");
+
+  for _ in 0..2 {
+    let response = app
+      .clone()
+      .oneshot(
+        Request::builder()
+          .uri("/v2/groups/available")
+          .header(header::AUTHORIZATION, format!("Bearer {token}"))
+          .header("X-Manta-Site", "test")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    // Past the exchange: the failure is the stub backend, not the token.
+    // The mock's `expect(1)` checks the exchange count on drop.
+    assert_ne!(response.status(), StatusCode::UNAUTHORIZED);
+  }
 }

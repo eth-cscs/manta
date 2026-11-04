@@ -85,7 +85,7 @@ sequenceDiagram
     CLI->>MS: {method} /v2/{resource}<br/>Authorization: Bearer <CSCS token><br/>X-Manta-Site: <any site>
     MS->>SK: token exchange (RFC 8693, per-site client secret)
     SK-->>MS: CSM token (CSCS token verified against the CSCS Keycloak)
-    Note over MS,SK: every request, nothing cached;<br/>OpenCHAMI sites: JWT bearer grant at the site's Hydra instead
+    Note over MS,SK: every request, nothing cached;<br/>OpenCHAMI sites: JWT bearer grant at the site's Hydra instead,<br/>result kept in memory until a token expires (temporary)
     MS->>B: proxied call with the CSM token
     B-->>MS: backend response (signature verified against the site's Keycloak)
     MS-->>CLI: 2xx / 4xx
@@ -108,7 +108,9 @@ For where the middleware layers sit in the request pipeline, see
   provider (RFC 8693 at Keycloak on CSM, RFC 7523 at Hydra on
   OpenCHAMI, with a per-site exchange client secret from
   `server.toml`) and proxies backend calls with the resulting token.
-  Nothing is cached.
+  Nothing is cached on CSM; OpenCHAMI tokens are temporarily kept in
+  memory until they or the CSCS token expire, because Hydra exchanges
+  a token only once.
 - **Upstream** (CSCS Keycloak / CSM / OpenCHAMI / Vault): not part of
   this repo. Each CSM site's Keycloak trusts the CSCS Keycloak as an
   identity provider and verifies the CSCS token's signature during

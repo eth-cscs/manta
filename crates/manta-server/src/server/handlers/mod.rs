@@ -28,6 +28,7 @@ use utoipa::{IntoParams, ToSchema};
 
 use super::ServerState;
 use super::common::app_context::InfraContext;
+use crate::dispatcher::StaticBackendDispatcher;
 
 mod analysis;
 mod boot_parameters;
@@ -216,16 +217,20 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     // 404-mapped error from extraction is the same shape the handler
     // would have produced.
     let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-    // Exchange on every request; nothing is cached, so the backend
-    // token lives only as long as this request. Should the exchange
-    // ever prove too costly (e.g. a Keycloak session per call), a
-    // per-(site, subject token) cache in `ServerState`, used here, is
-    // the one place to add it.
-    let token = infra
-      .backend
-      .exchange_api_token(&subject_token)
-      .await
-      .map_err(to_handler_error)?;
+    // Exchange on every request; on CSM nothing is cached, so the
+    // backend token lives only as long as this request. OpenCHAMI's
+    // Hydra exchanges a token only once, so its result is kept.
+    let exchange = || infra.backend.exchange_api_token(&subject_token);
+    let exchanged = match infra.backend {
+      StaticBackendDispatcher::OCHAMI(_) => {
+        state
+          .hydra_tokens
+          .get_or_exchange(&site_name, &subject_token, exchange)
+          .await
+      }
+      StaticBackendDispatcher::CSM(_) => exchange().await,
+    };
+    let token = exchanged.map_err(to_handler_error)?;
     Ok(Self {
       state: Arc::clone(state),
       token,

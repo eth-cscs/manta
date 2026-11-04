@@ -57,6 +57,8 @@ reqwest            = { workspace = true }
 serde              = { workspace = true }
 serde_json         = { workspace = true }
 serde_yaml         = { workspace = true }
+# Keys of the temporary Hydra token cache (server/hydra_token_cache.rs).
+sha2               = "0.11"
 tracing            = { workspace = true }
 uuid               = { workspace = true }
 

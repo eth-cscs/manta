@@ -346,10 +346,10 @@ client_secret = "…"                              # its secret; keep server.tom
 scope         = "smd.read bss.read smd.write bss.write"
 ```
 
-`[sites.X.token_exchange]` configures the token exchange, and is **required**: the server refuses to start without it. On every request manta-server swaps the caller's CSCS token for a token the site accepts and uses that for the backend API and the role checks; nothing is cached.
+`[sites.X.token_exchange]` configures the token exchange, and is **required**: the server refuses to start without it. On every request manta-server swaps the caller's CSCS token for a token the site accepts and uses that for the backend API and the role checks. On `csm` sites nothing is cached.
 
 - `csm` sites use an RFC 8693 token exchange at the site's Keycloak, `<shasta_base_url without /apis>/keycloak/realms/shasta`, and need `subject_issuer`. The exchanged token also does the Vault login.
-- `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer.
+- `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer. Hydra exchanges each token only once, so as a temporary workaround until TokenSmith, manta-server keeps the result in memory until the first of the two tokens expires. This assumes a single manta-server instance. After a restart, a token that was already exchanged gets `401` until the CLI refreshes it; `manta config unset auth` forces that.
 
 Errors: a CSCS token the identity provider rejects (expired, untrusted) → `401`, so the CLI logs in again; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`.
 

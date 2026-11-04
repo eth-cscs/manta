@@ -254,6 +254,7 @@ mod tests {
       sites: HashMap::new(),
       console_inactivity_timeout: Duration::from_secs(1),
       audit: AuditLog::with_sinks(vec![sink.clone()]),
+      hydra_tokens: Default::default(),
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(1),
       migrate_backup_root: None,

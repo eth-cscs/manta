@@ -192,6 +192,7 @@ impl TestFixture {
       sites,
       console_inactivity_timeout: Duration::from_secs(1800),
       audit: AuditLog::with_sinks(vec![audit.clone()]),
+      hydra_tokens: Default::default(),
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(30),
       migrate_backup_root: None,

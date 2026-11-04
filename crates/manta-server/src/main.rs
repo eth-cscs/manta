@@ -450,6 +450,7 @@ async fn run_server(
     sites,
     console_inactivity_timeout,
     audit,
+    hydra_tokens: Default::default(),
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,
