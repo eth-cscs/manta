@@ -58,7 +58,7 @@ pub async fn resolve_target_and_available_groups(
 
   let target_group_vec: Vec<String> = match settings_group_name_opt {
     Some(label) => {
-      if !is_admin(token) {
+      if !is_admin(infra, token) {
         let available_labels: Vec<String> = group_available_vec
           .iter()
           .map(|g| g.label.clone())

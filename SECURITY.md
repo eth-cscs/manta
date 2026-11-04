@@ -159,6 +159,9 @@ path.) Consequences:
   moment earlier, in the per-request token exchange, and that provider
   verified the caller's CSCS token before issuing it — a forged token
   never reaches the gate.
+- On OpenCHAMI sites there is no role gate for now: neither token
+  carries roles, so anyone whose CSCS token the site's Hydra accepts
+  is treated as admin. Scope Hydra's trust relationship accordingly.
 - The role gate is still useful as **defence in depth**: it reduces
   the blast radius of a token whose signature does verify but whose
   user's permissions should be tighter than what the backend would
