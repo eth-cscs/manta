@@ -104,10 +104,11 @@ For where the middleware layers sit in the request pipeline, see
   site. Never speaks to CSM/OCHAMI directly.
 - **Server side** (`manta-server` binary): the request chokepoint.
   Never sees user credentials — it has no auth endpoints. On every
-  request it exchanges the user's CSCS token at the site's Keycloak
-  (RFC 8693, with a per-site exchange client secret from
-  `server.toml`) and proxies backend calls with the resulting CSM
-  token. Nothing is cached.
+  request it exchanges the user's CSCS token at the site's identity
+  provider (RFC 8693 at Keycloak on CSM, RFC 7523 at Hydra on
+  OpenCHAMI, with a per-site exchange client secret from
+  `server.toml`) and proxies backend calls with the resulting token.
+  Nothing is cached.
 - **Upstream** (CSCS Keycloak / CSM / OpenCHAMI / Vault): not part of
   this repo. Each CSM site's Keycloak trusts the CSCS Keycloak as an
   identity provider and verifies the CSCS token's signature during
