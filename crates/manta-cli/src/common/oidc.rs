@@ -73,8 +73,8 @@ const MAX_REQUEST_LINE: u64 = 8 * 1024;
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// A cached token is treated as expired this long before its real
-/// expiry, so it does not lapse between the check and its use.
-const EXPIRY_GRACE_SECS: i64 = 10;
+/// expiry, so it does not lapse before the server has exchanged it.
+const EXPIRY_GRACE_SECS: i64 = 30;
 
 /// Page shown in the browser once the redirect has been received.
 const SUCCESS_HTML: &str = "<!DOCTYPE html><html><head><title>manta</title></head>\

@@ -13,10 +13,13 @@
 //! Bearer auth is wired once in the constructor via
 //! `reqwest::ClientBuilder::default_headers`.
 
+use std::sync::Arc;
+
 use anyhow::Context;
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use super::wire::format_request_as_curl;
+use crate::common::authentication::TokenRefresher;
 
 /// Default per-request timeout applied to one-shot REST calls through
 /// the progenitor-generated `openapi` client when `cli.toml` does not
@@ -252,6 +255,28 @@ mod into_anyhow_tests {
   }
 }
 
+/// Pre-request hook of the generated client (see `build.rs`): send the
+/// current token, overriding the `Authorization` default header. With no
+/// current token the default header stays, so the server reports the
+/// problem.
+pub(crate) async fn set_current_token(
+  refresher: &Option<Arc<TokenRefresher>>,
+  request: &mut reqwest::Request,
+) -> Result<(), std::convert::Infallible> {
+  let Some(refresher) = refresher else {
+    return Ok(());
+  };
+  if let Some(token) = refresher.current_token().await
+    && let Ok(mut bearer) = HeaderValue::from_str(&format!("Bearer {token}"))
+  {
+    bearer.set_sensitive(true);
+    request
+      .headers_mut()
+      .insert(reqwest::header::AUTHORIZATION, bearer);
+  }
+  Ok(())
+}
+
 /// HTTP client that forwards CLI requests to a manta server.
 ///
 /// Wraps three things:
@@ -296,6 +321,9 @@ pub struct MantaClient {
   /// Plain `reqwest::Client` for the WS / SSE paths. Same bearer-auth
   /// default header as `openapi` (when a token was passed in).
   pub raw: reqwest::Client,
+  /// Supplies a live token during long-running commands; `None` when the
+  /// token cannot be refreshed.
+  token_refresher: Option<Arc<TokenRefresher>>,
   /// Bearer token kept around for the WS path (which builds its own
   /// `Authorization` header on the tungstenite request).
   pub token: Option<String>,
@@ -327,6 +355,7 @@ impl MantaClient {
       ctx.require_site()?,
       ctx.request_timeout_secs,
       token,
+      ctx.token_refresher.clone(),
     )
   }
 
@@ -336,6 +365,8 @@ impl MantaClient {
   /// When `token` is `Some(t)`, both underlying `reqwest::Client`s get
   /// a default `Authorization: Bearer <t>` header so every call —
   /// generated or raw — sends the auth header automatically.
+  /// `token_refresher`, when set, replaces that header's value with the
+  /// current token before each generated call and each raw connection.
   ///
   /// Two separate `reqwest::Client`s are built so streams and one-shot
   /// API calls can have different timeout policies:
@@ -366,6 +397,7 @@ impl MantaClient {
     site_name: &str,
     timeout_secs: Option<u64>,
     token: Option<&str>,
+    token_refresher: Option<Arc<TokenRefresher>>,
   ) -> anyhow::Result<Self> {
     let normalized = if server_url.starts_with("http://")
       || server_url.starts_with("https://")
@@ -401,16 +433,30 @@ impl MantaClient {
       .timeout(std::time::Duration::from_secs(api_timeout_secs))
       .build()
       .context("Failed to build OpenAPI HTTP client")?;
-    let openapi =
-      crate::openapi_client::Client::new_with_client(&base_url, openapi_inner);
+    let openapi = crate::openapi_client::Client::new_with_client(
+      &base_url,
+      openapi_inner,
+      token_refresher.clone(),
+    );
 
     Ok(Self {
       openapi,
       site_name: site_name.to_owned(),
       raw,
       token: token.map(str::to_owned),
+      token_refresher,
       base_url,
     })
+  }
+
+  /// The token for a raw connection: the refresher's if it has one, else
+  /// the one this client was built with.
+  pub(crate) async fn current_token(&self) -> Option<String> {
+    match &self.token_refresher {
+      Some(refresher) => refresher.current_token().await,
+      None => None,
+    }
+    .or_else(|| self.token.clone())
   }
 
   /// Site name accessor used at every `openapi.<method>(args, client.site_name())` call site.

@@ -300,7 +300,7 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 ## Security model
 
-`manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. There are no `/v2/auth/*` endpoints.
+`manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. The access token is short-lived (5 minutes on the CSCS realm) and the server exchanges it per request, so a command can outlast it: `authentication::TokenRefresher` re-reads the token cache before each request, refreshing near expiry. It runs as a pre-request hook on the generated client (`http_client::set_current_token`, wired in `build.rs`), and when the raw WebSocket and SSE paths connect. If the refresh fails, the request goes out with the token the client has and the server answers `401`; it never starts a login mid-command. `MANTA_TOKEN` tokens are not refreshed. There are no `/v2/auth/*` endpoints.
 
 The server does **not** forward that token to the backend. No site accepts CSCS tokens, so the `RequestCtx` extractor (`server/handlers/mod.rs`) calls `AuthenticationTrait::exchange_api_token` on the site's dispatcher for every request, before the handler runs:
 
@@ -411,7 +411,7 @@ Three checked-in artifacts are produced by tooling, never hand-edited, and gated
 | `crates/manta-cli/man/` | `crates/manta-cli/build.rs` from the clap surface | anything under `crates/manta-cli/src/build/` | `MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli` |
 | `crates/manta-cli/autocomplete_shell_scripts/` | same | same | same |
 
-`openapi.json` is **not just documentation** — it is a build input. `crates/manta-cli/build.rs` runs progenitor 0.14 over it and emits a typed `reqwest` client into `$OUT_DIR/openapi_client.rs`, which `src/openapi_client.rs` `include!`s. A stale spec therefore means the CLI compiles against the wrong API shape, not merely that the docs are behind. (The spec is down-converted from OpenAPI 3.1 to 3.0 in `build.rs` first, because progenitor's `openapiv3` only understands 3.0.)
+`openapi.json` is **not just documentation** — it is a build input. `crates/manta-cli/build.rs` runs progenitor 0.14 over it and emits a typed `reqwest` client into `$OUT_DIR/openapi_client.rs`, which `src/openapi_client.rs` `include!`s. A stale spec therefore means the CLI compiles against the wrong API shape, not merely that the docs are behind. (The spec is down-converted from OpenAPI 3.1 to 3.0 in `build.rs` first, because progenitor's `openapiv3` only understands 3.0.) `build.rs` also gives the client an inner type and a pre-request hook, so `Client::new_with_client` takes the optional `TokenRefresher` as a third argument.
 
 Two endpoint families are deliberately excluded from the generated client and stay hand-written, because progenitor models neither WebSocket upgrades nor `text/event-stream` bodies:
 

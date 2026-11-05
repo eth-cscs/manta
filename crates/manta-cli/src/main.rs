@@ -151,6 +151,7 @@ async fn run_cli(
     },
     settings: &settings,
     token: None,
+    token_refresher: None,
     session: None,
   };
 

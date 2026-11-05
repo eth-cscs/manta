@@ -288,6 +288,8 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 2. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
 3. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
 
+The same check runs before every request of a command, because the server exchanges the token each time and a command can outlast it. A token within 30 s of expiry is refreshed, so a long `manta power` or `manta apply sat-file` keeps working while the refresh token is valid. A `MANTA_TOKEN` token cannot be refreshed, so a command using one fails with `401` once it expires.
+
 `manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to `MANTA_TOKEN` instead.
 
 Auditing is server-side only — every CLI command goes through HTTP to `manta-server`, which records one event per mutating request (see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail)) to its log and, when `[auditor.kafka]` is set, to Kafka. The CLI has no audit configuration.

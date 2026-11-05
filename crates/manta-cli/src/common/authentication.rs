@@ -20,6 +20,14 @@
 //! 3. Interactive OIDC login ([`oidc::login`]: browser, or device code
 //!    when headless). The result is written to the cache.
 //!
+//! ## During a command
+//!
+//! The CSCS access token lives for minutes, while a command can poll for
+//! hours, and the server exchanges the token on every request. So
+//! [`TokenRefresher`] repeats the cache step before each request, sending
+//! a refreshed token once the old one is near expiry. A token from
+//! `MANTA_TOKEN` cannot be refreshed and is sent as is until it expires.
+//!
 //! Tokens are not checked against the server up front. A token the
 //! site rejects surfaces as a `401` on the first real request (see
 //! [`crate::http_client::OpenApiResultExt`]).
@@ -29,6 +37,7 @@
 
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Result, bail};
 use manta_shared::common::config::get_default_cache_path;
@@ -111,11 +120,79 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   Ok(store.access_token)
 }
 
+/// Supplies the token for each request of a command: the cached one, or a
+/// refreshed one once that is near expiry.
+///
+/// Reads the cache file every time, so parallel `manta` runs pick up each
+/// other's refreshes instead of spending the refresh token again.
+#[derive(Debug)]
+pub struct TokenRefresher {
+  issuer_url: String,
+  client_id: String,
+  headless: bool,
+  cache_path: PathBuf,
+  /// Parallel requests wait for one refresh rather than starting their own.
+  refreshing: tokio::sync::Mutex<()>,
+}
+
+impl TokenRefresher {
+  pub(crate) fn new(settings: &OidcSettings<'_>, cache_path: PathBuf) -> Self {
+    Self {
+      issuer_url: settings.issuer_url.to_string(),
+      client_id: settings.client_id.to_string(),
+      headless: settings.headless,
+      cache_path,
+      refreshing: tokio::sync::Mutex::new(()),
+    }
+  }
+
+  /// The token to send now. `None` when the cache has none and it cannot
+  /// be refreshed: the caller then keeps the token it has, and the server
+  /// answers `401` if that has expired. Never starts a login.
+  pub async fn current_token(&self) -> Option<String> {
+    let _guard = self.refreshing.lock().await;
+    let settings = OidcSettings {
+      issuer_url: &self.issuer_url,
+      client_id: &self.client_id,
+      headless: self.headless,
+    };
+    token_from_cache(&settings, &self.cache_path)
+      .await
+      .unwrap_or_else(|err| {
+        tracing::warn!(error = %err, "cached token unusable");
+        None
+      })
+  }
+}
+
+/// The refresher for a command, or `None` when `MANTA_TOKEN` supplies the
+/// token.
+///
+/// # Errors
+///
+/// The cache directory cannot be resolved.
+pub fn token_refresher(
+  ctx: &AppContext<'_>,
+) -> Result<Option<Arc<TokenRefresher>>> {
+  if is_set(std::env::var(AUTH_TOKEN_ENV_VAR).ok().as_deref()) {
+    return Ok(None);
+  }
+  Ok(Some(Arc::new(TokenRefresher::new(
+    &ctx.oidc,
+    token_cache_path()?,
+  ))))
+}
+
+/// Whether `MANTA_TOKEN` holds something usable.
+fn is_set(value: Option<&str>) -> bool {
+  value.is_some_and(|t| !t.trim().is_empty())
+}
+
 /// Source 1: the token in `MANTA_TOKEN` (passed in as `value`). Used
 /// as-is; an expired one only draws a warning, since the server will
 /// reject it with a clear error anyway.
 fn token_from_env(value: Option<String>) -> Option<String> {
-  let token = value.filter(|t| !t.trim().is_empty())?;
+  let token = value.filter(|t| is_set(Some(t)))?;
   if let Ok(Some(exp)) = jwt_ops::get_expiration(&token)
     && exp <= oidc::now_secs()
   {
@@ -189,6 +266,13 @@ mod tests {
       token_from_env(Some("abc".to_string())).as_deref(),
       Some("abc")
     );
+  }
+
+  #[test]
+  fn only_a_non_blank_env_token_counts_as_set() {
+    assert!(is_set(Some("abc")));
+    assert!(!is_set(Some("  ")));
+    assert!(!is_set(None));
   }
 
   #[test]

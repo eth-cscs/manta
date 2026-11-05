@@ -37,8 +37,11 @@
 mod client;
 mod console;
 mod streaming;
+#[cfg(test)]
+mod token_refresh_tests;
 mod wire;
 
+pub(crate) use client::set_current_token;
 pub use client::{MantaClient, OpenApiResultExt};
 pub(super) use wire::ws_base_url;
 
@@ -134,9 +137,14 @@ mod tests {
 
   #[test]
   fn new_with_timeout_none_pins_url_and_site() {
-    let c =
-      MantaClient::new_with_timeout("http://stub.invalid", "alps", None, None)
-        .expect("construction with timeout=None must succeed");
+    let c = MantaClient::new_with_timeout(
+      "http://stub.invalid",
+      "alps",
+      None,
+      None,
+      None,
+    )
+    .expect("construction with timeout=None must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid/v2");
     assert_eq!(c.site_name(), "alps");
   }
@@ -148,6 +156,7 @@ mod tests {
       "alps",
       Some(5),
       None,
+      None,
     )
     .expect("construction with timeout=Some(5) must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid/v2");
@@ -156,9 +165,14 @@ mod tests {
 
   #[test]
   fn new_with_timeout_prepends_http_scheme_when_missing() {
-    let c =
-      MantaClient::new_with_timeout("stub.invalid:8080", "alps", None, None)
-        .expect("scheme-less host must succeed");
+    let c = MantaClient::new_with_timeout(
+      "stub.invalid:8080",
+      "alps",
+      None,
+      None,
+      None,
+    )
+    .expect("scheme-less host must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid:8080/v2");
   }
 }

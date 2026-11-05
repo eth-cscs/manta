@@ -47,11 +47,14 @@ impl MantaClient {
     timestamps: bool,
   ) -> anyhow::Result<impl AsyncBufRead + Send + Unpin> {
     let url = format!("{}/sessions/{}/logs", self.base_url(), session_name);
-    let builder = self
+    let mut builder = self
       .raw
       .get(&url)
       .header("X-Manta-Site", self.site_name())
       .query(&[("timestamps", timestamps.to_string())]);
+    if let Some(token) = self.current_token().await {
+      builder = builder.bearer_auth(token);
+    }
     Self::log_request_as_curl(&builder);
     let resp = builder
       .send()

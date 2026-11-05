@@ -16,7 +16,7 @@
 //! This local gate is the only read-only enforcement in the system.
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::common::authentication::{get_api_token, token_refresher};
 use crate::common::session::SessionContext;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
@@ -89,6 +89,7 @@ pub async fn process_cli(
   // `get_api_token` hit the short-circuit in `common::authentication`
   // instead of re-walking the cache.
   if let Some(token) = token_opt {
+    ctx.token_refresher = token_refresher(&ctx)?;
     let client = MantaClient::from_app_ctx(&ctx, Some(&token))?;
     ctx.session = Some(SessionContext::build(&client, &token).await?);
     ctx.token = Some(token);
