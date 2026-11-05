@@ -76,7 +76,7 @@ pub async fn get_redfish_endpoints(
 ) -> Result<RedfishEndpointArray, Error> {
   tracing::info!("Get Redfish endpoints");
 
-  if !is_admin(token) {
+  if !is_admin(infra, token) {
     let Some(xname) = params.id.as_deref() else {
       return Err(Error::BadRequest(
         "Non-admin callers must scope a Redfish-endpoints query by `id`."

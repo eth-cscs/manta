@@ -79,163 +79,6 @@
         ]
       }
     },
-    "/auth/token": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "POST /v2/auth/token — exchange username/password for a CSM token.",
-        "operationId": "auth_token",
-        "parameters": [
-          {
-            "name": "X-Manta-Site",
-            "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AuthTokenRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Token issued",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AuthTokenResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Invalid credentials",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown site",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/auth/validate": {
-      "post": {
-        "tags": [
-          "auth"
-        ],
-        "summary": "POST /v2/auth/validate — check whether a CSM token is still valid.",
-        "operationId": "auth_validate",
-        "parameters": [
-          {
-            "name": "X-Manta-Site",
-            "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ValidateTokenRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Token is valid"
-          },
-          "401": {
-            "description": "Token rejected",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Unknown site",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/boot-config": {
       "post": {
         "tags": [
@@ -4856,37 +4699,6 @@
           }
         }
       },
-      "AuthTokenRequest": {
-        "type": "object",
-        "description": "Request body for `POST /v2/auth/token`.\n\nPaired with [`AuthTokenResponse`] on success. The `/auth/*`\nsub-router is wrapped by `strip_body_for_logs`, so neither the\nrequest body nor the issued token appears in access logs.\n\n# Wire shape\n\n```json\n{ \"username\": \"alice\", \"password\": \"hunter2\" }\n```",
-        "required": [
-          "username",
-          "password"
-        ],
-        "properties": {
-          "password": {
-            "type": "string",
-            "description": "Keycloak password. Never logged by the server (the\n`/auth/*` sub-router is wrapped by `strip_body_for_logs`)."
-          },
-          "username": {
-            "type": "string",
-            "description": "Keycloak username submitted to the configured backend."
-          }
-        }
-      },
-      "AuthTokenResponse": {
-        "type": "object",
-        "description": "Response body for `POST /v2/auth/token`.\n\nReturned in exchange for a valid [`AuthTokenRequest`].\n\n# Wire shape\n\n```json\n{ \"token\": \"eyJhbGciOi...\" }\n```",
-        "required": [
-          "token"
-        ],
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "Bearer token issued by the backend (CSM or OpenCHAMI Keycloak).\nPass this as `Authorization: Bearer <token>` on every\nsubsequent request."
-          }
-        }
-      },
       "BackendSummary": {
         "type": "object",
         "description": "One row of the backend-data summary, anchored on an IMS image.\n\nEvery IMS image visible to the caller produces exactly one row.\nThe row's `image_id` and `name` are always populated; the rest are\n`Option<String>` and are filled in only when the corresponding\nrelation resolves.\n\nSee also [`super::configuration_analysis::ConfigurationAnalysis`]\nfor the parallel configuration-centric projection.\n\n# Wire shape\n\n```json\n{\n  \"image_id\": \"0a1b2c3d-...\",\n  \"name\": \"compute-cos-2.5\",\n  \"image_created\": \"2026-05-12T10:14:22Z\",\n  \"configuration_name\": \"cos-2.5\",\n  \"safe_to_delete\": false\n}\n```",
@@ -5296,10 +5108,10 @@
           "members": {
             "oneOf": [
               {
-                "type": "null"
+                "$ref": "#/components/schemas/Member"
               },
               {
-                "$ref": "#/components/schemas/Member"
+                "type": "null"
               }
             ]
           },
@@ -5869,19 +5681,6 @@
               "null"
             ],
             "description": "BMC username for Redfish authentication."
-          }
-        }
-      },
-      "ValidateTokenRequest": {
-        "type": "object",
-        "description": "Request body for `POST /v2/auth/validate`.\n\nUsed to check a previously-issued [`AuthTokenResponse::token`]\nbefore relying on it. The server returns `200 OK` for a valid\ntoken and `401` otherwise — there is no dedicated response body.",
-        "required": [
-          "token"
-        ],
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "Bearer token to validate against the backend."
           }
         }
       }

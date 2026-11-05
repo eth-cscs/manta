@@ -13,8 +13,6 @@
 //!     requests into service-layer calls.
 //!   - [`routes`] — router registration (one entry per `/v2`
 //!     path).
-//!   - [`auth_middleware`] — defensive middleware applied to
-//!     `/v2/auth/*` (per-IP rate limit + body redaction).
 //!   - [`audit`] — audit trail of every mutating request (middleware,
 //!     event schema, Kafka + log sinks).
 //!   - [`common`] — server-only helpers (per-request `InfraContext`,
@@ -24,9 +22,9 @@
 
 pub mod api_doc;
 pub mod audit;
-pub mod auth_middleware;
 pub mod common;
 pub mod handlers;
+pub mod hydra_token_cache;
 pub mod routes;
 
 use std::collections::HashMap;
@@ -87,9 +85,9 @@ pub struct ServerState {
   /// Audit trail every mutating request is recorded to (always the
   /// log; Kafka too when `[auditor.kafka]` is configured).
   pub audit: AuditLog,
-  /// Per-source-IP rate limit on `/v2/auth/*` (requests/minute).
-  /// `None` disables in-process rate limiting.
-  pub auth_rate_limit_per_minute: Option<u32>,
+  /// TEMPORARY: Hydra tokens of OpenCHAMI sites, reused because Hydra
+  /// exchanges a CSCS token only once. See [`hydra_token_cache`].
+  pub hydra_tokens: hydra_token_cache::HydraTokenCache,
   /// Global request timeout applied to every HTTP route (router-level
   /// `TimeoutLayer`). All long-running work (power transitions, SAT
   /// dispatch) runs CLI-side, so this is the only request-timeout

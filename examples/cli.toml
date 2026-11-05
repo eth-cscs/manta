@@ -27,6 +27,19 @@ manta_server_url = "https://manta-server.example.com:8443"
 # server-side counterpart. See MIGRATING.md §5.12.
 read_only = false
 
+# Login to the CSCS Keycloak. The CLI obtains one bearer token for all
+# sites directly from the Keycloak (manta-server is not involved) and
+# caches it in manta's cache directory as `token.json`.
+#
+# Issuer and client id default to the CSCS realm and the manta client;
+# override them only to point at another realm (e.g. TDS).
+# oidc_issuer_url = "https://auth.cscs.ch/auth/realms/cscs"
+# oidc_client_id  = "manta-cli"
+#
+# Log in with the device-code flow (print a URL + code) instead of
+# opening a browser. SSH sessions use it automatically.
+# oidc_headless = false
+
 
 # Timeout knobs. Values shown are the built-in defaults — delete a
 # line to fall back to the default, or change the value to override.

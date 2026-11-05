@@ -1,76 +1,37 @@
 //! Implements the `manta config unset auth` command.
 //!
-//! Lists the cached per-site token files under the manta cache
-//! directory, prompts the user to pick one, and deletes it. The next
-//! invocation that targets that site will re-run the device-code login
-//! flow.
-
-use std::fs;
+//! Deletes the cached token file (`<cache_dir>/token.json`). The next
+//! command that needs a token runs the interactive login again.
+//!
+//! Legacy per-site `<site>_auth` files from older manta versions are
+//! left alone: nothing reads them any more, and other manta versions
+//! may still use them.
 
 use anyhow::{Context, Error};
-use dialoguer::Select;
 
+use crate::common::authentication::token_cache_path;
 use crate::output::action_result;
-use manta_shared::common::config::get_default_cache_path;
 
-/// Remove cached authentication credentials.
-///
-/// Interactive: prompts via `dialoguer::Select`; not suitable for
-/// non-TTY contexts.
+/// Remove the cached authentication token.
 ///
 /// # Errors
 ///
-/// Returns an error if the cache directory cannot be read, no cached
-/// tokens are present, the interactive prompt fails, or the file
-/// cannot be removed.
+/// Returns an error if the cache directory cannot be resolved, no
+/// cached token is present, or the file cannot be removed.
 pub fn exec() -> Result<(), Error> {
-  unset_auth()
-}
+  let path = token_cache_path()?;
 
-fn unset_auth() -> Result<(), Error> {
-  let mut auth_token_list: Vec<std::path::PathBuf> = vec![];
-
-  let path_to_manta_authentication_token_file = get_default_cache_path()?;
-
-  for entry in fs::read_dir(&path_to_manta_authentication_token_file)
-    .context("Failed to read authentication token directory")?
-  {
-    auth_token_list.push(entry.context("Failed to read entry")?.path());
+  if !path.exists() {
+    anyhow::bail!("No cached authentication token found");
   }
 
-  if auth_token_list.is_empty() {
-    anyhow::bail!("No cached authentication tokens found");
-  }
-
-  let selection = Select::new()
-    .with_prompt("Please choose the site token to delete from the list below")
-    .default(0)
-    .items(
-      auth_token_list
-        .iter()
-        .map(|path| {
-          path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("unknown")
-        })
-        .collect::<Vec<_>>(),
-    )
-    .interact()
-    .context("Failed to get user selection")?;
+  std::fs::remove_file(&path)
+    .with_context(|| format!("Failed to delete '{}'", path.display()))?;
 
   action_result::print(
-    &format!(
-      "Deleting authentication file: {}",
-      auth_token_list[selection]
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("unknown")
-    ),
+    &format!("Deleted cached authentication token: {}", path.display()),
     None,
   )?;
-
-  fs::remove_file(auth_token_list[selection].clone())?;
 
   Ok(())
 }

@@ -7,8 +7,8 @@
 //!    has `read_only = true`. Runs before any token acquisition so no
 //!    HTTP call leaves the process on the refusal path.
 //! 2. (Authenticated verbs only) Token cascade
-//!    ([`get_api_token`]) — one round-trip if the cache is hot;
-//!    interactive prompt if cold.
+//!    ([`get_api_token`]) — no round-trip if the cache is hot;
+//!    interactive OIDC login if cold.
 //! 3. (Authenticated verbs only) [`SessionContext::build`] — one
 //!    `GET /groups/available` round-trip plus the JWT claims; cached
 //!    on `AppContext` for the duration of the command.

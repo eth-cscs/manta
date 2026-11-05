@@ -2,8 +2,10 @@
 //!
 //! - [`app_context`] — per-invocation context (config, site override,
 //!   global flags) threaded through every dispatch handler.
-//! - [`authentication`] — token bootstrap, refresh, and keyring
-//!   persistence; talks to `manta-server`'s `/auth` endpoints.
+//! - [`authentication`] — bearer-token resolution: `MANTA_TOKEN` env
+//!   var, cached token (refreshed when expired), interactive login.
+//! - [`oidc`] — OIDC flows (browser + PKCE, device code, refresh)
+//!   against the CSCS Keycloak.
 //! - [`clap_ext`] — `ArgMatches` extension trait with type-safe
 //!   accessors (`req_str`, `opt_str`, …) used by every handler.
 //! - [`config`] — typed schema for `cli.toml`
@@ -24,5 +26,6 @@ pub mod config;
 pub mod confirm;
 pub mod hooks;
 pub mod multi_line;
+pub mod oidc;
 pub mod read_only;
 pub mod session;

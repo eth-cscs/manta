@@ -193,13 +193,6 @@ fn print_startup_summary(
     "  console_inactivity_timeout_secs:  {}",
     configuration.server.console_inactivity_timeout_secs
   );
-  println!(
-    "  auth_rate_limit_per_minute:       {}",
-    configuration
-      .server
-      .auth_rate_limit_per_minute
-      .map_or_else(|| "<disabled>".to_string(), |n| n.to_string())
-  );
   println!("  log_filter:                       {}", configuration.log);
   println!();
   println!("[auditor]");
@@ -408,11 +401,28 @@ async fn run_server(
       vault_url.as_deref(),
       &site.root_ca_cert_file,
     );
+    // No site accepts the CSCS token as is, so a site without the
+    // exchange config could only ever fail. Fail at startup.
+    if site.token_exchange.is_none() {
+      return Err(
+        format!(
+          "[sites.{name}] has no [sites.{name}.token_exchange] table. \
+           The site does not accept the CSCS Keycloak token, so \
+           manta-server must exchange it at the site's identity provider; \
+           set client_id and client_secret there, plus subject_issuer for \
+           backend = \"csm\" or scope for backend = \"ochami\" \
+           (see README)."
+        )
+        .into(),
+      );
+    }
     let site_backend_dispatcher = StaticBackendDispatcher::new(
       site.backend.as_str(),
       &api_url,
       &root_cert,
-    )?;
+      site.token_exchange.as_ref(),
+    )
+    .map_err(|e| format!("[sites.{name}]: {e}"))?;
     sites.insert(
       name.clone(),
       server::SiteBackend {
@@ -440,7 +450,7 @@ async fn run_server(
     sites,
     console_inactivity_timeout,
     audit,
-    auth_rate_limit_per_minute: configuration.server.auth_rate_limit_per_minute,
+    hydra_tokens: Default::default(),
     request_timeout,
     shutdown_grace_period,
     migrate_backup_root,

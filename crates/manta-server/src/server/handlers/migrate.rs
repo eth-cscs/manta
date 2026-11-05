@@ -217,7 +217,7 @@ pub async fn migrate_backup(
   // chosen by the caller. Restrict to admin to prevent
   // non-privileged users from triggering arbitrary writes via the
   // server process's UID.
-  service::authorization::require_admin(&ctx.token)
+  service::authorization::require_admin(&infra, &ctx.token)
     .map_err(to_handler_error)?;
 
   // Confine the destination to `[server] migrate_backup_root`. Even
@@ -275,7 +275,7 @@ pub async fn migrate_restore(
   // Authorization: restore reads from server-side filesystem paths
   // chosen by the caller and rewrites CFS/HSM/IMS state — high
   // blast radius. Restrict to admin.
-  service::authorization::require_admin(&ctx.token)
+  service::authorization::require_admin(&infra, &ctx.token)
     .map_err(to_handler_error)?;
 
   // Confine every supplied file path to `[server] migrate_backup_root`.

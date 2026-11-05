@@ -42,6 +42,9 @@ mod output;
 
 use crate::common::app_context::AppContext;
 use crate::common::config::CliConfiguration;
+use crate::common::oidc::{
+  DEFAULT_OIDC_CLIENT_ID, DEFAULT_OIDC_ISSUER_URL, OidcSettings,
+};
 
 use clap::ArgMatches;
 
@@ -135,6 +138,17 @@ async fn run_cli(
     sat_file_not_visible_budget_secs: configuration
       .sat_file_not_visible_budget_secs,
     read_only: configuration.read_only,
+    oidc: OidcSettings {
+      issuer_url: configuration
+        .oidc_issuer_url
+        .as_deref()
+        .unwrap_or(DEFAULT_OIDC_ISSUER_URL),
+      client_id: configuration
+        .oidc_client_id
+        .as_deref()
+        .unwrap_or(DEFAULT_OIDC_CLIENT_ID),
+      headless: configuration.oidc_headless,
+    },
     settings: &settings,
     token: None,
     session: None,
