@@ -401,16 +401,17 @@ async fn run_server(
       vault_url.as_deref(),
       &site.root_ca_cert_file,
     );
-    // The CSCS token works on no CSM site, so a CSM site without
-    // the exchange config could only ever answer 403. Fail at startup.
-    if site.backend == BackendTechnology::Csm && site.token_exchange.is_none() {
+    // No site accepts the CSCS token as is, so a site without the
+    // exchange config could only ever fail. Fail at startup.
+    if site.token_exchange.is_none() {
       return Err(
         format!(
-          "[sites.{name}] uses backend = \"csm\" but has no \
-           [sites.{name}.token_exchange] table. CSM does not accept the \
-           CSCS Keycloak token, so manta-server must exchange it at the \
-           site's Keycloak; set client_id, client_secret and \
-           subject_issuer there (see README)."
+          "[sites.{name}] has no [sites.{name}.token_exchange] table. \
+           The site does not accept the CSCS Keycloak token, so \
+           manta-server must exchange it at the site's identity provider; \
+           set client_id and client_secret there, plus subject_issuer for \
+           backend = \"csm\" or scope for backend = \"ochami\" \
+           (see README)."
         )
         .into(),
       );
@@ -419,8 +420,9 @@ async fn run_server(
       site.backend.as_str(),
       &api_url,
       &root_cert,
-      site.token_exchange.as_ref().map(Into::into),
-    )?;
+      site.token_exchange.as_ref(),
+    )
+    .map_err(|e| format!("[sites.{name}]: {e}"))?;
     sites.insert(
       name.clone(),
       server::SiteBackend {

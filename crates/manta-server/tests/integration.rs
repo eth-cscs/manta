@@ -48,7 +48,7 @@ use wiremock::{
   matchers::{bearer_token, body_string_contains, method, path},
 };
 
-use csm_rs::backend_connector::TokenExchange;
+use manta_server::config::TokenExchangeConfig;
 use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server::{
   ServerState, SiteBackend,
@@ -152,10 +152,11 @@ impl TestFixture {
       "csm",
       &mock_server.uri(),
       TEST_ROOT_CERT,
-      Some(TokenExchange {
+      Some(&TokenExchangeConfig {
         client_id: "cscs-token-exchanger".to_string(),
         client_secret: "s3cret".to_string(),
-        subject_issuer: "cscs".to_string(),
+        subject_issuer: Some("cscs".to_string()),
+        scope: None,
       }),
     )
     .unwrap();

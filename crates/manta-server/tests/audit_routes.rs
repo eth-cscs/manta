@@ -5,6 +5,8 @@
 //! list, so a new mutating route that somehow bypasses the audit layer
 //! fails here without anyone remembering to add it.
 
+mod common;
+
 use std::sync::{Arc, Mutex};
 
 use axum::{
@@ -14,6 +16,7 @@ use axum::{
 use base64::prelude::*;
 use tower::ServiceExt as _;
 use utoipa::OpenApi as _;
+use wiremock::{Mock, MockServer, ResponseTemplate, matchers::any};
 
 use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server::{
@@ -41,17 +44,19 @@ impl Capture {
   }
 }
 
-fn router(sink: Arc<Capture>) -> axum::Router {
-  router_with_timeout(sink, std::time::Duration::from_secs(60))
+async fn router(sink: Arc<Capture>) -> axum::Router {
+  router_with(
+    sink,
+    std::time::Duration::from_secs(60),
+    common::stub_ochami_backend().await,
+  )
 }
 
-fn router_with_timeout(
+fn router_with(
   sink: Arc<Capture>,
   request_timeout: std::time::Duration,
+  backend: StaticBackendDispatcher,
 ) -> axum::Router {
-  let backend =
-    StaticBackendDispatcher::new("ochami", "http://stub.invalid", b"", None)
-      .unwrap();
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -123,6 +128,7 @@ async fn exactly_mutating_operations_and_consoles_are_audited() {
       let m = Method::from_bytes(method.to_uppercase().as_bytes()).unwrap();
       let sink = Arc::new(Capture::default());
       let response = router(sink.clone())
+        .await
         .oneshot(request(m.clone(), &format!("/v2{concrete}")))
         .await
         .unwrap();
@@ -160,7 +166,7 @@ async fn event_carries_identity_site_client_and_outcome() {
   req.extensions_mut().insert(axum::extract::ConnectInfo(
     "10.1.2.3:40000".parse::<std::net::SocketAddr>().unwrap(),
   ));
-  let response = router(sink.clone()).oneshot(req).await.unwrap();
+  let response = router(sink.clone()).await.oneshot(req).await.unwrap();
 
   let events = sink.take();
   let e = &events[0];
@@ -187,6 +193,7 @@ async fn event_carries_identity_site_client_and_outcome() {
 async fn unauthenticated_mutation_is_recorded_as_denied() {
   let sink = Arc::new(Capture::default());
   let response = router(sink.clone())
+    .await
     .oneshot(request(Method::DELETE, "/v2/groups/g1"))
     .await
     .unwrap();
@@ -205,16 +212,29 @@ async fn reads_unknown_routes_and_wrong_methods_are_not_audited() {
     (Method::POST, "/v2/no-such-route"),
     (Method::DELETE, "/v2/health"),
   ] {
-    router(sink.clone()).oneshot(request(m, uri)).await.unwrap();
+    router(sink.clone())
+      .await
+      .oneshot(request(m, uri))
+      .await
+      .unwrap();
   }
   assert!(sink.take().is_empty());
 }
 
 /// The audit layer sits outside the request timeout, so a request the
-/// server gave up on is still recorded. A zero timeout fires as soon
-/// as the handler first waits on the (unreachable) backend.
+/// server gave up on is still recorded. The timeout fires while the
+/// handler waits on a backend that does not answer in time.
 #[tokio::test]
 async fn timed_out_mutation_is_still_audited() {
+  let backend = MockServer::start().await;
+  // Mounted first, so the exchange answers at once and only the API is slow.
+  common::mount_echoing_hydra(&backend).await;
+  Mock::given(any())
+    .respond_with(
+      ResponseTemplate::new(200).set_delay(std::time::Duration::from_secs(60)),
+    )
+    .mount(&backend)
+    .await;
   let sink = Arc::new(Capture::default());
   let req = Request::builder()
     .method(Method::DELETE)
@@ -223,10 +243,14 @@ async fn timed_out_mutation_is_still_audited() {
     .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap();
-  let response = router_with_timeout(sink.clone(), std::time::Duration::ZERO)
-    .oneshot(req)
-    .await
-    .unwrap();
+  let response = router_with(
+    sink.clone(),
+    std::time::Duration::from_secs(1),
+    common::ochami_backend(&backend.uri()),
+  )
+  .oneshot(req)
+  .await
+  .unwrap();
   assert_eq!(response.status(), StatusCode::REQUEST_TIMEOUT);
   let e = &sink.take()[0];
   assert_eq!(e.outcome.result, Verdict::TimedOut);
@@ -262,6 +286,7 @@ fn authed(
 async fn handler_note_is_kept_when_the_operation_fails() {
   let sink = Arc::new(Capture::default());
   let response = router(sink.clone())
+    .await
     .oneshot(authed(Method::DELETE, "/v2/groups/g1?force=true", None))
     .await
     .unwrap();
@@ -277,6 +302,7 @@ async fn handler_note_is_kept_when_the_operation_fails() {
 async fn dry_run_and_list_targets_are_recorded() {
   let sink = Arc::new(Capture::default());
   router(sink.clone())
+    .await
     .oneshot(authed(
       Method::DELETE,
       "/v2/images?ids=a,%20b,&dry_run=true",
@@ -294,6 +320,7 @@ async fn dry_run_and_list_targets_are_recorded() {
 async fn redfish_credentials_never_reach_the_event() {
   let sink = Arc::new(Capture::default());
   router(sink.clone())
+    .await
     .oneshot(authed(
       Method::POST,
       "/v2/redfish-endpoints",
@@ -327,6 +354,7 @@ async fn power_action_names_the_operation() {
   ] {
     let sink = Arc::new(Capture::default());
     router(sink.clone())
+      .await
       .oneshot(authed(
         Method::POST,
         "/v2/power",
@@ -350,6 +378,7 @@ async fn power_on_a_group_targets_the_group() {
   for (target_type, kind) in [("nodes", "hosts"), ("cluster", "group")] {
     let sink = Arc::new(Capture::default());
     router(sink.clone())
+      .await
       .oneshot(authed(
         Method::POST,
         "/v2/power",

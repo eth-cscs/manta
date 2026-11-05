@@ -25,6 +25,16 @@
 //! client_id = "cscs-token-exchanger"
 //! client_secret = "…"
 //! subject_issuer = "cscs"
+//!
+//! [sites.basodino]
+//! backend = "ochami"
+//! shasta_base_url = "https://basodino-mgmt.cscs.ch:8443"
+//! root_ca_cert_file = "/etc/manta/basodino-ca.pem"
+//!
+//! [sites.basodino.token_exchange]
+//! client_id = "…"
+//! client_secret = "…"
+//! scope = "smd.read bss.read smd.write bss.write"
 //! ```
 //!
 //! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
@@ -36,7 +46,7 @@
 use std::collections::HashMap;
 
 use crate::server::audit::Auditor;
-use manta_backend_dispatcher::types::K8sDetails;
+use manta_backend_dispatcher::{error::Error, types::K8sDetails};
 use serde::{Deserialize, Serialize};
 
 /// Which backend API this site speaks.
@@ -79,28 +89,35 @@ pub struct Site {
   /// root CA certificate, used to verify TLS to `shasta_base_url`.
   pub root_ca_cert_file: String,
   /// How to exchange the caller's CSCS Keycloak token for a token this
-  /// site accepts. Required for `csm` sites (the server refuses to
-  /// start without it); ignored for `ochami` sites, whose exchange
-  /// passes the token through for now.
+  /// site accepts. Required: the server refuses to start without it.
   pub token_exchange: Option<TokenExchangeConfig>,
 }
 
-/// `[sites.X.token_exchange]`: client credentials for the RFC 8693
-/// token exchange at the site's Keycloak (`shasta` realm), which turns
-/// the caller's CSCS Keycloak token into a CSM token.
+/// `[sites.X.token_exchange]`: client credentials for exchanging the
+/// caller's CSCS Keycloak token for a token the site accepts.
 ///
-/// The Keycloak URL is derived from `shasta_base_url`
-/// (`<base>/keycloak`).
+/// - `csm` sites use an RFC 8693 token exchange at the site's Keycloak
+///   (`shasta` realm), at a URL derived from `shasta_base_url`
+///   (`<base>/keycloak`). They need `subject_issuer`.
+/// - `ochami` sites use an RFC 7523 JWT bearer grant at the site's
+///   Hydra, at a URL derived from `shasta_base_url`
+///   (`<base>/hydra/oauth2/token`). They need `scope`.
+///
+/// [`TokenExchangeConfig::csm`] and [`TokenExchangeConfig::ochami`]
+/// check that the backend's fields are present.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct TokenExchangeConfig {
-  /// Keycloak client allowed to exchange tokens, e.g.
-  /// `cscs-token-exchanger`.
+  /// Client allowed to exchange tokens, e.g. `cscs-token-exchanger`.
   pub client_id: String,
   /// Secret of the confidential `client_id`.
   pub client_secret: String,
-  /// Alias of the CSCS identity provider in the `shasta` realm, e.g.
-  /// `cscs`.
-  pub subject_issuer: String,
+  /// `csm` only: alias of the CSCS identity provider in the `shasta`
+  /// realm, e.g. `cscs`.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub subject_issuer: Option<String>,
+  /// `ochami` only: space-separated scopes to request.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub scope: Option<String>,
 }
 
 impl std::fmt::Debug for TokenExchangeConfig {
@@ -109,18 +126,51 @@ impl std::fmt::Debug for TokenExchangeConfig {
       .field("client_id", &self.client_id)
       .field("client_secret", &"<redacted>")
       .field("subject_issuer", &self.subject_issuer)
+      .field("scope", &self.scope)
       .finish()
   }
 }
 
-impl From<&TokenExchangeConfig> for csm_rs::backend_connector::TokenExchange {
-  fn from(c: &TokenExchangeConfig) -> Self {
-    Self {
-      client_id: c.client_id.clone(),
-      client_secret: c.client_secret.clone(),
-      subject_issuer: c.subject_issuer.clone(),
-    }
+impl TokenExchangeConfig {
+  /// The credentials as `csm-rs` takes them.
+  ///
+  /// # Errors
+  ///
+  /// [`Error::MissingField`] when `subject_issuer` is not set.
+  pub fn csm(&self) -> Result<csm_rs::backend_connector::TokenExchange, Error> {
+    Ok(csm_rs::backend_connector::TokenExchange {
+      client_id: self.client_id.clone(),
+      client_secret: self.client_secret.clone(),
+      subject_issuer: required(&self.subject_issuer, "subject_issuer", "csm")?,
+    })
   }
+
+  /// The credentials as `ochami-rs` takes them.
+  ///
+  /// # Errors
+  ///
+  /// [`Error::MissingField`] when `scope` is not set.
+  pub fn ochami(
+    &self,
+  ) -> Result<ochami_rs::authentication::TokenExchange, Error> {
+    Ok(ochami_rs::authentication::TokenExchange {
+      client_id: self.client_id.clone(),
+      client_secret: self.client_secret.clone(),
+      scope: required(&self.scope, "scope", "ochami")?,
+    })
+  }
+}
+
+fn required(
+  value: &Option<String>,
+  field: &str,
+  backend: &str,
+) -> Result<String, Error> {
+  value.clone().ok_or_else(|| {
+    Error::MissingField(format!(
+      "token_exchange.{field} is required for backend = \"{backend}\""
+    ))
+  })
 }
 
 /// Server-only settings — TLS, listen address, console behaviour. Lives
@@ -276,13 +326,14 @@ mod tests {
       token_exchange: Some(TokenExchangeConfig {
         client_id: "cscs-token-exchanger".to_string(),
         client_secret: "s3cret".to_string(),
-        subject_issuer: "cscs".to_string(),
+        subject_issuer: Some("cscs".to_string()),
+        scope: None,
       }),
     }
   }
 
   #[test]
-  fn token_exchange_is_optional_in_toml() {
+  fn token_exchange_may_be_absent_in_toml() {
     let site: Site = toml::from_str(
       r#"
       backend = "ochami"
@@ -312,8 +363,46 @@ mod tests {
     let te = site.token_exchange.expect("token_exchange parsed");
     assert_eq!(te.client_id, "cscs-token-exchanger");
     assert_eq!(te.client_secret, "s3cret");
-    assert_eq!(te.subject_issuer, "cscs");
+    assert_eq!(te.subject_issuer.as_deref(), Some("cscs"));
+    assert_eq!(te.csm().unwrap().subject_issuer, "cscs");
     assert!(!format!("{te:?}").contains("s3cret"));
+  }
+
+  #[test]
+  fn ochami_token_exchange_parses() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "ochami"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+
+      [token_exchange]
+      client_id = "client"
+      client_secret = "s3cret"
+      scope = "smd.read bss.read"
+    "#,
+    )
+    .unwrap();
+    let te = site
+      .token_exchange
+      .expect("token_exchange parsed")
+      .ochami()
+      .unwrap();
+    assert_eq!(te.scope, "smd.read bss.read");
+  }
+
+  #[test]
+  fn each_backend_names_the_token_exchange_field_it_misses() {
+    let te = TokenExchangeConfig {
+      client_id: "client".to_string(),
+      client_secret: "s3cret".to_string(),
+      subject_issuer: None,
+      scope: None,
+    };
+    let csm_err = te.csm().unwrap_err().to_string();
+    assert!(csm_err.contains("subject_issuer"), "{csm_err}");
+    let ochami_err = te.ochami().unwrap_err().to_string();
+    assert!(ochami_err.contains("scope"), "{ochami_err}");
   }
 
   #[test]
