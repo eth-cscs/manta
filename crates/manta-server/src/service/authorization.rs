@@ -55,7 +55,7 @@ pub(crate) fn is_admin(infra: &InfraContext<'_>, token: &str) -> bool {
     || jwt_ops::is_user_admin(token)
 }
 
-/// Return `Ok(())` when the caller is admin (see [`is_admin`]);
+/// Return `Ok(())` when the caller is admin (on OpenCHAMI, always);
 /// `Err(Error::BadRequest(...))` otherwise.
 ///
 /// Use at handler boundaries that restrict an operation to admin users.
