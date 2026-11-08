@@ -216,11 +216,11 @@ impl FromRequestParts<Arc<ServerState>> for RequestCtx {
     // 404-mapped error from extraction is the same shape the handler
     // would have produced.
     let infra = state.infra_context(&site_name).map_err(to_handler_error)?;
-    // Exchange on every request; nothing is cached, so the backend
-    // token lives only as long as this request. Should the exchange
-    // ever prove too costly (e.g. a Keycloak session per call), a
-    // per-(site, subject token) cache in `ServerState`, used here, is
-    // the one place to add it.
+    // Exchange once per request; every backend call this request makes
+    // reuses the result. Nothing is cached across requests, so the
+    // server stays stateless and can run as several replicas. Hydra
+    // accepts each CSCS token only once, so the CLI sends a new token
+    // on every request.
     let token = infra
       .backend
       .exchange_api_token(&subject_token)

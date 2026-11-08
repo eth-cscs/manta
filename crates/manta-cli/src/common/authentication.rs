@@ -22,11 +22,13 @@
 //!
 //! ## During a command
 //!
-//! The CSCS access token lives for minutes, while a command can poll for
-//! hours, and the server exchanges the token on every request. So
-//! [`TokenRefresher`] repeats the cache step before each request, sending
-//! a refreshed token once the old one is near expiry. A token from
-//! `MANTA_TOKEN` cannot be refreshed and is sent as is until it expires.
+//! [`TokenRefresher`] refreshes the token before every request, so each
+//! request carries a token no request has carried before. The server
+//! exchanges every token it receives, and an OpenCHAMI site's Hydra
+//! accepts each token only once (it rejects a reused `jti`). Refreshing
+//! every time also keeps a command that polls for hours supplied with a
+//! live token, though the CSCS access token lives for minutes. A token
+//! from `MANTA_TOKEN` cannot be refreshed and is sent as is.
 //!
 //! Tokens are not checked against the server up front. A token the
 //! site rejects surfaces as a `401` on the first real request (see
@@ -120,11 +122,13 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   Ok(store.access_token)
 }
 
-/// Supplies the token for each request of a command: the cached one, or a
-/// refreshed one once that is near expiry.
+/// Supplies the token for each request of a command: always a new one,
+/// from the cached refresh token.
 ///
-/// Reads the cache file every time, so parallel `manta` runs pick up each
-/// other's refreshes instead of spending the refresh token again.
+/// Never the cached access token as is: another request, or another
+/// `manta` run, may have sent it already, and Hydra would refuse it. The
+/// cache file is read every time, so parallel `manta` runs use each
+/// other's latest refresh token.
 #[derive(Debug)]
 pub struct TokenRefresher {
   issuer_url: String,
@@ -146,9 +150,9 @@ impl TokenRefresher {
     }
   }
 
-  /// The token to send now. `None` when the cache has none and it cannot
-  /// be refreshed: the caller then keeps the token it has, and the server
-  /// answers `401` if that has expired. Never starts a login.
+  /// A new token to send now. `None` when there is no cached refresh token
+  /// or the refresh fails: the caller then keeps the token it has, and the
+  /// server answers if it refuses that one. Never starts a login.
   pub async fn current_token(&self) -> Option<String> {
     let _guard = self.refreshing.lock().await;
     let settings = OidcSettings {
@@ -156,7 +160,7 @@ impl TokenRefresher {
       client_id: &self.client_id,
       headless: self.headless,
     };
-    token_from_cache(&settings, &self.cache_path)
+    fresh_token_from_cache(&settings, &self.cache_path)
       .await
       .unwrap_or_else(|err| {
         tracing::warn!(error = %err, "cached token unusable");
@@ -219,10 +223,44 @@ async fn token_from_cache(
   let Some(refresh_token) = &store.refresh_token else {
     return Ok(None);
   };
+  let token = refresh_and_save(settings, refresh_token, path).await?;
+  if token.is_some() {
+    tracing::info!("Access token refreshed");
+  }
+  Ok(token)
+}
+
+/// A new access token from the cached refresh token, whatever the cached
+/// access token's expiry. `Ok(None)` when there is no cache, no refresh
+/// token, or the refresh fails.
+async fn fresh_token_from_cache(
+  settings: &OidcSettings<'_>,
+  path: &Path,
+) -> Result<Option<String>> {
+  if !path.exists() {
+    return Ok(None);
+  }
+  let store = TokenStore::load(path)?;
+  let Some(refresh_token) = &store.refresh_token else {
+    return Ok(None);
+  };
+  let token = refresh_and_save(settings, refresh_token, path).await?;
+  if token.is_some() {
+    tracing::debug!("Access token refreshed for this request");
+  }
+  Ok(token)
+}
+
+/// Refresh with `refresh_token` and save the result at `path`. `Ok(None)`
+/// when the Keycloak refuses (the refresh token expired or was revoked).
+async fn refresh_and_save(
+  settings: &OidcSettings<'_>,
+  refresh_token: &str,
+  path: &Path,
+) -> Result<Option<String>> {
   match oidc::refresh(settings, refresh_token).await {
     Ok(refreshed) => {
       refreshed.save(path)?;
-      tracing::info!("Access token refreshed");
       Ok(Some(refreshed.access_token))
     }
     Err(err) => {

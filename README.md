@@ -288,7 +288,7 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 2. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
 3. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
 
-The same check runs before every request of a command, because the server exchanges the token each time and a command can outlast it. A token within 30 s of expiry is refreshed, so a long `manta power` or `manta apply sat-file` keeps working while the refresh token is valid. A `MANTA_TOKEN` token cannot be refreshed, so a command using one fails with `401` once it expires.
+Then, before every request, the CLI refreshes the token, so each request carries a token no request has carried before. The server exchanges every token it receives, and an OpenCHAMI site's Hydra accepts each token only once. This also keeps a long `manta power` or `manta apply sat-file` working while the refresh token is valid. A `MANTA_TOKEN` token cannot be refreshed: it is sent as is, and fails on an OpenCHAMI site from the second request on.
 
 `manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to `MANTA_TOKEN` instead.
 
@@ -351,7 +351,7 @@ scope         = "smd.read bss.read smd.write bss.write"
 `[sites.X.token_exchange]` configures the token exchange, and is **required**: the server refuses to start without it. On every request manta-server swaps the caller's CSCS token for a token the site accepts and uses that for the backend API and the role checks; nothing is cached.
 
 - `csm` sites use an RFC 8693 token exchange at the site's Keycloak, `<shasta_base_url without /apis>/keycloak/realms/shasta`, and need `subject_issuer`. The exchanged token also does the Vault login.
-- `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer.
+- `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer. Hydra accepts each CSCS token only once (it rejects a reused `jti` until the token expires), which is why the CLI sends a new token on every request.
 
 Errors: a CSCS token the identity provider rejects (expired, untrusted) → `401`, so the CLI logs in again; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`.
 

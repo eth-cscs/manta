@@ -73,7 +73,8 @@ const MAX_REQUEST_LINE: u64 = 8 * 1024;
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// A cached token is treated as expired this long before its real
-/// expiry, so it does not lapse before the server has exchanged it.
+/// expiry, so it does not lapse before the server has exchanged it. Only
+/// matters at the start of a command: every request then refreshes.
 const EXPIRY_GRACE_SECS: i64 = 30;
 
 /// Page shown in the browser once the redirect has been received.
