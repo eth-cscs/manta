@@ -205,3 +205,60 @@ async fn a_log_stream_connects_with_a_new_token() {
 
   assert!(client.stream_session_logs("s1", false).await.is_ok());
 }
+
+/// A Keycloak that, like one rotating refresh tokens, accepts only the
+/// refresh token it issued last, and answers slowly enough for two
+/// unsynchronised refreshes to overlap.
+async fn rotating_keycloak() -> MockServer {
+  let server = MockServer::start().await;
+  Mock::given(method("GET"))
+    .and(path("/.well-known/openid-configuration"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+      "authorization_endpoint": format!("{}/auth", server.uri()),
+      "token_endpoint": format!("{}/token", server.uri()),
+    })))
+    .mount(&server)
+    .await;
+  let issued = std::sync::Mutex::new(0_usize);
+  Mock::given(method("POST"))
+    .and(path("/token"))
+    .respond_with(move |request: &Request| {
+      let body = String::from_utf8_lossy(&request.body).to_string();
+      let mut last = issued.lock().unwrap();
+      if !body.contains(&format!("refresh_token=refresh-{last}")) {
+        return ResponseTemplate::new(400)
+          .set_body_json(json!({ "error": "invalid_grant" }));
+      }
+      *last += 1;
+      ResponseTemplate::new(200)
+        .set_body_json(json!({
+          "access_token": format!("token-{last}"),
+          "refresh_token": format!("refresh-{last}"),
+          "expires_in": 300,
+        }))
+        .set_delay(std::time::Duration::from_millis(100))
+    })
+    .mount(&server)
+    .await;
+  server
+}
+
+/// Two `manta` runs share `token.json` but not an in-process lock, as two
+/// refreshers here do. The file lock keeps them from spending the same
+/// refresh token.
+#[tokio::test]
+async fn two_manta_runs_do_not_refresh_with_the_same_refresh_token() {
+  let dir = tempfile::tempdir().unwrap();
+  write_cache(&cache_in(&dir), "cached", now_secs() + 300);
+  let keycloak = rotating_keycloak().await;
+  let server = MockServer::start().await;
+  accept(&server, "token-1", 1).await;
+  accept(&server, "token-2", 1).await;
+  let first = client(&server, "cached", &keycloak.uri(), cache_in(&dir));
+  let second = client(&server, "cached", &keycloak.uri(), cache_in(&dir));
+
+  let (a, b) = tokio::join!(list_groups(&first), list_groups(&second));
+
+  a.unwrap();
+  b.unwrap();
+}

@@ -127,8 +127,9 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
 ///
 /// Never the cached access token as is: another request, or another
 /// `manta` run, may have sent it already, and Hydra would refuse it. The
-/// cache file is read every time, so parallel `manta` runs use each
-/// other's latest refresh token.
+/// cache file is read every time, under a lock shared with other `manta`
+/// runs, so none of them refreshes with a refresh token another has
+/// already used (Keycloak may refuse a rotated one).
 #[derive(Debug)]
 pub struct TokenRefresher {
   issuer_url: String,
@@ -240,6 +241,7 @@ async fn fresh_token_from_cache(
   if !path.exists() {
     return Ok(None);
   }
+  let _lock = lock_cache(path).await;
   let store = TokenStore::load(path)?;
   let Some(refresh_token) = &store.refresh_token else {
     return Ok(None);
@@ -249,6 +251,34 @@ async fn fresh_token_from_cache(
     tracing::debug!("Access token refreshed for this request");
   }
   Ok(token)
+}
+
+/// Hold `<cache>.lock` exclusively until the returned file is dropped, so
+/// two `manta` runs never refresh at once. `None`, with a warning, when the
+/// lock cannot be taken; the refresh then goes ahead without it.
+async fn lock_cache(path: &Path) -> Option<std::fs::File> {
+  let lock_path = path.with_extension("lock");
+  let locked = tokio::task::spawn_blocking(move || {
+    let file = std::fs::OpenOptions::new()
+      .create(true)
+      .write(true)
+      .truncate(false)
+      .open(&lock_path)?;
+    file.lock()?;
+    Ok::<_, std::io::Error>(file)
+  })
+  .await;
+  match locked {
+    Ok(Ok(file)) => Some(file),
+    Ok(Err(err)) => {
+      tracing::warn!(error = %err, "cannot lock the token cache");
+      None
+    }
+    Err(err) => {
+      tracing::warn!(error = %err, "cannot lock the token cache");
+      None
+    }
+  }
 }
 
 /// Refresh with `refresh_token` and save the result at `path`. `Ok(None)`
