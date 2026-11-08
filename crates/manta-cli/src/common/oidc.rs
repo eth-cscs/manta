@@ -257,6 +257,40 @@ pub async fn refresh(
   Ok(store)
 }
 
+/// A new access token for a service account, with the client credentials
+/// grant at the realm's token endpoint. Nothing is cached: there is no
+/// refresh token, so every token comes from the credentials.
+///
+/// # Errors
+///
+/// Discovery fails, or the Keycloak rejects the credentials.
+pub async fn client_credentials(
+  issuer_url: &str,
+  client_id: &str,
+  client_secret: &str,
+) -> Result<String> {
+  let http = http_client()?;
+  let discovery = discover(&http, issuer_url).await?;
+  let resp = http
+    .post(&discovery.token_endpoint)
+    .basic_auth(client_id, Some(client_secret))
+    .form(&[("grant_type", "client_credentials")])
+    .send()
+    .await
+    .context("failed to send client-credentials request")?;
+  let status = resp.status();
+  let body = resp.bytes().await?;
+  if !status.is_success() {
+    bail!(
+      "service-account login rejected: {}",
+      oauth_error_message(&body)
+    );
+  }
+  let token: RawTokenResponse = serde_json::from_slice(&body)
+    .context("failed to parse client-credentials response")?;
+  Ok(token.access_token)
+}
+
 /// The browser could not be opened; [`login`] falls back to the
 /// device-code flow.
 #[derive(Debug)]

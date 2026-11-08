@@ -7,11 +7,13 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use serde_json::json;
 use tempfile::TempDir;
-use wiremock::matchers::{bearer_token, method, path};
+use wiremock::matchers::{
+  bearer_token, body_string_contains, header, method, path,
+};
 use wiremock::{Mock, MockServer, Request, ResponseTemplate};
 
 use super::{MantaClient, OpenApiResultExt};
-use crate::common::authentication::TokenRefresher;
+use crate::common::authentication::{ServiceAccount, TokenRefresher};
 use crate::common::oidc::{OidcSettings, TokenStore, now_secs};
 
 const SITE: &str = "alps";
@@ -261,4 +263,57 @@ async fn two_manta_runs_do_not_refresh_with_the_same_refresh_token() {
 
   a.unwrap();
   b.unwrap();
+}
+
+/// CI: no cache and no refresh token, a new token from the credentials
+/// for every request.
+#[tokio::test]
+async fn a_service_account_gets_a_new_token_for_every_request() {
+  let keycloak = MockServer::start().await;
+  Mock::given(method("GET"))
+    .and(path("/.well-known/openid-configuration"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+      "authorization_endpoint": format!("{}/auth", keycloak.uri()),
+      "token_endpoint": format!("{}/token", keycloak.uri()),
+    })))
+    .mount(&keycloak)
+    .await;
+  let issued = AtomicUsize::new(0);
+  Mock::given(method("POST"))
+    .and(path("/token"))
+    // base64("ci-bot:s3cret")
+    .and(header("authorization", "Basic Y2ktYm90OnMzY3JldA=="))
+    .and(body_string_contains("grant_type=client_credentials"))
+    .respond_with(move |_: &Request| {
+      let n = issued.fetch_add(1, Ordering::SeqCst) + 1;
+      ResponseTemplate::new(200).set_body_json(json!({
+        "access_token": format!("sa-token-{n}"),
+        "expires_in": 300,
+      }))
+    })
+    .expect(2)
+    .mount(&keycloak)
+    .await;
+  let server = MockServer::start().await;
+  accept(&server, "sa-token-1", 1).await;
+  accept(&server, "sa-token-2", 1).await;
+  let refresher = TokenRefresher::for_service_account(
+    &OidcSettings {
+      issuer_url: &keycloak.uri(),
+      client_id: "manta-cli",
+      headless: true,
+    },
+    ServiceAccount::new("ci-bot", "s3cret"),
+  );
+  let client = MantaClient::new_with_timeout(
+    &server.uri(),
+    SITE,
+    None,
+    Some("first"),
+    Some(Arc::new(refresher)),
+  )
+  .unwrap();
+
+  list_groups(&client).await.unwrap();
+  list_groups(&client).await.unwrap();
 }

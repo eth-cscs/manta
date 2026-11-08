@@ -12,12 +12,15 @@
 //! token it gets:
 //!
 //! 1. `MANTA_TOKEN` environment variable, used as-is (for scripts).
-//! 2. Cached token at `<cache_dir>/token.json` (`0600`). The cache
+//! 2. Service-account credentials in `MANTA_SA_CLIENT_ID` and
+//!    `MANTA_SA_CLIENT_SECRET` (for CI): a token from the client
+//!    credentials grant. Never cached.
+//! 3. Cached token at `<cache_dir>/token.json` (`0600`). The cache
 //!    directory comes from
 //!    [`manta_shared::common::config::get_default_cache_path`]. An
 //!    expired access token is refreshed with the cached refresh token
 //!    and written back.
-//! 3. Interactive OIDC login ([`oidc::login`]: browser, or device code
+//! 4. Interactive OIDC login ([`oidc::login`]: browser, or device code
 //!    when headless). The result is written to the cache.
 //!
 //! ## During a command
@@ -50,6 +53,12 @@ use crate::common::oidc::{self, OidcSettings, TokenStore};
 
 /// Environment variable holding a ready-made bearer token.
 pub const AUTH_TOKEN_ENV_VAR: &str = "MANTA_TOKEN";
+
+/// Environment variable holding a service account's client id.
+pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
+
+/// Environment variable holding a service account's client secret.
+pub const SA_CLIENT_SECRET_ENV_VAR: &str = "MANTA_SA_CLIENT_SECRET";
 
 /// File name of the token cache inside the manta cache directory.
 const TOKEN_CACHE_FILE: &str = "token.json";
@@ -95,6 +104,16 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
     return Ok(token);
   }
 
+  if let Some(account) = service_account_from_env()? {
+    tracing::info!(client_id = %account.client_id, "Using service account");
+    return oidc::client_credentials(
+      ctx.oidc.issuer_url,
+      &account.client_id,
+      &account.client_secret,
+    )
+    .await;
+  }
+
   let cache_path = token_cache_path()?;
   match token_from_cache(&ctx.oidc, &cache_path).await {
     Ok(Some(token)) => {
@@ -111,7 +130,8 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
     bail!(
       "no valid cached token and stdin is not a terminal, so cannot log \
        in interactively. Run manta interactively once to log in, or set \
-       {AUTH_TOKEN_ENV_VAR}."
+       {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a service \
+       account."
     );
   }
 
@@ -123,7 +143,7 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
 }
 
 /// Supplies the token for each request of a command: always a new one,
-/// from the cached refresh token.
+/// from the cached refresh token or the service account's credentials.
 ///
 /// Never the cached access token as is: another request, or another
 /// `manta` run, may have sent it already, and Hydra would refuse it. The
@@ -135,38 +155,131 @@ pub struct TokenRefresher {
   issuer_url: String,
   client_id: String,
   headless: bool,
-  cache_path: PathBuf,
+  source: TokenSource,
   /// Parallel requests wait for one refresh rather than starting their own.
   refreshing: tokio::sync::Mutex<()>,
 }
 
+/// Where [`TokenRefresher`] gets each new token.
+#[derive(Debug)]
+enum TokenSource {
+  /// The refresh token in the token cache at this path.
+  Cache(PathBuf),
+  /// The client credentials grant.
+  ServiceAccount(ServiceAccount),
+}
+
 impl TokenRefresher {
+  /// Refresh from the token cache at `cache_path`.
   pub(crate) fn new(settings: &OidcSettings<'_>, cache_path: PathBuf) -> Self {
+    Self::with_source(settings, TokenSource::Cache(cache_path))
+  }
+
+  /// Fetch each token with `account`'s credentials.
+  pub(crate) fn for_service_account(
+    settings: &OidcSettings<'_>,
+    account: ServiceAccount,
+  ) -> Self {
+    Self::with_source(settings, TokenSource::ServiceAccount(account))
+  }
+
+  fn with_source(settings: &OidcSettings<'_>, source: TokenSource) -> Self {
     Self {
       issuer_url: settings.issuer_url.to_string(),
       client_id: settings.client_id.to_string(),
       headless: settings.headless,
-      cache_path,
+      source,
       refreshing: tokio::sync::Mutex::new(()),
     }
   }
 
   /// A new token to send now. `None` when there is no cached refresh token
-  /// or the refresh fails: the caller then keeps the token it has, and the
-  /// server answers if it refuses that one. Never starts a login.
+  /// or getting a token fails: the caller then keeps the token it has, and
+  /// the server answers if it refuses that one. Never starts a login.
   pub async fn current_token(&self) -> Option<String> {
     let _guard = self.refreshing.lock().await;
-    let settings = OidcSettings {
-      issuer_url: &self.issuer_url,
-      client_id: &self.client_id,
-      headless: self.headless,
-    };
-    fresh_token_from_cache(&settings, &self.cache_path)
+    match &self.source {
+      TokenSource::Cache(cache_path) => {
+        let settings = OidcSettings {
+          issuer_url: &self.issuer_url,
+          client_id: &self.client_id,
+          headless: self.headless,
+        };
+        fresh_token_from_cache(&settings, cache_path)
+          .await
+          .unwrap_or_else(|err| {
+            tracing::warn!(error = %err, "cached token unusable");
+            None
+          })
+      }
+      TokenSource::ServiceAccount(account) => oidc::client_credentials(
+        &self.issuer_url,
+        &account.client_id,
+        &account.client_secret,
+      )
       .await
-      .unwrap_or_else(|err| {
-        tracing::warn!(error = %err, "cached token unusable");
-        None
-      })
+      .map_err(
+        |err| tracing::warn!(error = %err, "service-account login failed"),
+      )
+      .ok(),
+    }
+  }
+}
+
+/// A service account's client credentials, from [`SA_CLIENT_ID_ENV_VAR`]
+/// and [`SA_CLIENT_SECRET_ENV_VAR`].
+pub struct ServiceAccount {
+  client_id: String,
+  client_secret: String,
+}
+
+impl std::fmt::Debug for ServiceAccount {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ServiceAccount")
+      .field("client_id", &self.client_id)
+      .field("client_secret", &"<REDACTED>")
+      .finish()
+  }
+}
+
+#[cfg(test)]
+impl ServiceAccount {
+  pub(crate) fn new(client_id: &str, client_secret: &str) -> Self {
+    Self {
+      client_id: client_id.to_string(),
+      client_secret: client_secret.to_string(),
+    }
+  }
+}
+
+/// The service account in the environment, if any.
+///
+/// # Errors
+///
+/// Only one of the two variables is set.
+pub fn service_account_from_env() -> Result<Option<ServiceAccount>> {
+  service_account_from(
+    std::env::var(SA_CLIENT_ID_ENV_VAR).ok(),
+    std::env::var(SA_CLIENT_SECRET_ENV_VAR).ok(),
+  )
+}
+
+fn service_account_from(
+  client_id: Option<String>,
+  client_secret: Option<String>,
+) -> Result<Option<ServiceAccount>> {
+  let client_id = client_id.filter(|v| is_set(Some(v)));
+  let client_secret = client_secret.filter(|v| is_set(Some(v)));
+  match (client_id, client_secret) {
+    (Some(client_id), Some(client_secret)) => Ok(Some(ServiceAccount {
+      client_id,
+      client_secret,
+    })),
+    (None, None) => Ok(None),
+    _ => bail!(
+      "set both {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a \
+       service account, or neither"
+    ),
   }
 }
 
@@ -175,12 +288,18 @@ impl TokenRefresher {
 ///
 /// # Errors
 ///
-/// The cache directory cannot be resolved.
+/// Only one service-account variable is set, or the cache directory cannot
+/// be resolved.
 pub fn token_refresher(
   ctx: &AppContext<'_>,
 ) -> Result<Option<Arc<TokenRefresher>>> {
   if is_set(std::env::var(AUTH_TOKEN_ENV_VAR).ok().as_deref()) {
     return Ok(None);
+  }
+  if let Some(account) = service_account_from_env()? {
+    return Ok(Some(Arc::new(TokenRefresher::for_service_account(
+      &ctx.oidc, account,
+    ))));
   }
   Ok(Some(Arc::new(TokenRefresher::new(
     &ctx.oidc,
@@ -334,6 +453,28 @@ mod tests {
       token_from_env(Some("abc".to_string())).as_deref(),
       Some("abc")
     );
+  }
+
+  #[test]
+  fn a_service_account_needs_both_variables() {
+    let s = |v: &str| Some(v.to_string());
+    assert!(
+      service_account_from(s("id"), s("secret"))
+        .unwrap()
+        .is_some()
+    );
+    assert!(service_account_from(None, None).unwrap().is_none());
+    assert!(service_account_from(s(" "), s(" ")).unwrap().is_none());
+    assert!(service_account_from(s("id"), None).is_err());
+    assert!(service_account_from(None, s("secret")).is_err());
+  }
+
+  #[test]
+  fn service_account_debug_redacts_the_secret() {
+    let account = ServiceAccount::new("ci-bot", "hunter2");
+    let rendered = format!("{account:?}");
+    assert!(rendered.contains("ci-bot"), "{rendered}");
+    assert!(!rendered.contains("hunter2"), "{rendered}");
   }
 
   #[test]

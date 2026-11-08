@@ -262,7 +262,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 | Aspect | CLI | HTTP server |
 |--------|-----|-------------|
 | Entry point | `dispatch::process::process_cli` | `server::start_server` |
-| Auth source | `MANTA_TOKEN` env var → cached `token.json` (refreshed when expired) → interactive OIDC login against the CSCS Keycloak | `Authorization: Bearer` header, per request |
+| Auth source | `MANTA_TOKEN` env var → service-account credentials (`MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`, client credentials grant) → cached `token.json` (refreshed when expired) → interactive OIDC login against the CSCS Keycloak | `Authorization: Bearer` header, per request |
 | Context type | `AppContext` (flat 14-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
