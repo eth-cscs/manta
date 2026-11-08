@@ -848,7 +848,7 @@ provider (Keycloak on CSM, Hydra on OpenCHAMI), so each site needs a new
 |---|---|
 | CLI prompts for username + password, sends them to `POST /v2/auth/token` | CLI runs an OIDC login against the CSCS Keycloak: a browser (auth code + PKCE), or a device code when headless / over SSH |
 | One cached token per site: `<cache_dir>/<site>_auth` | One cached token for all sites: `<cache_dir>/token.json`, refreshed silently while the refresh token is valid |
-| `MANTA_CSM_TOKEN` env var | `MANTA_TOKEN` env var (no alias); must hold a CSCS token, not a CSM one |
+| `MANTA_CSM_TOKEN` env var | Removed, with no ready-made-token replacement: the CLI needs a new token for every request. CI uses a CSCS service account: `MANTA_SA_CLIENT_ID` + `MANTA_SA_CLIENT_SECRET` |
 | Server forwards the CSM token to CSM | Server exchanges the CSCS token for a CSM token per request: new required `[sites.<name>.token_exchange]` (`client_id`, `client_secret`, `subject_issuer`) for `csm` sites |
 | Server forwards the caller's token to OpenCHAMI | Server exchanges the CSCS token at Hydra per request: new required `[sites.<name>.token_exchange]` (`client_id`, `client_secret`, `scope`) for `ochami` sites |
 | Cached / env tokens checked with `POST /v2/auth/validate` | No up-front check; a rejected token surfaces as `HTTP 401` on the first request |
@@ -881,8 +881,10 @@ realm), `oidc_client_id` (default: the manta client) and
    needs a trust relationship for the CSCS Keycloak's issuer.
 2. **CLI users.** Nothing to do — the next command logs you in. Old
    `<site>_auth` files are ignored and can be deleted by hand.
-3. **Scripts.** Rename `MANTA_CSM_TOKEN` to `MANTA_TOKEN`. The token
-   must now come from the CSCS Keycloak, and it works for every site.
+3. **Scripts.** Replace `MANTA_CSM_TOKEN` with a CSCS service account:
+   set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET`. One service
+   account works for every site. A ready-made token cannot be passed
+   any more, because the CLI sends a new token on every request.
 4. **HTTP clients.** Stop calling `/v2/auth/*`; obtain the token from
    the CSCS Keycloak.
 

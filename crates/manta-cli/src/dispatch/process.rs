@@ -89,7 +89,7 @@ pub async fn process_cli(
   // `get_api_token` hit the short-circuit in `common::authentication`
   // instead of re-walking the cache.
   if let Some(token) = token_opt {
-    ctx.token_refresher = token_refresher(&ctx)?;
+    ctx.token_refresher = Some(token_refresher(&ctx)?);
     let client = MantaClient::from_app_ctx(&ctx, Some(&token))?;
     ctx.session = Some(SessionContext::build(&client, &token).await?);
     ctx.token = Some(token);

@@ -178,10 +178,11 @@ configured service-account tokens. Mitigations are
 mostly ops: short token lifetimes in the Keycloak, TLS termination
 upstream, service-account scoping, network segmentation.
 
-**One token for every site.** A leaked access token (e.g. from a
-`MANTA_TOKEN` in a CI log) works against every site, not just one.
-Keep `MANTA_TOKEN` out of logs and rely on the Keycloak's token
-lifetime to bound the damage.
+**One token for every site.** A leaked access token works against
+every site, not just one, until it expires. In CI the long-lived
+secret is the service account's `MANTA_SA_CLIENT_SECRET`: keep it out
+of logs, and rely on the Keycloak's short token lifetime to bound the
+damage of a leaked token.
 
 ## Cryptography notes
 

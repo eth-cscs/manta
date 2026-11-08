@@ -101,9 +101,8 @@ pub struct AppContext<'a> {
   /// via the short-circuit added in step 4 — that's how we avoid the
   /// second auth cascade per command. `None` for purely-local verbs.
   pub token: Option<String>,
-  /// Keeps long-running commands supplied with a live token. Set
-  /// alongside [`Self::token`], unless the token came from `MANTA_TOKEN`,
-  /// which cannot be refreshed.
+  /// Supplies a new token for every request. Set alongside
+  /// [`Self::token`].
   pub token_refresher:
     Option<std::sync::Arc<crate::common::authentication::TokenRefresher>>,
   /// JWT-derived per-invocation facts, populated at the top of

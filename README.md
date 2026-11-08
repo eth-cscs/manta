@@ -181,7 +181,7 @@ The `manta-cli` image has `manta` as its ENTRYPOINT, so anything after the image
 ```bash
 docker run -it --network=host \
   -v "$CONFIG_DIR":/root/.config/manta \
-  -e MANTA_TOKEN \
+  -e MANTA_SA_CLIENT_ID -e MANTA_SA_CLIENT_SECRET \
   manta-cli get redfish-endpoints
 ```
 
@@ -200,7 +200,7 @@ docker run -p 8443:8443 \
 > ```bash
 > docker run -it --rm --network=host \
 >   -v "$CONFIG_DIR":/root/.config/manta \
->   -e MANTA_TOKEN \
+>   -e MANTA_SA_CLIENT_ID -e MANTA_SA_CLIENT_SECRET \
 >   manta-cli get sessions
 > ERROR | Get and filter sessions command not implemented for this backend
 > exit status 1
@@ -284,14 +284,13 @@ sat_file_not_visible_budget_secs = 300       # 5 minutes
 
 **Authentication.** The CLI logs in to the CSCS Keycloak directly and uses one bearer token for every site; `manta-server` never sees user credentials. No site accepts the CSCS token as is, so on every request the server exchanges it at the site's identity provider (see `[sites.<name>.token_exchange]` below): the site's Keycloak for a CSM token, or the site's Hydra for an OpenCHAMI token. It uses the exchanged token for the backend API and, on CSM, Vault. The CLI resolves the token in this order:
 
-1. `MANTA_TOKEN` environment variable, used as-is (for scripts and CI). It must be a CSCS Keycloak token; a CSM token is rejected by the exchange.
-2. Service-account credentials in `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` (for CI). The CLI gets a token from the CSCS Keycloak with the client credentials grant, and never caches it. Set both or neither.
-3. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
-4. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
+1. Service-account credentials in `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` (for CI). The CLI gets a token from the CSCS Keycloak with the client credentials grant, and never caches it. Set both or neither.
+2. The cached token in manta's cache directory (`token.json`, mode `0600`). An expired access token is refreshed silently with the cached refresh token.
+3. Interactive login: a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache.
 
-Then, before every request, the CLI refreshes the token, so each request carries a token no request has carried before. The server exchanges every token it receives, and an OpenCHAMI site's Hydra accepts each token only once. This also keeps a long `manta power` or `manta apply sat-file` working while the refresh token is valid. A `MANTA_TOKEN` token cannot be refreshed: it is sent as is, and fails on an OpenCHAMI site from the second request on.
+Then, before every request, the CLI refreshes the token, so each request carries a token no request has carried before. The server exchanges every token it receives, and an OpenCHAMI site's Hydra accepts each token only once. This also keeps a long `manta power` or `manta apply sat-file` working while the refresh token is valid. There is therefore no way to pass a ready-made token: it could be sent only once. `MANTA_TOKEN` is no longer read; the CLI warns if it is set.
 
-`manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to `MANTA_TOKEN` instead.
+`manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to the service-account variables instead.
 
 Auditing is server-side only — every CLI command goes through HTTP to `manta-server`, which records one event per mutating request (see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail)) to its log and, when `[auditor.kafka]` is set, to Kafka. The CLI has no audit configuration.
 

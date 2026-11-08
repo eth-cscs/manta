@@ -9,7 +9,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 - **Base URL:** `https://<host>:8443/v2`
 - **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
 - **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`.
-- **Getting a token:** the token is issued by the CSCS Keycloak, not by the server — one token for every site. The easiest way is to log in once with the `manta` CLI and reuse its cached token (see [Get a token](#get-a-token)).
+- **Getting a token:** the token is issued by the CSCS Keycloak, not by the server — one token for every site. The easiest way is to log in once with the `manta` CLI and reuse its cached token (see [Get a token](#get-a-token)); an OpenCHAMI site accepts each token only once.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
 - **Errors:** uniform JSON `{ "error": "..." }` body with conventional HTTP status codes; see the table below.
@@ -1977,6 +1977,14 @@ export MANTA_TOKEN=$(jq -r .access_token ~/.cache/manta/token.json)
 ```
 
 The access token is short-lived; rerun the CLI to refresh the cache, then re-export.
+
+This works for CSM sites only. An OpenCHAMI site's Hydra accepts each token once, and the cached token is the one the CLI has just sent. Against an OpenCHAMI site, every request needs a token no request has used, for example one from the client credentials grant:
+
+```bash
+export MANTA_TOKEN=$(curl -s -u "$MANTA_SA_CLIENT_ID:$MANTA_SA_CLIENT_SECRET" \
+  -d grant_type=client_credentials \
+  https://auth.cscs.ch/auth/realms/cscs/protocol/openid-connect/token | jq -r .access_token)
+```
 
 ### GET a resource
 

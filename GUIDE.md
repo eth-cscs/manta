@@ -765,8 +765,8 @@ Manta gets its bearer token from the CSCS Keycloak — one token for every site,
 
 ```mermaid
 flowchart TD
-    Start[manta subcommand] --> Env{MANTA_TOKEN env var set?}
-    Env -->|yes| Run[run command with Bearer token]
+    Start[manta subcommand] --> Env{MANTA_SA_CLIENT_ID and<br/>MANTA_SA_CLIENT_SECRET set?}
+    Env -->|yes| SA[token from the client credentials grant<br/>never cached] --> Run[run command with Bearer token]
     Env -->|no| Cache{cached token?<br/>cache-dir/token.json, mode 0600}
     Cache -->|valid| Run
     Cache -->|expired| Refresh{refresh token accepted<br/>by the Keycloak?}
@@ -778,7 +778,7 @@ flowchart TD
     Login --> Run
 ```
 
-For scripts, set `MANTA_TOKEN` from a secret-fetch step before the `manta` invocation. It is used as-is: nothing checks it up front, so an expired or rejected token surfaces as an `HTTP 401` on the first request rather than falling through to the cache. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh the access token silently.
+For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh the access token silently. Either way, the CLI gets a new token before every request (an OpenCHAMI site accepts each token only once), so there is no way to pass a ready-made token; `MANTA_TOKEN` is no longer read.
 
 The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH or on a host without a graphical display, both detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
 

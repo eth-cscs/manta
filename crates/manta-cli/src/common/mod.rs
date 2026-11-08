@@ -2,8 +2,9 @@
 //!
 //! - [`app_context`] — per-invocation context (config, site override,
 //!   global flags) threaded through every dispatch handler.
-//! - [`authentication`] — bearer-token resolution: `MANTA_TOKEN` env
-//!   var, cached token (refreshed when expired), interactive login.
+//! - [`authentication`] — bearer-token resolution: service-account
+//!   credentials, cached token (refreshed when expired), interactive
+//!   login; and a new token before every request.
 //! - [`oidc`] — OIDC flows (browser + PKCE, device code, refresh)
 //!   against the CSCS Keycloak.
 //! - [`clap_ext`] — `ArgMatches` extension trait with type-safe

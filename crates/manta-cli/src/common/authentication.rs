@@ -1,4 +1,4 @@
-//! Token acquisition: env var -> cached token -> interactive login.
+//! Token acquisition: service account -> cached token -> interactive login.
 //!
 //! The bearer token is issued by the CSCS Keycloak and obtained by the
 //! CLI directly (see [`crate::common::oidc`]); `manta-server` takes no
@@ -11,16 +11,15 @@
 //! [`get_api_token`] tries each source in turn and returns the first
 //! token it gets:
 //!
-//! 1. `MANTA_TOKEN` environment variable, used as-is (for scripts).
-//! 2. Service-account credentials in `MANTA_SA_CLIENT_ID` and
+//! 1. Service-account credentials in `MANTA_SA_CLIENT_ID` and
 //!    `MANTA_SA_CLIENT_SECRET` (for CI): a token from the client
 //!    credentials grant. Never cached.
-//! 3. Cached token at `<cache_dir>/token.json` (`0600`). The cache
+//! 2. Cached token at `<cache_dir>/token.json` (`0600`). The cache
 //!    directory comes from
 //!    [`manta_shared::common::config::get_default_cache_path`]. An
 //!    expired access token is refreshed with the cached refresh token
 //!    and written back.
-//! 4. Interactive OIDC login ([`oidc::login`]: browser, or device code
+//! 3. Interactive OIDC login ([`oidc::login`]: browser, or device code
 //!    when headless). The result is written to the cache.
 //!
 //! ## During a command
@@ -30,8 +29,9 @@
 //! exchanges every token it receives, and an OpenCHAMI site's Hydra
 //! accepts each token only once (it rejects a reused `jti`). Refreshing
 //! every time also keeps a command that polls for hours supplied with a
-//! live token, though the CSCS access token lives for minutes. A token
-//! from `MANTA_TOKEN` cannot be refreshed and is sent as is.
+//! live token, though the CSCS access token lives for minutes. That is
+//! why there is no way to pass a ready-made token: it could be sent only
+//! once.
 //!
 //! Tokens are not checked against the server up front. A token the
 //! site rejects surfaces as a `401` on the first real request (see
@@ -46,13 +46,13 @@ use std::sync::Arc;
 
 use anyhow::{Result, bail};
 use manta_shared::common::config::get_default_cache_path;
-use manta_shared::common::jwt_ops;
 
 use crate::common::app_context::AppContext;
 use crate::common::oidc::{self, OidcSettings, TokenStore};
 
-/// Environment variable holding a ready-made bearer token.
-pub const AUTH_TOKEN_ENV_VAR: &str = "MANTA_TOKEN";
+/// No longer read: a ready-made token could be sent only once (see the
+/// module docs). Its presence only draws a warning.
+const REMOVED_TOKEN_ENV_VAR: &str = "MANTA_TOKEN";
 
 /// Environment variable holding a service account's client id.
 pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
@@ -72,7 +72,7 @@ pub fn token_cache_path() -> Result<PathBuf> {
   Ok(get_default_cache_path()?.join(TOKEN_CACHE_FILE))
 }
 
-/// Obtain a bearer token, trying in order: env var `MANTA_TOKEN`,
+/// Obtain a bearer token, trying in order: service-account credentials,
 /// cached token (refreshed when expired), interactive login.
 ///
 /// A successful refresh or login is written back to the cache file so
@@ -99,9 +99,12 @@ pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
   // send it to a site — fail on a missing site before starting a login.
   ctx.require_site()?;
 
-  if let Some(token) = token_from_env(std::env::var(AUTH_TOKEN_ENV_VAR).ok()) {
-    tracing::info!("Using authentication token from env var");
-    return Ok(token);
+  if is_set(std::env::var(REMOVED_TOKEN_ENV_VAR).ok().as_deref()) {
+    tracing::warn!(
+      "{REMOVED_TOKEN_ENV_VAR} is no longer supported and is ignored; use \
+       {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a service \
+       account"
+    );
   }
 
   if let Some(account) = service_account_from_env()? {
@@ -283,49 +286,31 @@ fn service_account_from(
   }
 }
 
-/// The refresher for a command, or `None` when `MANTA_TOKEN` supplies the
-/// token.
+/// The refresher for a command: the service account's when one is set,
+/// else the token cache's.
 ///
 /// # Errors
 ///
 /// Only one service-account variable is set, or the cache directory cannot
 /// be resolved.
-pub fn token_refresher(
-  ctx: &AppContext<'_>,
-) -> Result<Option<Arc<TokenRefresher>>> {
-  if is_set(std::env::var(AUTH_TOKEN_ENV_VAR).ok().as_deref()) {
-    return Ok(None);
-  }
+pub fn token_refresher(ctx: &AppContext<'_>) -> Result<Arc<TokenRefresher>> {
   if let Some(account) = service_account_from_env()? {
-    return Ok(Some(Arc::new(TokenRefresher::for_service_account(
+    return Ok(Arc::new(TokenRefresher::for_service_account(
       &ctx.oidc, account,
-    ))));
+    )));
   }
-  Ok(Some(Arc::new(TokenRefresher::new(
+  Ok(Arc::new(TokenRefresher::new(
     &ctx.oidc,
     token_cache_path()?,
-  ))))
+  )))
 }
 
-/// Whether `MANTA_TOKEN` holds something usable.
+/// Whether an environment variable holds something other than blanks.
 fn is_set(value: Option<&str>) -> bool {
   value.is_some_and(|t| !t.trim().is_empty())
 }
 
-/// Source 1: the token in `MANTA_TOKEN` (passed in as `value`). Used
-/// as-is; an expired one only draws a warning, since the server will
-/// reject it with a clear error anyway.
-fn token_from_env(value: Option<String>) -> Option<String> {
-  let token = value.filter(|t| is_set(Some(t)))?;
-  if let Ok(Some(exp)) = jwt_ops::get_expiration(&token)
-    && exp <= oidc::now_secs()
-  {
-    tracing::warn!("the token in {AUTH_TOKEN_ENV_VAR} has expired");
-  }
-  Some(token)
-}
-
-/// Source 2: the cached token at `path`. Returns the access token when
+/// The cached token at `path`. Returns the access token when
 /// still valid; otherwise refreshes it (saving the result) when a
 /// refresh token is cached. `Ok(None)` when there is no cache or it
 /// cannot be refreshed — the caller then logs in interactively.
@@ -443,19 +428,6 @@ mod tests {
   }
 
   #[test]
-  fn auth_token_env_var_name() {
-    assert_eq!(AUTH_TOKEN_ENV_VAR, "MANTA_TOKEN");
-  }
-
-  #[test]
-  fn env_token_is_used_when_set() {
-    assert_eq!(
-      token_from_env(Some("abc".to_string())).as_deref(),
-      Some("abc")
-    );
-  }
-
-  #[test]
   fn a_service_account_needs_both_variables() {
     let s = |v: &str| Some(v.to_string());
     assert!(
@@ -478,16 +450,10 @@ mod tests {
   }
 
   #[test]
-  fn only_a_non_blank_env_token_counts_as_set() {
+  fn only_a_non_blank_value_counts_as_set() {
     assert!(is_set(Some("abc")));
     assert!(!is_set(Some("  ")));
     assert!(!is_set(None));
-  }
-
-  #[test]
-  fn env_token_absent_or_blank_is_skipped() {
-    assert!(token_from_env(None).is_none());
-    assert!(token_from_env(Some("  ".to_string())).is_none());
   }
 
   #[tokio::test]
