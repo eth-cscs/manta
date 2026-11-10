@@ -286,6 +286,31 @@ async fn delete_routes_without_body_reject_missing_bearer_token() {
   }
 }
 
+/// `Bearer ` with nothing after it never reaches the identity provider
+/// (the stub Hydra here would accept it, and the request would get as far
+/// as the backend).
+#[tokio::test]
+async fn an_empty_bearer_token_is_rejected() {
+  for value in ["Bearer ", "Bearer    "] {
+    let resp = router()
+      .await
+      .oneshot(
+        Request::builder()
+          .method(Method::GET)
+          .uri("/v2/groups/available")
+          .header(header::AUTHORIZATION, value)
+          .header("X-Manta-Site", "test")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "for {value:?}");
+    let body = body_string(resp.into_body()).await;
+    assert!(body.contains("carries no token"), "for {value:?}: {body}");
+  }
+}
+
 #[tokio::test]
 async fn body_routes_reject_missing_bearer_token() {
   // POST/DELETE routes that take a JSON body. The Authorization

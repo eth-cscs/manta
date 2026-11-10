@@ -56,12 +56,18 @@ impl AuthenticationTrait for StaticBackendDispatcher {
     let backend = self.backend_kind();
     tracing::debug!(backend, "dispatch: exchange_api_token");
     let result = dispatch!(self, exchange_api_token, subject_token);
-    if let Err(ref e) = result {
-      tracing::warn!(
+    match &result {
+      // A refused token is routine (a user the site does not know, an
+      // ended session): no warning for each one.
+      Err(e @ (Error::Unauthorized(_) | Error::Forbidden(_))) => {
+        tracing::info!(backend, error = %e, "dispatch: token exchange refused");
+      }
+      Err(e) => tracing::warn!(
         backend,
         error = %e,
         "dispatch: exchange_api_token returned error from backend client"
-      );
+      ),
+      Ok(_) => {}
     }
     result
   }

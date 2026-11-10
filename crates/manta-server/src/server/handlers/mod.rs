@@ -74,6 +74,10 @@ pub use template::*;
 // ---------------------------------------------------------------------------
 
 /// Axum extractor that pulls the token from `Authorization: Bearer <token>`.
+///
+/// An empty token is refused here with `401`: passed on, the site's
+/// identity provider would answer the exchange with an error the backend
+/// crates report as a generic failure (a `500`, logged as an error).
 pub struct BearerToken(pub String);
 
 impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
@@ -106,7 +110,16 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
             error: "Authorization header must use Bearer scheme".to_string(),
           }),
         )
-      })?;
+      })?
+      .trim();
+    if token.is_empty() {
+      return Err((
+        StatusCode::UNAUTHORIZED,
+        Json(ErrorResponse {
+          error: "Authorization header carries no token".to_string(),
+        }),
+      ));
+    }
 
     Ok(BearerToken(token.to_string()))
   }
