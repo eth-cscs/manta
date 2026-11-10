@@ -25,8 +25,11 @@
 //! 3. When there is no usable cache, or the Keycloak refuses the cached
 //!    refresh token (`invalid_grant`: the session ended or was revoked),
 //!    an interactive login ([`oidc::login`]: browser, or device code
-//!    when headless), written to the cache. Only when stdin is a
-//!    terminal; otherwise the request fails and says how to log in.
+//!    when headless), written to the cache. Only when stderr is a
+//!    terminal: both flows talk to the user there (the browser flow's
+//!    fallback URL, the device flow's code), and neither reads stdin, so
+//!    `… | manta` can still log in. Otherwise the request fails and says
+//!    how to log in.
 //!
 //! Any other failure (the Keycloak unreachable or answering 5xx) fails
 //! the request without a login, which would not help.
@@ -148,7 +151,7 @@ impl TokenProvider {
   ///   cannot be reached.
   /// - The cached refresh token cannot be used for a reason a login
   ///   would not fix (the Keycloak unreachable or failing).
-  /// - A login is needed but stdin is not a terminal, or the login
+  /// - A login is needed but stderr is not a terminal, or the login
   ///   fails.
   pub async fn token(&self) -> Result<String> {
     let token = match &self.source {
@@ -212,7 +215,7 @@ impl TokenProvider {
 
     if !self.interactive {
       bail!(
-        "{why_login}, and stdin is not a terminal, so cannot log in \
+        "{why_login}, and stderr is not a terminal, so cannot log in \
          interactively. Run manta interactively once to log in, or set \
          {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a \
          service account."
@@ -307,7 +310,7 @@ pub fn token_provider(ctx: &AppContext<'_>) -> Result<Arc<TokenProvider>> {
   Ok(Arc::new(TokenProvider::from_cache(
     &ctx.oidc,
     token_cache_path()?,
-    io::stdin().is_terminal(),
+    io::stderr().is_terminal(),
   )))
 }
 

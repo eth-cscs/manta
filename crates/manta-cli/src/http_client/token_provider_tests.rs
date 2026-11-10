@@ -355,7 +355,7 @@ async fn a_refused_refresh_token_without_a_terminal_says_why() {
   let err = list_groups(&client).await.unwrap_err().to_string();
 
   assert!(err.contains("Session not active"), "got: {err}");
-  assert!(err.contains("stdin is not a terminal"), "got: {err}");
+  assert!(err.contains("stderr is not a terminal"), "got: {err}");
 }
 
 /// A Keycloak that is down is not fixed by a login: the request fails

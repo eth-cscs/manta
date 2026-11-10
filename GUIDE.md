@@ -772,7 +772,7 @@ flowchart TD
     Refresh -->|accepted| Save[write refreshed token to cache] --> Run
     Refresh -->|refused: session ended| TTY
     Refresh -->|Keycloak unreachable or failing| Err[the request fails]
-    Cache -->|none| TTY{stdin is a TTY?}
+    Cache -->|none| TTY{stderr is a TTY?}
     TTY -->|no| Fail[exit non-zero<br/>no way to log in non-interactively]
     TTY -->|yes| Login[OIDC login against the CSCS Keycloak<br/>browser, or device code when headless<br/>write 0600 cache]
     Login --> Run

@@ -292,7 +292,7 @@ Every request the CLI sends carries a new token, one no request has carried befo
 
 Any other failure, such as the Keycloak being unreachable, fails the request without a login. There is no way to pass a ready-made token: it could be sent only once. `MANTA_TOKEN` is no longer read; the CLI warns if it is set.
 
-`manta config unset auth` deletes the cached token and forces a new login. When stdin is not a terminal the CLI never starts a login; it fails with a pointer to the service-account variables instead.
+`manta config unset auth` deletes the cached token and forces a new login. The login prompts go to stderr, so when stderr is not a terminal (cron, CI, `2>file`) the CLI never starts a login; it fails with a pointer to the service-account variables instead. Piping into `manta` does not prevent a login.
 
 Auditing is server-side only — every CLI command goes through HTTP to `manta-server`, which records one event per mutating request (see [ARCHITECTURE.md § Audit trail](ARCHITECTURE.md#audit-trail)) to its log and, when `[auditor.kafka]` is set, to Kafka. The CLI has no audit configuration.
 
