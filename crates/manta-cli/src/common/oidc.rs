@@ -69,6 +69,12 @@ const DEVICE_LOGIN_MAX_WAIT: Duration = Duration::from_secs(30 * 60);
 /// is well under 1 KiB.
 const MAX_REQUEST_LINE: u64 = 8 * 1024;
 
+/// How long the redirect listener waits for a connection's request line.
+/// A browser sends it at once; a connection that stays silent (a
+/// browser's unused preconnect socket, or any local process) is dropped
+/// after this, so it delays the real redirect by at most this long.
+const REQUEST_LINE_TIMEOUT: Duration = Duration::from_secs(2);
+
 /// Per-request timeout for every call to the Keycloak.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
@@ -359,7 +365,7 @@ async fn login_via_browser(settings: &OidcSettings<'_>) -> Result<TokenStore> {
 
   let code = tokio::time::timeout(
     BROWSER_LOGIN_TIMEOUT,
-    wait_for_redirect(&listener, csrf_token.secret()),
+    wait_for_redirect(&listener, csrf_token.secret(), REQUEST_LINE_TIMEOUT),
   )
   .await
   .map_err(|_| anyhow!("timed out waiting for the browser login"))??;
@@ -403,20 +409,35 @@ async fn login_via_browser(settings: &OidcSettings<'_>) -> Result<TokenStore> {
 /// redirect, answer it, and return the authorization code. Any other
 /// request (e.g. a browser's `/favicon.ico`, or one without our
 /// `state`) gets a `404` and does not end the login; neither does a
-/// connection that fails or sends an unreadable request line.
+/// connection that fails, sends an unreadable request line, or sends
+/// nothing within `read_timeout` (connections are handled one at a
+/// time, so a silent one would otherwise hold up the redirect).
 async fn wait_for_redirect(
   listener: &TcpListener,
   expected_state: &str,
+  read_timeout: Duration,
 ) -> Result<String> {
   loop {
     let (mut stream, _) = listener.accept().await?;
     let mut request_line = String::new();
-    let read = BufReader::new((&mut stream).take(MAX_REQUEST_LINE))
-      .read_line(&mut request_line)
-      .await;
-    if let Err(e) = read {
-      tracing::debug!("ignoring unreadable request on the redirect port: {e}");
-      continue;
+    let read = tokio::time::timeout(
+      read_timeout,
+      BufReader::new((&mut stream).take(MAX_REQUEST_LINE))
+        .read_line(&mut request_line),
+    )
+    .await;
+    match read {
+      Ok(Ok(_)) => {}
+      Ok(Err(e)) => {
+        tracing::debug!(
+          "ignoring unreadable request on the redirect port: {e}"
+        );
+        continue;
+      }
+      Err(_) => {
+        tracing::debug!("dropping a silent connection on the redirect port");
+        continue;
+      }
     }
 
     let outcome = parse_redirect(&request_line, expected_state);
@@ -892,6 +913,9 @@ mod tests {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
     let client = tokio::spawn(async move {
+      // Connected first and never sends anything, like a browser's unused
+      // preconnect socket: it must not hold up the requests behind it.
+      let idle = tokio::net::TcpStream::connect(addr).await.unwrap();
       let not_found = "HTTP/1.1 404 Not Found";
       assert_eq!(
         send_to(addr, b"GET /favicon.ico HTTP/1.1\r\n").await,
@@ -915,12 +939,13 @@ mod tests {
       let status =
         send_to(addr, b"GET /?state=abc&code=the-code HTTP/1.1\r\n").await;
       drop(long);
+      drop(idle);
       status
     });
 
     let code = tokio::time::timeout(
       Duration::from_secs(10),
-      wait_for_redirect(&listener, "abc"),
+      wait_for_redirect(&listener, "abc", Duration::from_millis(100)),
     )
     .await
     .expect("redirect listener hung")
