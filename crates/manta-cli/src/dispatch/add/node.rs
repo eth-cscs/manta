@@ -36,13 +36,9 @@ pub struct ExecParams<'a> {
 /// Returns an error when the HTTP client cannot be built, when the
 /// `POST /nodes` call fails, or when the dry-run preview fails to
 /// serialise.
-pub async fn exec(
-  ctx: &AppContext<'_>,
-  token: &str,
-  p: ExecParams<'_>,
-) -> Result<()> {
+pub async fn exec(ctx: &AppContext<'_>, p: ExecParams<'_>) -> Result<()> {
   let _ = p.hardware_file;
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let req = AddNodeRequest {
     id: p.id.to_string(),
     group: p.group.to_string(),

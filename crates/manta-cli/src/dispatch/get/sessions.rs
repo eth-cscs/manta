@@ -57,7 +57,6 @@ fn parse_session_params(cli_args: &clap::ArgMatches) -> GetSessionParams {
 /// list fails, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_session_params(cli_args);
@@ -68,7 +67,7 @@ pub async fn exec(
     Some(params.xnames.join(","))
   };
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let raw = client
     .openapi
     .get_sessions(

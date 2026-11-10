@@ -10,7 +10,7 @@
 //! reach those endpoints through:
 //!
 //! ```ignore
-//! let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+//! let client = MantaClient::from_app_ctx(ctx)?;
 //! let groups = client
 //!   .openapi
 //!   .get_groups(params.group_name.as_deref(), client.site_name())

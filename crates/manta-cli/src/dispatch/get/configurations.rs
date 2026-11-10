@@ -54,7 +54,6 @@ fn parse_configuration_params(
 /// serialisation fails on the `--output json` path.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
@@ -62,7 +61,7 @@ pub async fn exec(
 
   let group_name = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let raw = client
     .openapi
     .get_configurations(

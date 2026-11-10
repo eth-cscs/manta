@@ -42,7 +42,6 @@ fn parse_boot_parameters_params(
 /// rejects the request, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
@@ -50,7 +49,7 @@ pub async fn exec(
 
   let group_name = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let boot_parameters = client
     .openapi
     .get_boot_parameters(

@@ -44,7 +44,6 @@ fn parse_hardware_nodes_params(
 /// HTTP request fails, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_hardware_nodes_params(cli_args)?;
@@ -52,7 +51,7 @@ pub async fn exec(
     .get_one::<String>("output")
     .map_or("table", String::as_str);
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let json = client
     .openapi
     .get_hardware_nodes_list(&params.host_expression, client.site_name())

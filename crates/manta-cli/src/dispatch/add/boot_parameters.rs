@@ -26,7 +26,6 @@ use crate::output::action_result;
 /// server rejects the request.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let hosts = cli_args.req_str("hosts")?;
@@ -79,7 +78,7 @@ pub async fn exec(
     )
     .context("Failed to convert BootParameters to wire type")?;
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .add_boot_parameters(client.site_name(), &bp_wire)

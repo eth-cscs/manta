@@ -34,7 +34,6 @@ pub struct ExecParams<'a> {
 /// `apply_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let xnames_expression = if p.hsm_group.is_none() {
@@ -42,7 +41,7 @@ pub async fn exec(
   } else {
     None
   };
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .apply_kernel_parameters(

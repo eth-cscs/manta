@@ -42,12 +42,11 @@ fn parse_group_params(
 /// or JSON serialisation fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_group_params(cli_args, ctx.settings_group_name_opt);
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let groups = client
     .openapi
     .get_groups(params.effective_group(), client.site_name())

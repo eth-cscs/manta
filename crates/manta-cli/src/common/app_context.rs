@@ -6,9 +6,8 @@
 //! poll-tuning knobs from `cli.toml`, and the raw `config::Config`
 //! handle for fields the typed struct doesn't surface.
 //!
-//! Authentication is *not* on the context — call
-//! [`crate::common::authentication::get_api_token`] when a handler
-//! needs a token, then thread the token into [`crate::http_client::MantaClient::from_app_ctx`].
+//! Handlers never touch the token: `process_cli` resolves it once and
+//! [`crate::http_client::MantaClient::from_app_ctx`] takes it from here.
 //!
 //! The server's analogous `InfraContext` (with backend dispatcher and
 //! per-site URLs) lives in `manta_server::server::common::app_context`
@@ -24,17 +23,14 @@ use crate::common::session::SessionContext;
 ///
 /// # Example
 ///
-/// Typical handler shape: resolve a token, build a client, call an
-/// OpenAPI method.
+/// Typical handler shape: build a client, call an OpenAPI method.
 ///
 /// ```ignore
 /// use crate::common::app_context::AppContext;
-/// use crate::common::authentication::get_api_token;
 /// use crate::http_client::{MantaClient, OpenApiResultExt};
 ///
 /// async fn list_groups(ctx: &AppContext<'_>) -> anyhow::Result<()> {
-///   let token = get_api_token(ctx).await?;
-///   let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+///   let client = MantaClient::from_app_ctx(ctx)?;
 ///   let groups = client
 ///     .openapi
 ///     .get_groups(None, client.site_name())

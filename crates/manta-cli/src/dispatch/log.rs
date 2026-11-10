@@ -14,7 +14,6 @@
 //! an SSE event.
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use anyhow::{Context, Error};
@@ -37,13 +36,11 @@ pub async fn handle_log(
   cli_log: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   let user_input = cli_log.req_str("VALUE")?;
   let timestamps = cli_log.get_flag("timestamps");
 
   use tokio::io::AsyncBufReadExt as _;
-  let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
 
   // Try user input as a session name first, then as an xname. The
   // generated `get_sessions` returns `serde_json::Value`; we round-trip

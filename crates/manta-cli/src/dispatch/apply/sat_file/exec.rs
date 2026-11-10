@@ -103,7 +103,6 @@ pub struct SatApplyOptions<'a> {
 /// a hook process exits non-zero.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   opts: &SatApplyOptions<'_>,
 ) -> Result<(), Error> {
   common::hooks::validate_hook(opts.prehook_opt, "Pre")?;
@@ -181,7 +180,7 @@ pub async fn exec(
   // 7a. Dispatch the plan element-by-element. The CLI accumulates
   //     `ref_name → image_id` across calls and builds the same
   //     four-list response the legacy endpoint used to return.
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = dispatch::dispatch_plan(ctx, &client, plan, opts).await?;
 
   crate::common::hooks::run_hook_if_present(opts.posthook_opt, "post")?;

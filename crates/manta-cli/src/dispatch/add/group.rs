@@ -44,7 +44,6 @@ pub struct ExecParams<'a> {
 /// when the optional `POST /groups/{label}/members` follow-up fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  auth_token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let grp = Group {
@@ -87,7 +86,7 @@ pub async fn exec(
     bail!("Operation cancelled by user");
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(auth_token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .create_group(client.site_name(), &grp)

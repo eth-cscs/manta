@@ -38,11 +38,10 @@ pub struct ExecParams<'a> {
 /// server's `add_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let xnames_expression = resolve_node_target(p.hsm_group, p.hosts_expression);
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .add_kernel_parameters(

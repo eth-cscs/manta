@@ -14,7 +14,6 @@
 //! Both leaves refuse to run if stdout is not a TTY.
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
@@ -36,8 +35,6 @@ pub async fn handle_console(
   cli_console: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   match cli_console.subcommand() {
     Some(("node", m)) => {
       if !std::io::stdout().is_terminal() {
@@ -46,7 +43,7 @@ pub async fn handle_console(
       let xname = m.req_str("XNAME")?;
 
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::from_app_ctx(ctx, Some(&token))?
+      let (a_input, a_output) = MantaClient::from_app_ctx(ctx)?
         .console_node(xname, cols, rows)
         .await?;
       let result = run_console_loop(a_input, a_output).await;
@@ -59,7 +56,7 @@ pub async fn handle_console(
       let session_name = m.req_str("SESSION_NAME")?;
 
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::from_app_ctx(ctx, Some(&token))?
+      let (a_input, a_output) = MantaClient::from_app_ctx(ctx)?
         .console_session(session_name, cols, rows)
         .await?;
       let result = run_console_loop(a_input, a_output).await;

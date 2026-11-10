@@ -30,7 +30,6 @@ use crate::output::action_result;
 pub async fn exec(
   cli_apply_hw_group: &ArgMatches,
   ctx: &AppContext<'_>,
-  token: &str,
 ) -> Result<(), Error> {
   let settings_hsm_group_name_opt = ctx.settings_group_name_opt;
 
@@ -61,7 +60,7 @@ pub async fn exec(
   let parent = parent_hsm_group_name_arg_opt
     .or(settings_hsm_group_name_opt)
     .context("No parent HSM group specified")?;
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .apply_hw_configuration(

@@ -32,7 +32,6 @@ pub struct ExecParams<'a> {
 /// when the `delete_hw_component` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let target = p
@@ -43,7 +42,7 @@ pub async fn exec(
     .parent_group
     .or(ctx.settings_group_name_opt)
     .ok_or_else(|| anyhow!("No parent HSM group specified"))?;
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .delete_hw_component(

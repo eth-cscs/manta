@@ -62,12 +62,11 @@ fn wire_datetime(value: Option<NaiveDateTime>) -> Option<String> {
 /// IMS images list into typed [`Image`] values fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_images_params(cli_args);
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let site = client.site_name();
 
   let since = wire_datetime(params.since);

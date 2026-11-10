@@ -38,13 +38,12 @@ fn parse_redfish_endpoints_params(
 /// Returns an error if the HTTP request fails or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_redfish_endpoints_params(cli_args);
   let output = cli_args.opt_str("output").unwrap_or("table");
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let endpoints = client
     .openapi
     .get_redfish_endpoints(

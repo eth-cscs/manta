@@ -298,11 +298,9 @@ pub(crate) async fn set_current_token(
 /// # Example
 ///
 /// ```ignore
-/// use crate::common::authentication::get_api_token;
 /// use crate::http_client::{MantaClient, OpenApiResultExt};
 ///
-/// let token = get_api_token(ctx).await?;
-/// let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+/// let client = MantaClient::from_app_ctx(ctx)?;
 /// let groups = client
 ///   .openapi
 ///   .get_groups(None, client.site_name())
@@ -336,9 +334,9 @@ impl MantaClient {
   /// Build a client from an `AppContext`, honouring its
   /// `request_timeout_secs` (loaded from `cli.toml`).
   ///
-  /// `token` is wired as a default `Authorization: Bearer <t>` header
-  /// on both the `openapi` client and the `raw` `reqwest::Client`
-  /// when `Some`.
+  /// The command's token (`ctx.token`, set by `process_cli`) is wired
+  /// as a default `Authorization: Bearer <t>` header on both the
+  /// `openapi` client and the `raw` `reqwest::Client` when set.
   ///
   /// # Errors
   ///
@@ -348,13 +346,12 @@ impl MantaClient {
   /// - Either internal `reqwest::Client::build` fails.
   pub fn from_app_ctx(
     ctx: &crate::common::app_context::AppContext<'_>,
-    token: Option<&str>,
   ) -> anyhow::Result<Self> {
     Self::new_with_timeout(
       ctx.manta_server_url,
       ctx.require_site()?,
       ctx.request_timeout_secs,
-      token,
+      ctx.token.as_deref(),
       ctx.token_refresher.clone(),
     )
   }

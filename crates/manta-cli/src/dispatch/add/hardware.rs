@@ -34,10 +34,9 @@ pub struct ExecParams<'a> {
 /// or backend errors).
 pub async fn exec(
   ctx: &AppContext<'_>,
-  shasta_token: &str,
   p: ExecParams<'_>,
 ) -> anyhow::Result<()> {
-  let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .add_hw_component(

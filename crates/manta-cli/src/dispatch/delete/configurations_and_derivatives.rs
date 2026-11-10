@@ -32,12 +32,11 @@ pub struct ExecParams<'a> {
 /// `delete_configurations` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
   let since_str = p.since.map(|d| d.to_string());
   let until_str = p.until.map(|d| d.to_string());
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .delete_configurations(

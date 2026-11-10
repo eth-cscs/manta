@@ -42,7 +42,6 @@ pub mod sat_file;
 pub mod template;
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use anyhow::{Context, Error, bail};
@@ -64,12 +63,10 @@ pub async fn handle_apply(
   cli_apply: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   match cli_apply.subcommand() {
     Some(("hardware", m)) => match m.subcommand() {
       Some(("group", m)) => {
-        hardware_group::exec(m, ctx, &token).await?;
+        hardware_group::exec(m, ctx).await?;
       }
       Some((other, _)) => bail!("Unknown 'apply hardware' subcommand: {other}"),
       None => bail!("No 'apply hardware' subcommand provided"),
@@ -139,7 +136,6 @@ pub async fn handle_apply(
 
       sat_file::exec::exec(
         ctx,
-        &token,
         &sat_file::exec::SatApplyOptions {
           sat_file_content: sat_file_content.as_str(),
           values_file_content_opt: cli_values_file_content_opt.as_deref(),
@@ -172,7 +168,6 @@ pub async fn handle_apply(
         .context("'include-disabled' must have a value")?;
       template::exec(
         ctx,
-        &token,
         template::ExecParams {
           session_name: bos_session_name_opt,
           template_name: bos_sessiontemplate_name,
@@ -206,7 +201,7 @@ pub async fn handle_apply(
         bail!("This command needs to run in interactive mode");
       }
 
-      let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+      let client = MantaClient::from_app_ctx(ctx)?;
       let response = client
         .openapi
         .create_ephemeral_env(client.site_name(), &req)
@@ -224,7 +219,6 @@ pub async fn handle_apply(
       let output_opt = m.opt_str("output");
       boot_parameters::exec(
         ctx,
-        &token,
         boot_parameters::ExecParams {
           xnames: hosts,
           nids: None,
@@ -241,7 +235,6 @@ pub async fn handle_apply(
     Some(("redfish-endpoints", m)) => {
       redfish_endpoint::exec(
         ctx,
-        &token,
         redfish_endpoint::ExecParams {
           id: m.req_str("id")?,
           name: m.opt_str("name"),
@@ -276,7 +269,6 @@ pub async fn handle_apply(
       let output_opt = m.opt_str("output");
       kernel_parameters::exec(
         ctx,
-        &token,
         kernel_parameters::ExecParams {
           kernel_params: kernel_parameters_val,
           hosts_expression: nodes_opt,
@@ -299,7 +291,6 @@ pub async fn handle_apply(
         }
         boot_node::exec(
           ctx,
-          &token,
           boot_node::ExecParams {
             boot_image: new_boot_image_id_opt,
             boot_image_configuration: m.opt_str("boot-image-configuration"),
@@ -314,7 +305,6 @@ pub async fn handle_apply(
       Some(("group", m)) => {
         boot_group::exec(
           ctx,
-          &token,
           boot_group::ExecParams {
             boot_image: m.opt_str("boot-image"),
             boot_image_configuration: m.opt_str("boot-image-configuration"),
@@ -334,7 +324,6 @@ pub async fn handle_apply(
       Some(("nodes", m)) => {
         runtime_configuration_node::exec(
           ctx,
-          &token,
           runtime_configuration_node::ExecParams {
             configuration_name: m.req_str("configuration-name")?,
             hosts_expression: m.req_str("VALUE")?,
@@ -347,7 +336,6 @@ pub async fn handle_apply(
       Some(("group", m)) => {
         runtime_configuration_group::exec(
           ctx,
-          &token,
           runtime_configuration_group::ExecParams {
             configuration_name: m.req_str("configuration-name")?,
             group_name: m.req_str("GROUP_NAME")?,

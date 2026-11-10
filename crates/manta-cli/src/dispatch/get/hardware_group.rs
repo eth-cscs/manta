@@ -39,7 +39,6 @@ fn parse_hardware_cluster_params(
 /// Returns an error if the HTTP request fails or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
@@ -50,7 +49,7 @@ pub async fn exec(
 
   let hsm = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let json = client
     .openapi
     .get_groups_hardware(hsm, client.site_name())

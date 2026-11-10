@@ -35,10 +35,9 @@ pub struct ExecParams<'a> {
 /// no members, or when the `apply_runtime_configuration` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
 
   let groups = client
     .openapi

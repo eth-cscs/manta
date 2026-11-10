@@ -31,7 +31,6 @@ pub struct ExecParams<'a> {
 /// `migrate_backup` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let bos = p.bos;
@@ -59,7 +58,7 @@ pub async fn exec(
 
   crate::common::hooks::run_hook_if_present(prehook, "pre")?;
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .migrate_backup(
