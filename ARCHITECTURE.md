@@ -25,7 +25,7 @@ A fourth directory, `crates/manta-cache/`, exists in the tree but is **not** a w
 
 | Module | Used by | Contents |
 |--------|---------|----------|
-| `types` | both bins | Wire types (`params/`, `dto`, `auth`) and `cluster_status` helpers |
+| `types` | both bins | Wire types (`api/`, `dto`) and `cluster_status` helpers |
 | `common` | both bins | Config loader (untyped `Config`), `MantaError`, logging |
 
 The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/mod.rs`, `dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
@@ -113,7 +113,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer, one module per domain: `analysis`, `auth`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `console`, `ephemeral_env`, `group`, `hardware`, `hw_cluster/`, `image`, `kernel_parameters`, `migrate`, `node`, `node_details`, `power`, `redfish`, `runtime_configuration`, `sat_file`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend`.
+Business logic layer, one module per domain: `analysis`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `console`, `ephemeral_env`, `group`, `hardware`, `hw_cluster/`, `image`, `kernel_parameters`, `migrate`, `node`, `node_details`, `power`, `redfish`, `runtime_configuration`, `sat_file`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend`.
 
 **Service code calls the backend traits directly** — `infra.backend.<method>(...)`, importing the trait it needs. `infra_backend.rs` is *not* a wrapper layer: it is two dispatcher-meta methods on `InfraContext` (`backend_kind()` for tracing labels, `backend_clone()` for owned dispatchers inside `'static`-bound spawned tasks). An earlier revision did host per-domain wrappers there; they were deliberately removed to cut an abstraction layer, so don't reintroduce one when adding a backend call.
 
@@ -309,7 +309,7 @@ The server does **not** forward that token to the backend. No site accepts CSCS 
 
 `main.rs` refuses to start a site without that table.
 
-`ctx.token` holds the exchanged token, so the CSM API calls, Vault's `jwt-manta-<site>` login and the role checks below all see the CSM identity without any handler or service knowing about the exchange. Nothing is cached: the exchanged token lives for one request. Keep it that way: the server is stateless so it can run as several replicas, and a cache of exchanged tokens would also have to deal with Hydra's one-use rule across replicas and restarts. Exchange failures map to `401` (Keycloak rejected the CSCS token: the CLI should log in again), `403` (exchange refused for this user) or `500` (bad client secret or other misconfiguration).
+`ctx.token` holds the exchanged token, so the CSM API calls, Vault's `jwt-manta-<site>` login and the role checks below all see the CSM identity without any handler or service knowing about the exchange. Nothing is cached: the exchanged token lives for one request. Keep it that way: the server is stateless so it can run as several replicas, and a cache of exchanged tokens would also have to deal with Hydra's one-use rule across replicas and restarts. Exchange failures map to `401` (the identity provider rejected the CSCS token), `403` (exchange refused for this user) or `500` (bad client secret or other misconfiguration); an error status from the identity provider itself, such as a `503`, is passed through as is.
 
 After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including group-listing and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 14-field struct of CLI-side knobs (site, server URL, default group, read-only flag, Keycloak login settings, tuneable request and poll timeouts) plus the per-invocation token provider and `SessionContext`; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 

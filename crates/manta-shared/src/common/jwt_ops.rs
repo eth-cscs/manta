@@ -9,21 +9,21 @@
 //! # Security caveat
 //!
 //! These helpers **do not verify the JWT signature**. Claims are
-//! extracted on trust. The signature is verified upstream by the
-//! backend (CSM / OpenCHAMI) on every call that uses the token, so a
-//! forged token with `pa_admin` in `realm_access.roles` will still be
-//! rejected at the first backend round-trip — but the in-process
-//! `is_user_admin` short-circuit means any code path that returns
-//! before the backend call is reached (e.g. a future cached path or
-//! a handler that only checks the local roles) would skip every
-//! group-access check.
+//! extracted on trust, which is sound only for a token whose origin is
+//! known:
 //!
-//! TODO: verify the signature locally against the per-site Keycloak
-//! JWKS, cached in `ServerState` with refresh on `kid` miss. Tracked
-//! as a follow-up because it requires JWKS fetching, key rotation,
-//! and a per-site cache. For now treat `is_user_admin` as advisory:
-//! never grant a privilege based on it alone without a follow-up
-//! call that hits the backend.
+//! - In manta-server, authorization reads the *exchanged* token, which
+//!   the `RequestCtx` extractor got from the site's own identity
+//!   provider over TLS a moment earlier (that provider verified the
+//!   caller's CSCS token first). Never use these helpers to authorize on
+//!   the caller-supplied CSCS token itself.
+//! - In manta-cli, the claims of the CLI's own CSCS token are only
+//!   displayed (`config show`), never trusted for access.
+//!
+//! TODO: verify the caller's CSCS token in manta-server (signature
+//! against the CSCS Keycloak's JWKS, plus `iss`, `aud`, `exp`). One
+//! issuer, so one cached key set; needs the audience question settled
+//! with IAM first.
 
 use base64::prelude::*;
 use serde_json::Value;

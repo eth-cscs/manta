@@ -787,7 +787,7 @@ prefix is dropped.
 | Before | After |
 |---|---|
 | `https://<host>:8443/api/v2/sessions` | `https://<host>:8443/v2/sessions` |
-| `https://<host>:8443/api/v2/auth/token` | `https://<host>:8443/v2/auth/token` |
+| `https://<host>:8443/api/v2/groups` | `https://<host>:8443/v2/groups` |
 | `wss://<host>:8443/api/v2/nodes/{xname}/console` | `wss://<host>:8443/v2/nodes/{xname}/console` |
 
 **Hard replacement — no alias.** The server does not answer on the
@@ -878,7 +878,11 @@ realm), `oidc_client_id` (default: the manta client) and
    `client_secret` and `scope`. The exchange goes to
    `<shasta_base_url>/hydra/oauth2/token`. The Hydra client needs the
    `urn:ietf:params:oauth:grant-type:jwt-bearer` grant type, and Hydra
-   needs a trust relationship for the CSCS Keycloak's issuer.
+   needs a trust relationship for the CSCS Keycloak's issuer. Until
+   OpenCHAMI tokens carry roles, manta-server treats **every caller on
+   an `ochami` site as admin** (temporary): whoever Hydra issues a token
+   to can do everything there, so scope Hydra's trust relationship and
+   client to the intended users.
 2. **CLI users.** Nothing to do — the next command logs you in. Old
    `<site>_auth` files are ignored and can be deleted by hand.
 3. **Scripts.** Replace `MANTA_CSM_TOKEN` with a CSCS service account:

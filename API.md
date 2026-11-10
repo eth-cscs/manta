@@ -58,7 +58,8 @@ All errors return JSON with an `error` field:
 | Status | Meaning |
 |--------|---------|
 | `400` | Bad request — invalid parameters or body |
-| `401` | Missing or malformed `Authorization` header |
+| `401` | Missing or malformed `Authorization` header, or the site's identity provider rejected the token (see [Authentication](#authentication)) |
+| `403` | The site's identity provider refused the token exchange for this user, or the user lacks the role or group the operation needs |
 | `404` | Resource not found |
 | `409` | Conflict — resource already exists |
 | `422` | Unprocessable entity — required field missing or wrong type |
@@ -1797,7 +1798,7 @@ curl -k -X POST "$MANTA_HOST/v2/sat-file/session-templates" \
 
 ## Authentication
 
-The server has no authentication endpoints and never sees credentials. Clients obtain a bearer token from the CSCS Keycloak themselves — the `manta` CLI does it with an OIDC login (see [README.md](README.md#configuration-files)) — and send it as `Authorization: Bearer <token>`. The same token works for every site. On every request the server exchanges it at the site's Keycloak for a token that site accepts (a CSM token on CSM sites; OpenCHAMI sites pass it through for now) and uses that for the backend API and Vault. A token the site's Keycloak rejects returns `401`; an exchange it refuses returns `403`.
+The server has no authentication endpoints and never sees credentials. Clients obtain a bearer token from the CSCS Keycloak themselves — the `manta` CLI does it with an OIDC login (see [README.md](README.md#configuration-files)) — and send it as `Authorization: Bearer <token>`. The same token works for every site. On every request the server exchanges it at the site's identity provider for a token that site accepts — the site's Keycloak on CSM sites (RFC 8693), the site's Hydra on OpenCHAMI sites (RFC 7523) — and uses that for the backend API and, on CSM, Vault. A token the identity provider rejects returns `401`; an exchange it refuses returns `403`.
 
 ---
 
@@ -1938,8 +1939,8 @@ If a request fails before reaching the service layer, you'll get one of the code
 | Status | Most common cause |
 |---|---|
 | **400 Bad Request** | Missing/malformed `X-Manta-Site` header, missing JSON body, or body not parseable as the declared `request_body` type. |
-| **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), or the site's Keycloak rejected the token in the per-request exchange: it expired, or the site does not trust the CSCS Keycloak yet. |
-| **403 Forbidden** | The site's Keycloak refused the token exchange for this user, or the user lacks the role or group membership the operation needs. |
+| **401 Unauthorized** | No `Authorization: Bearer …` (on a protected endpoint), or the site's identity provider (Keycloak or Hydra) rejected the token in the per-request exchange: it expired, an OpenCHAMI site's Hydra has seen it before, or the site does not trust the CSCS Keycloak yet. |
+| **403 Forbidden** | The site's identity provider refused the token exchange for this user, or the user lacks the role or group membership the operation needs. |
 | **404 Not Found** | Wrong URL path or the resource ID does not exist for the active site. |
 | **405 Method Not Allowed** | Sent `GET` to a `POST`-only endpoint (or vice versa) — `curl` defaults to `GET` when `-X` is omitted. |
 | **408 Request Timeout** | The handler took longer than `[server].request_timeout_secs` (default **600**, i.e. 10 min — bumped from 300 in beta.55 after large multi-site fetches consistently grazed the 5-min ceiling). Most endpoints return well under a second; the 10-min ceiling exists for the few operations that legitimately fan out across the upstream backend (large bulk CFS component fetches, SAT-file applies, migrate-restore re-hydrations). `POST /power` returns immediately with the PCS transition id and the CLI polls `GET /power/transitions/{id}` for completion, so 408 there indicates an unhealthy backend. |

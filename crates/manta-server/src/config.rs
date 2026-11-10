@@ -98,7 +98,8 @@ pub struct Site {
 ///
 /// - `csm` sites use an RFC 8693 token exchange at the site's Keycloak
 ///   (`shasta` realm), at a URL derived from `shasta_base_url`
-///   (`<base>/keycloak`). They need `subject_issuer`.
+///   (`<base without a trailing /apis>/keycloak`). They need
+///   `subject_issuer`.
 /// - `ochami` sites use an RFC 7523 JWT bearer grant at the site's
 ///   Hydra, at a URL derived from `shasta_base_url`
 ///   (`<base>/hydra/oauth2/token`). They need `scope`.
@@ -270,7 +271,7 @@ fn default_request_timeout_secs() -> u64 {
 pub struct ServerConfiguration {
   /// `EnvFilter` directive for the tracing subscriber.
   pub log: String,
-  /// Network / TLS / console / rate-limit knobs for the HTTPS server.
+  /// Network / TLS / console / timeout knobs for the HTTPS server.
   pub server: ServerSettings,
   /// Per-site backend connection details, keyed by site name. The
   /// `X-Manta-Site` header on each request picks which one to route to.

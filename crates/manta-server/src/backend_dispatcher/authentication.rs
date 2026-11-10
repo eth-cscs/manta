@@ -1,9 +1,9 @@
 //! [`AuthenticationTrait`] impl for [`StaticBackendDispatcher`].
 //!
 //! - `exchange_api_token` is called on every request (from the
-//!   `RequestCtx` extractor): CSM exchanges the caller's CSCS Keycloak
-//!   token for a CSM token at the site's Keycloak; OpenCHAMI passes it
-//!   through for now.
+//!   `RequestCtx` extractor): it exchanges the caller's CSCS Keycloak
+//!   token for one the site accepts, at the site's Keycloak on CSM
+//!   (RFC 8693) or the site's Hydra on OpenCHAMI (RFC 7523).
 //! - `get_api_token` (username/password grant) is no longer called by
 //!   manta: the CLI obtains its token from the CSCS Keycloak directly.
 //!   The forwarding is kept so `tests/dispatcher_coverage.rs` keeps

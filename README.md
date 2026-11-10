@@ -355,7 +355,7 @@ scope         = "smd.read bss.read smd.write bss.write"
 - `csm` sites use an RFC 8693 token exchange at the site's Keycloak, `<shasta_base_url without /apis>/keycloak/realms/shasta`, and need `subject_issuer`. The exchanged token also does the Vault login.
 - `ochami` sites use an RFC 7523 JWT bearer grant at the site's Hydra, `<shasta_base_url>/hydra/oauth2/token`, and need `scope`. The Hydra client needs that grant type, and Hydra needs a trust relationship for the CSCS Keycloak's issuer. Hydra accepts each CSCS token only once (it rejects a reused `jti` until the token expires), which is why the CLI sends a new token on every request.
 
-Errors: a CSCS token the identity provider rejects (expired, untrusted) → `401`, so the CLI logs in again; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`.
+Errors: a CSCS token the identity provider rejects (e.g. the site does not trust the CSCS Keycloak) → `401`; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`; an error status of the identity provider itself (e.g. `503`) is passed through.
 
 The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
 
