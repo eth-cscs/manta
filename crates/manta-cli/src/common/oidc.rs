@@ -109,6 +109,12 @@ pub struct TokenStore {
   /// unknown. Not read: every request refreshes (see
   /// [`crate::common::authentication`]).
   pub expires_at: Option<i64>,
+  /// Issuer the tokens came from ([`OidcSettings::issuer_url`]). A cache
+  /// from another issuer or client is not used: its refresh token would
+  /// go to a Keycloak that did not issue it.
+  pub issuer_url: String,
+  /// Client the tokens were issued to ([`OidcSettings::client_id`]).
+  pub client_id: String,
 }
 
 impl std::fmt::Debug for TokenStore {
@@ -121,6 +127,8 @@ impl std::fmt::Debug for TokenStore {
       )
       .field("id_token", &self.id_token.as_ref().map(|_| "<REDACTED>"))
       .field("expires_at", &self.expires_at)
+      .field("issuer_url", &self.issuer_url)
+      .field("client_id", &self.client_id)
       .finish()
   }
 }
@@ -177,12 +185,23 @@ impl TokenStore {
     })
   }
 
-  fn from_token_response(resp: RawTokenResponse) -> Self {
+  /// `true` when the tokens came from `settings`' issuer and client.
+  pub fn is_from(&self, settings: &OidcSettings<'_>) -> bool {
+    same_issuer(&self.issuer_url, settings.issuer_url)
+      && self.client_id == settings.client_id
+  }
+
+  fn from_token_response(
+    resp: RawTokenResponse,
+    settings: &OidcSettings<'_>,
+  ) -> Self {
     Self {
       access_token: resp.access_token,
       refresh_token: resp.refresh_token,
       id_token: resp.id_token,
       expires_at: resp.expires_in.map(expires_at),
+      issuer_url: settings.issuer_url.to_string(),
+      client_id: settings.client_id.to_string(),
     }
   }
 }
@@ -244,7 +263,7 @@ pub async fn refresh(
   }
   let token: RawTokenResponse = serde_json::from_slice(&body)
     .context("failed to parse refresh-token response")?;
-  let mut store = TokenStore::from_token_response(token);
+  let mut store = TokenStore::from_token_response(token, settings);
   // Keycloak may omit the refresh token when it is not rotated; keep
   // the one we have.
   if store.refresh_token.is_none() {
@@ -402,6 +421,8 @@ async fn login_via_browser(settings: &OidcSettings<'_>) -> Result<TokenStore> {
     refresh_token: token_response.refresh_token().map(|t| t.secret().clone()),
     id_token: Some(id_token.to_string()),
     expires_at: token_response.expires_in().map(|d| expires_at(d.as_secs())),
+    issuer_url: settings.issuer_url.to_string(),
+    client_id: settings.client_id.to_string(),
   })
 }
 
@@ -568,7 +589,7 @@ async fn login_via_device_code(
       let token: RawTokenResponse = serde_json::from_slice(&body)
         .context("failed to parse the token response")?;
       eprintln!("Authentication successful.");
-      return Ok(TokenStore::from_token_response(token));
+      return Ok(TokenStore::from_token_response(token, settings));
     }
 
     match device_poll_step(&body)? {
@@ -632,6 +653,11 @@ fn browser_unreachable_given(is_set: impl Fn(&str) -> bool) -> bool {
     && !is_set("DISPLAY")
     && !is_set("WAYLAND_DISPLAY");
   in_ssh || no_display
+}
+
+/// Issuer URLs compared as configured, ignoring a trailing `/`.
+fn same_issuer(a: &str, b: &str) -> bool {
+  a.trim_end_matches('/') == b.trim_end_matches('/')
 }
 
 pub(crate) fn now_secs() -> i64 {
@@ -764,7 +790,31 @@ mod tests {
       refresh_token: Some("refresh".to_string()),
       id_token: None,
       expires_at,
+      issuer_url: "https://kc/realms/cscs".to_string(),
+      client_id: "manta-cli".to_string(),
     }
+  }
+
+  #[test]
+  fn a_store_is_from_its_issuer_and_client_only() {
+    let settings = |issuer_url, client_id| OidcSettings {
+      issuer_url,
+      client_id,
+      headless: true,
+    };
+    let store = store(None);
+    assert!(store.is_from(&settings("https://kc/realms/cscs", "manta-cli")));
+    assert!(store.is_from(&settings("https://kc/realms/cscs/", "manta-cli")));
+    assert!(!store.is_from(&settings("https://tds/realms/cscs", "manta-cli")));
+    assert!(!store.is_from(&settings("https://kc/realms/cscs", "other")));
+  }
+
+  /// A cache written before the issuer and client were recorded is not
+  /// read: a login replaces it.
+  #[test]
+  fn a_cache_without_issuer_and_client_is_rejected() {
+    let old = r#"{"access_token":"a","refresh_token":"r","id_token":null,"expires_at":1}"#;
+    assert!(serde_json::from_str::<TokenStore>(old).is_err());
   }
 
   #[test]
@@ -778,7 +828,12 @@ mod tests {
       r#"{"access_token":"a","expires_in":18446744073709551615}"#,
     )
     .unwrap();
-    let store = TokenStore::from_token_response(token);
+    let settings = OidcSettings {
+      issuer_url: "https://kc",
+      client_id: "manta-cli",
+      headless: true,
+    };
+    let store = TokenStore::from_token_response(token, &settings);
     assert_eq!(store.expires_at, Some(i64::MAX));
   }
 
@@ -1069,6 +1124,7 @@ mod tests {
     assert_eq!(store.access_token, "new-access");
     assert_eq!(store.refresh_token.as_deref(), Some("new-refresh"));
     assert!(store.expires_at.is_some_and(|at| at > now_secs()));
+    assert!(store.is_from(&stub_settings(&issuer)));
   }
 
   #[tokio::test]

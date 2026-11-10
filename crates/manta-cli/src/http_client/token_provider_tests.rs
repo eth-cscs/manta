@@ -20,12 +20,16 @@ use crate::common::oidc::{OidcSettings, TokenStore, now_secs};
 const SITE: &str = "alps";
 const GROUPS_PATH: &str = "/v2/groups/available";
 
-fn write_cache(path: &Path) {
+/// A cache logged in at `issuer` as `manta-cli`, the client [`provider`]
+/// uses.
+fn write_cache(path: &Path, issuer: &str) {
   TokenStore {
     access_token: "cached".to_string(),
     refresh_token: Some("refresh-0".to_string()),
     id_token: None,
     expires_at: Some(now_secs() + 300),
+    issuer_url: issuer.to_string(),
+    client_id: "manta-cli".to_string(),
   }
   .save(path)
   .unwrap();
@@ -196,8 +200,8 @@ async fn list_groups(client: &MantaClient) -> anyhow::Result<Vec<String>> {
 #[tokio::test]
 async fn every_request_gets_a_new_token() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = keycloak(2).await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   accept(&server, "token-1", 1).await;
   accept(&server, "token-2", 1).await;
@@ -219,8 +223,8 @@ async fn every_request_gets_a_new_token() {
 #[tokio::test]
 async fn parallel_requests_each_get_their_own_token() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = rotating_keycloak().await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   accept(&server, "token-1", 1).await;
   accept(&server, "token-2", 1).await;
@@ -240,8 +244,8 @@ async fn parallel_requests_each_get_their_own_token() {
 #[tokio::test]
 async fn two_manta_runs_do_not_refresh_with_the_same_refresh_token() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = rotating_keycloak().await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   accept(&server, "token-1", 1).await;
   accept(&server, "token-2", 1).await;
@@ -260,8 +264,8 @@ async fn two_manta_runs_do_not_refresh_with_the_same_refresh_token() {
 #[tokio::test]
 async fn a_refused_refresh_token_leads_to_a_login() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = session_ended_keycloak(1).await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   accept(&server, "login-token", 1).await;
   let client = client(&server, provider(&keycloak.uri(), cache_in(&dir), true));
@@ -345,8 +349,8 @@ async fn without_a_login_and_a_terminal_the_request_fails() {
 #[tokio::test]
 async fn a_refused_refresh_token_without_a_terminal_says_why() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = session_ended_keycloak(0).await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   expect_no_request(&server).await;
   let client =
@@ -358,13 +362,33 @@ async fn a_refused_refresh_token_without_a_terminal_says_why() {
   assert!(err.contains("stderr is not a terminal"), "got: {err}");
 }
 
+/// Switching `oidc_issuer_url` (prod ↔ TDS): the cached refresh token is
+/// not sent to the new issuer, and the error says why a login is needed.
+#[tokio::test]
+async fn another_issuers_refresh_token_is_not_sent() {
+  let dir = tempfile::tempdir().unwrap();
+  write_cache(&cache_in(&dir), "https://prod.example/realms/cscs");
+  let keycloak = keycloak(0).await;
+  let server = MockServer::start().await;
+  expect_no_request(&server).await;
+  let client =
+    client(&server, provider(&keycloak.uri(), cache_in(&dir), false));
+
+  let err = list_groups(&client).await.unwrap_err().to_string();
+
+  assert!(
+    err.contains("https://prod.example/realms/cscs"),
+    "got: {err}"
+  );
+}
+
 /// A Keycloak that is down is not fixed by a login: the request fails
 /// without one, even at a terminal.
 #[tokio::test]
 async fn a_keycloak_outage_fails_the_request_without_a_login() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = MockServer::start().await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   discovery(&keycloak).await;
   Mock::given(method("POST"))
     .and(path("/token"))
@@ -395,11 +419,11 @@ async fn a_cache_that_cannot_be_saved_still_gives_the_new_token() {
   use std::os::unix::fs::PermissionsExt;
 
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
+  let keycloak = keycloak(1).await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   std::fs::write(cache_in(&dir).with_extension("lock"), "").unwrap();
   let read_only = std::fs::Permissions::from_mode(0o500);
   std::fs::set_permissions(dir.path(), read_only).unwrap();
-  let keycloak = keycloak(1).await;
   let server = MockServer::start().await;
   accept(&server, "token-1", 1).await;
   let client =
@@ -437,8 +461,8 @@ async fn without_a_provider_no_token_is_sent() {
 #[tokio::test]
 async fn a_log_stream_connects_with_a_new_token() {
   let dir = tempfile::tempdir().unwrap();
-  write_cache(&cache_in(&dir));
   let keycloak = keycloak(1).await;
+  write_cache(&cache_in(&dir), &keycloak.uri());
   let server = MockServer::start().await;
   Mock::given(method("GET"))
     .and(path("/v2/sessions/s1/logs"))

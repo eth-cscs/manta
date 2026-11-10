@@ -196,8 +196,8 @@ impl TokenProvider {
     let settings = self.settings();
     let _lock = lock_cache(path).await;
 
-    let why_login = match cached_refresh_token(path) {
-      Some(refresh_token) => {
+    let why_login = match cached_refresh_token(path, &settings) {
+      Ok(refresh_token) => {
         match oidc::refresh(&settings, &refresh_token).await {
           Ok(refreshed) => {
             save_or_warn(&refreshed, path);
@@ -210,7 +210,7 @@ impl TokenProvider {
           }
         }
       }
-      None => "not logged in".to_string(),
+      Err(why) => why,
     };
 
     if !self.interactive {
@@ -319,20 +319,32 @@ fn is_set(value: Option<&str>) -> bool {
   value.is_some_and(|t| !t.trim().is_empty())
 }
 
-/// The refresh token in the cache at `path`. `None` when there is no
-/// cache, it holds no refresh token, or it cannot be read (with a
-/// warning): a login replaces it.
-fn cached_refresh_token(path: &Path) -> Option<String> {
+/// The refresh token in the cache at `path`, if it is one `settings`'
+/// issuer and client gave out. Otherwise why there is none, which a
+/// login fixes: no cache, no refresh token in it, a cache that cannot be
+/// read (e.g. written by an older manta), or one from another issuer or
+/// client, whose refresh token must not go to this one.
+fn cached_refresh_token(
+  path: &Path,
+  settings: &OidcSettings<'_>,
+) -> Result<String, String> {
   if !path.exists() {
-    return None;
+    return Err("not logged in".to_string());
   }
-  match TokenStore::load(path) {
-    Ok(store) => store.refresh_token,
-    Err(err) => {
-      tracing::warn!(error = %format!("{err:#}"), "token cache unusable");
-      None
-    }
+  let store = TokenStore::load(path)
+    .map_err(|err| format!("the token cache is unusable ({err:#})"))?;
+  if !store.is_from(settings) {
+    return Err(format!(
+      "logged in at {} as client {}, not at the configured {} as {}",
+      store.issuer_url,
+      store.client_id,
+      settings.issuer_url,
+      settings.client_id
+    ));
   }
+  store
+    .refresh_token
+    .ok_or_else(|| "not logged in (no refresh token cached)".to_string())
 }
 
 /// Save `store` at `path`. A failure only warns: the token in hand is
@@ -416,10 +428,46 @@ mod tests {
     assert!(!is_set(None));
   }
 
+  fn settings(issuer_url: &str) -> OidcSettings<'_> {
+    OidcSettings {
+      issuer_url,
+      client_id: "manta-cli",
+      headless: true,
+    }
+  }
+
+  fn cache_from(path: &Path, issuer_url: &str) {
+    TokenStore {
+      access_token: "access".to_string(),
+      refresh_token: Some("refresh".to_string()),
+      id_token: None,
+      expires_at: None,
+      issuer_url: issuer_url.to_string(),
+      client_id: "manta-cli".to_string(),
+    }
+    .save(path)
+    .unwrap();
+  }
+
+  #[test]
+  fn the_configured_issuers_cache_gives_its_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    cache_from(&path, "https://prod");
+    assert_eq!(
+      cached_refresh_token(&path, &settings("https://prod")),
+      Ok("refresh".to_string())
+    );
+  }
+
   #[test]
   fn no_cache_means_no_refresh_token() {
     let dir = tempfile::tempdir().unwrap();
-    assert!(cached_refresh_token(&dir.path().join(TOKEN_CACHE_FILE)).is_none());
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    assert_eq!(
+      cached_refresh_token(&path, &settings("https://prod")),
+      Err("not logged in".to_string())
+    );
   }
 
   #[test]
@@ -427,6 +475,21 @@ mod tests {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join(TOKEN_CACHE_FILE);
     std::fs::write(&path, "not json").unwrap();
-    assert!(cached_refresh_token(&path).is_none());
+    let why =
+      cached_refresh_token(&path, &settings("https://prod")).unwrap_err();
+    assert!(why.starts_with("the token cache is unusable"), "got: {why}");
+  }
+
+  /// Switching `oidc_issuer_url` (prod ↔ TDS) must not send prod's refresh
+  /// token to TDS.
+  #[test]
+  fn another_issuers_cache_gives_no_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    cache_from(&path, "https://prod");
+    let why =
+      cached_refresh_token(&path, &settings("https://tds")).unwrap_err();
+    assert!(why.contains("https://prod"), "got: {why}");
+    assert!(why.contains("https://tds"), "got: {why}");
   }
 }
