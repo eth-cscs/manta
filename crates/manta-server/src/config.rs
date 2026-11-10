@@ -332,6 +332,61 @@ mod tests {
     }
   }
 
+  /// `examples/server.toml`, with its commented-out sites enabled, is a
+  /// config the server starts with: every site has the token exchange
+  /// its backend needs (`run_server` refuses a site without one, and
+  /// [`TokenExchangeConfig::csm`] / [`TokenExchangeConfig::ochami`] check
+  /// the backend's fields).
+  #[test]
+  fn the_example_server_toml_is_a_valid_config() {
+    let path =
+      concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/server.toml");
+    let example = std::fs::read_to_string(path).unwrap();
+    // Each commented-out site: a `# [sites.<name>]` line and the comment
+    // lines right after it, with the `# ` taken off. (Not the commented
+    // alternatives inside an enabled site, such as `alps`' `Native`.)
+    let is_site_header = |line: &str| {
+      line
+        .strip_prefix("# [sites.")
+        .and_then(|rest| rest.strip_suffix(']'))
+        .is_some_and(|name| !name.contains('.'))
+    };
+    let mut enabled = String::new();
+    let mut in_site = false;
+    for line in example.lines() {
+      if is_site_header(line) {
+        in_site = true;
+      } else if !line.starts_with('#') {
+        in_site = false;
+      }
+      if in_site {
+        let toml_line = line.strip_prefix('#').unwrap_or(line);
+        enabled.push_str(toml_line.strip_prefix(' ').unwrap_or(toml_line));
+        enabled.push('\n');
+      }
+    }
+    let config: ServerConfiguration =
+      toml::from_str(&format!("{example}\n{enabled}")).unwrap();
+
+    assert!(
+      config.sites.contains_key("ochami-dev"),
+      "{:?}",
+      config.sites.keys()
+    );
+    for (name, site) in &config.sites {
+      let exchange = site
+        .token_exchange
+        .as_ref()
+        .unwrap_or_else(|| panic!("[sites.{name}] has no token_exchange"));
+      match site.backend {
+        BackendTechnology::Csm => assert!(exchange.csm().is_ok(), "{name}"),
+        BackendTechnology::Ochami => {
+          assert!(exchange.ochami().is_ok(), "{name}");
+        }
+      }
+    }
+  }
+
   #[test]
   fn token_exchange_may_be_absent_in_toml() {
     let site: Site = toml::from_str(
