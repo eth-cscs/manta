@@ -217,9 +217,10 @@ async fn every_request_gets_a_new_token() {
   assert_eq!(saved.refresh_token.as_deref(), Some("refresh-2"));
 }
 
-/// Parallel requests refresh one after another (the cache lock orders
-/// them), so each uses the refresh token the previous one saved: the
-/// rotating Keycloak would refuse the other.
+/// Parallel requests refresh one after another (the in-process mutex
+/// orders them; on a local filesystem the cache lock alone would too),
+/// so each uses the refresh token the previous one saved: the rotating
+/// Keycloak would refuse the other.
 #[tokio::test]
 async fn parallel_requests_each_get_their_own_token() {
   let dir = tempfile::tempdir().unwrap();

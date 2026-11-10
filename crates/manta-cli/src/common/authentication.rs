@@ -46,13 +46,20 @@
 //!
 //! ## Concurrency
 //!
-//! Getting a token from the cache holds an exclusive lock on
-//! `<cache>.lock`, through a login too. Every request opens the lock
-//! file anew, so the lock orders parallel requests of one run as well as
-//! separate `manta` runs. So each refresh uses the refresh token the
-//! previous one saved, which a Keycloak that rotates refresh tokens
-//! requires, and a login one request starts is reused by the others,
-//! not repeated. Service-account tokens need no ordering.
+//! Getting a token from the cache is ordered twice, both held through a
+//! login too: a mutex orders the requests of one run, and an exclusive
+//! lock on `<cache>.lock` orders separate `manta` runs. So each refresh
+//! uses the refresh token the previous one saved, which a Keycloak that
+//! rotates refresh tokens requires, and a login one request starts is
+//! reused by the others, not repeated. Service-account tokens need no
+//! ordering.
+//!
+//! The file lock alone is not enough inside one run: on a local
+//! filesystem two `flock`s of one process exclude each other, but on
+//! Linux NFS `flock` is emulated with POSIX locks, which belong to the
+//! process, so they do not; and when the lock cannot be taken at all the
+//! refresh goes ahead without it. The tests run on a local filesystem
+//! and cannot tell the two apart.
 
 use std::io::{self, IsTerminal};
 use std::path::{Path, PathBuf};
@@ -104,6 +111,9 @@ pub struct TokenProvider {
   /// Whether a login may be started: someone is at the terminal.
   interactive: bool,
   source: TokenSource,
+  /// Orders this run's requests for a cached token (see the module
+  /// docs for why the file lock does not suffice).
+  in_process: tokio::sync::Mutex<()>,
   /// The token handed out last, for reading its claims.
   last_issued: std::sync::Mutex<Option<String>>,
 }
@@ -147,6 +157,7 @@ impl TokenProvider {
       headless: settings.headless,
       interactive,
       source,
+      in_process: tokio::sync::Mutex::new(()),
       last_issued: std::sync::Mutex::new(None),
     }
   }
@@ -199,9 +210,10 @@ impl TokenProvider {
   }
 
   /// Refresh with the cached refresh token, or log in when there is
-  /// none or the Keycloak refuses it. Under the cache lock throughout.
+  /// none or the Keycloak refuses it. Under both locks throughout.
   async fn token_from_cache(&self, path: &Path) -> Result<String> {
     let settings = self.settings();
+    let _in_process = self.in_process.lock().await;
     let _lock = lock_cache(path).await;
 
     let why_login = match cached_refresh_token(path, &settings) {
@@ -364,11 +376,8 @@ fn save_or_warn(store: &TokenStore, path: &Path) {
 }
 
 /// Hold `<cache>.lock` exclusively until the returned file is dropped, so
-/// no two requests, of one `manta` run or of several, refresh at once.
-/// Each call opens the file anew: `flock` locks taken through separate
-/// opens exclude each other within one process too. `None`, with a
-/// warning, when the lock cannot be taken; the refresh then goes ahead
-/// without it.
+/// no two `manta` runs refresh at once. `None`, with a warning, when the
+/// lock cannot be taken; the refresh then goes ahead without it.
 ///
 /// Waits as long as the holder needs, which during a login is minutes.
 /// After [`LOCK_WAIT_NOTICE_AFTER`] it says so on stderr, so the wait
@@ -399,8 +408,8 @@ async fn lock_cache(path: &Path) -> Option<std::fs::File> {
       Ok(locked) => locked,
       Err(_) => {
         eprintln!(
-          "Waiting for another manta command (or request) that is logging \
-           in or refreshing the token (lock: {shown_path})..."
+          "Waiting for another manta command that is logging in or \
+           refreshing the token (lock: {shown_path})..."
         );
         locking.await
       }
