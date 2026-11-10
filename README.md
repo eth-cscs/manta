@@ -290,7 +290,7 @@ Every request the CLI sends carries a new token, one no request has carried befo
 2. Otherwise the refresh token cached in manta's cache directory (`token.json`, mode `0600`): a refreshed token, written back to the cache.
 3. When there is no cache, or the Keycloak refuses the cached refresh token (the session ended or was revoked): an interactive login, a browser window (authorization code + PKCE), or — with `oidc_headless = true`, inside an SSH session, without a graphical display (`DISPLAY`/`WAYLAND_DISPLAY`, outside macOS), or when no browser can be opened — a device code to enter on any device. The result is written to the cache. This can happen in the middle of a long command, when the session ends while it runs.
 
-Any other failure, such as the Keycloak being unreachable, fails the request without a login. There is no way to pass a ready-made token: it could be sent only once. `MANTA_CSM_TOKEN` is no longer read; the CLI warns if it is set.
+Any other failure, such as the Keycloak being unreachable, fails the request without a login. There is no way to pass a ready-made token: it could be sent only once. `MANTA_CSM_TOKEN` is no longer read; if it is set, the CLI logs a warning (shown with `log = "warn"`).
 
 `manta config unset auth` deletes the cached token and forces a new login. The cache records the issuer and client it came from: after changing `oidc_issuer_url` or `oidc_client_id` (e.g. prod ↔ TDS), the CLI logs in again rather than send the old refresh token to the new issuer. The login prompts go to stderr, so when stderr is not a terminal (cron, CI, `2>file`) the CLI never starts a login; it fails with a pointer to the service-account variables instead. Piping into `manta` does not prevent a login.
 

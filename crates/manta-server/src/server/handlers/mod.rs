@@ -184,8 +184,9 @@ pub struct SiteHeader {
 /// a configured [`super::SiteBackend`], so [`Self::infra`] inside the
 /// handler body is infallible, and exchanges the caller's token for
 /// the site's backend token ([`Self::token`]). A rejected exchange
-/// fails the request before the handler runs (401 when Keycloak
-/// rejects the caller's token, 403 when it refuses the exchange).
+/// fails the request before the handler runs (401 when the site's
+/// identity provider, Keycloak or Hydra, rejects the caller's token, 403
+/// when it refuses the exchange).
 ///
 /// The health endpoint still uses explicit extractors — it doesn't
 /// need a Bearer token.
