@@ -56,7 +56,7 @@ pub(crate) fn is_admin(infra: &InfraContext<'_>, token: &str) -> bool {
 }
 
 /// Return `Ok(())` when the caller is admin (on OpenCHAMI, always);
-/// `Err(Error::BadRequest(...))` otherwise.
+/// `Err(Error::Forbidden(...))` (a `403`) otherwise.
 ///
 /// Use at handler boundaries that restrict an operation to admin users.
 /// Centralises the check so a future policy change (e.g. a different
@@ -68,7 +68,7 @@ pub fn require_admin(
   if is_admin(infra, token) {
     Ok(())
   } else {
-    Err(Error::BadRequest(
+    Err(Error::Forbidden(
       "this operation requires admin privileges".to_string(),
     ))
   }
@@ -333,7 +333,10 @@ Wf86aX6PepsntZv2GYlA5UpabfT2EZICICpJ5h/iI+i341gBmLiAFQOyTDT+/wQc\n\
     let infra = infra(&backend);
 
     assert!(require_admin(&infra, &token_with_roles(&[PA_ADMIN])).is_ok());
-    assert!(require_admin(&infra, &token_with_roles(&["other"])).is_err());
+    assert!(matches!(
+      require_admin(&infra, &token_with_roles(&["other"])),
+      Err(Error::Forbidden(_))
+    ));
   }
 
   #[test]

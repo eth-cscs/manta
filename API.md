@@ -372,7 +372,7 @@ curl -k "$MANTA_HOST/v2/groups/available" \
 
 ### POST /groups
 
-Create a new HSM group. **Admin only** — non-admin callers receive `400 BadRequest`: a brand-new group label has no membership to scope against, so there's no meaningful per-group authorization to apply.
+Create a new HSM group. **Admin only** — non-admin callers receive `403 Forbidden`: a brand-new group label has no membership to scope against, so there's no meaningful per-group authorization to apply.
 
 **Request body** — HSM group object:
 
@@ -386,7 +386,9 @@ Create a new HSM group. **Admin only** — non-admin callers receive `400 BadReq
 
 **Response `201`** — `{ "created": true }`.
 
-**Response `400`** — caller is not admin (or the body is malformed).
+**Response `400`** — the body is malformed.
+
+**Response `403`** — caller is not admin.
 
 ```bash
 curl -k -X POST "$MANTA_HOST/v2/groups" \
@@ -1494,7 +1496,7 @@ curl -k -X POST "$MANTA_HOST/v2/migrate/nodes" \
 
 ### POST /migrate/backup
 
-Back up vCluster configuration to files. **Admin only.**
+Back up vCluster configuration to files. **Admin only** (`403 Forbidden` otherwise).
 
 > **Server-side filesystem confinement** — both `/migrate/*` endpoints require the operator to configure `[server] migrate_backup_root` in `server.toml` (an absolute directory). When unset, the endpoints reject every request with `400 BadRequest` even for admins. When set, every `destination` / `*_file` / `image_dir` path in the body is canonicalised and rejected with `400 BadRequest` if it resolves outside that root.
 
@@ -1526,7 +1528,7 @@ curl -k -X POST "$MANTA_HOST/v2/migrate/backup" \
 
 ### POST /migrate/restore
 
-Restore a vCluster from backup files. **Admin only**, and subject to the same `[server] migrate_backup_root` confinement as `POST /migrate/backup` — every path in the body must resolve under that root or the request is rejected with `400 BadRequest`.
+Restore a vCluster from backup files. **Admin only** (`403 Forbidden` otherwise), and subject to the same `[server] migrate_backup_root` confinement as `POST /migrate/backup` — every path in the body must resolve under that root or the request is rejected with `400 BadRequest`.
 
 **Request body**
 
