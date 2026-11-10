@@ -1509,6 +1509,70 @@ async fn rejected_subject_token_is_401_and_skips_the_handler() {
   );
 }
 
+/// An unsigned JWT carrying `roles` in `realm_access`.
+fn jwt_with_roles(username: &str, roles: &[&str]) -> String {
+  use base64::Engine as _;
+  let encode = |v: Value| {
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(v.to_string())
+  };
+  format!(
+    "{}.{}.sig",
+    encode(json!({ "alg": "none", "typ": "JWT" })),
+    encode(json!({
+      "preferred_username": username,
+      "name": username,
+      "realm_access": { "roles": roles },
+    }))
+  )
+}
+
+/// Roles come from the exchanged token only: a CSCS token claiming
+/// `pa_admin` (it is not verified locally) gains nothing when the site
+/// issues a token without it. The admin-only route refuses with 403
+/// and never reaches CSM.
+#[tokio::test]
+async fn admin_role_in_the_callers_token_does_not_count() {
+  let f = TestFixture::setup().await;
+  let claims_admin = jwt_with_roles("mallory", &["pa_admin"]);
+  let site_issued = jwt_with_roles("mallory", &["alps"]);
+  Mock::given(method("POST"))
+    .and(path(KEYCLOAK_TOKEN_PATH))
+    .and(body_string_contains(format!(
+      "subject_token={claims_admin}"
+    )))
+    .respond_with(
+      ResponseTemplate::new(200)
+        .set_body_json(json!({ "access_token": site_issued })),
+    )
+    .mount(&f.mock_server)
+    .await;
+  Mock::given(method("POST"))
+    .and(path("/smd/hsm/v2/groups"))
+    .respond_with(ResponseTemplate::new(201).set_body_json(json!({})))
+    .expect(0)
+    .mount(&f.mock_server)
+    .await;
+
+  let resp = f
+    .send(
+      Request::builder()
+        .method(Method::POST)
+        .uri("/v2/groups")
+        .header(header::AUTHORIZATION, format!("Bearer {claims_admin}"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("X-Manta-Site", "test")
+        .body(Body::from(
+          json!({ "label": "new-group", "description": "escalation" })
+            .to_string(),
+        ))
+        .unwrap(),
+    )
+    .await;
+
+  assert_eq!(resp.status(), StatusCode::FORBIDDEN);
+  assert_eq!(exchange_count(&f.mock_server).await, 1);
+}
+
 #[tokio::test]
 async fn refused_exchange_is_403() {
   let f = TestFixture::setup().await;
