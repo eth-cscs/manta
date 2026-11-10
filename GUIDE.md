@@ -778,7 +778,7 @@ flowchart TD
     Login --> Run
 ```
 
-For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh silently. There is no way to pass a ready-made token, since it could be sent only once; `MANTA_TOKEN` is no longer read.
+For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh silently. There is no way to pass a ready-made token, since it could be sent only once; `MANTA_CSM_TOKEN` is no longer read.
 
 The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH or on a host without a graphical display, both detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
 

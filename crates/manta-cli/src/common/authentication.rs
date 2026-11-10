@@ -64,9 +64,11 @@ use manta_shared::common::config::get_default_cache_path;
 use crate::common::app_context::AppContext;
 use crate::common::oidc::{self, OidcSettings, TokenStore};
 
-/// No longer read: a ready-made token could be sent only once (see the
-/// module docs). Its presence only draws a warning.
-const REMOVED_TOKEN_ENV_VAR: &str = "MANTA_TOKEN";
+/// The ready-made token earlier releases read. No longer read: a token
+/// could be sent only once (see the module docs). Its presence only
+/// draws a warning. (Not `MANTA_TOKEN`: API.md's curl examples use that
+/// name for a shell variable.)
+const REMOVED_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
 
 /// Environment variable holding a service account's client id.
 pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
