@@ -163,8 +163,7 @@ async fn run_cli(
       headless: configuration.oidc_headless,
     },
     settings: &settings,
-    token: None,
-    token_refresher: None,
+    token_provider: None,
     session: None,
   };
 

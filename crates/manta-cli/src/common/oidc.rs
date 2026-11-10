@@ -72,11 +72,6 @@ const MAX_REQUEST_LINE: u64 = 8 * 1024;
 /// Per-request timeout for every call to the Keycloak.
 const HTTP_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// A cached token is treated as expired this long before its real
-/// expiry, so it does not lapse before the server has exchanged it. Only
-/// matters at the start of a command: every request then refreshes.
-const EXPIRY_GRACE_SECS: i64 = 30;
-
 /// Page shown in the browser once the redirect has been received.
 const SUCCESS_HTML: &str = "<!DOCTYPE html><html><head><title>manta</title></head>\
 <body><h2>Authentication successful</h2>\
@@ -100,12 +95,13 @@ pub struct OidcSettings<'a> {
 pub struct TokenStore {
   /// Bearer token sent to manta-server.
   pub access_token: String,
-  /// Refresh token, used by [`refresh`] once the access token expires.
+  /// Refresh token, used by [`refresh`] for every request.
   pub refresh_token: Option<String>,
   /// ID token from the login; kept for completeness, not sent anywhere.
   pub id_token: Option<String>,
-  /// Access-token expiry as seconds since the Unix epoch. `None` means
-  /// unknown, which [`TokenStore::is_expired`] treats as expired.
+  /// Access-token expiry as seconds since the Unix epoch, `None` when
+  /// unknown. Not read: every request refreshes (see
+  /// [`crate::common::authentication`]).
   pub expires_at: Option<i64>,
 }
 
@@ -124,18 +120,6 @@ impl std::fmt::Debug for TokenStore {
 }
 
 impl TokenStore {
-  /// `true` once the access token is within [`EXPIRY_GRACE_SECS`] of
-  /// its expiry (or its expiry is unknown).
-  pub fn is_expired(&self) -> bool {
-    self.is_expired_at(now_secs())
-  }
-
-  fn is_expired_at(&self, now: i64) -> bool {
-    self
-      .expires_at
-      .is_none_or(|exp| now.saturating_add(EXPIRY_GRACE_SECS) >= exp)
-  }
-
   /// Read a token store from `path`.
   ///
   /// # Errors
@@ -223,8 +207,11 @@ pub async fn login(settings: &OidcSettings<'_>) -> Result<TokenStore> {
 ///
 /// # Errors
 ///
-/// Discovery fails, or the Keycloak rejects the refresh token (it
-/// expired, was revoked, or the session ended).
+/// - [`RefreshRefused`] when the Keycloak refuses the refresh token
+///   (`invalid_grant`: it expired, was revoked, or the session ended).
+///   Only a new login helps then.
+/// - Any other error when discovery or the request fails, or the
+///   Keycloak answers with another error.
 pub async fn refresh(
   settings: &OidcSettings<'_>,
   refresh_token: &str,
@@ -244,7 +231,10 @@ pub async fn refresh(
   let status = resp.status();
   let body = resp.bytes().await?;
   if !status.is_success() {
-    bail!("token refresh rejected: {}", oauth_error_message(&body));
+    if is_invalid_grant(&body) {
+      return Err(RefreshRefused(oauth_error_message(&body)).into());
+    }
+    bail!("token refresh failed: {}", oauth_error_message(&body));
   }
   let token: RawTokenResponse = serde_json::from_slice(&body)
     .context("failed to parse refresh-token response")?;
@@ -289,6 +279,25 @@ pub async fn client_credentials(
   let token: RawTokenResponse = serde_json::from_slice(&body)
     .context("failed to parse client-credentials response")?;
   Ok(token.access_token)
+}
+
+/// The Keycloak refused a refresh token (`invalid_grant`), so a new
+/// login is needed. Returned by [`refresh`].
+#[derive(Debug)]
+pub struct RefreshRefused(String);
+
+impl std::fmt::Display for RefreshRefused {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "the CSCS Keycloak refused the refresh token: {}", self.0)
+  }
+}
+
+impl std::error::Error for RefreshRefused {}
+
+/// `true` when an OAuth error body says `invalid_grant`.
+fn is_invalid_grant(body: &[u8]) -> bool {
+  serde_json::from_slice::<OAuthError>(body)
+    .is_ok_and(|e| e.error == "invalid_grant")
 }
 
 /// The browser could not be opened; [`login`] falls back to the
@@ -738,27 +747,8 @@ mod tests {
   }
 
   #[test]
-  fn expiry_honours_grace_period() {
-    let now = 1_000_000;
-    assert!(!store(Some(now + EXPIRY_GRACE_SECS + 1)).is_expired_at(now));
-    assert!(store(Some(now + EXPIRY_GRACE_SECS)).is_expired_at(now));
-    assert!(store(Some(now - 1)).is_expired_at(now));
-  }
-
-  #[test]
-  fn unknown_expiry_counts_as_expired() {
-    assert!(store(None).is_expired_at(0));
-  }
-
-  #[test]
   fn huge_expires_in_saturates_instead_of_overflowing() {
     assert_eq!(expires_at(u64::MAX), i64::MAX);
-    assert!(!store(Some(expires_at(u64::MAX))).is_expired_at(now_secs()));
-  }
-
-  #[test]
-  fn expiry_check_near_i64_max_does_not_overflow() {
-    assert!(store(Some(i64::MAX)).is_expired_at(i64::MAX));
   }
 
   #[test]
@@ -1053,7 +1043,7 @@ mod tests {
       .unwrap();
     assert_eq!(store.access_token, "new-access");
     assert_eq!(store.refresh_token.as_deref(), Some("new-refresh"));
-    assert!(!store.is_expired());
+    assert!(store.expires_at.is_some_and(|at| at > now_secs()));
   }
 
   #[tokio::test]
@@ -1075,7 +1065,7 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn refresh_rejection_is_an_error() {
+  async fn a_refused_refresh_token_is_refresh_refused() {
     let issuer = stub_keycloak(|base, path, _| match path {
       "/.well-known/openid-configuration" => (200, discovery_json(base, false)),
       "/token" => (
@@ -1089,9 +1079,33 @@ mod tests {
 
     let err = refresh(&stub_settings(&issuer), "old-refresh")
       .await
-      .unwrap_err()
-      .to_string();
-    assert!(err.contains("Session not active"), "got: {err}");
+      .unwrap_err();
+    assert!(err.is::<RefreshRefused>(), "got: {err:#}");
+    assert!(
+      err.to_string().contains("Session not active"),
+      "got: {err:#}"
+    );
+  }
+
+  /// Only `invalid_grant` calls for a new login; a Keycloak that is down
+  /// does not.
+  #[tokio::test]
+  async fn a_keycloak_error_is_not_refresh_refused() {
+    let issuer = stub_keycloak(|base, path, _| match path {
+      "/.well-known/openid-configuration" => (200, discovery_json(base, false)),
+      "/token" => (503, "Service Unavailable".to_string()),
+      _ => (404, "{}".to_string()),
+    })
+    .await;
+
+    let err = refresh(&stub_settings(&issuer), "old-refresh")
+      .await
+      .unwrap_err();
+    assert!(!err.is::<RefreshRefused>(), "got: {err:#}");
+    assert!(
+      err.to_string().contains("Service Unavailable"),
+      "got: {err:#}"
+    );
   }
 
   #[tokio::test]

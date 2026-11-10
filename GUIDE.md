@@ -759,26 +759,26 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 ### Authentication for scripts
 
-Manta gets its bearer token from the CSCS Keycloak — one token for every site, obtained by the CLI itself (manta-server is not involved). It resolves the token in a defined order; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full resolution lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
+Manta gets its bearer tokens from the CSCS Keycloak — one token serves every site, obtained by the CLI itself (manta-server is not involved). Every request gets a new token (an OpenCHAMI site accepts each token only once), always the same way; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full logic lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
 
-*Flowchart: how `manta` resolves the bearer token in scripted use.*
+*Flowchart: how `manta` gets the bearer token of each request.*
 
 ```mermaid
 flowchart TD
-    Start[manta subcommand] --> Env{MANTA_SA_CLIENT_ID and<br/>MANTA_SA_CLIENT_SECRET set?}
-    Env -->|yes| SA[token from the client credentials grant<br/>never cached] --> Run[run command with Bearer token]
-    Env -->|no| Cache{cached token?<br/>cache-dir/token.json, mode 0600}
-    Cache -->|valid| Run
-    Cache -->|expired| Refresh{refresh token accepted<br/>by the Keycloak?}
-    Refresh -->|yes| Save[write refreshed token to cache] --> Run
-    Refresh -->|no| TTY
+    Start[request to manta-server] --> Env{MANTA_SA_CLIENT_ID and<br/>MANTA_SA_CLIENT_SECRET set?}
+    Env -->|yes| SA[token from the client credentials grant<br/>never cached] --> Run[send the request with Bearer token]
+    Env -->|no| Cache{cached refresh token?<br/>cache-dir/token.json, mode 0600}
+    Cache -->|yes| Refresh{refresh}
+    Refresh -->|accepted| Save[write refreshed token to cache] --> Run
+    Refresh -->|refused: session ended| TTY
+    Refresh -->|Keycloak unreachable or failing| Err[the request fails]
     Cache -->|none| TTY{stdin is a TTY?}
     TTY -->|no| Fail[exit non-zero<br/>no way to log in non-interactively]
     TTY -->|yes| Login[OIDC login against the CSCS Keycloak<br/>browser, or device code when headless<br/>write 0600 cache]
     Login --> Run
 ```
 
-For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh the access token silently. Either way, the CLI gets a new token before every request (an OpenCHAMI site accepts each token only once), so there is no way to pass a ready-made token; `MANTA_TOKEN` is no longer read.
+For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh silently. There is no way to pass a ready-made token, since it could be sent only once; `MANTA_TOKEN` is no longer read.
 
 The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH or on a host without a graphical display, both detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
 

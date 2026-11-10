@@ -44,9 +44,9 @@ use crate::output::action_result;
 
 /// Dispatch the `manta upgrade` command.
 ///
-/// Like `gen_autocomplete` and `gen_man`, this handler does NOT call
-/// `get_api_token(ctx)` — `manta upgrade` talks to GitHub releases,
-/// not the manta server, so there's no token to bootstrap.
+/// Like `gen_autocomplete` and `gen_man`, this handler needs no
+/// token — `manta upgrade` talks to GitHub releases, not the manta
+/// server.
 pub async fn handle_upgrade(
   cli_upgrade: &ArgMatches,
   _ctx: &AppContext<'_>,

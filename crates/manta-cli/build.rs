@@ -62,12 +62,12 @@ fn generate_openapi_client() -> Result<(), Error> {
       Error::other(format!("openapi.json is not valid OpenAPI: {e}"))
     })?;
 
-  // Every generated call runs this hook first, so a long-running command
-  // keeps sending a live token (see `http_client::set_current_token`).
+  // Every generated call runs this hook first: it gives each request a
+  // new token (see `http_client::set_current_token`).
   let mut settings = progenitor::GenerationSettings::default();
   settings
     .with_inner_type(quote::quote! {
-      Option<std::sync::Arc<crate::common::authentication::TokenRefresher>>
+      Option<std::sync::Arc<crate::common::authentication::TokenProvider>>
     })
     .with_pre_hook_async(quote::quote! {
       crate::http_client::set_current_token

@@ -11,9 +11,8 @@
 //! open `text/event-stream` connection that streams lines indefinitely.
 //! The CLI needs the body as `impl AsyncBufRead`, so this endpoint
 //! stays on the raw `reqwest::Client` (`MantaClient::raw_client()`).
-//! Bearer auth comes from the default `Authorization` header set in
-//! [`crate::http_client::MantaClient::new_with_timeout`]; the
-//! `X-Manta-Site` header is attached per call.
+//! The bearer token (a new one, from the client's token provider) and
+//! the `X-Manta-Site` header are attached per call.
 //!
 //! Adding a new streaming endpoint? Hand-roll it here. Everything
 //! else should be added to the server with `#[utoipa::path(...)]`
@@ -52,7 +51,7 @@ impl MantaClient {
       .get(&url)
       .header("X-Manta-Site", self.site_name())
       .query(&[("timestamps", timestamps.to_string())]);
-    if let Some(token) = self.current_token().await {
+    if let Some(token) = self.bearer_token().await? {
       builder = builder.bearer_auth(token);
     }
     Self::log_request_as_curl(&builder);

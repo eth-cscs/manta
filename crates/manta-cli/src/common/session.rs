@@ -15,8 +15,7 @@ use crate::http_client::{MantaClient, OpenApiResultExt};
 
 /// Facts derived from the bearer token (and one `GET
 /// /groups/available` round-trip) that aren't in `cli.toml`. Built
-/// once per CLI invocation right after the auth cascade resolves a
-/// valid token.
+/// once per CLI invocation, by the command's first request.
 #[derive(Debug, Clone)]
 pub struct SessionContext {
   /// `preferred_username` claim — usually the operator's login name.
@@ -58,8 +57,9 @@ impl SessionContext {
   /// 1. Calling `GET /v2/groups/available` to populate
   ///    `accessible_groups` (server filters by realm role for
   ///    non-admin callers, returns the universe for admins).
-  /// 2. Locally decoding the JWT claims via
-  ///    [`manta_shared::common::jwt_ops`].
+  /// 2. Locally decoding the JWT claims, via
+  ///    [`manta_shared::common::jwt_ops`], of the token that request
+  ///    carried.
   ///
   /// Returns `Err` when the HTTP call or the JWT decode fails.
   ///
@@ -67,11 +67,9 @@ impl SessionContext {
   ///
   /// - HTTP failure on `get_available_groups` (network, 401/403,
   ///   server error).
-  /// - JWT decode failure (malformed token, missing claim).
-  pub async fn build(
-    client: &MantaClient,
-    token: &str,
-  ) -> anyhow::Result<Self> {
+  /// - JWT decode failure (malformed token, missing claim), or the
+  ///   client has no token provider.
+  pub async fn build(client: &MantaClient) -> anyhow::Result<Self> {
     let accessible_groups = client
       .openapi
       .get_available_groups(client.site_name())
@@ -79,7 +77,10 @@ impl SessionContext {
       .into_anyhow()
       .await
       .context("fetch accessible groups")?;
-    Self::from_parts(token, accessible_groups)
+    let token = client
+      .last_token()
+      .context("the group listing was sent without a token")?;
+    Self::from_parts(&token, accessible_groups)
   }
 }
 

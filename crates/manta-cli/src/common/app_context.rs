@@ -6,8 +6,9 @@
 //! poll-tuning knobs from `cli.toml`, and the raw `config::Config`
 //! handle for fields the typed struct doesn't surface.
 //!
-//! Handlers never touch the token: `process_cli` resolves it once and
-//! [`crate::http_client::MantaClient::from_app_ctx`] takes it from here.
+//! Handlers never touch a token: `process_cli` sets the token provider
+//! here and [`crate::http_client::MantaClient::from_app_ctx`] hands it
+//! to the client, which gets a new token for every request.
 //!
 //! The server's analogous `InfraContext` (with backend dispatcher and
 //! per-site URLs) lives in `manta_server::server::common::app_context`
@@ -90,17 +91,11 @@ pub struct AppContext<'a> {
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
   pub settings: &'a Config,
-  /// Bearer token resolved at the top of
+  /// Supplies a new token for every request, set at the top of
   /// [`crate::dispatch::process::process_cli`] for every command that
-  /// authenticates. Handlers that call
-  /// [`crate::common::authentication::get_api_token`] read this first
-  /// via the short-circuit added in step 4 — that's how we avoid the
-  /// second auth cascade per command. `None` for purely-local verbs.
-  pub token: Option<String>,
-  /// Supplies a new token for every request. Set alongside
-  /// [`Self::token`].
-  pub token_refresher:
-    Option<std::sync::Arc<crate::common::authentication::TokenRefresher>>,
+  /// talks to the server. `None` for purely-local verbs.
+  pub token_provider:
+    Option<std::sync::Arc<crate::common::authentication::TokenProvider>>,
   /// JWT-derived per-invocation facts, populated at the top of
   /// [`crate::dispatch::process::process_cli`] for every command that
   /// authenticates AND passes the read-only gate. `None` for
@@ -156,8 +151,7 @@ mod tests {
         headless: false,
       },
       settings,
-      token: None,
-      token_refresher: None,
+      token_provider: None,
       session: None,
     }
   }
