@@ -76,6 +76,12 @@ pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
 /// Environment variable holding a service account's client secret.
 pub const SA_CLIENT_SECRET_ENV_VAR: &str = "MANTA_SA_CLIENT_SECRET";
 
+/// How long to wait for the token cache lock before saying so. A refresh
+/// holds it well under this; a login another command started holds it
+/// for minutes.
+const LOCK_WAIT_NOTICE_AFTER: std::time::Duration =
+  std::time::Duration::from_secs(2);
+
 /// File name of the token cache inside the manta cache directory.
 const TOKEN_CACHE_FILE: &str = "token.json";
 
@@ -363,9 +369,14 @@ fn save_or_warn(store: &TokenStore, path: &Path) {
 /// opens exclude each other within one process too. `None`, with a
 /// warning, when the lock cannot be taken; the refresh then goes ahead
 /// without it.
+///
+/// Waits as long as the holder needs, which during a login is minutes.
+/// After [`LOCK_WAIT_NOTICE_AFTER`] it says so on stderr, so the wait
+/// does not look like a hang.
 async fn lock_cache(path: &Path) -> Option<std::fs::File> {
   let lock_path = path.with_extension("lock");
-  let locked = tokio::task::spawn_blocking(move || {
+  let shown_path = lock_path.display().to_string();
+  let mut locking = tokio::task::spawn_blocking(move || {
     // Before the first login the cache directory may not exist yet;
     // create it as `TokenStore::save` would.
     if let Some(dir) = lock_path.parent() {
@@ -382,8 +393,18 @@ async fn lock_cache(path: &Path) -> Option<std::fs::File> {
       .open(&lock_path)?;
     file.lock()?;
     Ok::<_, std::io::Error>(file)
-  })
-  .await;
+  });
+  let locked =
+    match tokio::time::timeout(LOCK_WAIT_NOTICE_AFTER, &mut locking).await {
+      Ok(locked) => locked,
+      Err(_) => {
+        eprintln!(
+          "Waiting for another manta command (or request) that is logging \
+           in or refreshing the token (lock: {shown_path})..."
+        );
+        locking.await
+      }
+    };
   match locked {
     Ok(Ok(file)) => Some(file),
     Ok(Err(err)) => {
