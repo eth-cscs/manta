@@ -103,6 +103,26 @@ where
   }
 }
 
+/// The message for a `401`. manta-server exchanges the CSCS token on
+/// every request at the site's identity provider (Keycloak on CSM sites,
+/// Hydra on OpenCHAMI); a `401` means that provider rejected it. The
+/// token was a new one, so it was neither expired nor reused: the cause
+/// is who it belongs to, or the site's trust in the CSCS Keycloak.
+fn token_rejected(body: &str, service_account: bool) -> String {
+  let advice = if service_account {
+    "Check that the service account in `MANTA_SA_CLIENT_ID` is allowed on \
+     this site"
+  } else {
+    "Check that your account is allowed on this site; `manta config unset \
+     auth` forces a new login, e.g. as another user"
+  };
+  format!(
+    "this site's identity provider rejected the CSCS token. {advice}, or \
+     ask the manta-server operators whether the site accepts CSCS tokens. \
+     Original body: {body}"
+  )
+}
+
 /// Pull the human-readable error message out of a raw response body.
 /// Recognises the `{"error":"..."}` shape produced by
 /// `manta-server`'s `ErrorResponse`; otherwise returns the body
@@ -157,16 +177,16 @@ fn categorise_transport_error(rqe: &reqwest::Error) -> String {
 }
 
 /// Re-shape an `HTTP <status>: <body>` error from manta-server into a
-/// message that names *which* timeout fired when the body matches a
-/// known timeout shape. Only the timeout-related cases are rewritten;
-/// everything else passes through as-is.
+/// message that says what went wrong: a rejected token (401), or
+/// *which* timeout fired when the body matches a known timeout shape.
+/// Everything else passes through as-is.
 fn categorise_server_error(status: u16, body: &str) -> String {
   if status == 401 {
-    return format!(
-      "the token was rejected: it has expired, or this site does not \
-       accept tokens from the CSCS Keycloak. Run `manta config unset \
-       auth` to force a new login. Original body: {body}"
+    let service_account = matches!(
+      crate::common::authentication::service_account_from_env(),
+      Ok(Some(_))
     );
+    return token_rejected(body, service_account);
   }
   if status == 408 {
     return format!(
@@ -208,11 +228,19 @@ mod into_anyhow_tests {
   }
 
   #[test]
-  fn categorise_server_401_explains_token_rejection() {
-    let msg = categorise_server_error(401, "invalid token");
-    assert!(msg.contains("token was rejected"));
-    assert!(msg.contains("manta config unset auth"));
-    assert!(msg.contains("invalid token"));
+  fn a_401_names_the_identity_provider_and_keeps_the_body() {
+    let msg = token_rejected("invalid token", false);
+    assert!(msg.contains("identity provider rejected"), "{msg}");
+    assert!(msg.contains("manta config unset auth"), "{msg}");
+    assert!(msg.contains("invalid token"), "{msg}");
+  }
+
+  /// `config unset auth` does nothing for a service account.
+  #[test]
+  fn a_401_with_a_service_account_points_at_it() {
+    let msg = token_rejected("invalid token", true);
+    assert!(msg.contains("MANTA_SA_CLIENT_ID"), "{msg}");
+    assert!(!msg.contains("config unset auth"), "{msg}");
   }
 
   #[test]
