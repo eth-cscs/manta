@@ -12,6 +12,8 @@
 //!   - Request-body validation fires before backend calls
 //!   - Vault/K8s-dependent routes return 501 when not configured
 
+mod common;
+
 use std::sync::Arc;
 
 use axum::{
@@ -21,19 +23,21 @@ use axum::{
 use http_body_util::BodyExt as _;
 use tower::ServiceExt as _;
 
-use manta_server::dispatcher::StaticBackendDispatcher;
 use manta_server::server::{ServerState, SiteBackend, routes::build_router};
 
 // ---------------------------------------------------------------------------
 // Test helpers
 // ---------------------------------------------------------------------------
 
-/// Build a router backed by a stub CSM backend with no real URLs.
+/// Build a router backed by a stub backend with no real URLs.
 /// Backend methods are never called because all non-health tests
 /// either fail at auth or at Axum's request extraction layer first.
-fn router() -> axum::Router {
-  let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+///
+/// The stub is an OpenCHAMI dispatcher with a mock Hydra, so requests
+/// get past `RequestCtx`. The CSM exchange is covered in
+/// `tests/integration.rs`.
+async fn router() -> axum::Router {
+  let backend = common::stub_ochami_backend().await;
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -50,7 +54,6 @@ fn router() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
-    auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -58,11 +61,10 @@ fn router() -> axum::Router {
   build_router(state)
 }
 
-/// Same as `router()` but with vault and k8s URLs set, used to
+/// Same as `router().await` but with vault and k8s URLs set, used to
 /// reach the "requires vault/k8s" code paths.
-fn router_with_vault() -> axum::Router {
-  let backend =
-    StaticBackendDispatcher::new("csm", "http://stub.invalid", b"").unwrap();
+async fn router_with_vault() -> axum::Router {
+  let backend = common::stub_ochami_backend().await;
   let mut sites = std::collections::HashMap::new();
   sites.insert(
     "test".to_string(),
@@ -79,7 +81,6 @@ fn router_with_vault() -> axum::Router {
     sites,
     console_inactivity_timeout: std::time::Duration::from_secs(1800),
     audit: manta_server::server::audit::AuditLog::default(),
-    auth_rate_limit_per_minute: None,
     request_timeout: std::time::Duration::from_secs(60),
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
@@ -121,39 +122,19 @@ fn post_json(uri: &str, body: &str) -> Request<Body> {
     .unwrap()
 }
 
-/// Build an **unauthenticated** POST to a public `/auth/*` endpoint
-/// for an arbitrary `X-Manta-Site`. No Bearer token (these endpoints
-/// are how a token is obtained). The `ConnectInfo` extension is
-/// injected so `auth_token`'s `ConnectInfo<SocketAddr>` extractor
-/// resolves under `oneshot` (which doesn't set it) and the handler
-/// body — where the site lookup lives — actually runs.
-fn post_auth(uri: &str, site: &str, body: &str) -> Request<Body> {
-  let mut req = Request::builder()
-    .method(Method::POST)
-    .uri(uri)
-    .header(header::CONTENT_TYPE, "application/json")
-    .header("X-Manta-Site", site)
-    .body(Body::from(body.to_string()))
-    .unwrap();
-  req.extensions_mut().insert(axum::extract::ConnectInfo(
-    "127.0.0.1:65000".parse::<std::net::SocketAddr>().unwrap(),
-  ));
-  req
-}
-
 // ---------------------------------------------------------------------------
 // Health check
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
 async fn health_returns_200_without_auth() {
-  let resp = router().oneshot(get("/v2/health")).await.unwrap();
+  let resp = router().await.oneshot(get("/v2/health")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn health_body_contains_status_ok() {
-  let resp = router().oneshot(get("/v2/health")).await.unwrap();
+  let resp = router().await.oneshot(get("/v2/health")).await.unwrap();
   let body = body_string(resp.into_body()).await;
   assert!(body.contains("\"ok\""), "body was: {body}");
 }
@@ -169,7 +150,7 @@ async fn responses_carry_strict_transport_security_header() {
   // protected without further config. Pin the exact value so a
   // future bump of max-age or addition of `preload` is an explicit
   // operator decision, not a silent drift.
-  let resp = router().oneshot(get("/v2/health")).await.unwrap();
+  let resp = router().await.oneshot(get("/v2/health")).await.unwrap();
   let hsts = resp
     .headers()
     .get(axum::http::header::STRICT_TRANSPORT_SECURITY)
@@ -186,13 +167,21 @@ async fn responses_carry_strict_transport_security_header() {
 
 #[tokio::test]
 async fn unknown_route_returns_404() {
-  let resp = router().oneshot(get("/v2/does-not-exist")).await.unwrap();
+  let resp = router()
+    .await
+    .oneshot(get("/v2/does-not-exist"))
+    .await
+    .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
 async fn old_prefix_returns_404() {
-  let resp = router().oneshot(get("/api/v2/sessions")).await.unwrap();
+  let resp = router()
+    .await
+    .oneshot(get("/api/v2/sessions"))
+    .await
+    .unwrap();
   assert_eq!(resp.status(), StatusCode::NOT_FOUND);
 }
 
@@ -202,7 +191,7 @@ async fn old_prefix_returns_404() {
 
 #[tokio::test]
 async fn get_on_post_only_route_returns_405() {
-  let resp = router().oneshot(get("/v2/power")).await.unwrap();
+  let resp = router().await.oneshot(get("/v2/power")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
 
@@ -210,6 +199,7 @@ async fn get_on_post_only_route_returns_405() {
 async fn post_on_get_only_route_returns_405() {
   // POST /clusters is not a registered route; only GET is allowed.
   let resp = router()
+    .await
     .oneshot(
       Request::builder()
         .method(Method::POST)
@@ -225,6 +215,7 @@ async fn post_on_get_only_route_returns_405() {
 #[tokio::test]
 async fn delete_health_returns_405() {
   let resp = router()
+    .await
     .oneshot(
       Request::builder()
         .method(Method::DELETE)
@@ -258,7 +249,7 @@ async fn get_routes_reject_missing_bearer_token() {
     "/v2/hardware-clusters",
   ];
   for uri in routes {
-    let resp = router().oneshot(get(uri)).await.unwrap();
+    let resp = router().await.oneshot(get(uri)).await.unwrap();
     assert_eq!(
       resp.status(),
       StatusCode::UNAUTHORIZED,
@@ -277,6 +268,7 @@ async fn delete_routes_without_body_reject_missing_bearer_token() {
   ];
   for uri in routes {
     let resp = router()
+      .await
       .oneshot(
         Request::builder()
           .method(Method::DELETE)
@@ -291,6 +283,31 @@ async fn delete_routes_without_body_reject_missing_bearer_token() {
       StatusCode::UNAUTHORIZED,
       "expected 401 for DELETE {uri}"
     );
+  }
+}
+
+/// `Bearer ` with nothing after it never reaches the identity provider
+/// (the stub Hydra here would accept it, and the request would get as far
+/// as the backend).
+#[tokio::test]
+async fn an_empty_bearer_token_is_rejected() {
+  for value in ["Bearer ", "Bearer    "] {
+    let resp = router()
+      .await
+      .oneshot(
+        Request::builder()
+          .method(Method::GET)
+          .uri("/v2/groups/available")
+          .header(header::AUTHORIZATION, value)
+          .header("X-Manta-Site", "test")
+          .body(Body::empty())
+          .unwrap(),
+      )
+      .await
+      .unwrap();
+    assert_eq!(resp.status(), StatusCode::UNAUTHORIZED, "for {value:?}");
+    let body = body_string(resp.into_body()).await;
+    assert!(body.contains("carries no token"), "for {value:?}: {body}");
   }
 }
 
@@ -332,6 +349,7 @@ async fn body_routes_reject_missing_bearer_token() {
   ];
   for (method, uri, body) in cases {
     let resp = router()
+      .await
       .oneshot(
         Request::builder()
           .method(method.clone())
@@ -388,7 +406,7 @@ async fn post_routes_reject_invalid_bodies() {
     ("/v2/hardware-clusters/my-cluster/configuration", "{}"),
   ];
   for (uri, body) in cases {
-    let resp = router().oneshot(post_json(uri, body)).await.unwrap();
+    let resp = router().await.oneshot(post_json(uri, body)).await.unwrap();
     assert_eq!(
       resp.status(),
       StatusCode::UNPROCESSABLE_ENTITY,
@@ -406,13 +424,14 @@ async fn post_routes_reject_invalid_bodies() {
 
 #[tokio::test]
 async fn get_nodes_without_xname_returns_400() {
-  let resp = router().oneshot(get_auth("/v2/nodes")).await.unwrap();
+  let resp = router().await.oneshot(get_auth("/v2/nodes")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn get_hardware_nodes_list_without_xnames_returns_400() {
   let resp = router()
+    .await
     .oneshot(get_auth("/v2/hardware-nodes-list"))
     .await
     .unwrap();
@@ -426,6 +445,7 @@ async fn get_hardware_nodes_list_without_xnames_returns_400() {
 #[tokio::test]
 async fn get_session_logs_without_k8s_config_returns_501() {
   let resp = router()
+    .await
     .oneshot(get_auth("/v2/sessions/my-session/logs"))
     .await
     .unwrap();
@@ -445,7 +465,7 @@ async fn assert_route_exists(method: Method, uri: &str) {
     .header("X-Manta-Site", "test")
     .body(Body::empty())
     .unwrap();
-  let resp = router().oneshot(req).await.unwrap();
+  let resp = router().await.oneshot(req).await.unwrap();
   assert_ne!(
     resp.status(),
     StatusCode::NOT_FOUND,
@@ -510,8 +530,6 @@ async fn all_post_routes_are_registered() {
     "/v2/sat-file/session-templates",
     "/v2/hardware-clusters/my-cluster/members",
     "/v2/hardware-clusters/my-cluster/configuration",
-    "/v2/auth/token",
-    "/v2/auth/validate",
   ] {
     assert_route_exists(Method::POST, uri).await;
   }
@@ -560,6 +578,7 @@ async fn all_put_routes_are_registered() {
 #[tokio::test]
 async fn delete_kernel_parameters_missing_params_returns_422() {
   let resp = router()
+    .await
     .oneshot(
       Request::builder()
         .method(Method::DELETE)
@@ -586,6 +605,7 @@ async fn delete_kernel_parameters_missing_params_returns_422() {
 #[tokio::test]
 async fn create_session_with_vault_does_not_return_501() {
   let resp = router_with_vault()
+    .await
     .oneshot(post_json(
       "/v2/sessions",
       r#"{"repo_names":["cray/foo"],"repo_last_commit_ids":["abc123"]}"#,
@@ -602,6 +622,7 @@ async fn create_session_with_vault_does_not_return_501() {
 #[tokio::test]
 async fn get_session_logs_with_vault_and_k8s_does_not_return_501() {
   let resp = router_with_vault()
+    .await
     .oneshot(get_auth("/v2/sessions/my-session/logs"))
     .await
     .unwrap();
@@ -634,6 +655,7 @@ fn ws_upgrade(uri: &str) -> Request<Body> {
 #[tokio::test]
 async fn console_node_without_auth_returns_401() {
   let resp = router()
+    .await
     .oneshot(ws_upgrade("/v2/nodes/x3000c0s1b0n0/console"))
     .await
     .unwrap();
@@ -643,6 +665,7 @@ async fn console_node_without_auth_returns_401() {
 #[tokio::test]
 async fn console_session_without_auth_returns_401() {
   let resp = router()
+    .await
     .oneshot(ws_upgrade("/v2/sessions/my-session/console"))
     .await
     .unwrap();
@@ -650,81 +673,23 @@ async fn console_session_without_auth_returns_401() {
 }
 
 // ---------------------------------------------------------------------------
-// Auth endpoints — unknown site is reported as 404 (issue #102)
-//
-// The public `/auth/*` endpoints used to collapse every failure
-// (including "site not configured") into a generic 401. They now 404
-// on an unknown `X-Manta-Site`, matching every authenticated endpoint,
-// so the CLI can fail fast instead of prompting for credentials that
-// can never succeed. A *known* site must NOT 404 — the backend call is
-// attempted and its failure stays a generic 401.
+// Auth endpoints are gone — the CLI obtains its token from the CSCS
+// Keycloak directly, so the server no longer handles credentials.
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn auth_token_unknown_site_returns_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/token",
-      "nonexistent-site",
-      r#"{"username":"alice","password":"hunter2"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-  let body = body_string(resp.into_body()).await;
-  assert!(
-    body.contains("nonexistent-site"),
-    "404 body should name the missing site, got: {body}"
-  );
-}
-
-#[tokio::test]
-async fn auth_validate_unknown_site_returns_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/validate",
-      "nonexistent-site",
-      r#"{"token":"some-token"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_eq!(resp.status(), StatusCode::NOT_FOUND);
-  let body = body_string(resp.into_body()).await;
-  assert!(
-    body.contains("nonexistent-site"),
-    "404 body should name the missing site, got: {body}"
-  );
-}
-
-#[tokio::test]
-async fn auth_token_known_site_is_not_404() {
-  // Site "test" exists; the stub backend at http://stub.invalid can't
-  // be reached, so the credential exchange fails — but as a generic
-  // 401, never a 404 (which is reserved for unknown sites).
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/token",
-      "test",
-      r#"{"username":"alice","password":"hunter2"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn auth_validate_known_site_is_not_404() {
-  let resp = router()
-    .oneshot(post_auth(
-      "/v2/auth/validate",
-      "test",
-      r#"{"token":"some-token"}"#,
-    ))
-    .await
-    .unwrap();
-  assert_ne!(resp.status(), StatusCode::NOT_FOUND);
-  assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+async fn auth_routes_are_not_registered() {
+  for uri in ["/v2/auth/token", "/v2/auth/validate"] {
+    let req = Request::builder()
+      .method(Method::POST)
+      .uri(uri)
+      .header(header::CONTENT_TYPE, "application/json")
+      .header("X-Manta-Site", "test")
+      .body(Body::from("{}"))
+      .unwrap();
+    let resp = router().await.oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::NOT_FOUND, "{uri} still routed");
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -733,13 +698,13 @@ async fn auth_validate_known_site_is_not_404() {
 
 #[tokio::test]
 async fn openapi_json_returns_200() {
-  let resp = router().oneshot(get("/openapi.json")).await.unwrap();
+  let resp = router().await.oneshot(get("/openapi.json")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn openapi_spec_contains_expected_paths_and_schemas() {
-  let resp = router().oneshot(get("/openapi.json")).await.unwrap();
+  let resp = router().await.oneshot(get("/openapi.json")).await.unwrap();
   assert_eq!(resp.status(), StatusCode::OK);
   let body = body_string(resp.into_body()).await;
   let spec: serde_json::Value =
@@ -935,7 +900,7 @@ async fn post_with_manta_read_only_role_is_not_refused_by_role_gate() {
     .header("X-Manta-Site", "test")
     .body(Body::from(r#"{"label":"x"}"#))
     .unwrap();
-  let resp = router().oneshot(req).await.unwrap();
+  let resp = router().await.oneshot(req).await.unwrap();
   let status = resp.status();
   let body = body_string(resp.into_body()).await;
   assert_ne!(

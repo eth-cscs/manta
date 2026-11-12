@@ -14,6 +14,8 @@ use csm_rs::backend_connector::Csm;
 use manta_backend_dispatcher::error::Error;
 use ochami_rs::backend_connector::Ochami;
 
+use crate::config::TokenExchangeConfig;
+
 /// Routes API calls to either a CSM or OCHAMI backend.
 ///
 /// Every backend trait (e.g. `CfsTrait`, `GroupTrait`,
@@ -57,6 +59,11 @@ impl StaticBackendDispatcher {
   /// bytes of the backend's root CA — used to verify TLS to
   /// `base_url`.
   ///
+  /// `token_exchange` holds the client credentials used to exchange
+  /// the caller's token at the site's identity provider (Keycloak for
+  /// CSM, Hydra for OpenCHAMI). A dispatcher without it fails every
+  /// `exchange_api_token` call.
+  ///
   /// Called once per configured site during server startup.
   ///
   /// # Errors
@@ -65,14 +72,29 @@ impl StaticBackendDispatcher {
   ///   `"csm"` or `"ochami"`.
   /// - Any error surfaced by `Csm::new` (CSM variant) when
   ///   the supplied cert is unusable.
+  /// - [`Error::MissingField`] when `token_exchange` lacks a field this
+  ///   backend needs.
   pub fn new(
     backend_type: &str,
     base_url: &str,
     root_cert: &[u8],
+    token_exchange: Option<&TokenExchangeConfig>,
   ) -> Result<Self, Error> {
     match backend_type {
-      "csm" => Ok(Self::CSM(Csm::new(base_url, root_cert)?)),
-      "ochami" => Ok(Self::OCHAMI(Ochami::new(base_url, root_cert))),
+      "csm" => {
+        let csm = Csm::new(base_url, root_cert)?;
+        Ok(Self::CSM(match token_exchange {
+          Some(te) => csm.with_token_exchange(te.csm()?),
+          None => csm,
+        }))
+      }
+      "ochami" => {
+        let ochami = Ochami::new(base_url, root_cert);
+        Ok(Self::OCHAMI(match token_exchange {
+          Some(te) => ochami.with_token_exchange(te.ochami()?),
+          None => ochami,
+        }))
+      }
       _ => Err(Error::UnsupportedBackend(format!(
         "Backend '{backend_type}' not supported"
       ))),

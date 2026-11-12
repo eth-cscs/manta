@@ -20,8 +20,8 @@ use crate::output::action_result;
 
 /// Dispatch `manta gen-man`.
 ///
-/// Like `gen-autocomplete`, this handler does NOT call
-/// `get_api_token` — installing man pages is purely local.
+/// Like `gen-autocomplete`, this handler needs no
+/// token — installing man pages is purely local.
 pub async fn handle_gen_man(
   cli_gen_man: &ArgMatches,
   _ctx: &AppContext<'_>,

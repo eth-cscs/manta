@@ -11,7 +11,8 @@
 //!    [`validate_user_group_vec_access`] (group labels).
 //! 3. Proceed to the actual backend mutation.
 //!
-//! Admin tokens carrying the [`PA_ADMIN`] role short-circuit every
+//! Admin tokens carrying the [`PA_ADMIN`] role (and, for now, every
+//! token on an OpenCHAMI site) short-circuit every
 //! check to `Ok(())` without touching the backend, mirroring the
 //! "admin sees everything" expectation. Listing endpoints still
 //! validate so the response can't disclose more than the caller
@@ -25,6 +26,7 @@
 use manta_backend_dispatcher::error::Error;
 use manta_backend_dispatcher::interfaces::hsm::group::GroupTrait;
 
+use crate::dispatcher::StaticBackendDispatcher;
 use crate::server::common::{app_context::InfraContext, jwt_ops};
 
 /// Keycloak role name that grants full admin access. The canonical
@@ -33,30 +35,40 @@ use crate::server::common::{app_context::InfraContext, jwt_ops};
 /// compiling after the relocation.
 pub use crate::server::common::jwt_ops::PA_ADMIN;
 
-/// Returns `true` when the caller is admin (carries `PA_ADMIN` in
-/// `realm_access.roles`). Admin tokens short-circuit every group-scope
-/// check in this module — see the module-level security note and the
-/// `jwt_ops.rs` module doc for the no-local-signature-verification posture.
+/// Returns `true` when the caller is admin: on CSM, when the token
+/// carries `PA_ADMIN` in `realm_access.roles`; on OpenCHAMI, always.
+/// Admin tokens short-circuit every group-scope check in this module —
+/// see the module-level security note and the `jwt_ops.rs` module doc for
+/// the no-local-signature-verification posture.
+///
+/// TEMPORARY for OpenCHAMI: neither the CSCS token nor the Hydra token
+/// carries roles, and no other source exists yet (OpenFGA is being
+/// evaluated), so anyone holding a token this site's Hydra issued counts
+/// as admin. Revert this commit when roles exist.
 ///
 /// This is the canonical admin-detection entry point for the service layer.
 /// All callers that need to branch on admin status must use this function
 /// rather than calling `jwt_ops::is_user_admin` directly, so that a future
 /// policy change (e.g. a different role name, audit logging) touches one place.
-pub(crate) fn is_admin(token: &str) -> bool {
-  jwt_ops::is_user_admin(token)
+pub(crate) fn is_admin(infra: &InfraContext<'_>, token: &str) -> bool {
+  matches!(infra.backend, StaticBackendDispatcher::OCHAMI(_))
+    || jwt_ops::is_user_admin(token)
 }
 
-/// Return `Ok(())` when the caller carries the admin role (`pa_admin`);
-/// `Err(Error::BadRequest(...))` otherwise.
+/// Return `Ok(())` when the caller is admin (on OpenCHAMI, always);
+/// `Err(Error::Forbidden(...))` (a `403`) otherwise.
 ///
 /// Use at handler boundaries that restrict an operation to admin users.
 /// Centralises the check so a future policy change (e.g. a different
 /// admin-role name, or audit-logging on admin access) touches one place.
-pub fn require_admin(token: &str) -> Result<(), Error> {
-  if is_admin(token) {
+pub fn require_admin(
+  infra: &InfraContext<'_>,
+  token: &str,
+) -> Result<(), Error> {
+  if is_admin(infra, token) {
     Ok(())
   } else {
-    Err(Error::BadRequest(
+    Err(Error::Forbidden(
       "this operation requires admin privileges".to_string(),
     ))
   }
@@ -73,7 +85,7 @@ pub async fn validate_user_group_access(
   token: &str,
   group_name: &str,
 ) -> Result<(), Error> {
-  if is_admin(token) {
+  if is_admin(infra, token) {
     return Ok(());
   }
 
@@ -96,7 +108,7 @@ pub async fn validate_user_group_vec_access(
   token: &str,
   group_vec: &[String],
 ) -> Result<(), Error> {
-  if is_admin(token) {
+  if is_admin(infra, token) {
     return Ok(());
   }
 
@@ -160,7 +172,7 @@ pub(crate) async fn fetch_group_names_and_validate_access(
   target_groups: &[String],
 ) -> Result<Vec<String>, Error> {
   let available = infra.backend.get_group_name_available(token).await?;
-  if !is_admin(token) {
+  if !is_admin(infra, token) {
     validate_group_vec_access(target_groups, &available)?;
   }
   Ok(available)
@@ -178,7 +190,7 @@ pub async fn validate_ansible_limit_membership_access(
   token: &str,
   ansible_limit: &str,
 ) -> Result<(), Error> {
-  if is_admin(token) {
+  if is_admin(infra, token) {
     return Ok(());
   }
 
@@ -201,7 +213,7 @@ pub async fn validate_user_group_members_access(
   token: &str,
   group_members_target_vec: &[String],
 ) -> Result<(), Error> {
-  if is_admin(token) {
+  if is_admin(infra, token) {
     return Ok(());
   }
 
@@ -229,7 +241,7 @@ pub async fn validate_group_members_access(
   group_members_target_vec: &[String],
   hsm_groups_user_has_access: &[String],
 ) -> Result<(), Error> {
-  if is_admin(token) {
+  if is_admin(infra, token) {
     return Ok(());
   }
 
@@ -265,7 +277,75 @@ pub async fn validate_group_members_access(
 
 #[cfg(test)]
 mod tests {
+  use base64::prelude::*;
+
   use super::*;
+
+  /// Any well-formed PEM certificate.
+  const TEST_PEM: &[u8] = b"-----BEGIN CERTIFICATE-----\n\
+MIIBhTCCASugAwIBAgIQIRi6zePL6mKjOipn+dNuaTAKBggqhkjOPQQDAjASMRAw\n\
+DgYDVQQKEwdBY21lIENvMB4XDTE3MTAyMDE5NDMwNloXDTE4MTAyMDE5NDMwNlow\n\
+EjEQMA4GA1UEChMHQWNtZSBDbzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABD0d\n\
+7VNhbWvZLWPuj/RtHFjvtJBEwOkhbN/BnnE8rnZR8+sbwnc/KhCk3FhnpHZnQz7B\n\
+5aETbbIgmuvewdjvSBSjYzBhMA4GA1UdDwEB/wQEAwICpDATBgNVHSUEDDAKBggr\n\
+BgEFBQcDATAPBgNVHRMBAf8EBTADAQH/MCkGA1UdEQQiMCCCDmxvY2FsaG9zdDo1\n\
+NDUzgg4xMjcuMC4wLjE6NTQ1MzAKBggqhkjOPQQDAgNIADBFAiEA2zpJEPQyz6/l\n\
+Wf86aX6PepsntZv2GYlA5UpabfT2EZICICpJ5h/iI+i341gBmLiAFQOyTDT+/wQc\n\
+6MF9+Yw1Yy0t\n\
+-----END CERTIFICATE-----\n";
+
+  fn infra(backend: &StaticBackendDispatcher) -> InfraContext<'_> {
+    InfraContext {
+      backend,
+      site_name: "test",
+      shasta_base_url: "http://stub.invalid",
+      shasta_root_cert: &[],
+      vault_base_url: None,
+      gitea_base_url: "http://stub.invalid",
+      k8s_api_url: None,
+    }
+  }
+
+  fn csm() -> StaticBackendDispatcher {
+    StaticBackendDispatcher::new("csm", "http://stub.invalid", TEST_PEM, None)
+      .unwrap()
+  }
+
+  fn ochami() -> StaticBackendDispatcher {
+    StaticBackendDispatcher::new(
+      "ochami",
+      "http://stub.invalid",
+      TEST_PEM,
+      None,
+    )
+    .unwrap()
+  }
+
+  fn token_with_roles(roles: &[&str]) -> String {
+    let claims =
+      serde_json::json!({ "realm_access": { "roles": roles } }).to_string();
+    format!("e30.{}.sig", BASE64_URL_SAFE_NO_PAD.encode(claims))
+  }
+
+  #[test]
+  fn csm_requires_the_admin_role() {
+    let backend = csm();
+    let infra = infra(&backend);
+
+    assert!(require_admin(&infra, &token_with_roles(&[PA_ADMIN])).is_ok());
+    assert!(matches!(
+      require_admin(&infra, &token_with_roles(&["other"])),
+      Err(Error::Forbidden(_))
+    ));
+  }
+
+  #[test]
+  fn ochami_treats_a_token_without_roles_as_admin() {
+    let backend = ochami();
+    let infra = infra(&backend);
+
+    assert!(require_admin(&infra, &token_with_roles(&[])).is_ok());
+  }
 
   fn s(v: &[&str]) -> Vec<String> {
     v.iter().map(|s| (*s).to_string()).collect()

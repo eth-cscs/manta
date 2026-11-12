@@ -3,7 +3,6 @@
 pub mod nodes;
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
@@ -24,8 +23,6 @@ pub async fn handle_migrate(
   cli_migrate: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   match cli_migrate.subcommand() {
     Some(("nodes", m)) => {
       let dry_run: bool = m.get_flag("dry-run");
@@ -36,7 +33,7 @@ pub async fn handle_migrate(
 
       // Build the client once; reuse it for both the optional
       // accessible-groups lookup and the migrate_nodes call in nodes::exec.
-      let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+      let client = MantaClient::from_app_ctx(ctx)?;
 
       // If --from is set, use just that group; otherwise fan out to every
       // group the token can access. The accessible-group list comes from

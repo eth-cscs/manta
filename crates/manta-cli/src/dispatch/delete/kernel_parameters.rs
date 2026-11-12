@@ -30,11 +30,10 @@ pub struct ExecParams<'a> {
 /// `delete_kernel_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let xnames_expression = resolve_node_target(p.hsm_group, p.nodes);
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .delete_kernel_parameters(

@@ -106,9 +106,9 @@ impl MantaClient {
     use tokio_tungstenite::tungstenite::client::IntoClientRequest;
     use tokio_tungstenite::tungstenite::http::HeaderValue;
 
-    let token = self.token.as_deref().context(
+    let token = self.bearer_token().await?.context(
       "WebSocket console requires an authenticated client; construct \
-       MantaClient with Some(token)",
+       MantaClient with a token provider",
     )?;
 
     let mut req = url.into_client_request().context("Invalid WebSocket URL")?;

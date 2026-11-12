@@ -17,7 +17,6 @@ use serde_json::Value;
 
 use crate::common;
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 use crate::openapi_client::types::{PowerRequest, PowerTargetType};
@@ -74,8 +73,6 @@ pub async fn handle_power(
   cli_power: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   let (action, kind_m) = match cli_power.subcommand() {
     Some(("on", m)) => (PowerAction::On, m),
     Some(("off", m)) => (PowerAction::Off, m),
@@ -86,10 +83,10 @@ pub async fn handle_power(
 
   match kind_m.subcommand() {
     Some(("group", m)) => {
-      exec_cluster(ctx, &token, build_opts(action, "GROUP_NAME", m)?).await
+      exec_cluster(ctx, build_opts(action, "GROUP_NAME", m)?).await
     }
     Some(("nodes", m)) => {
-      exec_nodes(ctx, &token, build_opts(action, "VALUE", m)?).await
+      exec_nodes(ctx, build_opts(action, "VALUE", m)?).await
     }
     Some((other, _)) => bail!("Unknown 'power {action}' subcommand: {other}"),
     None => bail!("No 'power {action}' subcommand provided"),
@@ -189,7 +186,6 @@ async fn exec_power(
   label: &str,
   target_type: PowerTargetType,
   ctx: &AppContext<'_>,
-  token: &str,
   opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
   // Interactive context printed before the confirm prompt; intentionally
@@ -203,7 +199,7 @@ async fn exec_power(
   {
     bail!("Operation cancelled by user");
   }
-  dispatch_and_wait(ctx, token, &opts, target_type).await
+  dispatch_and_wait(ctx, &opts, target_type).await
 }
 
 /// Execute a power action against a list of nodes resolved
@@ -215,10 +211,9 @@ async fn exec_power(
 /// when [`dispatch_and_wait`] fails.
 pub async fn exec_nodes(
   ctx: &AppContext<'_>,
-  token: &str,
   opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
-  exec_power("Nodes expression", PowerTargetType::Nodes, ctx, token, opts).await
+  exec_power("Nodes expression", PowerTargetType::Nodes, ctx, opts).await
 }
 
 /// Execute a power action against all nodes in an HSM group.
@@ -229,10 +224,9 @@ pub async fn exec_nodes(
 /// when [`dispatch_and_wait`] fails.
 pub async fn exec_cluster(
   ctx: &AppContext<'_>,
-  token: &str,
   opts: PowerOpts<'_>,
 ) -> Result<(), Error> {
-  exec_power("Group", PowerTargetType::Cluster, ctx, token, opts).await
+  exec_power("Group", PowerTargetType::Cluster, ctx, opts).await
 }
 
 /// POST `/power` to start the transition, then (unless `no_wait`)
@@ -241,7 +235,6 @@ pub async fn exec_cluster(
 /// prints a final summary, and exits non-zero if any task failed.
 async fn dispatch_and_wait(
   ctx: &AppContext<'_>,
-  token: &str,
   opts: &PowerOpts<'_>,
   target_type: PowerTargetType,
 ) -> Result<(), Error> {
@@ -263,7 +256,7 @@ async fn dispatch_and_wait(
     );
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let started = client
     .openapi
     .post_power(client.site_name(), &req)

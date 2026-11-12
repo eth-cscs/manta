@@ -26,7 +26,6 @@ pub mod nodes;
 pub mod redfish_endpoint;
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
 use anyhow::{Context, Error, bail};
 use clap::ArgMatches;
@@ -45,8 +44,6 @@ pub async fn handle_add(
   cli_add: &ArgMatches,
   ctx: &AppContext<'_>,
 ) -> Result<(), Error> {
-  let token = get_api_token(ctx).await?;
-
   match cli_add.subcommand() {
     Some(("nodes", m)) => {
       let target_hsm_name = m.req_str("group")?;
@@ -56,7 +53,6 @@ pub async fn handle_add(
       let output_opt = m.opt_str("output");
       nodes::exec(
         ctx,
-        &token,
         target_hsm_name,
         hosts_expression,
         dryrun,
@@ -68,7 +64,6 @@ pub async fn handle_add(
     Some(("node", m)) => {
       node::exec(
         ctx,
-        &token,
         node::ExecParams {
           id: m.req_str("id")?,
           group: m.req_str("group")?,
@@ -84,7 +79,6 @@ pub async fn handle_add(
     Some(("group", m)) => {
       group::exec(
         ctx,
-        &token,
         group::ExecParams {
           label: m.req_str("label")?,
           description: m.opt_str("description"),
@@ -109,7 +103,6 @@ pub async fn handle_add(
         .context("'parent-cluster' is required (no default in cli.toml)")?;
       hardware::exec(
         ctx,
-        &token,
         hardware::ExecParams {
           target_group: target,
           parent_group: parent,
@@ -122,7 +115,7 @@ pub async fn handle_add(
       .await?;
     }
     Some(("boot-parameters", m)) => {
-      boot_parameters::exec(ctx, &token, m).await?;
+      boot_parameters::exec(ctx, m).await?;
     }
     Some(("kernel-parameters", m)) => {
       let hsm_group = m.opt_str("group");
@@ -133,7 +126,6 @@ pub async fn handle_add(
       };
       kernel_parameters::exec(
         ctx,
-        &token,
         kernel_parameters::ExecParams {
           kernel_params: m.req_str("VALUE")?,
           hosts_expression: nodes_opt,
@@ -148,7 +140,6 @@ pub async fn handle_add(
     Some(("redfish-endpoints", m)) => {
       redfish_endpoint::exec(
         ctx,
-        &token,
         redfish_endpoint::ExecParams {
           id: m.req_str("id")?,
           name: m.opt_str("name"),

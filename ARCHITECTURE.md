@@ -25,12 +25,12 @@ A fourth directory, `crates/manta-cache/`, exists in the tree but is **not** a w
 
 | Module | Used by | Contents |
 |--------|---------|----------|
-| `types` | both bins | Wire types (`params/`, `dto`, `auth`) and `cluster_status` helpers |
+| `types` | both bins | Wire types (`api/`, `dto`) and `cluster_status` helpers |
 | `common` | both bins | Config loader (untyped `Config`), `MantaError`, logging |
 
 The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks routing to `csm-rs`/`ochami-rs`, plus the `authorization` helpers that take a `&StaticBackendDispatcher`) lives in **`manta-server` only** (`crates/manta-server/src/backend_dispatcher/mod.rs`, `dispatcher.rs`, `service/authorization.rs`). The CLI never reaches them.
 
-`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `hooks`, `confirm`, `multi_line`); the SAT-file Jinja renderer lives next to its caller at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs`. `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `jwt_ops`, `vault`), the audit trail under `crates/manta-server/src/server/audit/`, and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
+`manta-cli` keeps its CLI-only modules under `crates/manta-cli/src/common/` (e.g. `app_context::AppContext`, `config::CliConfiguration`, `authentication`, `oidc`, `hooks`, `confirm`, `multi_line`); the SAT-file Jinja renderer lives next to its caller at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs`. `manta-server` keeps cross-tier helpers under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `jwt_ops`, `vault`), the audit trail under `crates/manta-server/src/server/audit/`, and its typed server config schema at `crates/manta-server/src/config.rs`. The bulk of service-tier orchestration (`node_ops`, `authorization`, `ims_ops`, `boot_parameters`, plus the `hw_cluster` family) lives under `crates/manta-server/src/service/`.
 
 ---
 
@@ -39,7 +39,8 @@ The backend bridge (`StaticBackendDispatcher` enum and the trait-impl blocks rou
 ```mermaid
 flowchart LR
   User((User)) --> CLI[manta CLI]
-  CLI -->|HTTPS| Server[manta-server]
+  CLI -->|OIDC login| KC[(CSCS Keycloak)]
+  CLI -->|HTTPS + Bearer| Server[manta-server]
   CLI -. shares .-> Shared
   Server -. shares .-> Shared
 
@@ -77,7 +78,7 @@ Each binary has its own `main.rs`:
 Startup runs in two phases:
 
 1. **Single-threaded phase** — parse CLI args, load `cli.toml` from the platform config directory (Linux: `~/.config/manta/cli.toml` or `$XDG_CONFIG_HOME/manta/cli.toml`; macOS: `~/Library/Application Support/local.cscs.manta/cli.toml`) into a `CliConfiguration`. If the optional top-level `socks5_proxy` is set, export `SOCKS5` so `reqwest` picks it up for connections to manta-server.
-2. **Multi-threaded phase** — start the tokio runtime, build an `AppContext` (site name, manta-server URL, default HSM group, timeout/poll knobs, raw settings) and hand it to `dispatch::process::process_cli`, which runs the read-only gate → token cascade → `SessionContext` build before routing to the verb. The CLI never instantiates `StaticBackendDispatcher` — every backend operation goes through `MantaClient` HTTPS calls to manta-server, and it emits no audit events of its own (that is server-side only).
+2. **Multi-threaded phase** — start the tokio runtime, build an `AppContext` (site name, manta-server URL, default HSM group, timeout/poll knobs, raw settings) and hand it to `dispatch::process::process_cli`, which runs the read-only gate → token cascade → `SessionContext` build before routing to the verb. The token cascade is the only place the CLI talks to anything but manta-server: it logs in to the CSCS Keycloak directly (`common::oidc`). The CLI never instantiates `StaticBackendDispatcher` — every backend operation goes through `MantaClient` HTTPS calls to manta-server, and it emits no audit events of its own (that is server-side only).
 
 ### `crates/manta-server/src/main.rs`
 
@@ -92,12 +93,12 @@ Mirrors the CLI bootstrap, then starts the HTTPS server. Minimal Clap surface: `
 Presentation layer. Responsibilities:
 
 - **`build/`** — Clap command and subcommand definitions, split per verb (`add.rs`, `apply.rs`, `backup.rs`, `config.rs`, `console.rs`, `delete.rs`, `gen_autocomplete.rs`, `gen_man.rs`, `get.rs`, `log.rs`, `migrate.rs`, `power.rs`, `restore.rs`, `run.rs`, `upgrade.rs`); `mod.rs` keeps the top-level `build_cli()` plus a few shared helpers (`output_flag`, `HOSTLIST_HELP`).
-- **`dispatch/`** — Routing **and** execution; there is no separate `handlers/` directory in the CLI. `dispatch/process.rs` is the root dispatcher: for every invocation it runs the read-only gate, then (for authenticated verbs) the auth-token cascade (`get_api_token`) and the `SessionContext` build, then matches the top-level verb and calls the verb module. One subdirectory per verb (`add/`, `apply/`, `backup/`, `config/`, `console/`, `delete/`, `get/`, `migrate/`, `power/`, `restore/`, `run/`), each containing one file per noun (`dispatch/get/sessions.rs` implements `manta get sessions`, etc.) exporting `pub async fn exec(...)`; the verb's `mod.rs` holds the noun match arms. Verbs with no nouns live as single files directly under `dispatch/` (`gen_autocomplete.rs`, `gen_man.rs`, `log.rs`, `upgrade.rs`). `apply/sat_file/` is itself a sub-tree (`render`, `plan`, `dispatch`, `exec`).
+- **`dispatch/`** — Routing **and** execution; there is no separate `handlers/` directory in the CLI. `dispatch/process.rs` is the root dispatcher: for every invocation it runs the read-only gate, then (for authenticated verbs) sets up the token provider and builds the `SessionContext` (its request is the command's first, so a needed login happens there), then matches the top-level verb and calls the verb module. One subdirectory per verb (`add/`, `apply/`, `backup/`, `config/`, `console/`, `delete/`, `get/`, `migrate/`, `power/`, `restore/`, `run/`), each containing one file per noun (`dispatch/get/sessions.rs` implements `manta get sessions`, etc.) exporting `pub async fn exec(...)`; the verb's `mod.rs` holds the noun match arms. Verbs with no nouns live as single files directly under `dispatch/` (`gen_autocomplete.rs`, `gen_man.rs`, `log.rs`, `upgrade.rs`). `apply/sat_file/` is itself a sub-tree (`render`, `plan`, `dispatch`, `exec`).
 - **`openapi_client.rs`** — a doc header and a single `include!(concat!(env!("OUT_DIR"), "/openapi_client.rs"))`. The body is a typed `reqwest` client generated at build time by `build.rs` (progenitor 0.14) from `crates/manta-cli/openapi.json`, so it never appears in the source tree or in `cargo publish` output. See [Generated code](#generated-code).
 - **`http_client/`** — `MantaClient`, a thin wrapper over the generated client. `client.rs` holds the struct, `from_app_ctx` constructor, the `openapi` field (the progenitor `Client`), and `OpenApiResultExt::into_anyhow` which turns a progenitor result into `anyhow`; `wire.rs` handles URL-scheme rewriting + curl debug + JSON-secret redaction; `console.rs` and `streaming.rs` hold the two hand-rolled endpoint families (WebSocket console, SSE logs). There are **no** per-resource sub-modules here any more — a plain JSON endpoint is reached as `client.openapi.<operation_id>(...)`, not via a hand-written method. Handlers call it as:
 
   ```rust,ignore
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let groups = client.openapi
     .get_groups(params.group_name.as_deref(), client.site_name())
     .await
@@ -112,7 +113,7 @@ CLI code **must not** contain business logic. It calls service functions with ty
 
 ### `crates/manta-server/src/service/`
 
-Business logic layer, one module per domain: `analysis`, `auth`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `console`, `ephemeral_env`, `group`, `hardware`, `hw_cluster/`, `image`, `kernel_parameters`, `migrate`, `node`, `node_details`, `power`, `redfish`, `runtime_configuration`, `sat_file`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend`.
+Business logic layer, one module per domain: `analysis`, `authorization`, `boot_parameters`, `cluster`, `configuration`, `console`, `ephemeral_env`, `group`, `hardware`, `hw_cluster/`, `image`, `kernel_parameters`, `migrate`, `node`, `node_details`, `power`, `redfish`, `runtime_configuration`, `sat_file`, `sat_groups`, `session`, `template`, plus the cross-cutting helpers `ims_ops`, `node_ops`, and `infra_backend`.
 
 **Service code calls the backend traits directly** — `infra.backend.<method>(...)`, importing the trait it needs. `infra_backend.rs` is *not* a wrapper layer: it is two dispatcher-meta methods on `InfraContext` (`backend_kind()` for tracing labels, `backend_clone()` for owned dispatchers inside `'static`-bound spawned tasks). An earlier revision did host per-domain wrappers there; they were deliberately removed to cut an abstraction layer, so don't reintroduce one when adding a backend call.
 
@@ -149,9 +150,9 @@ Genuinely bi-binary helpers:
 | `config/` | Load `cli.toml` / `server.toml` — returns an untyped `::config::Config`; each binary deserialises into its own typed schema (`CliConfiguration` in `manta-cli`, `ServerConfiguration` in `manta-server`) |
 | `error` | `MantaError` enum — error type for pure helpers (no backend-dispatcher dep) |
 | `log_ops` | Logger initialisation; both binaries call `log_ops::configure(...)` on startup |
-| `jwt_ops` | JWT **claim extraction** for the audit + authorization paths. Canonical home since the move out of the server; `crates/manta-server/src/server/common/jwt_ops.rs` is now a thin `pub use` shim kept so existing call sites resolve — new code should use `manta_shared::common::jwt_ops` directly. **These helpers do not verify the JWT signature** (see [Security model](#security-model)). |
+| `jwt_ops` | JWT **claim extraction** for the audit + authorization paths and the CLI's `SessionContext`. Canonical home since the move out of the server; `crates/manta-server/src/server/common/jwt_ops.rs` is now a thin `pub use` shim kept so existing call sites resolve — new code should use `manta_shared::common::jwt_ops` directly. **These helpers do not verify the JWT signature** (see [Security model](#security-model)). |
 
-CLI-only modules live under `crates/manta-cli/src/common/` (`app_context::AppContext`, `authentication`, `clap_ext` ArgMatches extension trait, `config::CliConfiguration`, `confirm` y/n prompt, `hooks` pre-/post-hook runner, `multi_line` table-cell wrapper, `read_only` local mutating-verb gate, `session::SessionContext` per-invocation JWT + reachable-groups snapshot). The SAT-file Jinja renderer + the run-session local-git-repo helpers live next to their callers at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs` and `crates/manta-cli/src/dispatch/run/session/local_git_repo.rs`. Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `vault`, plus `jwt_ops` — a re-export shim over `manta_shared::common::jwt_ops`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
+CLI-only modules live under `crates/manta-cli/src/common/` (`app_context::AppContext`, `authentication` per-request token provider, `oidc` CSCS-Keycloak login flows, `clap_ext` ArgMatches extension trait, `config::CliConfiguration`, `confirm` y/n prompt, `hooks` pre-/post-hook runner, `multi_line` table-cell wrapper, `read_only` local mutating-verb gate, `session::SessionContext` per-invocation JWT + reachable-groups snapshot). The SAT-file Jinja renderer + the run-session local-git-repo helpers live next to their callers at `crates/manta-cli/src/dispatch/apply/sat_file/render.rs` and `crates/manta-cli/src/dispatch/run/session/local_git_repo.rs`. Server-only helpers live under `crates/manta-server/src/server/common/` (`app_context::InfraContext`, `vault`, plus `jwt_ops` — a re-export shim over `manta_shared::common::jwt_ops`); the typed `ServerConfiguration` sits at `crates/manta-server/src/config.rs`. Modules that orchestrate backend calls (`authorization`, `node_ops`, `ims_ops`, `boot_parameters`, `hw_cluster::hw_inventory_utils`) live under `crates/manta-server/src/service/` since they're service-tier logic, not handler helpers.
 
 ### `crates/manta-server/src/server/`
 
@@ -160,8 +161,8 @@ Axum HTTPS server. Key files:
 | File | Purpose |
 |------|---------|
 | `mod.rs` | `start_server` — binds TLS, builds router, logs to stderr when the socket is ready to accept connections |
-| `routes.rs` | Registers REST endpoints (including the two `/v2/auth/*` endpoints) + 2 WebSocket upgrades under `/v2/`; serves `GET /openapi.json` and `GET /docs` |
-| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (analysis, auth, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, runtime_configuration, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
+| `routes.rs` | Registers REST endpoints + 2 WebSocket upgrades under `/v2/`; serves `GET /openapi.json` and `GET /docs` |
+| `handlers/` | Module tree: parent `mod.rs` (extractors `BearerToken`/`SiteName`/`RequestCtx`, `ErrorResponse` + `to_handler_error`, guard helpers, `/health`) plus per-resource sub-modules (analysis, boot_parameters, cluster, configuration, console, ephemeral_env, group, hardware, hw_cluster, image, kernel_parameters, migrate, node, power, redfish_endpoints, runtime_configuration, sat_file, session, template). External callers reference `handlers::X` unchanged via `pub use <module>::*` re-exports. |
 | `audit/` | Audit trail: `audit_requests` middleware, `AuditNote` handler extractor, `AuditLog` + sinks (log, Kafka), event schema. See [Audit trail](#audit-trail). |
 | `api_doc.rs` | `ApiDoc` struct — assembles the OpenAPI 3.0 spec from all `#[utoipa::path]` annotations; adds `bearerAuth` security scheme and `/v2` server base path |
 
@@ -197,7 +198,7 @@ flowchart TD
 | Type | Used by | Contents |
 |------|---------|---------|
 | `InfraContext<'_>` | Service layer (server-only, in `crates/manta-server/src/server/common/app_context.rs`) | Backend dispatcher, site name, shasta + gitea base URLs, root CA cert, optional vault + k8s URLs (7 borrowed fields) |
-| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 13-field struct) | `site_name`, `manta_server_url`, `settings_group_name_opt`, `request_timeout_secs`, `power_poll_interval_secs`, `power_max_poll_attempts`, `sat_file_poll_interval_secs`, `sat_file_poll_budget_secs`, `sat_file_not_visible_budget_secs`, `read_only`, `settings`, plus two fields populated by `process_cli` rather than by `cli.toml`: `token` (the resolved bearer token) and `session` (`Option<SessionContext>` — JWT-derived facts + one `GET /groups/available`, cached for the command's lifetime so no handler re-runs the auth cascade). The poll/budget knobs are user-tunable from `cli.toml` and feed the dispatcher's compiled defaults when unset. |
+| `AppContext<'_>` | CLI layer (in `crates/manta-cli/src/common/app_context.rs`, flat 14-field struct) | `site_name`, `manta_server_url`, `settings_group_name_opt`, `request_timeout_secs`, `power_poll_interval_secs`, `power_max_poll_attempts`, `sat_file_poll_interval_secs`, `sat_file_poll_budget_secs`, `sat_file_not_visible_budget_secs`, `read_only`, `oidc` (Keycloak issuer / client id / headless flag, `cli.toml`'s `oidc_*` keys with defaults filled in), `settings`, plus two fields populated by `process_cli` rather than by `cli.toml`: `token_provider` (supplies every request's token) and `session` (`Option<SessionContext>` — JWT-derived facts of the first request's token + one `GET /groups/available`, cached for the command's lifetime). The poll/budget knobs are user-tunable from `cli.toml` and feed the dispatcher's compiled defaults when unset. |
 | `Arc<ServerState>` | HTTP server | Infrastructure behind a reference-counted pointer; each handler calls `.infra_context()` |
 
 `manta_server_url` is a CLI routing decision — proxy requests through the manta HTTP server instead of calling the backend directly. It is not needed by the service layer or the HTTP server.
@@ -220,8 +221,8 @@ The two schemas are disjoint:
 
 | Schema | Fields |
 |---|---|
-| `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`. **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
-| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, auth rate limit), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, optional `[sites.X.k8s]` block). |
+| `CliConfiguration` | `log`, `site` (active), top-level `manta_server_url`, optional top-level `socks5_proxy`, optional top-level `request_timeout_secs`, optional `oidc_issuer_url` / `oidc_client_id` / `oidc_headless` (CSCS-Keycloak login). **No `[sites]` map** — CLI only knows about the one manta-server it talks to. The legacy `parent_hsm_group` field was removed (see MIGRATING.md §5.7); the CLI uses `hsm_group` as the default group key. |
+| `ServerConfiguration` | `log`, `[server]` (TLS, listen, console timeout, request timeout), `auditor`, `sites: HashMap<String, Site>` (per-site backend, URLs, root cert, required `[sites.X.token_exchange]`, optional `[sites.X.k8s]` block). |
 
 The server has no notion of an "active" site — it hosts every entry in its `sites` table simultaneously, and clients select per-request via the `X-Manta-Site` header. The CLI puts that header on every request based on its own `site = "..."` (overridable with `--site`).
 
@@ -261,8 +262,8 @@ root_ca_cert_file = "ochami_root_cert.pem"
 | Aspect | CLI | HTTP server |
 |--------|-----|-------------|
 | Entry point | `dispatch::process::process_cli` | `server::start_server` |
-| Auth source | `MANTA_CSM_TOKEN` env var → cached local file → interactive Keycloak prompt (via `POST /v2/auth/token`) | `Authorization: Bearer` header, per request |
-| Context type | `AppContext` (flat 13-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
+| Auth source | Service-account credentials (`MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`, client credentials grant) → the refresh token cached in `token.json` (refreshed for every request) → interactive OIDC login against the CSCS Keycloak | `Authorization: Bearer` header, per request |
+| Context type | `AppContext` (flat 14-field struct in manta-cli) | `Arc<ServerState>` → `infra_context()` |
 | Error handling | `eprintln!` + `process::exit()` | JSON `{"error": "..."}` with HTTP status code |
 | Output | Terminal tables / stdout | JSON response body |
 | Streaming | stdout | SSE (`/sessions/{name}/logs`) or WebSocket (`/nodes/{xname}/console`) |
@@ -275,7 +276,7 @@ root_ca_cert_file = "ochami_root_cert.pem"
 Three error types, partitioned by layer (the backend-dispatcher rule is enforced by CI):
 
 - **`manta_backend_dispatcher::error::Error`** (`BackendError`) — used in `manta-server`'s service layer and handler boundary (`crates/manta-server/src/{server,service,backend_dispatcher,dispatcher.rs}`).
-- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (config loader). Also raised by binary-side helpers that depend on it (`manta-cli`'s sat-file Jinja renderer, `manta-server`'s `audit`/`jwt_ops`/`kafka`). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
+- **`manta_shared::common::error::MantaError`** — used by `manta-shared`'s pure helpers (config loader). Also raised by binary-side helpers that depend on it (`manta-cli`'s sat-file Jinja renderer, `manta-server`'s `audit` (Kafka sink) and `jwt_ops`). Lets manta-shared have no compile-time dependency on backend-dispatcher's error surface. Converted to `BackendError` at server call sites via `crates/manta-server/src/wire_conv.rs::to_backend(MantaError) -> BackendError`.
 - **`anyhow::Error`** — allowed only in `crates/manta-cli/src/` handlers and CLI-only helpers.
 
 The HTTP server converts typed errors to HTTP status codes via `to_handler_error` in `crates/manta-server/src/server/handlers/mod.rs`.
@@ -299,9 +300,18 @@ The filter directive comes from `[log]` in `cli.toml` / `server.toml` (e.g. `"in
 
 ## Security model
 
-`manta-server` is a **credential-handling endpoint**: the CLI POSTs Keycloak username/password to `POST /v2/auth/token`, and the server proxies them to the configured backend (CSM or OCHAMI) via `service::auth::get_api_token`. The CSM bearer token comes back to the CLI; subsequent authenticated endpoints use it via `Authorization: Bearer`.
+`manta-server` **never handles credentials**. The CLI logs in to the CSCS Keycloak itself (`crates/manta-cli/src/common/oidc.rs`: authorization code + PKCE in a browser, the device-code flow when headless, refresh-token reuse) and sends the resulting access token as `Authorization: Bearer` on every request. One token serves every site. The server exchanges the token on every request, and an OpenCHAMI site's Hydra accepts each token only once (it rejects a reused `jti`), so every request carries a new token from `authentication::TokenProvider`: a refresh with the cached refresh token, or the service account's client credentials grant. That also keeps a command that outlasts the short-lived access token (5 minutes on the CSCS realm) working. The server stays stateless: nothing is cached, so it can run as several replicas. The provider is the only way to a token: the generated client's pre-request hook (`http_client::set_current_token`, wired in `build.rs`) and the raw WebSocket and SSE paths call it, and nothing is resolved before a command runs. When there is no cache, or the Keycloak refuses the refresh token, it logs in (browser or device code), also mid-command when the session ends during a long one; without a terminal, or when the Keycloak is unreachable, the request fails with the reason and is not sent. A mutex orders all of this across the requests of one run, and a lock on the cache file across `manta` runs (the file lock alone is not enough within a run: on Linux NFS, `flock` does not exclude within one process), so a rotated refresh token is never reused and one login serves every waiting request. There is no way to pass a ready-made token, since it could be sent only once; `MANTA_CSM_TOKEN` is no longer read. There are no `/v2/auth/*` endpoints.
 
-After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including auth, group-listing, and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 13-field struct of CLI-side knobs (site, server URL, default group, read-only flag, tuneable request and poll timeouts) plus the per-invocation token and `SessionContext`; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
+The server does **not** forward that token to the backend. No site accepts CSCS tokens, so the `RequestCtx` extractor (`server/handlers/mod.rs`) calls `AuthenticationTrait::exchange_api_token` on the site's dispatcher for every request, before the handler runs:
+
+- **CSM** (csm-rs): an RFC 8693 token exchange (Keycloak's external-to-internal flow) at `<base>/keycloak/realms/shasta`, authenticated with the per-site `[sites.X.token_exchange]` client from `server.toml`; `subject_issuer` names the CSCS identity provider in the `shasta` realm. The site's Keycloak verifies the CSCS token and returns a CSM token for the same user.
+- **OpenCHAMI** (ochami-rs): an RFC 7523 JWT bearer grant at `<base>/hydra/oauth2/token`, authenticated with the same table, which here holds `scope`. Hydra verifies the CSCS token against a trust relationship for the CSCS Keycloak's issuer and returns a token with the same `sub`. It carries no `preferred_username` or `realm_access`. Hydra accepts each CSCS token only once (it rejects a reused `jti` until the token expires); the CLI satisfies that by sending a new token on every request (see the security model above).
+
+`main.rs` refuses to start a site without that table.
+
+`ctx.token` holds the exchanged token, so the CSM API calls, Vault's `jwt-manta-<site>` login and the role checks below all see the CSM identity without any handler or service knowing about the exchange. Nothing is cached: the exchanged token lives for one request. Keep it that way: the server is stateless so it can run as several replicas, and a cache of exchanged tokens would also have to deal with Hydra's one-use rule across replicas and restarts. Exchange failures map to `401` (the identity provider rejected the CSCS token), `403` (exchange refused for this user) or `500` (bad client secret or other misconfiguration); an error status from the identity provider itself, such as a `503`, is passed through as is.
+
+After Phase 7, the CLI never constructs `StaticBackendDispatcher` and never calls a backend trait method at runtime. Every CLI command (including group-listing and the previously-direct `apply_session` / `add hardware` / `migrate nodes` / `config_*` paths) goes through `MantaClient`. `AppContext` is a flat 14-field struct of CLI-side knobs (site, server URL, default group, read-only flag, Keycloak login settings, tuneable request and poll timeouts) plus the per-invocation token provider and `SessionContext`; the server holds all real infra (TLS, backend dispatcher, Vault, k8s).
 
 Server-side authorization helpers live in `service::authorization`:
 
@@ -309,31 +319,32 @@ Server-side authorization helpers live in `service::authorization`:
 - `validate_user_group_members_access` — every xname in the request must be a member of an accessible group.
 - `validate_ansible_limit_membership_access` — the same membership check applied to a comma-separated `ansible_limit` string.
 
-Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. That is sound only because every authorized path still makes a backend round-trip, and CSM/OpenCHAMI verifies the signature there — a forged token is rejected at the first real call. The rule this imposes: **never add a code path that acts on a JWT claim and returns before the backend call happens** (a local cache, a short-circuit, a handler that only consults local roles). `is_user_admin` is exactly such a short-circuit, so any new use of it must still be followed by a backend call.
+Those helpers read the caller's roles and groups out of the bearer token via `manta_shared::common::jwt_ops`, which **decodes claims without verifying the JWT signature**. That is sound because the token is not the caller's: `RequestCtx` obtained it from the site's own identity provider over TLS a moment earlier, and that provider verified the caller's CSCS token before issuing it, so a forged token never reaches a handler.
 
-Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. Handlers that operate on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
+Admin tokens (carrying the `PA_ADMIN` Keycloak role) short-circuit every check. On OpenCHAMI sites every caller is **temporarily** admin (`service::authorization::is_admin`): neither the CSCS token nor the Hydra token carries roles, and no other source exists yet. Handlers that operate on a single backend-issued identifier (e.g. `delete_node`, `delete_session`, `add_boot_parameters`) currently rely on backend-side ACLs rather than these helpers; treat any new privileged handler as a candidate for adding the appropriate check.
 
 **The CLI's `read_only` flag is not a security control.** `cli.toml`'s `read_only = true` makes `dispatch::process::process_cli` refuse every backend-mutating verb (`add` / `apply` / `backup` / `delete` / `migrate` / `power` / `restore` / `run`) before any HTTP request leaves the process — see `crates/manta-cli/src/common/read_only.rs` (`read_only_gate`, `MUTATING_VERBS`). It is a local foot-gun guard, toggled with `manta config set|unset read-only`; a mutating verb invoked with `--dry-run` is let through (`dry_run_set`). There is **no** server-side counterpart, and anyone can flip their own config or call the API directly. When adding a **new top-level verb**, classify it: `MUTATING_VERBS` is an explicit list, and a unit test in that module asserts `build_cli()`'s subcommand set equals `MUTATING_VERBS ∪ READ_ONLY_VERBS`, so an unclassified verb fails `cargo test`, not review.
 
 The wire-type coupling that survived Phase 7 has since been cleaned up: `csm-rs` and `ochami-rs` are gone from `manta-cli`'s transitive deps. `manta-shared::types::dto` now defines a local `NodeDetails` mirror (identical JSON wire shape) instead of re-exporting csm-rs's. `manta-shared::common::error::MantaError` replaced `manta_backend_dispatcher::error::Error` in the pure helpers. The lightweight `manta-backend-dispatcher` crate still appears transitively in the CLI's dep tree for `dto.rs`'s remaining type re-exports (`Group`, `NodeSummary`, `BosSessionTemplate`, `BootParameters`, `CfsConfigurationResponse`, `CfsSessionGetResponse`, `Image`); mirroring those too is a deferred trade-off (~700 LOC vs perpetual mirror maintenance).
 
-This means manta-server is a **single point of compromise** for everyone using it: if it is owned, the attacker gets a chokepoint that sees every auth attempt and holds whatever service-account scoped tokens are configured for the backend. Mitigations split between code and ops:
+manta-server is still a **chokepoint** for everyone using it: it never sees passwords, but every request carries a CSCS token that every site will exchange, and the server holds each site's exchange client secret, so an attacker who owns the server can turn any live CSCS token into a CSM token on every site until it expires. Login attempts, brute-force protection and their audit trail are the CSCS Keycloak's job now. Mitigations split between code and ops:
 
 | Layer | Where | Notes |
 |---|---|---|
-| Per-source-IP rate limit on `/v2/auth/*` | code | `[server].auth_rate_limit_per_minute` (default 60). Implementation in `server::auth_middleware::rate_limit`. |
-| Generic 401 on every auth failure | code | `server::handlers::auth_token` returns the same `"invalid credentials"` body regardless of whether the user was unknown or the password was wrong. Detail stays in server-side `tracing::warn!`. |
-| Audit trail of every mutation | code | `server::audit::audit_requests` + `send_auth_audit`; see [Audit trail](#audit-trail). Credentials are never recorded. |
-| Body redaction on `/auth/*` log spans | code | `server::auth_middleware::strip_body_for_logs`. |
-| TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence; manta-server's in-process limiter is belt-and-braces. |
-| Service-account scoping at CSM / Vault | **ops** | Limit what the manta-server-issued tokens can do at the backend. |
+| No user credentials on the server | code | Login happens between the CLI and the CSCS Keycloak; the server has no auth endpoints and never sees a password or refresh token. |
+| No stored backend tokens | code | The exchanged token is used for one request and dropped; there is no token cache to leak. `TokenExchangeConfig`'s `Debug` redacts the client secret. |
+| Exchange client secret | **ops** | `[sites.X.token_exchange].client_secret` sits in `server.toml`: keep the file readable only by the manta-server user. It cannot live in Vault, because the Vault login itself needs the exchanged token. |
+| Token cache hygiene on the client | code | `token.json` is written `0600` in a `0700` cache dir; `TokenStore`'s `Debug` redacts every token. |
+| Audit trail of every mutation | code | `server::audit::audit_requests`; see [Audit trail](#audit-trail). Credentials are never recorded. |
+| TLS termination, WAF, reverse-proxy rate limit | **ops** | First line of defence. |
+| Token lifetime and scope in the CSCS Keycloak | **ops** | Short access-token lifetimes bound the replay window; the manta client's claims (`realm_access.roles`, audience) bound what a token can do at the backend. |
 | Network segmentation | **ops** | Treat manta-server as a privileged host. |
 
 ### Middleware layer stack
 
 Tower applies layers in **reverse-add order** — the last `.layer()` becomes the outermost middleware. The order below is what an inbound request crosses, top to bottom.
 
-*Flowchart: where each control sits on the two sub-routers.*
+*Flowchart: where each control sits.*
 
 ```mermaid
 flowchart TD
@@ -343,18 +354,13 @@ flowchart TD
     Split -->|/v2/*| Aud[audit_requests<br/>one event per mutating request]
     Aud --> Panic[CatchPanicLayer<br/>handler panic → 500]
     Panic --> Tmo[TimeoutLayer<br/>request_timeout_secs]
-    Tmo --> Hdlr[Resource handlers<br/>BearerToken + SiteName + RequestCtx]
-
-    Split -->|/v2/auth/*| StripBody[strip_body_for_logs<br/>redacts /auth/* request bodies]
-    StripBody --> RL[rate_limit<br/>per-source-IP token bucket]
-    RL --> AuthH[auth_token / auth_validate handlers]
+    Tmo --> Ctx[RequestCtx extractor<br/>BearerToken + SiteName,<br/>token exchange at the site's Keycloak]
+    Ctx --> Hdlr[Resource handlers]
 
     Split -->|/docs, /openapi.json| Swagger[Swagger UI / spec]
 ```
 
-The diagram captures three facts that trip up new contributors: the nest split between `/v2/*` and `/v2/auth/*`, the last-added-outermost layer ordering on each sub-router, and which defences live on which path.
-
-**Deferred:** forwarding the original client IP to Keycloak via `X-Forwarded-For` on the upstream auth call. The current `AuthenticationTrait::get_api_token` signature in `manta-backend-dispatcher` does not take a header argument, so this would require a sibling-repo upgrade (csm-rs + ochami-rs). Tracked as a follow-up.
+The timeout covers the `/v2/*` resource router only; Swagger UI and the spec sit outside it.
 
 ---
 
@@ -362,7 +368,7 @@ The diagram captures three facts that trip up new contributors: the nest split b
 
 A single `tower_http::timeout::TimeoutLayer` lives in `crates/manta-server/src/server/routes.rs::build_router`, configured from `[server].request_timeout_secs` (default 600s). When the timer fires, axum returns `408 REQUEST_TIMEOUT`.
 
-**It covers the resource router only.** The layer is applied to the `api` sub-router (`/v2/*`, including the WebSocket routes merged into it); `/v2/auth/*` is a *separate* sub-router carrying the rate limiter and body redaction, and no timeout is applied to it. So a hung upstream Keycloak on `POST /v2/auth/token` is not bounded by this knob — the middleware diagram above shows the split. Treat that as a known gap rather than a design choice; the fix is to apply the layer on the outer `Router` before the nest split, or to the auth router as well.
+The layer is applied to the `api` sub-router (`/v2/*`, including the WebSocket routes merged into it).
 
 There's no per-route override on the server. Long-running work runs CLI-side:
 
@@ -385,10 +391,11 @@ The CLI honours `cli.toml`'s optional `request_timeout_secs` via `MantaClient::f
 | `clap` | CLI argument parsing |
 | `tokio` | Async runtime |
 | `minijinja` | Jinja2 template rendering for SAT file processing |
-| `rdkafka` | Kafka producer for operation audit trail |
 | `git2` | Local git repository operations (repo validation, CFS layer source) |
 | `config` | TOML config file loading with environment variable overrides |
 | `dialoguer` | Interactive terminal prompts (confirmations, selection lists) |
+| `rdkafka` | Kafka producer for operation audit trail |
+| `openidconnect` + `webbrowser` | CLI login against the CSCS Keycloak (PKCE, ID-token verification; opening the browser) |
 | `comfy-table` | Terminal table output |
 | `reqwest` | HTTP client used by csm-rs and ochami-rs |
 
@@ -404,7 +411,7 @@ Three checked-in artifacts are produced by tooling, never hand-edited, and gated
 | `crates/manta-cli/man/` | `crates/manta-cli/build.rs` from the clap surface | anything under `crates/manta-cli/src/build/` | `MANTA_REGENERATE_DOCS=1 cargo build -p manta-cli` |
 | `crates/manta-cli/autocomplete_shell_scripts/` | same | same | same |
 
-`openapi.json` is **not just documentation** — it is a build input. `crates/manta-cli/build.rs` runs progenitor 0.14 over it and emits a typed `reqwest` client into `$OUT_DIR/openapi_client.rs`, which `src/openapi_client.rs` `include!`s. A stale spec therefore means the CLI compiles against the wrong API shape, not merely that the docs are behind. (The spec is down-converted from OpenAPI 3.1 to 3.0 in `build.rs` first, because progenitor's `openapiv3` only understands 3.0.)
+`openapi.json` is **not just documentation** — it is a build input. `crates/manta-cli/build.rs` runs progenitor 0.14 over it and emits a typed `reqwest` client into `$OUT_DIR/openapi_client.rs`, which `src/openapi_client.rs` `include!`s. A stale spec therefore means the CLI compiles against the wrong API shape, not merely that the docs are behind. (The spec is down-converted from OpenAPI 3.1 to 3.0 in `build.rs` first, because progenitor's `openapiv3` only understands 3.0.) `build.rs` also gives the client an inner type and a pre-request hook, so `Client::new_with_client` takes the optional `TokenProvider` as a third argument.
 
 Two endpoint families are deliberately excluded from the generated client and stay hand-written, because progenitor models neither WebSocket upgrades nor `text/event-stream` bodies:
 
@@ -425,7 +432,7 @@ Only the CLI has a first-class SOCKS5 knob — `cli.toml`'s optional top-level `
 
 Only `manta-server` audits — it is the chokepoint every CLI command passes through, so the CLI emits nothing. Code: `crates/manta-server/src/server/audit/`.
 
-**What is recorded.** `audit_requests` is layered on the `/v2` router, *outside* the `TimeoutLayer` and a `CatchPanicLayer`, and emits one event per request whose method is not GET/HEAD/OPTIONS, plus every console attach (`…/console`, a GET upgrade to an interactive shell). It emits after the response is known, so each event has both the attempt and the outcome; a timed-out request is recorded as `timed_out`, a handler panic as a `failed` 500. Reads are not audited; neither are 404/405 (no route or method matched). `/v2/auth/token` sits outside the middleware (no bearer yet) and emits its own `auth_attempt` event via `send_auth_audit`. The coverage rule is pinned by `tests/audit_routes.rs`, which walks the OpenAPI spec.
+**What is recorded.** `audit_requests` is layered on the `/v2` router, *outside* the `TimeoutLayer` and a `CatchPanicLayer`, and emits one event per request whose method is not GET/HEAD/OPTIONS, plus every console attach (`…/console`, a GET upgrade to an interactive shell). It emits after the response is known, so each event has both the attempt and the outcome; a timed-out request is recorded as `timed_out`, a handler panic as a `failed` 500. Reads are not audited; neither are 404/405 (no route or method matched). Login never reaches the server — it happens against the CSCS Keycloak, which records it. The coverage rule is pinned by `tests/audit_routes.rs`, which walks the OpenAPI spec.
 
 **Event shape** (`event::AuditEvent`, `schema_version` 1 — add fields freely; rename/remove only with a version bump):
 
@@ -434,7 +441,7 @@ Only `manta-server` audits — it is the chokepoint every CLI command passes thr
   "schema_version": 1,
   "event_id": "0d6c…",                       // v4 UUID, also the Kafka key
   "timestamp": "2026-10-13T09:12:44.101Z",
-  "kind": "api_request",                     // | console_session | auth_attempt
+  "kind": "api_request",                     // | console_session
   "action": "group.delete",                  // handler-chosen; "<METHOD> <route>" if the handler never ran
   "summary": "alice @ alps: group delete zinal (force) → success",  // for humans, derived by AuditEvent::describe
   "actor": { "username": "alice", "name": "Alice A", "subject": "0b5e…" },
@@ -469,7 +476,7 @@ The CLI's `apply sat-file`, `backup vcluster`, and `restore vcluster` commands s
 
 1. Create `crates/manta-cli/src/dispatch/<verb>/<noun>.rs` with `pub async fn exec(...)`. (For an entirely new verb, create the directory and a `mod.rs` re-exporting the noun modules.)
 2. Register the noun module in `crates/manta-cli/src/dispatch/<verb>/mod.rs` (and the verb in `crates/manta-cli/src/dispatch/mod.rs` for a new verb), then add the clap subcommand definition to `crates/manta-cli/src/build/<verb>.rs`.
-3. Add the dispatch arm in `crates/manta-cli/src/dispatch/<verb>/mod.rs`, which matches the clap subcommand and calls `dispatch::<verb>::<noun>::exec`. Argument extraction lives in the noun module itself (conventionally a `parse_*_params` helper, kept separate from `exec` so it is unit-testable against the production clap builder). For a brand-new verb, also add the arm to `crates/manta-cli/src/dispatch/process.rs`, which does the auth-token bootstrap and routes to each verb.
+3. Add the dispatch arm in `crates/manta-cli/src/dispatch/<verb>/mod.rs`, which matches the clap subcommand and calls `dispatch::<verb>::<noun>::exec`. Argument extraction lives in the noun module itself (conventionally a `parse_*_params` helper, kept separate from `exec` so it is unit-testable against the production clap builder). For a brand-new verb, also add the arm to `crates/manta-cli/src/dispatch/process.rs`, which sets up the token provider and session and routes to each verb.
 4. If the operation is non-trivial, implement the business logic as a public function in the appropriate `crates/manta-server/src/service/<module>.rs`.
 5. If the operation needs a new backend call, add the method to the relevant trait in `manta-backend-dispatcher`, implement it in both `csm-rs` and `ochami-rs`, and add the dispatch arm to the corresponding `impl <Trait> for StaticBackendDispatcher` block, which lives in that trait's **sibling file** under `crates/manta-server/src/backend_dispatcher/` (e.g. `sat.rs`, `group.rs`) — `mod.rs` holds only the shared imports, the `dispatch!` macro, and the `mod` declarations, so a brand-new trait also needs its `mod` line added there.
 6. If the command should also be reachable via the HTTP API, add a handler in the appropriate `crates/manta-server/src/server/handlers/<resource>.rs` (with a `#[utoipa::path(...)]` annotation; `handlers/mod.rs` re-exports the resource module's public items, so the handler is automatically reachable as `handlers::<fn_name>`). Register the route in `crates/manta-server/src/server/routes.rs`, and add the path and any new schema types to the `#[openapi(...)]` derive in `crates/manta-server/src/server/api_doc.rs`.

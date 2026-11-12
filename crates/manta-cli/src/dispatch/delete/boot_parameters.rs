@@ -22,7 +22,6 @@ use crate::output::action_result;
 /// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   hosts: Vec<String>,
   output_opt: Option<&str>,
   dry_run: bool,
@@ -38,7 +37,7 @@ pub async fn exec(
     );
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .delete_boot_parameters(client.site_name(), &req)

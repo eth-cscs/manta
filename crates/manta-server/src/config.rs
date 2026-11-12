@@ -15,12 +15,26 @@
 //! cert = "/etc/manta/tls/server.crt"
 //! key = "/etc/manta/tls/server.key"
 //! console_inactivity_timeout_secs = 1800
-//! auth_rate_limit_per_minute = 60
 //!
 //! [sites.alps]
 //! backend = "csm"
 //! shasta_base_url = "https://api.alps.cscs.ch"
 //! root_ca_cert_file = "/etc/manta/alps-ca.pem"
+//!
+//! [sites.alps.token_exchange]
+//! client_id = "cscs-token-exchanger"
+//! client_secret = "…"
+//! subject_issuer = "cscs"
+//!
+//! [sites.basodino]
+//! backend = "ochami"
+//! shasta_base_url = "https://basodino-mgmt.cscs.ch:8443"
+//! root_ca_cert_file = "/etc/manta/basodino-ca.pem"
+//!
+//! [sites.basodino.token_exchange]
+//! client_id = "…"
+//! client_secret = "…"
+//! scope = "smd.read bss.read smd.write bss.write"
 //! ```
 //!
 //! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
@@ -32,7 +46,7 @@
 use std::collections::HashMap;
 
 use crate::server::audit::Auditor;
-use manta_backend_dispatcher::types::K8sDetails;
+use manta_backend_dispatcher::{error::Error, types::K8sDetails};
 use serde::{Deserialize, Serialize};
 
 /// Which backend API this site speaks.
@@ -74,6 +88,90 @@ pub struct Site {
   /// Path (absolute or relative to the config dir) of the backend's
   /// root CA certificate, used to verify TLS to `shasta_base_url`.
   pub root_ca_cert_file: String,
+  /// How to exchange the caller's CSCS Keycloak token for a token this
+  /// site accepts. Required: the server refuses to start without it.
+  pub token_exchange: Option<TokenExchangeConfig>,
+}
+
+/// `[sites.X.token_exchange]`: client credentials for exchanging the
+/// caller's CSCS Keycloak token for a token the site accepts.
+///
+/// - `csm` sites use an RFC 8693 token exchange at the site's Keycloak
+///   (`shasta` realm), at a URL derived from `shasta_base_url`
+///   (`<base without a trailing /apis>/keycloak`). They need
+///   `subject_issuer`.
+/// - `ochami` sites use an RFC 7523 JWT bearer grant at the site's
+///   Hydra, at a URL derived from `shasta_base_url`
+///   (`<base>/hydra/oauth2/token`). They need `scope`.
+///
+/// [`TokenExchangeConfig::csm`] and [`TokenExchangeConfig::ochami`]
+/// check that the backend's fields are present.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TokenExchangeConfig {
+  /// Client allowed to exchange tokens, e.g. `cscs-token-exchanger`.
+  pub client_id: String,
+  /// Secret of the confidential `client_id`.
+  pub client_secret: String,
+  /// `csm` only: alias of the CSCS identity provider in the `shasta`
+  /// realm, e.g. `cscs`.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub subject_issuer: Option<String>,
+  /// `ochami` only: space-separated scopes to request.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub scope: Option<String>,
+}
+
+impl std::fmt::Debug for TokenExchangeConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("TokenExchangeConfig")
+      .field("client_id", &self.client_id)
+      .field("client_secret", &"<redacted>")
+      .field("subject_issuer", &self.subject_issuer)
+      .field("scope", &self.scope)
+      .finish()
+  }
+}
+
+impl TokenExchangeConfig {
+  /// The credentials as `csm-rs` takes them.
+  ///
+  /// # Errors
+  ///
+  /// [`Error::MissingField`] when `subject_issuer` is not set.
+  pub fn csm(&self) -> Result<csm_rs::backend_connector::TokenExchange, Error> {
+    Ok(csm_rs::backend_connector::TokenExchange {
+      client_id: self.client_id.clone(),
+      client_secret: self.client_secret.clone(),
+      subject_issuer: required(&self.subject_issuer, "subject_issuer", "csm")?,
+    })
+  }
+
+  /// The credentials as `ochami-rs` takes them.
+  ///
+  /// # Errors
+  ///
+  /// [`Error::MissingField`] when `scope` is not set.
+  pub fn ochami(
+    &self,
+  ) -> Result<ochami_rs::authentication::TokenExchange, Error> {
+    Ok(ochami_rs::authentication::TokenExchange {
+      client_id: self.client_id.clone(),
+      client_secret: self.client_secret.clone(),
+      scope: required(&self.scope, "scope", "ochami")?,
+    })
+  }
+}
+
+fn required(
+  value: &Option<String>,
+  field: &str,
+  backend: &str,
+) -> Result<String, Error> {
+  value.clone().ok_or_else(|| {
+    Error::MissingField(format!(
+      "token_exchange.{field} is required for backend = \"{backend}\""
+    ))
+  })
 }
 
 /// Server-only settings — TLS, listen address, console behaviour. Lives
@@ -99,10 +197,6 @@ pub struct ServerSettings {
   /// How long a node-console WebSocket stays open without activity
   /// before the server tears it down.
   pub console_inactivity_timeout_secs: u64,
-  /// Per-source-IP rate limit for the `/v2/auth/*` endpoints,
-  /// in requests per minute. `None` disables in-process rate limiting
-  /// (operators are then expected to enforce it at the reverse proxy).
-  pub auth_rate_limit_per_minute: Option<u32>,
   /// Global request timeout applied to every HTTP route, in seconds.
   /// When this elapses the server returns `408 REQUEST_TIMEOUT`. All
   /// long-running work (e.g. power transitions) now runs CLI-side,
@@ -177,7 +271,7 @@ fn default_request_timeout_secs() -> u64 {
 pub struct ServerConfiguration {
   /// `EnvFilter` directive for the tracing subscriber.
   pub log: String,
-  /// Network / TLS / console / rate-limit knobs for the HTTPS server.
+  /// Network / TLS / console / timeout knobs for the HTTPS server.
   pub server: ServerSettings,
   /// Per-site backend connection details, keyed by site name. The
   /// `X-Manta-Site` header on each request picks which one to route to.
@@ -230,7 +324,141 @@ mod tests {
       shasta_base_url: "https://api.example.com".to_string(),
       k8s: None,
       root_ca_cert_file: "cert.pem".to_string(),
+      token_exchange: Some(TokenExchangeConfig {
+        client_id: "cscs-token-exchanger".to_string(),
+        client_secret: "s3cret".to_string(),
+        subject_issuer: Some("cscs".to_string()),
+        scope: None,
+      }),
     }
+  }
+
+  /// `examples/server.toml`, with its commented-out sites enabled, is a
+  /// config the server starts with: every site has the token exchange
+  /// its backend needs (`run_server` refuses a site without one, and
+  /// [`TokenExchangeConfig::csm`] / [`TokenExchangeConfig::ochami`] check
+  /// the backend's fields).
+  #[test]
+  fn the_example_server_toml_is_a_valid_config() {
+    let path =
+      concat!(env!("CARGO_MANIFEST_DIR"), "/../../examples/server.toml");
+    let example = std::fs::read_to_string(path).unwrap();
+    // Each commented-out site: a `# [sites.<name>]` line and the comment
+    // lines right after it, with the `# ` taken off. (Not the commented
+    // alternatives inside an enabled site, such as `alps`' `Native`.)
+    let is_site_header = |line: &str| {
+      line
+        .strip_prefix("# [sites.")
+        .and_then(|rest| rest.strip_suffix(']'))
+        .is_some_and(|name| !name.contains('.'))
+    };
+    let mut enabled = String::new();
+    let mut in_site = false;
+    for line in example.lines() {
+      if is_site_header(line) {
+        in_site = true;
+      } else if !line.starts_with('#') {
+        in_site = false;
+      }
+      if in_site {
+        let toml_line = line.strip_prefix('#').unwrap_or(line);
+        enabled.push_str(toml_line.strip_prefix(' ').unwrap_or(toml_line));
+        enabled.push('\n');
+      }
+    }
+    let config: ServerConfiguration =
+      toml::from_str(&format!("{example}\n{enabled}")).unwrap();
+
+    assert!(
+      config.sites.contains_key("ochami-dev"),
+      "{:?}",
+      config.sites.keys()
+    );
+    for (name, site) in &config.sites {
+      let exchange = site
+        .token_exchange
+        .as_ref()
+        .unwrap_or_else(|| panic!("[sites.{name}] has no token_exchange"));
+      match site.backend {
+        BackendTechnology::Csm => assert!(exchange.csm().is_ok(), "{name}"),
+        BackendTechnology::Ochami => {
+          assert!(exchange.ochami().is_ok(), "{name}");
+        }
+      }
+    }
+  }
+
+  #[test]
+  fn token_exchange_may_be_absent_in_toml() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "ochami"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+    "#,
+    )
+    .unwrap();
+    assert!(site.token_exchange.is_none());
+  }
+
+  #[test]
+  fn token_exchange_parses_and_redacts_the_secret() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "csm"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+
+      [token_exchange]
+      client_id = "cscs-token-exchanger"
+      client_secret = "s3cret"
+      subject_issuer = "cscs"
+    "#,
+    )
+    .unwrap();
+    let te = site.token_exchange.expect("token_exchange parsed");
+    assert_eq!(te.client_id, "cscs-token-exchanger");
+    assert_eq!(te.client_secret, "s3cret");
+    assert_eq!(te.subject_issuer.as_deref(), Some("cscs"));
+    assert_eq!(te.csm().unwrap().subject_issuer, "cscs");
+    assert!(!format!("{te:?}").contains("s3cret"));
+  }
+
+  #[test]
+  fn ochami_token_exchange_parses() {
+    let site: Site = toml::from_str(
+      r#"
+      backend = "ochami"
+      shasta_base_url = "https://api.example.com"
+      root_ca_cert_file = "cert.pem"
+
+      [token_exchange]
+      client_id = "client"
+      client_secret = "s3cret"
+      scope = "smd.read bss.read"
+    "#,
+    )
+    .unwrap();
+    let te = site
+      .token_exchange
+      .expect("token_exchange parsed")
+      .ochami()
+      .unwrap();
+    assert_eq!(te.scope, "smd.read bss.read");
+  }
+
+  #[test]
+  fn each_backend_names_the_token_exchange_field_it_misses() {
+    let te = TokenExchangeConfig {
+      client_id: "client".to_string(),
+      client_secret: "s3cret".to_string(),
+      subject_issuer: None,
+      scope: None,
+    };
+    let csm_err = te.csm().unwrap_err().to_string();
+    assert!(csm_err.contains("subject_issuer"), "{csm_err}");
+    let ochami_err = te.ochami().unwrap_err().to_string();
+    assert!(ochami_err.contains("scope"), "{ochami_err}");
   }
 
   #[test]
@@ -245,7 +473,6 @@ mod tests {
         cert: Some("/etc/manta/tls/server.crt".to_string()),
         key: Some("/etc/manta/tls/server.key".to_string()),
         console_inactivity_timeout_secs: 1800,
-        auth_rate_limit_per_minute: Some(60),
         request_timeout_secs: 300,
         shutdown_grace_period_secs: 30,
         migrate_backup_root: None,

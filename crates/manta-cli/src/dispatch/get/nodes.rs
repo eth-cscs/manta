@@ -47,7 +47,6 @@ fn parse_nodes_params(
 /// value.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_nodes_params(cli_args)?;
@@ -55,7 +54,7 @@ pub async fn exec(
   let output_opt = cli_args.opt_str("output");
   let status_summary = cli_args.get_flag("summary-status");
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let node_details_list = client
     .openapi
     .get_nodes(

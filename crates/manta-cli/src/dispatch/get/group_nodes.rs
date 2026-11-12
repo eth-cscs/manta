@@ -42,7 +42,6 @@ fn parse_cluster_params(
 /// fails, or `--output` holds an unrecognised value.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_cluster_params(cli_args, ctx.settings_group_name_opt);
@@ -53,7 +52,7 @@ pub async fn exec(
 
   let hsm = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let node_details_list = client
     .openapi
     .get_groups_nodes(hsm, params.status_filter.as_deref(), client.site_name())

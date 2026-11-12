@@ -44,7 +44,6 @@ fn parse_kernel_parameters_params(
 /// serialisation fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params =
@@ -52,7 +51,7 @@ pub async fn exec(
 
   let group_name = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let boot_parameters = client
     .openapi
     .get_kernel_parameters(

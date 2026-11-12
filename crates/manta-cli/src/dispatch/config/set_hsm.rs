@@ -9,7 +9,6 @@ use anyhow::{Error, bail};
 use clap::ArgMatches;
 use toml_edit::value;
 
-use crate::http_client::MantaClient;
 use crate::output::action_result;
 use manta_shared::common::config::{read_config_toml, write_config_toml};
 
@@ -26,24 +25,18 @@ use manta_shared::common::config::{read_config_toml, write_config_toml};
 /// read or written.
 pub async fn exec(
   cli_config_set_hsm: &ArgMatches,
-  client: &MantaClient,
-  token: &str,
   accessible_groups: &[String],
 ) -> Result<(), Error> {
   let new_hsm: &String = cli_config_set_hsm
     .get_one("HSM_GROUP_NAME")
     .ok_or_else(|| Error::msg("new hsm group not defined"))?;
 
-  set_hsm_config_value(client, token, new_hsm, accessible_groups).await
+  set_hsm_config_value(new_hsm, accessible_groups).await
 }
 
 /// Validate `new_hsm` against the user's accessible groups and persist
-/// it to `cli.toml`. `_shasta_token` is unused — the client already
-/// carries the bearer token; kept in the signature for symmetry with
-/// other handlers.
+/// it to `cli.toml`.
 async fn set_hsm_config_value(
-  _client: &MantaClient,
-  _shasta_token: &str,
   new_hsm: &str,
   accessible_groups: &[String],
 ) -> Result<(), Error> {

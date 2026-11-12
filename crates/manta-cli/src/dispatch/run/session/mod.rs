@@ -51,7 +51,6 @@ const GITEA_REPO_NAME_PREFIX: &str = "cray/";
 pub async fn exec(
   cli_run_session: &ArgMatches,
   ctx: &AppContext<'_>,
-  token: &str,
 ) -> Result<(), Error> {
   let repo_path_vec: Vec<PathBuf> = cli_run_session
     .get_many("repo-path")
@@ -76,7 +75,6 @@ pub async fn exec(
 
   run_session(
     ctx,
-    token,
     SessionParams {
       session_name: cfs_conf_sess_name_opt,
       playbook: playbook_file_name_opt,
@@ -119,7 +117,6 @@ struct SessionParams<'a> {
 /// caller that wouldn't have anything to do with them.
 async fn run_session(
   ctx: &AppContext<'_>,
-  shasta_token: &str,
   p: SessionParams<'_>,
 ) -> Result<(), Error> {
   let cfs_conf_sess_name = p.session_name;
@@ -158,7 +155,7 @@ async fn run_session(
   }
 
   // Create CFS session via server
-  let client = MantaClient::from_app_ctx(ctx, Some(shasta_token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let created = client
     .openapi
     .create_session(client.site_name(), &req)

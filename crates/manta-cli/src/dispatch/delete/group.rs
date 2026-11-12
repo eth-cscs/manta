@@ -21,7 +21,6 @@ use crate::output::action_result;
 /// cannot be built, or when the `delete_group` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   label: &str,
   force: bool,
   dry_run: bool,
@@ -40,7 +39,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .delete_group(label, Some(force), client.site_name())

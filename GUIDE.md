@@ -759,27 +759,28 @@ manta run session -n test -r ~/repos/cos-config -H compute --dry-run -o json | j
 
 ### Authentication for scripts
 
-Manta resolves the bearer token in a defined order; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full resolution lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
+Manta gets its bearer tokens from the CSCS Keycloak — one token serves every site, obtained by the CLI itself (manta-server is not involved). Every request gets a new token (an OpenCHAMI site accepts each token only once), always the same way; scripts running in CI / cron / non-interactive shells need to know which branch they will hit. The full logic lives in `crates/manta-cli/src/common/authentication.rs`; the diagram below is the operator-facing summary.
 
-*Flowchart: how `manta` resolves the bearer token in scripted use.*
+*Flowchart: how `manta` gets the bearer token of each request.*
 
 ```mermaid
 flowchart TD
-    Start[manta subcommand] --> Env{MANTA_CSM_TOKEN env var set?}
-    Env -->|yes| ValEnv{server accepts token?}
-    Env -->|no| Cache
-    ValEnv -->|yes| Run[run command with Bearer token]
-    ValEnv -->|no| Cache{cache file exists?<br/>config-dir/site_auth, mode 0600}
-    Cache -->|yes| ValCache{server accepts token?}
-    Cache -->|no| TTY{stdin is a TTY?}
-    ValCache -->|yes| Run
-    ValCache -->|no| TTY
-    TTY -->|no| Fail[exit non-zero<br/>no way to prompt non-interactively]
-    TTY -->|yes| Prompt[prompt user -> POST /auth/token<br/>write 0600 cache]
-    Prompt --> Run
+    Start[request to manta-server] --> Env{MANTA_SA_CLIENT_ID and<br/>MANTA_SA_CLIENT_SECRET set?}
+    Env -->|yes| SA[token from the client credentials grant<br/>never cached] --> Run[send the request with Bearer token]
+    Env -->|no| Cache{cached refresh token?<br/>cache-dir/token.json, mode 0600}
+    Cache -->|yes| Refresh{refresh}
+    Refresh -->|accepted| Save[write refreshed token to cache] --> Run
+    Refresh -->|refused: session ended| TTY
+    Refresh -->|Keycloak unreachable or failing| Err[the request fails]
+    Cache -->|none| TTY{stderr is a TTY?}
+    TTY -->|no| Fail[exit non-zero<br/>no way to log in non-interactively]
+    TTY -->|yes| Login[OIDC login against the CSCS Keycloak<br/>browser, or device code when headless<br/>write 0600 cache]
+    Login --> Run
 ```
 
-For scripts, set `MANTA_CSM_TOKEN` from a secret-fetch step before the `manta` invocation. If the server rejects the token (e.g. expired), the CLI falls through to the cached file and then to an interactive prompt — see the flowchart above.
+For CI, set `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` to a CSCS service account's credentials from a secret-fetch step before the `manta` invocation. Alternatively, log in once interactively on the same account: while the cached refresh token stays valid, non-interactive runs refresh silently. There is no way to pass a ready-made token, since it could be sent only once; `MANTA_CSM_TOKEN` is no longer read.
+
+The cache directory is `~/.cache/manta/` on Linux and `~/Library/Caches/local.cscs.manta/` on macOS. `manta config unset auth` deletes the cached token. On a machine without a usable browser (e.g. over SSH or on a host without a graphical display, both detected automatically) the login prints a URL and a code to enter on any other device; set `oidc_headless = true` in `cli.toml` to always use that flow.
 
 > **Note:** `manta add group` is the one verb where `-D` (capital) is the short alias for `--description` because `-d` is reserved for `--dry-run`. See [MIGRATING.md §5.11](MIGRATING.md#511---dry-run-on-every-mutating-verb-add-group--d-reassigned).
 

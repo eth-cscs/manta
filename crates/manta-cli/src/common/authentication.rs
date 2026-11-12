@@ -1,451 +1,527 @@
-//! Token acquisition: env var -> cached file -> interactive Keycloak login.
+//! The bearer token of every request to manta-server.
 //!
-//! Every path checks the candidate token against the configured
-//! `manta-server` (via `MantaClient`), which in turn validates it
-//! against the CSM/OCHAMI backend. The CLI never reaches a backend
-//! directly.
+//! The token is issued by the CSCS Keycloak and obtained by the CLI
+//! directly (see [`crate::common::oidc`]); `manta-server` takes no part
+//! in the login (it exchanges the token per request for one the site
+//! accepts). One token serves every site, so nothing here depends on
+//! the selected site.
 //!
-//! ## Resolution order
+//! [`TokenProvider::token`] is the only way to a token. The generated
+//! client's pre-request hook ([`crate::http_client::set_current_token`])
+//! and the raw log-stream and console connections call it for every
+//! request. Nothing is resolved before a command runs: the command's
+//! first request (the session's `GET /groups/available`) is where a
+//! login happens when one is needed.
 //!
-//! [`get_api_token`] walks the candidates in this order and returns
-//! the first one that the server's `/v2/auth/validate` accepts:
+//! ## Where each token comes from
 //!
-//! 1. `MANTA_CSM_TOKEN` environment variable.
-//! 2. Cached file at `<cache_dir>/<site>_auth` (0600-permissions). The
-//!    cache directory comes from
-//!    [`manta_shared::common::config::get_default_cache_path`].
-//! 3. Interactive Keycloak username + password prompt
-//!    (`dialoguer`-based), retried up to [`MAX_LOGIN_ATTEMPTS`] times
-//!    against `/v2/auth/token`. A successful interactive login is
-//!    written back to the cache file.
+//! 1. Service-account credentials in `MANTA_SA_CLIENT_ID` and
+//!    `MANTA_SA_CLIENT_SECRET` (for CI): the client credentials grant.
+//!    Nothing is cached.
+//! 2. Otherwise the refresh token in `<cache_dir>/token.json` (`0600`,
+//!    the directory from
+//!    [`manta_shared::common::config::get_default_cache_path`]): the
+//!    refresh grant. The new tokens are written back.
+//! 3. When there is no usable cache, or the Keycloak refuses the cached
+//!    refresh token (`invalid_grant`: the session ended or was revoked),
+//!    an interactive login ([`oidc::login`]: browser, or device code
+//!    when headless), written to the cache. Only when stderr is a
+//!    terminal: both flows talk to the user there (the browser flow's
+//!    fallback URL, the device flow's code), and neither reads stdin, so
+//!    `… | manta` can still log in. Otherwise the request fails and says
+//!    how to log in.
 //!
-//! ## Short-circuits
+//! Any other failure (the Keycloak unreachable or answering 5xx) fails
+//! the request without a login, which would not help.
 //!
-//! Two failures abort the cascade immediately instead of falling
-//! through to the next path (or re-prompting), because no other
-//! credential source could possibly succeed:
+//! ## A new token for every request
 //!
-//! - **Unreachable server** (DNS / TCP / TLS) — surfaced by the
-//!   [`crate::http_client::AuthServerUnreachable`] typed context.
-//!   Trying the next path would hit the same dead endpoint.
-//! - **Unknown site** — a `404` from `/auth/*`, surfaced by the
-//!   [`crate::http_client::SiteNotFound`] typed context. The server is
-//!   reachable but doesn't serve the configured `site`; no token can
-//!   authenticate against a site that doesn't exist, so the cascade
-//!   stops rather than prompting for credentials.
+//! The server exchanges every token it receives, and an OpenCHAMI site's
+//! Hydra accepts each token only once (it rejects a reused `jti`). So
+//! even a valid cached access token is never sent: every request gets a
+//! token no request has carried before. That also keeps a command that
+//! polls for hours supplied with a live token, though the CSCS access
+//! token lives for minutes, and it is why there is no way to pass a
+//! ready-made token: it could be sent only once.
 //!
-//!   Note: in the bare interactive case (no env var **and** no cache
-//!   file) the first server contact *is* the credential exchange, so
-//!   one prompt appears before the `404` can be seen; the short-circuit
-//!   then suppresses the remaining retries. Zero-prompt failure happens
-//!   only when an env-var or cached token gives the cascade something to
-//!   validate against the server *before* prompting.
+//! ## Concurrency
 //!
-//! Non-interactive callers (`stdin` is not a TTY) also stop after the
-//! cached-token attempt rather than blocking on a prompt that can
-//! never be answered.
+//! Getting a token from the cache is ordered twice, both held through a
+//! login too: a mutex orders the requests of one run, and an exclusive
+//! lock on `<cache>.lock` orders separate `manta` runs. So each refresh
+//! uses the refresh token the previous one saved, which a Keycloak that
+//! rotates refresh tokens requires, and a login one request starts is
+//! reused by the others, not repeated. Service-account tokens need no
+//! ordering.
+//!
+//! The file lock alone is not enough inside one run: on a local
+//! filesystem two `flock`s of one process exclude each other, but on
+//! Linux NFS `flock` is emulated with POSIX locks, which belong to the
+//! process, so they do not; and when the lock cannot be taken at all the
+//! refresh goes ahead without it. The tests run on a local filesystem
+//! and cannot tell the two apart.
+
+use std::io::{self, IsTerminal};
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, PoisonError};
+
+use anyhow::{Context, Result, bail};
+use manta_shared::common::config::get_default_cache_path;
 
 use crate::common::app_context::AppContext;
-use crate::http_client::{AuthServerUnreachable, MantaClient, SiteNotFound};
-use anyhow::{Result, anyhow};
-use crossterm::style::Stylize;
-use dialoguer::{Input, Password};
-use manta_shared::common::config::get_default_cache_path;
-use std::{
-  fs::{File, create_dir_all},
-  io::{self, IsTerminal, Read, Write},
-  os::unix::fs::OpenOptionsExt,
-};
+use crate::common::oidc::{self, OidcSettings, TokenStore};
 
-/// `true` if `err`'s typed-context chain contains
-/// [`AuthServerUnreachable`] — the marker attached by
-/// [`MantaClient::validate_token`] / [`MantaClient::exchange_credentials`]
-/// whenever the auth call fails at the TCP / timeout layer. Used
-/// by [`cascade_abort_reason`] to decide whether to abort the auth
-/// cascade immediately instead of falling through or re-prompting.
-///
-/// Uses `downcast_ref` rather than `chain().any(is::<...>())`
-/// because anyhow stores contexts behind an internal wrapper type;
-/// `downcast_ref` knows how to look through it, but the chain
-/// iterator yields the wrapper's concrete type.
-fn is_auth_server_unreachable(err: &anyhow::Error) -> bool {
-  err.downcast_ref::<AuthServerUnreachable>().is_some()
-}
+/// The ready-made token earlier releases read. No longer read: a token
+/// could be sent only once (see the module docs). Its presence only
+/// draws a warning. (Not `MANTA_TOKEN`: API.md's curl examples use that
+/// name for a shell variable.)
+const REMOVED_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
 
-/// `true` if `err`'s typed-context chain contains [`SiteNotFound`] —
-/// the marker attached by [`MantaClient::validate_token`] /
-/// [`MantaClient::exchange_credentials`] on a `404` from `/auth/*`
-/// (the server is reachable but doesn't serve the configured site).
-/// Used by [`cascade_abort_reason`]; no credentials can authenticate
-/// against a site that doesn't exist.
-fn is_site_not_found(err: &anyhow::Error) -> bool {
-  err.downcast_ref::<SiteNotFound>().is_some()
-}
+/// Environment variable holding a service account's client id.
+pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
 
-/// Which error variant causes the auth cascade to stop immediately
-/// instead of falling through to the next credential source or
-/// re-prompting. Returned by [`cascade_abort_reason`].
-enum CascadeAbort {
-  /// The manta server was unreachable (DNS / TCP / TLS failure).
-  ServerUnreachable,
-  /// The server is up but doesn't serve the configured site (404).
-  SiteNotFound,
-}
+/// Environment variable holding a service account's client secret.
+pub const SA_CLIENT_SECRET_ENV_VAR: &str = "MANTA_SA_CLIENT_SECRET";
 
-/// Return the cascade-abort reason if `err` contains an
-/// [`AuthServerUnreachable`] or [`SiteNotFound`] typed marker;
-/// `None` for a plain credential rejection (wrong password, etc.)
-/// that should let the caller try the next source or re-prompt.
-fn cascade_abort_reason(err: &anyhow::Error) -> Option<CascadeAbort> {
-  if is_auth_server_unreachable(err) {
-    Some(CascadeAbort::ServerUnreachable)
-  } else if is_site_not_found(err) {
-    Some(CascadeAbort::SiteNotFound)
-  } else {
-    None
-  }
-}
+/// How long to wait for the token cache lock before saying so. A refresh
+/// holds it well under this; a login another command started holds it
+/// for minutes.
+const LOCK_WAIT_NOTICE_AFTER: std::time::Duration =
+  std::time::Duration::from_secs(2);
 
-/// Environment variable name for the API authentication token.
-const AUTH_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
+/// File name of the token cache inside the manta cache directory.
+const TOKEN_CACHE_FILE: &str = "token.json";
 
-/// Suffix appended to the site name to form the auth cache filename.
-const AUTH_CACHE_FILE_SUFFIX: &str = "_auth";
-
-/// Maximum number of interactive login attempts before giving up.
-const MAX_LOGIN_ATTEMPTS: u32 = 3;
-
-/// Obtain a valid API token, trying in order: env var
-/// `MANTA_CSM_TOKEN`, cached file, interactive login. Every candidate
-/// is validated through `manta-server`.
-///
-/// On a successful interactive login the token is written back to
-/// `<cache_dir>/<site>_auth` with `0600` permissions so subsequent
-/// invocations re-use it.
+/// Path of the token cache file (`<cache_dir>/token.json`).
 ///
 /// # Errors
 ///
-/// - No site is set (`ctx.require_site()` fails).
-/// - The manta server is unreachable at any point — the cascade
-///   aborts and surfaces an
-///   [`crate::http_client::AuthServerUnreachable`]-wrapped error.
-/// - All three candidates failed (no env var, no cached file or
-///   stale cached token, and either the interactive retries hit
-///   [`MAX_LOGIN_ATTEMPTS`] or stdin isn't a terminal).
-/// - File I/O for the cache write fails after a successful login.
-#[tracing::instrument(skip_all, fields(site = ctx.site_name.unwrap_or("<unset>")))]
-pub async fn get_api_token(ctx: &AppContext<'_>) -> Result<String> {
-  // process_cli pre-resolves the token at the top of every
-  // authenticated command and stashes it on AppContext. Handlers
-  // continue to call this function unchanged; we just hand back the
-  // already-resolved token instead of re-walking the cache+env+IDP
-  // cascade. Verbs in process_cli's `verb_skips_session` list (no
-  // pre-resolved token) fall through to the full cascade below.
-  if let Some(t) = &ctx.token {
-    return Ok(t.clone());
+/// The platform cache directory cannot be resolved.
+pub fn token_cache_path() -> Result<PathBuf> {
+  Ok(get_default_cache_path()?.join(TOKEN_CACHE_FILE))
+}
+
+/// Supplies the token of every request of a command: always a new one
+/// (see the module docs).
+#[derive(Debug)]
+pub struct TokenProvider {
+  issuer_url: String,
+  client_id: String,
+  headless: bool,
+  /// Whether a login may be started: someone is at the terminal.
+  interactive: bool,
+  source: TokenSource,
+  /// Orders this run's requests for a cached token (see the module
+  /// docs for why the file lock does not suffice).
+  in_process: tokio::sync::Mutex<()>,
+  /// The token handed out last, for reading its claims.
+  last_issued: std::sync::Mutex<Option<String>>,
+}
+
+/// Where [`TokenProvider`] gets each new token.
+#[derive(Debug)]
+enum TokenSource {
+  /// The token cache at this path: its refresh token, or a login.
+  Cache(PathBuf),
+  /// The client credentials grant.
+  ServiceAccount(ServiceAccount),
+}
+
+impl TokenProvider {
+  /// Tokens from the token cache at `cache_path`, logging in when
+  /// `interactive` and the cache cannot supply one.
+  pub(crate) fn from_cache(
+    settings: &OidcSettings<'_>,
+    cache_path: PathBuf,
+    interactive: bool,
+  ) -> Self {
+    Self::with_source(settings, TokenSource::Cache(cache_path), interactive)
   }
 
-  // Auth endpoints are the ones that *obtain* or *check* the token,
-  // so we pass `None` as the bearer here; no default `Authorization`
-  // header gets attached.
-  let site_name = ctx.require_site()?;
-  let client = MantaClient::new(ctx.manta_server_url, site_name)?;
+  /// Tokens from `account`'s credentials. Never logs in.
+  pub(crate) fn for_service_account(
+    settings: &OidcSettings<'_>,
+    account: ServiceAccount,
+  ) -> Self {
+    Self::with_source(settings, TokenSource::ServiceAccount(account), false)
+  }
 
-  tracing::info!(
-    server = %ctx.manta_server_url,
-    "Beginning authentication"
-  );
-
-  match get_token_from_env(&client).await {
-    Ok(token) => {
-      tracing::info!("Authentication successful using env var");
-      return Ok(token);
+  fn with_source(
+    settings: &OidcSettings<'_>,
+    source: TokenSource,
+    interactive: bool,
+  ) -> Self {
+    Self {
+      issuer_url: settings.issuer_url.to_string(),
+      client_id: settings.client_id.to_string(),
+      headless: settings.headless,
+      interactive,
+      source,
+      in_process: tokio::sync::Mutex::new(()),
+      last_issued: std::sync::Mutex::new(None),
     }
-    Err(err) => {
-      // Short-circuit: an unreachable server or unknown site means no
-      // other credential source could succeed either, so abort the
-      // cascade immediately instead of falling through to the next path.
-      if cascade_abort_reason(&err).is_some() {
-        return Err(err);
+  }
+
+  /// A new token to send now.
+  ///
+  /// # Errors
+  ///
+  /// - The service account's credentials are refused, or the Keycloak
+  ///   cannot be reached.
+  /// - The cached refresh token cannot be used for a reason a login
+  ///   would not fix (the Keycloak unreachable or failing).
+  /// - A login is needed but stderr is not a terminal, or the login
+  ///   fails.
+  pub async fn token(&self) -> Result<String> {
+    let token = match &self.source {
+      TokenSource::Cache(cache_path) => {
+        self.token_from_cache(cache_path).await?
       }
-      tracing::warn!(
-        error = %err,
-        "env-var auth failed, trying cached token file"
+      TokenSource::ServiceAccount(account) => oidc::client_credentials(
+        &self.issuer_url,
+        &account.client_id,
+        &account.client_secret,
+      )
+      .await
+      .context("could not get a token for the service account")?,
+    };
+    *self
+      .last_issued
+      .lock()
+      .unwrap_or_else(PoisonError::into_inner) = Some(token.clone());
+    Ok(token)
+  }
+
+  /// The token [`Self::token`] handed out last, if any.
+  pub fn last_issued(&self) -> Option<String> {
+    self
+      .last_issued
+      .lock()
+      .unwrap_or_else(PoisonError::into_inner)
+      .clone()
+  }
+
+  fn settings(&self) -> OidcSettings<'_> {
+    OidcSettings {
+      issuer_url: &self.issuer_url,
+      client_id: &self.client_id,
+      headless: self.headless,
+    }
+  }
+
+  /// Refresh with the cached refresh token, or log in when there is
+  /// none or the Keycloak refuses it. Under both locks throughout.
+  async fn token_from_cache(&self, path: &Path) -> Result<String> {
+    let settings = self.settings();
+    let _in_process = self.in_process.lock().await;
+    let _lock = lock_cache(path).await;
+
+    let why_login = match cached_refresh_token(path, &settings) {
+      Ok(refresh_token) => {
+        match oidc::refresh(&settings, &refresh_token).await {
+          Ok(refreshed) => {
+            save_or_warn(&refreshed, path);
+            tracing::debug!("Access token refreshed for this request");
+            return Ok(refreshed.access_token);
+          }
+          Err(err) if err.is::<oidc::RefreshRefused>() => err.to_string(),
+          Err(err) => {
+            return Err(err.context("could not refresh the token"));
+          }
+        }
+      }
+      Err(why) => why,
+    };
+
+    if !self.interactive {
+      bail!(
+        "{why_login}, and stderr is not a terminal, so cannot log in \
+         interactively. Run manta interactively once to log in, or set \
+         {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a \
+         service account."
       );
     }
+    tracing::info!(issuer = %self.issuer_url, reason = %why_login, "Logging in interactively");
+    let store = oidc::login(&settings).await?;
+    save_or_warn(&store, path);
+    Ok(store.access_token)
+  }
+}
+
+/// A service account's client credentials, from [`SA_CLIENT_ID_ENV_VAR`]
+/// and [`SA_CLIENT_SECRET_ENV_VAR`].
+pub struct ServiceAccount {
+  client_id: String,
+  client_secret: String,
+}
+
+impl std::fmt::Debug for ServiceAccount {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("ServiceAccount")
+      .field("client_id", &self.client_id)
+      .field("client_secret", &"<REDACTED>")
+      .finish()
+  }
+}
+
+#[cfg(test)]
+impl ServiceAccount {
+  pub(crate) fn new(client_id: &str, client_secret: &str) -> Self {
+    Self {
+      client_id: client_id.to_string(),
+      client_secret: client_secret.to_string(),
+    }
+  }
+}
+
+/// The service account in the environment, if any.
+///
+/// # Errors
+///
+/// Only one of the two variables is set.
+pub fn service_account_from_env() -> Result<Option<ServiceAccount>> {
+  service_account_from(
+    std::env::var(SA_CLIENT_ID_ENV_VAR).ok(),
+    std::env::var(SA_CLIENT_SECRET_ENV_VAR).ok(),
+  )
+}
+
+fn service_account_from(
+  client_id: Option<String>,
+  client_secret: Option<String>,
+) -> Result<Option<ServiceAccount>> {
+  let client_id = client_id.filter(|v| is_set(Some(v)));
+  let client_secret = client_secret.filter(|v| is_set(Some(v)));
+  match (client_id, client_secret) {
+    (Some(client_id), Some(client_secret)) => Ok(Some(ServiceAccount {
+      client_id,
+      client_secret,
+    })),
+    (None, None) => Ok(None),
+    _ => bail!(
+      "set both {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a \
+       service account, or neither"
+    ),
+  }
+}
+
+/// The token provider for a command: the service account's when one is
+/// set, else the token cache's.
+///
+/// # Errors
+///
+/// Only one service-account variable is set, or the cache directory
+/// cannot be resolved.
+pub fn token_provider(ctx: &AppContext<'_>) -> Result<Arc<TokenProvider>> {
+  if is_set(std::env::var(REMOVED_TOKEN_ENV_VAR).ok().as_deref()) {
+    tracing::warn!(
+      "{REMOVED_TOKEN_ENV_VAR} is no longer supported and is ignored; use \
+       {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a service \
+       account"
+    );
   }
 
-  match get_token_from_local_file(site_name, &client).await {
-    Ok(token) => {
-      tracing::info!("Authentication successful using local file");
-      return Ok(token);
+  if let Some(account) = service_account_from_env()? {
+    tracing::info!(client_id = %account.client_id, "Using service account");
+    return Ok(Arc::new(TokenProvider::for_service_account(
+      &ctx.oidc, account,
+    )));
+  }
+  Ok(Arc::new(TokenProvider::from_cache(
+    &ctx.oidc,
+    token_cache_path()?,
+    io::stderr().is_terminal(),
+  )))
+}
+
+/// Whether an environment variable holds something other than blanks.
+fn is_set(value: Option<&str>) -> bool {
+  value.is_some_and(|t| !t.trim().is_empty())
+}
+
+/// The refresh token in the cache at `path`, if it is one `settings`'
+/// issuer and client gave out. Otherwise why there is none, which a
+/// login fixes: no cache, no refresh token in it, a cache that cannot be
+/// read (e.g. written by an older manta), or one from another issuer or
+/// client, whose refresh token must not go to this one.
+fn cached_refresh_token(
+  path: &Path,
+  settings: &OidcSettings<'_>,
+) -> Result<String, String> {
+  if !path.exists() {
+    return Err("not logged in".to_string());
+  }
+  let store = TokenStore::load(path)
+    .map_err(|err| format!("the token cache is unusable ({err:#})"))?;
+  if !store.is_from(settings) {
+    return Err(format!(
+      "logged in at {} as client {}, not at the configured {} as {}",
+      store.issuer_url,
+      store.client_id,
+      settings.issuer_url,
+      settings.client_id
+    ));
+  }
+  store
+    .refresh_token
+    .ok_or_else(|| "not logged in (no refresh token cached)".to_string())
+}
+
+/// Save `store` at `path`. A failure only warns: the token in hand is
+/// still good for this request, and the next one refreshes or logs in.
+fn save_or_warn(store: &TokenStore, path: &Path) {
+  if let Err(err) = store.save(path) {
+    tracing::warn!(error = %format!("{err:#}"), "could not save the token cache");
+  }
+}
+
+/// Hold `<cache>.lock` exclusively until the returned file is dropped, so
+/// no two `manta` runs refresh at once. `None`, with a warning, when the
+/// lock cannot be taken; the refresh then goes ahead without it.
+///
+/// Waits as long as the holder needs, which during a login is minutes.
+/// After [`LOCK_WAIT_NOTICE_AFTER`] it says so on stderr, so the wait
+/// does not look like a hang.
+async fn lock_cache(path: &Path) -> Option<std::fs::File> {
+  let lock_path = path.with_extension("lock");
+  let shown_path = lock_path.display().to_string();
+  let mut locking = tokio::task::spawn_blocking(move || {
+    // Before the first login the cache directory may not exist yet;
+    // create it as `TokenStore::save` would.
+    if let Some(dir) = lock_path.parent() {
+      use std::os::unix::fs::DirBuilderExt;
+      std::fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(dir)?;
     }
-    Err(err) => {
-      // Unknown site or unreachable server: bail before prompting —
-      // interactive login would hit the same dead endpoint or 404.
-      if cascade_abort_reason(&err).is_some() {
-        return Err(err);
-      }
-      let stdin = io::stdin();
-      if !stdin.is_terminal() {
-        tracing::warn!(
-          error = %err,
-          "cached token rejected and stdin is not a terminal; giving up"
+    let file = std::fs::OpenOptions::new()
+      .create(true)
+      .write(true)
+      .truncate(false)
+      .open(&lock_path)?;
+    file.lock()?;
+    Ok::<_, std::io::Error>(file)
+  });
+  let locked =
+    match tokio::time::timeout(LOCK_WAIT_NOTICE_AFTER, &mut locking).await {
+      Ok(locked) => locked,
+      Err(_) => {
+        eprintln!(
+          "Waiting for another manta command that is logging in or \
+           refreshing the token (lock: {shown_path})..."
         );
-        return Err(err);
+        locking.await
       }
-      tracing::warn!(
-        error = %err,
-        "cached token rejected, prompting for credentials interactively"
-      );
+    };
+  match locked {
+    Ok(Ok(file)) => Some(file),
+    Ok(Err(err)) => {
+      tracing::warn!(error = %err, "cannot lock the token cache");
+      None
+    }
+    Err(err) => {
+      tracing::warn!(error = %err, "cannot lock the token cache");
+      None
     }
   }
-
-  tracing::info!("Getting CSM authentication token interactively");
-  let shasta_token = get_token_interactively(&client).await?;
-
-  store_token_in_local_file(site_name, &shasta_token)?;
-  tracing::info!("Authentication successful using interactive login");
-  Ok(shasta_token)
-}
-
-async fn get_token_from_env(client: &MantaClient) -> Result<String> {
-  let auth_token_env_name = AUTH_TOKEN_ENV_VAR;
-
-  tracing::info!(
-    "Looking for authentication token in env var '{}'",
-    auth_token_env_name
-  );
-
-  let shasta_token = std::env::var(auth_token_env_name).map_err(|_| {
-    anyhow!("authentication token not found in env var '{auth_token_env_name}'")
-  })?;
-
-  tracing::info!(
-    "Authentication token found in env var '{}'. Check if it is valid",
-    auth_token_env_name
-  );
-
-  client.validate_token(&shasta_token).await?;
-  Ok(shasta_token)
-}
-
-async fn get_token_from_local_file(
-  site_name: &str,
-  client: &MantaClient,
-) -> Result<String> {
-  let mut path = get_default_cache_path()?;
-
-  path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX);
-
-  tracing::info!(
-    "Looking for authentication token in filesystem file '{}'",
-    path.display()
-  );
-
-  let mut shasta_token = String::new();
-  File::open(&path)
-    .inspect_err(|e| {
-      tracing::debug!("Could not open token file '{}': {}", path.display(), e);
-    })
-    .map_err(|_| {
-      anyhow!("authentication token not found at '{}'", path.display())
-    })?
-    .read_to_string(&mut shasta_token)?;
-
-  tracing::info!(
-    "Authentication token found in filesystem. Check if it is still valid",
-  );
-
-  client.validate_token(&shasta_token).await?;
-  Ok(shasta_token)
-}
-
-fn store_token_in_local_file(
-  site_name: &str,
-  shasta_token: &str,
-) -> Result<()> {
-  tracing::info!("Store authentication token in filesystem file");
-
-  let mut path = get_default_cache_path()?;
-
-  create_dir_all(&path)?;
-
-  path.push(site_name.to_string() + AUTH_CACHE_FILE_SUFFIX);
-
-  tracing::info!("Cache file: {:?}", path);
-
-  let mut file: File = File::options()
-    .write(true)
-    .create(true)
-    .truncate(true)
-    .mode(0o600)
-    .open(&path)?;
-  file.write_all(shasta_token.as_bytes())?;
-
-  tracing::info!(path = %path.display(), "Authentication token cached on disk");
-  Ok(())
-}
-
-async fn get_token_interactively(client: &MantaClient) -> Result<String> {
-  // Single attempt loop: prompt → try → return on success or cascade
-  // abort → log and continue on credential rejection.
-  //
-  // The do-while pattern (pre-loop prompt + identical prompt in the
-  // loop body) has been replaced by a plain for-loop so the prompt
-  // block appears exactly once. `attempt` is 0-indexed, so `attempt +
-  // 1` gives the correct 1-indexed attempt number in log messages
-  // without any off-by-one adjustment.
-  let mut last_err = anyhow!("no login attempt was made");
-
-  for attempt in 0..MAX_LOGIN_ATTEMPTS {
-    println!("Please type your {}", "Keycloak credentials".green());
-    let username: String =
-      Input::new().with_prompt("username").interact_text()?;
-    let password = Password::new().with_prompt("password").interact()?;
-
-    match client.exchange_credentials(&username, &password).await {
-      Ok(token) => {
-        if attempt > 0 {
-          tracing::info!(
-            attempt = attempt + 1,
-            "Interactive authentication succeeded after retries"
-          );
-        }
-        return Ok(token);
-      }
-      Err(err) => match cascade_abort_reason(&err) {
-        Some(CascadeAbort::ServerUnreachable) => {
-          tracing::warn!(
-            error = %err,
-            "auth server unreachable; aborting interactive retries"
-          );
-          return Err(err);
-        }
-        Some(CascadeAbort::SiteNotFound) => {
-          tracing::warn!(
-            error = %err,
-            "site not configured on server; aborting interactive retries"
-          );
-          return Err(err);
-        }
-        None => {
-          tracing::warn!(
-            attempt = attempt + 1,
-            max_attempts = MAX_LOGIN_ATTEMPTS,
-            error = %err,
-            "Interactive authentication attempt failed"
-          );
-          last_err = err;
-        }
-      },
-    }
-  }
-
-  Err(last_err)
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use std::os::unix::fs::PermissionsExt;
 
   #[test]
-  fn store_and_read_token_from_local_file() {
-    let tmp_dir = tempfile::tempdir().unwrap();
-
-    let site_name = "test_site";
-    let token = "my-secret-token-12345";
-
-    let mut path = tmp_dir.path().to_path_buf();
-    path.push(format!("{site_name}{AUTH_CACHE_FILE_SUFFIX}"));
-
-    let mut file = File::options()
-      .write(true)
-      .create(true)
-      .truncate(true)
-      .mode(0o600)
-      .open(&path)
-      .unwrap();
-    file.write_all(token.as_bytes()).unwrap();
-
-    let mut content = String::new();
-    File::open(&path)
-      .unwrap()
-      .read_to_string(&mut content)
-      .unwrap();
-    assert_eq!(content, token);
-
-    let metadata = std::fs::metadata(&path).unwrap();
-    let mode = metadata.permissions().mode() & 0o777;
-    assert_eq!(mode, 0o600, "Token file should have 600 permissions");
+  fn a_service_account_needs_both_variables() {
+    let s = |v: &str| Some(v.to_string());
+    assert!(
+      service_account_from(s("id"), s("secret"))
+        .unwrap()
+        .is_some()
+    );
+    assert!(service_account_from(None, None).unwrap().is_none());
+    assert!(service_account_from(s(" "), s(" ")).unwrap().is_none());
+    assert!(service_account_from(s("id"), None).is_err());
+    assert!(service_account_from(None, s("secret")).is_err());
   }
 
   #[test]
-  fn store_token_overwrites_existing() {
-    let tmp_dir = tempfile::tempdir().unwrap();
-    let mut path = tmp_dir.path().to_path_buf();
-    path.push("overwrite_test_auth");
-
-    let mut file = File::options()
-      .write(true)
-      .create(true)
-      .truncate(true)
-      .mode(0o600)
-      .open(&path)
-      .unwrap();
-    file.write_all(b"old-token").unwrap();
-
-    let mut file = File::options()
-      .write(true)
-      .create(true)
-      .truncate(true)
-      .mode(0o600)
-      .open(&path)
-      .unwrap();
-    file.write_all(b"new-token").unwrap();
-
-    let mut content = String::new();
-    File::open(&path)
-      .unwrap()
-      .read_to_string(&mut content)
-      .unwrap();
-    assert_eq!(content, "new-token");
+  fn service_account_debug_redacts_the_secret() {
+    let account = ServiceAccount::new("ci-bot", "hunter2");
+    let rendered = format!("{account:?}");
+    assert!(rendered.contains("ci-bot"), "{rendered}");
+    assert!(!rendered.contains("hunter2"), "{rendered}");
   }
 
   #[test]
-  fn auth_token_env_var_name() {
-    assert_eq!(AUTH_TOKEN_ENV_VAR, "MANTA_CSM_TOKEN");
+  fn only_a_non_blank_value_counts_as_set() {
+    assert!(is_set(Some("abc")));
+    assert!(!is_set(Some("  ")));
+    assert!(!is_set(None));
+  }
+
+  fn settings(issuer_url: &str) -> OidcSettings<'_> {
+    OidcSettings {
+      issuer_url,
+      client_id: "manta-cli",
+      headless: true,
+    }
+  }
+
+  fn cache_from(path: &Path, issuer_url: &str) {
+    TokenStore {
+      access_token: "access".to_string(),
+      refresh_token: Some("refresh".to_string()),
+      id_token: None,
+      expires_at: None,
+      issuer_url: issuer_url.to_string(),
+      client_id: "manta-cli".to_string(),
+    }
+    .save(path)
+    .unwrap();
   }
 
   #[test]
-  fn auth_cache_file_suffix_value() {
-    assert_eq!(AUTH_CACHE_FILE_SUFFIX, "_auth");
+  fn the_configured_issuers_cache_gives_its_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    cache_from(&path, "https://prod");
+    assert_eq!(
+      cached_refresh_token(&path, &settings("https://prod")),
+      Ok("refresh".to_string())
+    );
   }
 
   #[test]
-  fn max_login_attempts_is_reasonable() {
-    const { assert!(MAX_LOGIN_ATTEMPTS >= 1 && MAX_LOGIN_ATTEMPTS <= 10) };
+  fn no_cache_means_no_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    assert_eq!(
+      cached_refresh_token(&path, &settings("https://prod")),
+      Err("not logged in".to_string())
+    );
   }
 
   #[test]
-  fn site_not_found_marker_is_detected_through_anyhow_context() {
-    // The cascade's bail-out points rely on `is_site_not_found` seeing
-    // the marker through anyhow's context wrapper — the same shape
-    // `MantaClient::map_auth_error` produces on a 404.
-    let err = anyhow!("HTTP 404").context(SiteNotFound {
-      site: "nonexistent".to_string(),
-    });
-    assert!(is_site_not_found(&err));
-    // Must not be confused with the unreachable-server short-circuit.
-    assert!(!is_auth_server_unreachable(&err));
+  fn a_corrupt_cache_means_no_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    std::fs::write(&path, "not json").unwrap();
+    let why =
+      cached_refresh_token(&path, &settings("https://prod")).unwrap_err();
+    assert!(why.starts_with("the token cache is unusable"), "got: {why}");
   }
 
+  /// Switching `oidc_issuer_url` (prod ↔ TDS) must not send prod's refresh
+  /// token to TDS.
   #[test]
-  fn plain_error_is_not_site_not_found() {
-    // A genuine credential rejection carries no marker, so the cascade
-    // keeps trying / re-prompts rather than bailing.
-    let err = anyhow!("invalid credentials");
-    assert!(!is_site_not_found(&err));
+  fn another_issuers_cache_gives_no_refresh_token() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join(TOKEN_CACHE_FILE);
+    cache_from(&path, "https://prod");
+    let why =
+      cached_refresh_token(&path, &settings("https://tds")).unwrap_err();
+    assert!(why.contains("https://prod"), "got: {why}");
+    assert!(why.contains("https://tds"), "got: {why}");
   }
 }

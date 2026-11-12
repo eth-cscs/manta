@@ -46,10 +46,9 @@ pub struct ExecParams<'a> {
 /// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
 
   let req = UpdateRedfishEndpointParams {
     id: p.id.to_string(),

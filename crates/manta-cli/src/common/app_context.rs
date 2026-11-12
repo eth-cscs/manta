@@ -6,9 +6,9 @@
 //! poll-tuning knobs from `cli.toml`, and the raw `config::Config`
 //! handle for fields the typed struct doesn't surface.
 //!
-//! Authentication is *not* on the context — call
-//! [`crate::common::authentication::get_api_token`] when a handler
-//! needs a token, then thread the token into [`crate::http_client::MantaClient::from_app_ctx`].
+//! Handlers never touch a token: `process_cli` sets the token provider
+//! here and [`crate::http_client::MantaClient::from_app_ctx`] hands it
+//! to the client, which gets a new token for every request.
 //!
 //! The server's analogous `InfraContext` (with backend dispatcher and
 //! per-site URLs) lives in `manta_server::server::common::app_context`
@@ -24,17 +24,14 @@ use crate::common::session::SessionContext;
 ///
 /// # Example
 ///
-/// Typical handler shape: resolve a token, build a client, call an
-/// OpenAPI method.
+/// Typical handler shape: build a client, call an OpenAPI method.
 ///
 /// ```ignore
 /// use crate::common::app_context::AppContext;
-/// use crate::common::authentication::get_api_token;
 /// use crate::http_client::{MantaClient, OpenApiResultExt};
 ///
 /// async fn list_groups(ctx: &AppContext<'_>) -> anyhow::Result<()> {
-///   let token = get_api_token(ctx).await?;
-///   let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+///   let client = MantaClient::from_app_ctx(ctx)?;
 ///   let groups = client
 ///     .openapi
 ///     .get_groups(None, client.site_name())
@@ -87,17 +84,18 @@ pub struct AppContext<'a> {
   /// backend-mutating verbs before any HTTP request leaves the
   /// process. `false` by default.
   pub read_only: bool,
+  /// Where and how the CLI logs in to obtain its bearer token —
+  /// `cli.toml`'s `oidc_*` keys with the CSCS defaults filled in.
+  pub oidc: crate::common::oidc::OidcSettings<'a>,
   /// Raw loaded `cli.toml` settings; held alongside the parsed
   /// `CliConfiguration` so handlers can read fields (e.g. `log`)
   /// that don't live on the typed struct.
   pub settings: &'a Config,
-  /// Bearer token resolved at the top of
+  /// Supplies a new token for every request, set at the top of
   /// [`crate::dispatch::process::process_cli`] for every command that
-  /// authenticates. Handlers that call
-  /// [`crate::common::authentication::get_api_token`] read this first
-  /// via the short-circuit added in step 4 — that's how we avoid the
-  /// second auth cascade per command. `None` for purely-local verbs.
-  pub token: Option<String>,
+  /// talks to the server. `None` for purely-local verbs.
+  pub token_provider:
+    Option<std::sync::Arc<crate::common::authentication::TokenProvider>>,
   /// JWT-derived per-invocation facts, populated at the top of
   /// [`crate::dispatch::process::process_cli`] for every command that
   /// authenticates AND passes the read-only gate. `None` for
@@ -147,8 +145,13 @@ mod tests {
       sat_file_poll_budget_secs: None,
       sat_file_not_visible_budget_secs: None,
       read_only: false,
+      oidc: crate::common::oidc::OidcSettings {
+        issuer_url: "https://issuer.example",
+        client_id: "test-client",
+        headless: false,
+      },
       settings,
-      token: None,
+      token_provider: None,
       session: None,
     }
   }

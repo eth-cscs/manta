@@ -23,7 +23,6 @@ use crate::output::action_result;
 /// is reported as a successful no-op rather than an error.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   target_hsm_name: &str,
   hosts_expression: &str,
   dryrun: bool,
@@ -50,7 +49,7 @@ pub async fn exec(
     return Ok(());
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .delete_group_members(

@@ -42,6 +42,9 @@ mod output;
 
 use crate::common::app_context::AppContext;
 use crate::common::config::CliConfiguration;
+use crate::common::oidc::{
+  DEFAULT_OIDC_CLIENT_ID, DEFAULT_OIDC_ISSUER_URL, OidcSettings,
+};
 
 use clap::ArgMatches;
 
@@ -51,9 +54,22 @@ use manta_shared::common::log_ops;
 /// `Display` (not `Debug`) so multi-line messages aren't escaped.
 fn main() {
   if let Err(e) = run() {
-    eprintln!("{e}");
+    eprintln!("{}", error_chain(e.as_ref()));
     std::process::exit(1);
   }
+}
+
+/// `e` followed by each of its causes. `Display` alone shows only the
+/// outermost message, e.g. an anyhow `context` without the error it wraps.
+fn error_chain(e: &(dyn std::error::Error + 'static)) -> String {
+  let mut out = e.to_string();
+  let mut source = e.source();
+  while let Some(cause) = source {
+    out.push_str("\n  caused by: ");
+    out.push_str(&cause.to_string());
+    source = cause.source();
+  }
+  out
 }
 
 /// Synchronous entry point. Loads `cli.toml`, resolves the active site,
@@ -135,8 +151,19 @@ async fn run_cli(
     sat_file_not_visible_budget_secs: configuration
       .sat_file_not_visible_budget_secs,
     read_only: configuration.read_only,
+    oidc: OidcSettings {
+      issuer_url: configuration
+        .oidc_issuer_url
+        .as_deref()
+        .unwrap_or(DEFAULT_OIDC_ISSUER_URL),
+      client_id: configuration
+        .oidc_client_id
+        .as_deref()
+        .unwrap_or(DEFAULT_OIDC_CLIENT_ID),
+      headless: configuration.oidc_headless,
+    },
     settings: &settings,
-    token: None,
+    token_provider: None,
     session: None,
   };
 
@@ -144,4 +171,31 @@ async fn run_cli(
     crate::dispatch::process::process_cli(&cli_matches, app_context).await;
 
   cli_result.map_err(Into::into)
+}
+
+#[cfg(test)]
+mod tests {
+  use super::error_chain;
+
+  /// The shape that hid Hydra's reason: an anyhow context, converted to
+  /// the `Box<dyn Error>` that `run` returns.
+  #[test]
+  fn error_chain_shows_the_cause_behind_a_context() {
+    let err: Box<dyn std::error::Error> =
+      anyhow::anyhow!("HTTP 401: invalid_grant")
+        .context("fetch accessible groups")
+        .into();
+
+    assert_eq!(
+      error_chain(err.as_ref()),
+      "fetch accessible groups\n  caused by: HTTP 401: invalid_grant"
+    );
+  }
+
+  #[test]
+  fn error_chain_of_a_plain_error_is_its_message() {
+    let err: Box<dyn std::error::Error> = "no site selected".into();
+
+    assert_eq!(error_chain(err.as_ref()), "no site selected");
+  }
 }

@@ -33,7 +33,6 @@ pub struct ExecParams<'a> {
 /// `update_boot_parameters` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let hosts: Vec<String> = p.xnames.split(',').map(String::from).collect();
@@ -62,7 +61,7 @@ pub async fn exec(
     initrd: p.initrd.unwrap_or_default().to_string(),
   };
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .update_boot_parameters(client.site_name(), &params)

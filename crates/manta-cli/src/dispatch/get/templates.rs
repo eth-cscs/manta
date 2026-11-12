@@ -48,14 +48,13 @@ fn parse_template_params(
 /// the required `--output` flag is missing, or the renderer fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   cli_args: &clap::ArgMatches,
 ) -> Result<(), Error> {
   let params = parse_template_params(cli_args, ctx.settings_group_name_opt);
 
   let group_name = params.effective_group();
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let raw = client
     .openapi
     .get_templates(

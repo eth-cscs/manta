@@ -5,11 +5,12 @@
 #
 #     docker build -f crates/manta-cli/Dockerfile -t manta-cli .
 #
-# Run with a mounted config and an ACCESS_TOKEN:
+# Run with a mounted config and service-account credentials (or a mounted
+# token cache from an interactive login):
 #
 #     docker run --rm -it --network=host \
 #       -v $HOME/.config/manta:/home/manta/.config/manta \
-#       -e MANTA_CSM_TOKEN \
+#       -e MANTA_SA_CLIENT_ID -e MANTA_SA_CLIENT_SECRET \
 #       manta-cli get redfish-endpoints
 #
 # (The image ENTRYPOINT is `manta`, so anything after the image name

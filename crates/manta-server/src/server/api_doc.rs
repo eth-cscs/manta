@@ -75,8 +75,6 @@ use super::handlers;
     handlers::apply_hw_configuration,
     handlers::console_node_ws,
     handlers::console_session_ws,
-    handlers::auth_token,
-    handlers::auth_validate,
     handlers::get_available_groups,
   ),
   components(schemas(
@@ -106,9 +104,6 @@ use super::handlers;
     handlers::DeleteHwComponentRequest,
     handlers::HwClusterMode,
     handlers::ApplyHwConfigurationRequest,
-    manta_shared::types::auth::AuthTokenRequest,
-    manta_shared::types::auth::AuthTokenResponse,
-    manta_shared::types::auth::ValidateTokenRequest,
     crate::service::boot_parameters::UpdateBootParametersParams,
     manta_shared::types::api::redfish_endpoints::UpdateRedfishEndpointParams,
     manta_shared::types::dto::NodeDetails,

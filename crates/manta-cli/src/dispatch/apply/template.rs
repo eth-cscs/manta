@@ -33,7 +33,6 @@ pub struct ExecParams<'a> {
 /// `post_template_session` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
   let operation = match p.operation {
@@ -44,7 +43,7 @@ pub async fn exec(
       "unknown BOS operation '{other}' (expected boot/reboot/shutdown)"
     ),
   };
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .post_template_session(

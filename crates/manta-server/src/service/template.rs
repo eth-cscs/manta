@@ -189,12 +189,15 @@ pub async fn validate_and_prepare_template_session(
     name: params.bos_session_name.clone(),
     tenant: None,
     operation: Some(
-      Operation::from_str(&params.bos_session_operation).map_err(|_| {
-        Error::BadRequest(format!(
-          "Invalid BOS session operation '{}'",
-          params.bos_session_operation
-        ))
-      })?,
+      params
+        .bos_session_operation
+        .parse::<Operation>()
+        .map_err(|_| {
+          Error::BadRequest(format!(
+            "Invalid BOS session operation '{}'",
+            params.bos_session_operation
+          ))
+        })?,
     ),
     template_name: params.bos_sessiontemplate_name.clone(),
     limit: Some(limit_vec.join(",")),

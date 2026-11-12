@@ -23,7 +23,6 @@ use crate::output::action_result;
 /// fails to serialise.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   id: &str,
   output_opt: Option<&str>,
   dry_run: bool,
@@ -37,7 +36,7 @@ pub async fn exec(
     );
   }
 
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .delete_redfish_endpoint(id, client.site_name())

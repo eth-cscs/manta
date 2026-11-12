@@ -18,9 +18,7 @@ pub mod unset_hsm;
 pub mod unset_read_only;
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
 use crate::common::clap_ext::ArgMatchesExt;
-use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -28,14 +26,13 @@ use clap::ArgMatches;
 ///
 /// Routes the parsed clap matches to one of the per-subcommand `exec`
 /// handlers in this module. Only `show` (when a site is selected) and
-/// `set hsm` resolve a token and build a [`MantaClient`]; the other
-/// handlers operate purely on the local config file.
+/// `set hsm` use the server, through the session `process_cli` built;
+/// the other handlers operate purely on the local config file.
 ///
 /// # Errors
 ///
-/// Returns an error if token acquisition fails on a path that needs
-/// one, the selected handler fails, or no recognised subcommand was
-/// provided.
+/// Returns an error if `set hsm` runs without a site, the selected
+/// handler fails, or no recognised subcommand was provided.
 pub async fn handle_config(
   cli_config: &ArgMatches,
   ctx: &AppContext<'_>,
@@ -50,8 +47,8 @@ pub async fn handle_config(
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
-        let token = get_api_token(ctx).await?;
-        let client = MantaClient::from_app_ctx(ctx, Some(&token))?;
+        // The accessible groups come from the site.
+        ctx.require_site()?;
         // SessionContext is guaranteed Some here: this arm only runs
         // for verbs that don't skip the session build in process_cli
         // (set_hsm requires a site, so a session was built).
@@ -60,7 +57,7 @@ pub async fn handle_config(
           .as_ref()
           .map(|s| s.accessible_groups.as_slice())
           .unwrap_or_default();
-        set_hsm::exec(m, &client, &token, accessible_groups).await?;
+        set_hsm::exec(m, accessible_groups).await?;
       }
       Some(("site", m)) => set_site::exec(m)?,
       Some(("log", m)) => set_log::exec(m)?,

@@ -6,17 +6,18 @@
 //! 1. Read-only gate — refuses backend-mutating verbs when `cli.toml`
 //!    has `read_only = true`. Runs before any token acquisition so no
 //!    HTTP call leaves the process on the refusal path.
-//! 2. (Authenticated verbs only) Token cascade
-//!    ([`get_api_token`]) — one round-trip if the cache is hot;
-//!    interactive prompt if cold.
+//! 2. (Authenticated verbs only) The token provider
+//!    ([`token_provider`]), which gives every request of the command a
+//!    new token. Makes no request itself.
 //! 3. (Authenticated verbs only) [`SessionContext::build`] — one
 //!    `GET /groups/available` round-trip plus the JWT claims; cached
-//!    on `AppContext` for the duration of the command.
+//!    on `AppContext` for the duration of the command. As the first
+//!    request, it is where an interactive login happens when needed.
 //!
 //! This local gate is the only read-only enforcement in the system.
 
 use crate::common::app_context::AppContext;
-use crate::common::authentication::get_api_token;
+use crate::common::authentication::token_provider;
 use crate::common::session::SessionContext;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
@@ -28,9 +29,7 @@ use crate::dispatch::{
 };
 
 /// Verbs that operate purely on the local config file (or local
-/// machine state) and never call `get_api_token`. Derived empirically
-/// from `grep -rl get_api_token crates/manta-cli/src/dispatch` — any
-/// handler that does NOT appear in that grep result belongs here.
+/// machine state) and never send a request to manta-server.
 ///
 /// Today the no-auth set is: `gen-autocomplete`, `gen-man`, `upgrade`,
 /// `config set site`, `config set log`, `config set read-only`,
@@ -62,7 +61,7 @@ fn verb_skips_session(cli_root: &ArgMatches) -> bool {
 ///
 /// # Errors
 ///
-/// Returns an error when the auth cascade fails, the SessionContext
+/// Returns an error when no token can be obtained, the SessionContext
 /// build fails, the read-only gate refuses a mutating verb, no
 /// subcommand is provided, the subcommand name is unknown, or the
 /// chosen verb's handler returns an error.
@@ -72,26 +71,17 @@ pub async fn process_cli(
 ) -> Result<(), Error> {
   // Step 1: read-only gate. Fires purely off `cli.toml`, before any
   // HTTP call — a `read_only = true` operator running `manta apply`
-  // is refused without the token cascade ever running.
+  // is refused before any token is fetched.
   crate::common::read_only::read_only_gate(cli_root, ctx.read_only)?;
 
   let needs_session = !verb_skips_session(cli_root) && ctx.site_name.is_some();
 
-  // Step 2: resolve the token (only for authenticated verbs).
-  let token_opt: Option<String> = if needs_session {
-    Some(get_api_token(&ctx).await?)
-  } else {
-    None
-  };
-
-  // Step 3: full SessionContext build (groups fetch + JWT claims).
-  // Stash the token on `ctx.token` so downstream handlers that call
-  // `get_api_token` hit the short-circuit in `common::authentication`
-  // instead of re-walking the cache.
-  if let Some(token) = token_opt {
-    let client = MantaClient::from_app_ctx(&ctx, Some(&token))?;
-    ctx.session = Some(SessionContext::build(&client, &token).await?);
-    ctx.token = Some(token);
+  // Step 2: the token provider, and step 3: the session (groups fetch
+  // + JWT claims), whose request gets the command's first token.
+  if needs_session {
+    ctx.token_provider = Some(token_provider(&ctx)?);
+    let client = MantaClient::from_app_ctx(&ctx)?;
+    ctx.session = Some(SessionContext::build(&client).await?);
   }
 
   match cli_root.subcommand() {

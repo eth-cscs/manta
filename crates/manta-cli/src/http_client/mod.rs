@@ -10,7 +10,7 @@
 //! reach those endpoints through:
 //!
 //! ```ignore
-//! let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+//! let client = MantaClient::from_app_ctx(ctx)?;
 //! let groups = client
 //!   .openapi
 //!   .get_groups(params.group_name.as_deref(), client.site_name())
@@ -37,11 +37,12 @@
 mod client;
 mod console;
 mod streaming;
+#[cfg(test)]
+mod token_provider_tests;
 mod wire;
 
-pub use client::{
-  AuthServerUnreachable, MantaClient, OpenApiResultExt, SiteNotFound,
-};
+pub(crate) use client::set_current_token;
+pub use client::{MantaClient, OpenApiResultExt};
 pub(super) use wire::ws_base_url;
 
 #[cfg(test)]

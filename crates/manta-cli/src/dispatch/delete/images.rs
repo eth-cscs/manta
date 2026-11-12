@@ -20,7 +20,6 @@ use crate::output::action_result;
 /// `delete_images` call fails.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   image_id_vec: &[&str],
   dry_run: bool,
   output_opt: Option<&str>,
@@ -31,7 +30,7 @@ pub async fn exec(
   );
 
   let ids = image_id_vec.join(",");
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .delete_images(Some(dry_run), &ids, client.site_name())

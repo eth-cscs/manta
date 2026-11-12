@@ -20,7 +20,6 @@ use crate::output::action_result;
 /// reported as a successful no-op rather than an error.
 pub async fn exec(
   ctx: &AppContext<'_>,
-  token: &str,
   session_name: &str,
   dry_run: bool,
   assume_yes: bool,
@@ -35,7 +34,7 @@ pub async fn exec(
     action_result::print("Operation cancelled by user", output_opt)?;
     return Ok(());
   }
-  let client = MantaClient::from_app_ctx(ctx, Some(token))?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
     .delete_session(session_name, Some(dry_run), client.site_name())

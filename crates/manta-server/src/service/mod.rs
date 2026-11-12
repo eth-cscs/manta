@@ -30,7 +30,7 @@
 //!
 //! - Cross-cutting: [`authorization`], [`infra_backend`], [`analysis`],
 //!   [`sat_groups`], [`node_ops`], [`ims_ops`].
-//! - Per-resource: [`auth`], [`boot_parameters`], [`configuration`],
+//! - Per-resource: [`boot_parameters`], [`configuration`],
 //!   [`group`], [`hardware`], [`image`], [`kernel_parameters`],
 //!   [`node`], [`node_details`], [`power`], [`redfish`], [`session`],
 //!   [`template`].
@@ -38,7 +38,6 @@
 //!   [`hw_cluster`] (the last is a subdirectory module).
 
 pub mod analysis;
-pub mod auth;
 pub mod authorization;
 pub mod boot_parameters;
 pub mod cluster;

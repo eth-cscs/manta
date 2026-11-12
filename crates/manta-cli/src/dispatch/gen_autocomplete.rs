@@ -20,7 +20,7 @@ use crate::output::action_result;
 
 /// Dispatch `manta gen-autocomplete`.
 ///
-/// Like `manta upgrade`, this handler does NOT call `get_api_token` —
+/// Like `manta upgrade`, this handler needs no token —
 /// generating shell-completion scripts is purely local.
 pub async fn handle_gen_autocomplete(
   cli_gen_autocomplete: &ArgMatches,
