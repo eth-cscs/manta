@@ -342,9 +342,9 @@ fn site_less_config_for(
   (dir, path)
 }
 
-/// `power` without a site: the POST goes out without `X-Manta-Site`,
-/// the CLI adopts the site the server echoes, and the transition poll
-/// (whose endpoint cannot resolve anything) carries it.
+/// `power` without a site: the POST goes out without `X-Manta-Site`
+/// but with a token, the CLI adopts the site the server echoes, and the
+/// transition poll (whose endpoint cannot resolve anything) carries it.
 #[test]
 fn power_without_a_site_pins_the_site_the_server_resolved() {
   let (url, requests) = spawn_manta_mock(vec![
@@ -375,9 +375,13 @@ fn power_without_a_site_pins_the_site_the_server_resolved() {
   let post = requests.recv().unwrap();
   assert!(post.starts_with("POST /v2/power "), "{post}");
   assert!(!post.contains("x-manta-site"), "{post}");
+  // No site is no reason to go unauthenticated: manta-server needs the
+  // token to resolve the site and to exchange it there.
+  assert!(post.contains("authorization: Bearer test-token"), "{post}");
   let poll = requests.recv().unwrap();
   assert!(poll.starts_with("GET /v2/power/transitions/t-1 "), "{poll}");
   assert!(poll.contains("x-manta-site: alps"), "{poll}");
+  assert!(poll.contains("authorization: Bearer test-token"), "{poll}");
 }
 
 /// A resolution failure is the server's to explain; the CLI shows its
