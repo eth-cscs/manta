@@ -6,8 +6,10 @@
 //! - `GET /v2/groups/nodes` (unfiltered) → every accessible node,
 //!   each carrying its xname and comma-separated `hsm` membership.
 //!
-//! Both calls send `X-Manta-Site: <name>` and `Authorization: Bearer
-//! <token>` from the [`SiteDescriptor`].
+//! Both calls send `X-Manta-Site: <name>` from the [`SiteDescriptor`]
+//! and `Authorization: Bearer <token>` with a new token from the
+//! [`TokenSource`] for each call (see there for why it is never
+//! reused).
 
 use std::time::Duration;
 
@@ -17,6 +19,7 @@ use serde::de::DeserializeOwned;
 use crate::error::CacheError;
 use crate::index::{Index, NodeMembership, SiteSnapshot};
 use crate::site::SiteDescriptor;
+use crate::token::TokenSource;
 
 /// TCP/TLS connect timeout per site request. A site that is down or
 /// unroutable should fail the refresh quickly, not stall it.
@@ -97,10 +100,12 @@ pub struct SnapshotOutcome {
 ///
 /// Returns [`CacheError::ClientBuild`] if the shared HTTP client cannot
 /// be created — the only failure that precedes the fan-out. Per-site
-/// failures ([`CacheError::Request`] / [`CacheError::Status`]) never
-/// error the call; they are collected in the outcome.
+/// failures ([`CacheError::Token`] / [`CacheError::Request`] /
+/// [`CacheError::Status`]) never error the call; they are collected in
+/// the outcome.
 pub async fn fetch_snapshots(
   sites: &[SiteDescriptor],
+  tokens: &impl TokenSource,
 ) -> Result<SnapshotOutcome, CacheError> {
   tracing::debug!(site_count = sites.len(), "snapshot fetch starting");
 
@@ -114,7 +119,7 @@ pub async fn fetch_snapshots(
     .map_err(CacheError::ClientBuild)?;
 
   let results = futures::future::join_all(
-    sites.iter().map(|site| fetch_site(&client, site)),
+    sites.iter().map(|site| fetch_site(&client, tokens, site)),
   )
   .await;
 
@@ -150,8 +155,9 @@ pub async fn fetch_snapshots(
 /// Same as [`fetch_snapshots`], which this wraps.
 pub async fn refresh(
   sites: &[SiteDescriptor],
+  tokens: &impl TokenSource,
 ) -> Result<RefreshOutcome, CacheError> {
-  let outcome = fetch_snapshots(sites).await?;
+  let outcome = fetch_snapshots(sites, tokens).await?;
   let index = Index::from_snapshots(outcome.snapshots);
   tracing::debug!(
     sites = index.sites().count(),
@@ -167,16 +173,17 @@ pub async fn refresh(
 /// Gather one site's snapshot from its two group endpoints.
 async fn fetch_site(
   client: &reqwest::Client,
+  tokens: &impl TokenSource,
   site: &SiteDescriptor,
 ) -> Result<SiteSnapshot, CacheError> {
   let base = normalize_base(&site.manta_server_url);
   tracing::debug!(site = %site.name, %base, "refreshing site");
 
   let labels: Vec<String> =
-    get_json(client, site, &format!("{base}/groups/available")).await?;
+    get_json(client, tokens, site, &format!("{base}/groups/available")).await?;
 
   let nodes: Vec<GroupNode> =
-    get_json(client, site, &format!("{base}/groups/nodes")).await?;
+    get_json(client, tokens, site, &format!("{base}/groups/nodes")).await?;
 
   let nodes = nodes
     .into_iter()
@@ -193,17 +200,25 @@ async fn fetch_site(
   })
 }
 
-/// GET `url` with the site's `X-Manta-Site` + bearer headers and decode
-/// the JSON body, mapping failures to the right [`CacheError`] variant.
+/// GET `url` with the site's `X-Manta-Site` header and a new bearer
+/// token, and decode the JSON body, mapping failures to the right
+/// [`CacheError`] variant.
+///
+/// The only place a token is taken: every request gets its own.
 async fn get_json<T: DeserializeOwned>(
   client: &reqwest::Client,
+  tokens: &impl TokenSource,
   site: &SiteDescriptor,
   url: &str,
 ) -> Result<T, CacheError> {
+  let token = tokens.token().await.map_err(|source| CacheError::Token {
+    site: site.name.clone(),
+    source,
+  })?;
   let resp = client
     .get(url)
     .header("X-Manta-Site", &site.name)
-    .bearer_auth(&site.token)
+    .bearer_auth(token)
     .send()
     .await
     .map_err(|source| CacheError::Request {

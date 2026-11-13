@@ -2,30 +2,53 @@
 //! server standing in for manta-server.
 //!
 //! These cover what the unit tests cannot — the wire behaviour: request
-//! headers (`X-Manta-Site`, per-site bearer token), the two-call
-//! fan-out, tolerance of unknown JSON fields, and the mapping of HTTP
-//! failures into [`RefreshOutcome::failures`].
+//! headers (`X-Manta-Site`, a new bearer token per request), the
+//! two-call fan-out, tolerance of unknown JSON fields, and the mapping
+//! of token and HTTP failures into [`RefreshOutcome::failures`].
 
-use manta_cache::{CacheError, RefreshOutcome, SiteDescriptor, refresh};
+use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use manta_cache::{
+  CacheError, RefreshOutcome, SiteDescriptor, TokenError, TokenSource, refresh,
+};
 use serde_json::json;
-use wiremock::matchers::{header, method, path};
+use wiremock::matchers::{header, header_regex, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-fn descriptor(server: &MockServer, site: &str, token: &str) -> SiteDescriptor {
+/// Hands out `tok-1`, `tok-2`, … — a new token per call, like the
+/// service account's client credentials grant.
+#[derive(Default)]
+struct Counter(AtomicUsize);
+
+impl TokenSource for Counter {
+  async fn token(&self) -> Result<String, TokenError> {
+    Ok(format!("tok-{}", self.0.fetch_add(1, Ordering::SeqCst) + 1))
+  }
+}
+
+/// Never supplies a token.
+struct Refused;
+
+impl TokenSource for Refused {
+  async fn token(&self) -> Result<String, TokenError> {
+    Err("service-account login rejected: Invalid client secret".into())
+  }
+}
+
+fn descriptor(server: &MockServer, site: &str) -> SiteDescriptor {
   SiteDescriptor {
     name: site.to_owned(),
     manta_server_url: server.uri(),
-    token: token.to_owned(),
   }
 }
 
 /// Mount the two group endpoints for one site, matching on its
-/// `X-Manta-Site` and bearer headers so a request with the wrong
-/// headers falls through to wiremock's 404.
+/// `X-Manta-Site` header and a [`Counter`] bearer token so a request
+/// with the wrong headers falls through to wiremock's 404.
 async fn mount_site(
   server: &MockServer,
   site: &str,
-  token: &str,
   labels: serde_json::Value,
   nodes: serde_json::Value,
 ) {
@@ -33,7 +56,7 @@ async fn mount_site(
     Mock::given(method("GET"))
       .and(path(format!("/v2/groups/{endpoint}")))
       .and(header("X-Manta-Site", site))
-      .and(header("Authorization", format!("Bearer {token}")))
+      .and(header_regex("Authorization", r"^Bearer tok-\d+$"))
       .respond_with(ResponseTemplate::new(200).set_body_json(body))
       .expect(1)
       .mount(server)
@@ -51,7 +74,6 @@ async fn refresh_fans_out_with_per_site_headers() {
   mount_site(
     &server,
     "alps",
-    "tok-alps",
     json!(["compute"]),
     json!([{"xname": "x1000c0s0b0n0", "hsm": "compute", "power_status": "ON"}]),
   )
@@ -59,16 +81,15 @@ async fn refresh_fans_out_with_per_site_headers() {
   mount_site(
     &server,
     "daint",
-    "tok-daint",
     json!(["compute_d"]),
     json!([{"xname": "x2000c0s0b0n0", "hsm": "compute_d, extra"}]),
   )
   .await;
 
-  let outcome: RefreshOutcome = refresh(&[
-    descriptor(&server, "alps", "tok-alps"),
-    descriptor(&server, "daint", "tok-daint"),
-  ])
+  let outcome: RefreshOutcome = refresh(
+    &[descriptor(&server, "alps"), descriptor(&server, "daint")],
+    &Counter::default(),
+  )
   .await
   .expect("client build");
 
@@ -85,6 +106,61 @@ async fn refresh_fans_out_with_per_site_headers() {
   // each carrying that site's own headers.
 }
 
+/// No token is sent twice: OpenCHAMI's Hydra would reject the reuse.
+#[tokio::test]
+async fn every_request_carries_a_new_token() {
+  let server = MockServer::start().await;
+  for site in ["alps", "daint"] {
+    mount_site(&server, site, json!([]), json!([])).await;
+  }
+  let tokens = Counter::default();
+
+  let outcome = refresh(
+    &[descriptor(&server, "alps"), descriptor(&server, "daint")],
+    &tokens,
+  )
+  .await
+  .expect("client build");
+
+  assert!(outcome.is_complete(), "failures: {:?}", outcome.failures);
+  let sent: Vec<String> = server
+    .received_requests()
+    .await
+    .unwrap()
+    .iter()
+    .map(|r| r.headers["authorization"].to_str().unwrap().to_owned())
+    .collect();
+  assert_eq!(sent.len(), 4, "{sent:?}");
+  assert_eq!(sent.iter().collect::<HashSet<_>>().len(), 4, "{sent:?}");
+  assert_eq!(tokens.0.load(Ordering::SeqCst), 4);
+}
+
+/// A token the source cannot supply fails each site with
+/// [`CacheError::Token`], and no request goes out without one.
+#[tokio::test]
+async fn a_token_failure_fails_the_site_without_sending() {
+  let server = MockServer::start().await;
+
+  let outcome = refresh(
+    &[descriptor(&server, "alps"), descriptor(&server, "daint")],
+    &Refused,
+  )
+  .await
+  .expect("client build");
+
+  assert_eq!(outcome.index.sites().count(), 0);
+  let failed: Vec<_> = outcome.failures.iter().map(CacheError::site).collect();
+  assert_eq!(failed, vec![Some("alps"), Some("daint")]);
+  for failure in &outcome.failures {
+    assert!(matches!(failure, CacheError::Token { .. }), "{failure:?}");
+    assert!(
+      failure.to_string().contains("Invalid client secret"),
+      "{failure}"
+    );
+  }
+  assert!(server.received_requests().await.unwrap().is_empty());
+}
+
 #[tokio::test]
 async fn refresh_collects_failures_and_keeps_healthy_sites() {
   let server = MockServer::start().await;
@@ -92,7 +168,6 @@ async fn refresh_collects_failures_and_keeps_healthy_sites() {
   mount_site(
     &server,
     "good",
-    "tok-good",
     json!(["compute"]),
     json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
   )
@@ -106,10 +181,10 @@ async fn refresh_collects_failures_and_keeps_healthy_sites() {
     .mount(&server)
     .await;
 
-  let outcome = refresh(&[
-    descriptor(&server, "good", "tok-good"),
-    descriptor(&server, "bad", "tok-bad"),
-  ])
+  let outcome = refresh(
+    &[descriptor(&server, "good"), descriptor(&server, "bad")],
+    &Counter::default(),
+  )
   .await
   .expect("client build");
 
@@ -139,7 +214,7 @@ async fn refresh_maps_undecodable_bodies_to_request_errors() {
     .mount(&server)
     .await;
 
-  let outcome = refresh(&[descriptor(&server, "alps", "tok")])
+  let outcome = refresh(&[descriptor(&server, "alps")], &Counter::default())
     .await
     .expect("client build");
 
@@ -164,7 +239,7 @@ async fn refresh_marks_empty_error_bodies() {
     .mount(&server)
     .await;
 
-  let outcome = refresh(&[descriptor(&server, "alps", "tok")])
+  let outcome = refresh(&[descriptor(&server, "alps")], &Counter::default())
     .await
     .expect("client build");
 

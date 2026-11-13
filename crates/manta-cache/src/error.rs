@@ -20,6 +20,17 @@ pub enum CacheError {
   #[error("failed to build HTTP client: {0}")]
   ClientBuild(#[source] reqwest::Error),
 
+  /// The [`TokenSource`](crate::TokenSource) could not supply a token
+  /// for a request to this site, so the request was not sent.
+  #[error("no token for site '{site}': {source}")]
+  Token {
+    /// Site (`X-Manta-Site`) whose request needed the token.
+    site: String,
+    /// What the token source reported.
+    #[source]
+    source: crate::TokenError,
+  },
+
   /// An outbound request to a site's manta-server failed at the
   /// transport layer, or its JSON body could not be decoded.
   #[error("request to site '{site}' failed: {source}")]
@@ -57,9 +68,9 @@ impl CacheError {
   pub fn site(&self) -> Option<&str> {
     match self {
       CacheError::ClientBuild(_) => None,
-      CacheError::Request { site, .. } | CacheError::Status { site, .. } => {
-        Some(site)
-      }
+      CacheError::Token { site, .. }
+      | CacheError::Request { site, .. }
+      | CacheError::Status { site, .. } => Some(site),
     }
   }
 }

@@ -2,15 +2,19 @@
 //!
 //! The file lives in the same platform config directory as the other
 //! manta configs (`~/.config/manta/` on Linux), overridable with the
-//! `MANTA_CACHE_SERVER_CONFIG` environment variable. The path helper is
-//! a deliberate, tiny duplicate of `manta_shared::common::config`'s
-//! `ProjectDirs` lookup: depending on `manta-shared` would drag
-//! `manta-backend-dispatcher` (+ csm/ochami types) into this otherwise
-//! standalone service for one function.
+//! `MANTA_CACHE_SERVER_CONFIG` environment variable. The path helper
+//! uses the same `ProjectDirs` triple as `manta_shared::common::config`,
+//! so all manta configs share one directory.
+//!
+//! The service account the cache refreshes as is **not** configured
+//! here: its credentials come from `MANTA_SA_CLIENT_ID` and
+//! `MANTA_SA_CLIENT_SECRET` (see [`crate::auth`]). Only the Keycloak
+//! issuer can be overridden, in `[auth]`.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use manta_shared::common::oidc::DEFAULT_OIDC_ISSUER_URL;
 use serde::Deserialize;
 
 /// Sample config embedded in the "config file not found" error so an
@@ -28,14 +32,14 @@ const CONFIG_SAMPLE: &str = r#"log = "info"
 # refresh_interval_secs = 300    # omit = refresh at startup only
 # shutdown_grace_period_secs = 30
 
+# The cache refreshes as a CSCS Keycloak service account whose
+# credentials come from the environment (MANTA_SA_CLIENT_ID,
+# MANTA_SA_CLIENT_SECRET), never from this file.
+# [auth]
+# issuer_url = "https://auth.cscs.ch/auth/realms/cscs"   # the default
+
 [sites.alps]
 manta_server_url = "https://manta-server.example.com:8443"
-# A CSCS Keycloak service-account token; manta-server exchanges it for
-# the site's own token, so every site can point at the same file.
-# Re-read on every refresh, so rotating the secret needs no restart.
-# There is deliberately no inline form: this is a real credential and
-# does not belong in a config file.
-token_file = "/run/secrets/manta-cache/alps-token"
 "#;
 
 /// Top-level `cache-server.toml` schema.
@@ -44,9 +48,8 @@ token_file = "/run/secrets/manta-cache/alps-token"
 /// hand-edited and its keys are security-relevant, so a typo must be an
 /// error rather than a silently ignored setting. Without it a mistyped
 /// `api_token_fil` would start an unauthenticated server, and a
-/// half-migrated `[sites.*] token` would leave a live Keycloak
-/// credential sitting in the file while the service quietly used
-/// something else.
+/// leftover `[sites.*] token_file` would point at a credential the
+/// service no longer reads.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CacheServerConfiguration {
@@ -56,6 +59,9 @@ pub struct CacheServerConfiguration {
   /// Listener + refresh settings.
   #[serde(default)]
   pub server: ServerSettings,
+  /// Where the service account gets its tokens.
+  #[serde(default)]
+  pub auth: AuthSettings,
   /// One entry per site the cache indexes, keyed by the site name sent
   /// as `X-Manta-Site`.
   #[serde(default)]
@@ -96,11 +102,10 @@ pub struct ServerSettings {
   /// Path to a file holding the `api_token`, for deployments that keep
   /// secrets out of config files. Mutually exclusive with `api_token`.
   ///
-  /// Unlike the per-site `token_file`, this one is read **once at
-  /// startup**: it guards the cache's own endpoints, so re-reading it
-  /// per request would put a filesystem hit on the hot path, and
-  /// rotating it means restarting anyway (in-flight clients hold the
-  /// old value).
+  /// Read **once at startup**: it guards the cache's own endpoints, so
+  /// re-reading it per request would put a filesystem hit on the hot
+  /// path, and rotating it means restarting anyway (in-flight clients
+  /// hold the old value).
   pub api_token_file: Option<PathBuf>,
   /// Re-run the cross-site refresh every N seconds. Absent = refresh
   /// once at startup and serve that index until restart (Stage 4 adds
@@ -164,28 +169,35 @@ impl ServerSettings {
   }
 }
 
-/// One `[sites.<name>]` block: where that site's manta-server lives and
-/// the service-account credential used to refresh from it.
+/// `[auth]` block: the Keycloak the service account belongs to. The
+/// credentials themselves come from the environment (see
+/// [`crate::auth`]).
+#[derive(Debug, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuthSettings {
+  /// Issuer URL of the CSCS Keycloak realm; defaults to the production
+  /// realm ([`DEFAULT_OIDC_ISSUER_URL`]), the same default as the CLI.
+  pub issuer_url: Option<String>,
+}
+
+impl AuthSettings {
+  /// The configured issuer, else the production CSCS realm.
+  pub fn issuer_url(&self) -> &str {
+    self
+      .issuer_url
+      .as_deref()
+      .unwrap_or(DEFAULT_OIDC_ISSUER_URL)
+  }
+}
+
+/// One `[sites.<name>]` block: where that site's manta-server lives.
+/// The token is not per site: one service account serves every site.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct SiteConfig {
   /// Base URL of the manta-server hosting the site (scheme + host +
-  /// port; `/api/v1` is appended by the cache).
+  /// port; `/v2` is appended by the cache).
   pub manta_server_url: String,
-  /// Path to the file holding the CSCS Keycloak service-account bearer
-  /// token this site is refreshed with. manta-server exchanges it per
-  /// request for a token the site accepts, so one account (one file)
-  /// can serve every site.
-  ///
-  /// A path rather than an inline value, deliberately and without an
-  /// inline alternative (ROADMAP Stage 5): a real credential must not
-  /// live in a file that gets templated, backed up, or committed. It is
-  /// also the one form every deployment target can produce — a
-  /// Kubernetes projected `Secret`, a systemd `LoadCredential=`, or a
-  /// bind mount all hand the process a path.
-  ///
-  /// Re-read on **every** refresh, so rotation needs no restart.
-  pub token_file: PathBuf,
 }
 
 fn default_log() -> String {
@@ -217,9 +229,9 @@ pub fn config_file_path() -> Result<PathBuf, String> {
 /// Read and parse the config file, returning it with the path it was
 /// loaded from (for the startup summary).
 ///
-/// Also resolves `api_token_file` and warns about over-permissive
-/// secret files, so everything downstream sees a config whose secrets
-/// are already in hand.
+/// Also resolves `api_token_file` and warns when it is readable beyond
+/// its owner, so everything downstream sees a config whose secret is
+/// already in hand.
 pub fn load() -> Result<(CacheServerConfiguration, PathBuf), String> {
   let path = config_file_path()?;
   let raw = std::fs::read_to_string(&path).map_err(|e| {
@@ -239,32 +251,27 @@ pub fn load() -> Result<(CacheServerConfiguration, PathBuf), String> {
     })?;
   config.validate()?;
   config.resolve_secrets()?;
-  config.warn_about_secret_file_permissions();
+  config.warn_about_api_token_file_permissions();
   Ok((config, path))
 }
 
 /// Extra explanation appended to a parse failure that looks like the
-/// inline-`token` removal, empty otherwise.
+/// removal of per-site credentials, empty otherwise.
 ///
-/// Both halves of that migration surface as bare serde errors that name
-/// a field but not the change behind it: dropping `token` without adding
-/// `token_file` gives "missing field `token_file`", and keeping it gives
-/// "unknown field `token`". Neither tells an operator staring at a file
-/// that visibly contains a credential what actually happened, and this
-/// was a breaking change — so the error carries the migration itself.
+/// A config written for an earlier version still carries
+/// `[sites.<name>] token_file` (or the even older inline `token`), and
+/// `deny_unknown_fields` rejects it with a bare "unknown field" that
+/// does not say what replaced it — so the error carries the migration.
 fn migration_hint(error: &str) -> &'static str {
-  // Matched against the two exact serde phrasings rather than the bare
-  // field names: `deny_unknown_fields` puts "expected `manta_server_url`
-  // or `token_file`" into the message for *any* unknown key in a
-  // `[sites.*]` table, so a looser test would append a paragraph about
-  // deleting an inline `token` to someone who mistyped `timeout_secs`.
-  if error.contains("unknown field `token`")
-    || error.contains("missing field `token_file`")
+  // Matched against the exact serde phrasing, not the bare field names,
+  // so a mistyped unrelated key gets no paragraph about credentials.
+  if error.contains("unknown field `token_file`")
+    || error.contains("unknown field `token`")
   {
-    "\n\nNote: `[sites.<name>] token` was removed — per-site credentials \
-     are now file-based only. Write the CSCS Keycloak service-account \
-     token to a file (mode 0600) and point `token_file` at it, then \
-     delete the inline `token` line."
+    "\n\nNote: per-site tokens were removed. The cache now gets a new \
+     token for every request as a CSCS Keycloak service account: set \
+     MANTA_SA_CLIENT_ID and MANTA_SA_CLIENT_SECRET in its environment \
+     and delete the `token_file` / `token` lines."
   } else {
     ""
   }
@@ -327,7 +334,8 @@ impl CacheServerConfiguration {
     Ok(())
   }
 
-  /// Warn (never fail) about secret files readable beyond their owner.
+  /// Warn (never fail) when `api_token_file` is readable beyond its
+  /// owner.
   ///
   /// Deliberately advisory: Kubernetes projected `Secret` volumes
   /// default to mode `0644`, so refusing to start would break the
@@ -340,38 +348,25 @@ impl CacheServerConfiguration {
   /// [`load`] runs before `tracing_subscriber` is initialised in
   /// `main::run`, so a `tracing` call here would be swallowed with no
   /// test to catch the regression.
-  pub fn warn_about_secret_file_permissions(&self) {
-    let mut paths: Vec<(String, &PathBuf)> = self
-      .sites
-      .iter()
-      .map(|(name, site)| {
-        (format!("[sites.{name}] token_file"), &site.token_file)
-      })
-      .collect();
-    if let Some(path) = &self.server.api_token_file {
-      paths.push(("[server] api_token_file".to_string(), path));
-    }
-    // HashMap iteration order would otherwise shuffle the warnings
-    // between runs.
-    paths.sort_by(|a, b| a.0.cmp(&b.0));
-
-    for (label, path) in paths {
-      if let Some(mode) = group_or_world_readable_mode(path) {
-        eprintln!(
-          "warning: {label} '{}' is readable beyond its owner (mode \
-           {mode:04o}); tighten it to 0600 unless your secret store \
-           sets the mode for you",
-          path.display()
-        );
-      }
+  pub fn warn_about_api_token_file_permissions(&self) {
+    let Some(path) = &self.server.api_token_file else {
+      return;
+    };
+    if let Some(mode) = group_or_world_readable_mode(path) {
+      eprintln!(
+        "warning: [server] api_token_file '{}' is readable beyond its \
+         owner (mode {mode:04o}); tighten it to 0600 unless your secret \
+         store sets the mode for you",
+        path.display()
+      );
     }
   }
 }
 
 /// The file's permission bits when any of them grant group or world
 /// access, `None` when the file is owner-only or cannot be stat'd (an
-/// unreadable file is reported by the refresh, which produces a far
-/// better message than a permission note would).
+/// unreadable file is reported by [`load`], which produces a far better
+/// message than a permission note would).
 #[cfg(unix)]
 fn group_or_world_readable_mode(path: &std::path::Path) -> Option<u32> {
   use std::os::unix::fs::PermissionsExt;
@@ -398,7 +393,6 @@ mod tests {
       r#"
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
     );
     config.validate().expect("valid");
@@ -408,61 +402,78 @@ mod tests {
   }
 
   #[test]
-  fn a_half_migrated_inline_token_is_rejected_not_ignored() {
-    // The dangerous upgrade path: the operator adds `token_file` but
-    // leaves the old `token` behind. Silently ignoring it would park a
-    // live Keycloak credential in the config file — exactly what moving
-    // to file-based credentials was meant to prevent — while the service
-    // quietly used something else.
-    let err = toml::from_str::<CacheServerConfiguration>(
-      r#"
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
-      token = "ey"
-      token_file = "/run/secrets/alps"
-      "#,
-    )
-    .unwrap_err()
-    .to_string();
-    assert!(err.contains("unknown field `token`"), "{err}");
-    assert!(migration_hint(&err).contains("was removed"), "{err}");
-  }
-
-  #[test]
-  fn missing_credential_is_rejected() {
-    let err = toml::from_str::<CacheServerConfiguration>(
-      r#"
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
-      "#,
-    )
-    .unwrap_err()
-    .to_string();
-    assert!(err.contains("token_file"), "{err}");
-    // A bare "missing field `token_file`" does not tell someone looking
-    // at a file that still contains a credential what changed.
-    assert!(migration_hint(&err).contains("service-account"), "{err}");
+  fn a_leftover_token_file_is_rejected_with_the_migration() {
+    // A config from before the service account still names a token
+    // file. Ignoring it would leave the operator believing the cache
+    // refreshes with that credential.
+    for key in ["token_file = \"/run/secrets/alps\"", "token = \"ey\""] {
+      let err = toml::from_str::<CacheServerConfiguration>(&format!(
+        "[sites.alps]\nmanta_server_url = \"https://manta:8443\"\n{key}\n"
+      ))
+      .unwrap_err()
+      .to_string();
+      assert!(err.contains("unknown field"), "{err}");
+      let hint = migration_hint(&err);
+      assert!(hint.contains("MANTA_SA_CLIENT_ID"), "{key}: {err}");
+    }
   }
 
   #[test]
   fn an_unrelated_unknown_site_key_gets_no_migration_paragraph() {
-    // serde names `token_file` in the "expected …" half of every
-    // unknown-key error inside a `[sites.*]` table, so a hint keyed on
-    // the bare field name would lecture this operator about deleting an
-    // inline `token` they never wrote.
     let err = toml::from_str::<CacheServerConfiguration>(
       r#"
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       timeout_secs = 30
       "#,
     )
     .unwrap_err()
     .to_string();
     assert!(err.contains("timeout_secs"), "{err}");
-    assert!(err.contains("`token_file`"), "the trap this guards: {err}");
     assert!(migration_hint(&err).is_empty(), "{err}");
+  }
+
+  #[test]
+  fn the_issuer_defaults_to_the_production_realm_and_can_be_overridden() {
+    let config = parse(
+      r#"
+      [sites.alps]
+      manta_server_url = "https://manta:8443"
+      "#,
+    );
+    assert_eq!(config.auth.issuer_url(), DEFAULT_OIDC_ISSUER_URL);
+
+    let config = parse(
+      r#"
+      [auth]
+      issuer_url = "https://auth-tds.cscs.ch/auth/realms/cscs"
+
+      [sites.alps]
+      manta_server_url = "https://manta:8443"
+      "#,
+    );
+    assert_eq!(
+      config.auth.issuer_url(),
+      "https://auth-tds.cscs.ch/auth/realms/cscs"
+    );
+  }
+
+  #[test]
+  fn auth_rejects_credentials_in_the_file() {
+    // The secret belongs in the environment; a `client_secret` here
+    // must not be silently ignored.
+    let err = toml::from_str::<CacheServerConfiguration>(
+      r#"
+      [auth]
+      client_secret = "s3cret"
+
+      [sites.alps]
+      manta_server_url = "https://manta:8443"
+      "#,
+    )
+    .unwrap_err()
+    .to_string();
+    assert!(err.contains("client_secret"), "{err}");
   }
 
   #[test]
@@ -477,7 +488,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
     )
     .unwrap_err()
@@ -496,7 +506,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
     );
     config.resolve_secrets().expect("nothing to resolve");
@@ -515,7 +524,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
     );
     let err = config.validate().unwrap_err();
@@ -536,7 +544,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
       path.display()
     ));
@@ -555,7 +562,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
       missing.display()
     ));
@@ -571,7 +577,6 @@ mod tests {
 
       [sites.alps]
       manta_server_url = "https://manta:8443"
-      token_file = "/run/secrets/alps"
       "#,
       empty.display()
     ));

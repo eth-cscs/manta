@@ -11,13 +11,15 @@
 //! 2. Parse command-line flags via [`parse_cli_args`] (hand-rolled —
 //!    like `manta-server`, deliberately no `clap` dependency).
 //! 3. Read `cache-server.toml` (`MANTA_CACHE_SERVER_CONFIG` or the
-//!    shared manta config directory).
+//!    shared manta config directory) and the service account from
+//!    `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`.
 //! 4. Build a Tokio runtime and hand off to [`run_server`]: enforce the
-//!    TLS-or-`allow_http` invariant, run the initial refresh, spawn the
-//!    optional periodic refresh, and serve until SIGTERM / Ctrl+C.
+//!    TLS-or-`allow_http` invariant, check that the service account
+//!    gets a token, run the initial refresh, spawn the optional
+//!    periodic refresh, and serve until SIGTERM / Ctrl+C.
 
+mod auth;
 mod config;
-mod credential;
 mod refresh;
 mod routes;
 
@@ -26,7 +28,12 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum_server::tls_rustls::RustlsConfig;
+use manta_cache::TokenSource as _;
+use manta_shared::common::oidc::{
+  SA_CLIENT_ID_ENV_VAR, SA_CLIENT_SECRET_ENV_VAR, ServiceAccount,
+};
 
+use auth::ServiceAccountTokens;
 use config::{CacheServerConfiguration, ServerSettings};
 use routes::AppState;
 
@@ -36,7 +43,8 @@ manta-cache-server — standalone site-resolution lookup service.
 
 Serves the manta-cache index over HTTP: which site owns a given HSM
 group or node xname. Refreshes from every configured manta-server at
-startup (and optionally on an interval).
+startup (and optionally on an interval), as the CSCS Keycloak service
+account in MANTA_SA_CLIENT_ID and MANTA_SA_CLIENT_SECRET (both required).
 
 Usage: manta-cache-server [OPTIONS]
 
@@ -124,9 +132,10 @@ fn parse_cli_args() -> Result<CliArgs, String> {
 
 /// Print the resolved settings on stdout, visible regardless of the
 /// log filter — same operator courtesy as manta-server's summary.
-/// Token values are never echoed, only their source.
+/// Secrets are never echoed, only their source.
 fn print_startup_summary(
   configuration: &CacheServerConfiguration,
+  tokens: &ServiceAccountTokens,
   config_path: &std::path::Path,
   listen_addr: &str,
   port: u16,
@@ -170,30 +179,21 @@ fn print_startup_summary(
   );
   println!("  log_filter:                  {}", configuration.log);
   println!();
-  let now = chrono::Utc::now();
+  println!("[auth]");
+  println!("  issuer_url:                  {}", tokens.issuer_url());
+  println!(
+    "  service_account:             {} (from {SA_CLIENT_ID_ENV_VAR})",
+    tokens.client_id()
+  );
+  println!();
   let mut names: Vec<&String> = configuration.sites.keys().collect();
   names.sort();
   for name in names {
-    let site = &configuration.sites[name];
     println!("[site: {name}]");
-    println!("  manta_server_url: {}", site.manta_server_url);
-    println!("  token_file:       {}", site.token_file.display());
-
-    // Describe the credential from its own claims, so a cache that is
-    // about to refresh as somebody's personal token says so before it
-    // ever reaches a site. Read failures are left silent here: the
-    // initial refresh reports them properly a moment later, and
-    // duplicating that as a summary line would only add noise.
-    match std::fs::read_to_string(&site.token_file) {
-      Ok(raw) => {
-        let info = credential::inspect(raw.trim());
-        println!("  credential:       {}", info.summary(now));
-        for warning in info.warnings(now) {
-          println!("  ⚠ WARNING:        {warning}");
-        }
-      }
-      Err(e) => println!("  credential:       <unreadable: {e}>"),
-    }
+    println!(
+      "  manta_server_url: {}",
+      configuration.sites[name].manta_server_url
+    );
   }
   println!();
 }
@@ -217,6 +217,15 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
   let cli =
     parse_cli_args().map_err(|e| format!("{e}\nRun with --help for usage."))?;
   let (configuration, config_path) = config::load()?;
+  let account = ServiceAccount::from_env()?.ok_or_else(|| {
+    format!(
+      "No service account: set {SA_CLIENT_ID_ENV_VAR} and \
+       {SA_CLIENT_SECRET_ENV_VAR} to the credentials of the CSCS Keycloak \
+       service account the cache refreshes as."
+    )
+  })?;
+  let tokens =
+    ServiceAccountTokens::new(account, configuration.auth.issuer_url());
 
   tracing_subscriber::fmt()
     .with_env_filter(
@@ -228,13 +237,14 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()?;
-  rt.block_on(run_server(configuration, config_path, cli))
+  rt.block_on(run_server(configuration, tokens, config_path, cli))
 }
 
 /// Async bootstrap: resolve settings, enforce fail-closed TLS, run the
 /// initial refresh, spawn the periodic one, and serve.
 async fn run_server(
   configuration: CacheServerConfiguration,
+  tokens: ServiceAccountTokens,
   config_path: std::path::PathBuf,
   cli: CliArgs,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -266,11 +276,23 @@ async fn run_server(
 
   print_startup_summary(
     &configuration,
+    &tokens,
     &config_path,
     &listen_addr,
     port,
     has_tls,
   );
+
+  // One grant before anything else, so wrong credentials (or a wrong
+  // issuer) stop the start with the Keycloak's reason instead of
+  // showing up as every site failing its refresh.
+  tokens.token().await.map_err(|e| {
+    format!(
+      "The service account '{}' could not get a token from {}: {e}",
+      tokens.client_id(),
+      tokens.issuer_url()
+    )
+  })?;
 
   // Read everything needed after `configuration` moves into the state.
   let shutdown_grace_period =
@@ -280,14 +302,14 @@ async fn run_server(
   let state = Arc::new(AppState {
     cache: tokio::sync::RwLock::new(routes::CacheState::default()),
     config: Arc::new(configuration),
+    tokens,
   });
 
   // Initial refresh before the listener binds (ROADMAP lifecycle).
   // Per-site failures are tolerated — the failed sites are absent from
   // the index and are retried by the periodic loop or a management
-  // POST /refresh; only a refresh that cannot start at all (unreadable
-  // token_file, client build) aborts startup, since that is an
-  // operator error no retry will fix.
+  // POST /refresh; only a refresh that cannot start at all (the HTTP
+  // client cannot be built) aborts startup.
   let failures = refresh::refresh_all(&state).await?;
   if !failures.is_empty() {
     for failure in &failures {

@@ -36,6 +36,7 @@ use axum::{Json, Router, middleware};
 use manta_cache::{Index, SiteSnapshot};
 use serde::{Deserialize, Serialize};
 
+use crate::auth::ServiceAccountTokens;
 use crate::config::CacheServerConfiguration;
 use crate::refresh::{self, SiteRefreshError};
 
@@ -67,19 +68,6 @@ pub struct SiteStatus {
   pub refreshed_at: Option<chrono::DateTime<chrono::Utc>>,
   /// Why the most recent refresh attempt failed. Cleared on success.
   pub last_error: Option<String>,
-  /// What the last credential successfully read for this site says
-  /// about itself. Survives a failed refresh: knowing which account was
-  /// in use is most of the diagnosis. `None` only until the first
-  /// successful read — a later unreadable `token_file` leaves the
-  /// previous value in place, so a `last_error` about an unreadable file
-  /// sitting next to a populated `credential` is expected, and the
-  /// credential shown is the one that last worked, not a current one.
-  pub credential: Option<crate::credential::CredentialInfo>,
-  /// The warnings last *emitted to the log* for `credential`, kept as
-  /// the comparison point that stops a month-long expiry warning from
-  /// repeating on every refresh tick. Not served by `GET /dump`, which
-  /// recomputes warnings against the request's own clock.
-  pub credential_warnings: Vec<String>,
 }
 
 /// Shared application state.
@@ -89,6 +77,8 @@ pub struct AppState {
   /// The loaded configuration (sites + api_token), shared with the
   /// refresh plumbing.
   pub config: Arc<CacheServerConfiguration>,
+  /// The service account every refresh request gets its token from.
+  pub tokens: ServiceAccountTokens,
 }
 
 /// `{"error": "…"}` — same wire shape as manta-server's error body.
@@ -161,6 +151,8 @@ struct RefreshResponse {
 struct DumpResponse {
   /// When this dump was rendered (RFC3339, UTC).
   generated_at: String,
+  /// Who the cache refreshes as. The secret is never included.
+  service_account: ServiceAccountDump,
   /// Every **configured** site — including ones absent from the index,
   /// which is the only way a failed site is visible at all.
   sites: BTreeMap<String, SiteDump>,
@@ -178,14 +170,6 @@ struct DumpResponse {
 struct SiteDump {
   /// Base URL the refresh fetches from.
   manta_server_url: String,
-  /// Configured `token_file` path — never the credential itself.
-  /// Catching "it is reading the wrong token file" needs the path, not
-  /// the secret.
-  token_file: String,
-  /// What that credential says about itself, as of the last refresh
-  /// attempt. `None` before the first attempt or when the file could
-  /// not be read.
-  credential: Option<CredentialDump>,
   /// Whether the index currently holds data for this site.
   in_index: bool,
   /// When the held snapshot was fetched (RFC3339, UTC).
@@ -196,30 +180,13 @@ struct SiteDump {
   last_error: Option<String>,
 }
 
-/// Advisory description of a site's refresh credential — who it belongs
-/// to and how long it has left.
-///
-/// Decoded from the token's own claims and **never verified** (see
-/// [`crate::credential`]); diagnostics only. The token value is not
-/// included in any form.
+/// The service account the cache refreshes as.
 #[derive(Debug, Serialize)]
-struct CredentialDump {
-  /// Keycloak client id for a service account, login name for a person.
-  principal: Option<String>,
-  /// `service_account`, `user`, or `unknown`.
-  kind: crate::credential::CredentialKind,
-  /// `exp` claim (RFC3339, UTC), when the credential carries one.
-  expires_at: Option<String>,
-  /// Whole days until expiry, negative once expired. The field worth
-  /// alerting on: service-account tokens are minted for a year, so the
-  /// lapse they precede is easy to forget.
-  expires_in_days: Option<i64>,
-  /// Whether the token carries `pa_admin`, i.e. whether this site's
-  /// snapshot covers every HSM group or only the account's own roles.
-  is_admin: bool,
-  /// Problems worth an operator's attention; empty when healthy. Same
-  /// text the server logs.
-  warnings: Vec<String>,
+struct ServiceAccountDump {
+  /// Its client id (`MANTA_SA_CLIENT_ID`).
+  client_id: String,
+  /// The Keycloak issuer it gets its tokens from.
+  issuer_url: String,
 }
 
 /// One group as the lookups resolve it.
@@ -468,8 +435,8 @@ async fn refresh_all_handler(State(state): State<Arc<AppState>>) -> Response {
       })
       .into_response()
     }
-    // Could-not-start failures (unreadable token_file, client build)
-    // are operator errors, not upstream ones.
+    // A refresh that cannot start (the HTTP client cannot be built) is
+    // a local failure, not an upstream one.
     Err(e) => error_response(StatusCode::INTERNAL_SERVER_ERROR, e),
   }
 }
@@ -549,22 +516,6 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
         name.clone(),
         SiteDump {
           manta_server_url: site.manta_server_url.clone(),
-          token_file: site.token_file.display().to_string(),
-          credential: status.and_then(|s| s.credential.as_ref()).map(|info| {
-            CredentialDump {
-              principal: info.principal.clone(),
-              kind: info.kind,
-              expires_at: info
-                .expires_at
-                .map(|at| at.to_rfc3339_opts(SecondsFormat::Secs, true)),
-              // Computed against this dump's `now`, not frozen at
-              // refresh time, so a long-running server does not report
-              // a countdown that stopped days ago.
-              expires_in_days: info.expires_in_days(now),
-              is_admin: info.is_admin,
-              warnings: info.warnings(now),
-            }
-          }),
           in_index: indexed.contains(name.as_str()),
           refreshed_at: refreshed_at
             .map(|t| t.to_rfc3339_opts(SecondsFormat::Secs, true)),
@@ -577,6 +528,10 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
 
   Json(DumpResponse {
     generated_at: now.to_rfc3339_opts(SecondsFormat::Secs, true),
+    service_account: ServiceAccountDump {
+      client_id: state.tokens.client_id().to_owned(),
+      issuer_url: state.tokens.issuer_url().to_owned(),
+    },
     sites,
     groups,
     xnames,
@@ -705,50 +660,7 @@ mod tests {
   use tower::ServiceExt as _;
 
   use super::*;
-
-  /// The token file every fixture points at, paired with the exact JWT
-  /// written into it.
-  ///
-  /// Static rather than per-test because `SiteConfig` stores a *path*:
-  /// a `TempDir` scoped to one test would be deleted while a config
-  /// built from it was still in use, turning every refresh into an
-  /// unreadable-token-file error instead of the failure under test.
-  ///
-  /// The token is stored **alongside** the directory, not regenerated on
-  /// demand, and that is load-bearing for the leak test.
-  /// `service_account_token_valid_for` stamps `exp` from `Utc::now()` at
-  /// call time with second granularity, so a second call yields
-  /// different payload bytes unless it lands in the same whole second.
-  /// A leak assertion built from a regenerated token would compare the
-  /// response against a string that was never written, never read and
-  /// never sent — vacuous for the payload segment, which is precisely
-  /// the part a leak would expose.
-  ///
-  /// Consequence of the static: nothing ever drops the `TempDir`, so
-  /// each run of the test binary leaves one directory behind in the
-  /// system temp dir. Accepted — it holds a synthetic token and the
-  /// alternative is threading a lifetime through every fixture.
-  fn shared_token() -> &'static (tempfile::TempDir, String) {
-    static TOKEN: std::sync::OnceLock<(tempfile::TempDir, String)> =
-      std::sync::OnceLock::new();
-    TOKEN.get_or_init(|| {
-      let dir = tempfile::tempdir().expect("temp dir");
-      let token =
-        crate::credential::test_support::service_account_token_valid_for(365);
-      std::fs::write(dir.path().join("token"), &token).expect("write token");
-      (dir, token)
-    })
-  }
-
-  /// Path to the shared token file.
-  fn shared_token_file() -> String {
-    shared_token().0.path().join("token").display().to_string()
-  }
-
-  /// The exact JWT sitting in [`shared_token_file`].
-  fn shared_token_value() -> &'static str {
-    &shared_token().1
-  }
+  use crate::auth::test_support;
 
   /// Config for tests: one unreachable site (nothing listens on the
   /// URL), plus an optional api_token.
@@ -757,12 +669,9 @@ mod tests {
     if let Some(token) = api_token {
       raw.push_str(&format!("[server]\napi_token = \"{token}\"\n\n"));
     }
-    raw.push_str(&format!(
-      "[sites.unreachable]\n\
-       manta_server_url = \"http://127.0.0.1:9\"\n\
-       token_file = \"{}\"\n",
-      shared_token_file()
-    ));
+    raw.push_str(
+      "[sites.unreachable]\nmanta_server_url = \"http://127.0.0.1:9\"\n",
+    );
     let config: CacheServerConfiguration = toml::from_str(&raw).unwrap();
     config.validate().unwrap();
     Arc::new(config)
@@ -823,13 +732,24 @@ mod tests {
     }
   }
 
+  /// State for tests that never refresh: its service account points at
+  /// an issuer nothing listens on.
   fn state_from(
     cache: CacheState,
     config: Arc<CacheServerConfiguration>,
   ) -> Arc<AppState> {
+    state_with_tokens(cache, config, test_support::unused_tokens())
+  }
+
+  fn state_with_tokens(
+    cache: CacheState,
+    config: Arc<CacheServerConfiguration>,
+    tokens: ServiceAccountTokens,
+  ) -> Arc<AppState> {
     Arc::new(AppState {
       cache: tokio::sync::RwLock::new(cache),
       config,
+      tokens,
     })
   }
 
@@ -843,15 +763,12 @@ mod tests {
 
         [sites.alps]
         manta_server_url = "https://alps.example.ch:8443"
-        token_file = "/run/secrets/alps"
 
         [sites.daint]
         manta_server_url = "https://daint.example.ch:8443"
-        token_file = "/run/secrets/daint"
 
         [sites.prealps]
         manta_server_url = "https://prealps.example.ch:8443"
-        token_file = "/run/secrets/prealps"
       "#,
     )
     .unwrap();
@@ -859,34 +776,13 @@ mod tests {
     Arc::new(config)
   }
 
-  /// A `CredentialInfo` as a healthy service-account token yields it.
-  fn service_account_credential(
-    expires_in_days: i64,
-  ) -> crate::credential::CredentialInfo {
-    crate::credential::CredentialInfo {
-      principal: Some("manta-cache-alps".to_owned()),
-      kind: crate::credential::CredentialKind::ServiceAccount,
-      expires_at: Some(
-        chrono::Utc::now() + chrono::Duration::days(expires_in_days),
-      ),
-      is_admin: false,
-    }
-  }
-
   /// alps + daint served and 90s old; prealps configured but failed, so
-  /// it holds no data at all. alps carries a healthy credential, daint
-  /// one that is about to lapse.
+  /// it holds no data at all.
   fn dump_state() -> Arc<AppState> {
     let mut cache = snapshots_to_state(sample_snapshots());
     let ninety_seconds_ago = chrono::Utc::now() - chrono::Duration::seconds(90);
     for status in cache.status.values_mut() {
       status.refreshed_at = Some(ninety_seconds_ago);
-    }
-    if let Some(status) = cache.status.get_mut("alps") {
-      status.credential = Some(service_account_credential(300));
-    }
-    if let Some(status) = cache.status.get_mut("daint") {
-      status.credential = Some(service_account_credential(5));
     }
     cache.status.insert(
       "prealps".to_owned(),
@@ -1047,7 +943,12 @@ mod tests {
 
   #[tokio::test]
   async fn refresh_all_reports_failures_and_replaces_state() {
-    let router = build_router(sample_state(Some("sekrit")));
+    let keycloak = test_support::mock_keycloak().await;
+    let router = build_router(state_with_tokens(
+      snapshots_to_state(sample_snapshots()),
+      test_config(Some("sekrit")),
+      test_support::tokens_from(&keycloak),
+    ));
     // The configured site is unreachable: the refresh succeeds as a
     // call, reports the failure, and the rebuilt index is empty (the
     // sample sites are not in the config, so they drop out).
@@ -1057,17 +958,26 @@ mod tests {
     assert_eq!(body["sites"], serde_json::json!([]));
     let failures = body["failures"].as_array().unwrap();
     assert_eq!(failures.len(), 1);
-    assert!(failures[0].as_str().unwrap().contains("unreachable"));
+    let failure = failures[0].as_str().unwrap();
+    // A transport failure at the site, not a missing token.
+    assert!(
+      failure.contains("request to site 'unreachable'"),
+      "{failure}"
+    );
   }
 
   #[tokio::test]
   async fn management_refresh_success_paths_rebuild_the_index() {
-    use wiremock::matchers::{method, path};
+    use wiremock::matchers::{header_regex, method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
+    let keycloak = test_support::mock_keycloak().await;
     let server = MockServer::start().await;
+    // Only a request carrying a token from the service account's
+    // Keycloak is answered.
     Mock::given(method("GET"))
       .and(path("/v2/groups/available"))
+      .and(header_regex("Authorization", r"^Bearer sa-token-\d+$"))
       .respond_with(
         ResponseTemplate::new(200)
           .set_body_json(serde_json::json!(["compute"])),
@@ -1076,25 +986,18 @@ mod tests {
       .await;
     Mock::given(method("GET"))
       .and(path("/v2/groups/nodes"))
+      .and(header_regex("Authorization", r"^Bearer sa-token-\d+$"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
         serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
       ))
       .mount(&server)
       .await;
 
-    let raw = format!(
-      "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"{}\"\ntoken_file = \"{}\"\n",
-      server.uri(),
-      shared_token_file()
-    );
-    let config: CacheServerConfiguration = toml::from_str(&raw).unwrap();
-    config.validate().unwrap();
-    let state = Arc::new(AppState {
-      cache: tokio::sync::RwLock::new(CacheState::default()),
-      config: Arc::new(config),
-    });
-    let router = build_router(state);
+    let router = build_router(state_with_tokens(
+      CacheState::default(),
+      config_for(&server.uri()),
+      test_support::tokens_from(&keycloak),
+    ));
 
     // Full refresh populates the empty cache from the mock.
     let (status, body) =
@@ -1126,8 +1029,8 @@ mod tests {
   }
 
   /// A manta-server that answers both group endpoints with `200 []` —
-  /// what a site looks like when the refresh credential carries no HSM
-  /// roles at all.
+  /// what a site looks like when the service account has no HSM roles
+  /// there at all.
   async fn mock_site_with_no_groups() -> wiremock::MockServer {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
@@ -1148,8 +1051,7 @@ mod tests {
   fn config_for(uri: &str) -> Arc<CacheServerConfiguration> {
     let config: CacheServerConfiguration = toml::from_str(&format!(
       "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"{uri}\"\ntoken_file = \"{}\"\n",
-      shared_token_file()
+       [sites.live]\nmanta_server_url = \"{uri}\"\n"
     ))
     .unwrap();
     config.validate().unwrap();
@@ -1158,10 +1060,12 @@ mod tests {
 
   #[tokio::test]
   async fn a_site_that_returns_no_groups_is_a_failure_not_a_healthy_site() {
+    let keycloak = test_support::mock_keycloak().await;
     let server = mock_site_with_no_groups().await;
-    let router = build_router(state_from(
+    let router = build_router(state_with_tokens(
       CacheState::default(),
       config_for(&server.uri()),
+      test_support::tokens_from(&keycloak),
     ));
 
     // The HTTP calls all succeeded, so nothing below comes from a
@@ -1184,25 +1088,12 @@ mod tests {
     assert_eq!(site["refreshed_at"], serde_json::Value::Null);
     let error = site["last_error"].as_str().unwrap();
     assert!(error.contains("labels=0 nodes=0"), "{error}");
-    assert!(error.contains("Keycloak roles"), "{error}");
-    // The credential in use survives the failure — knowing which
-    // account produced the empty result is most of the diagnosis.
+    assert!(error.contains("token exchange"), "{error}");
+    // Which account produced the empty result is most of the diagnosis.
     assert_eq!(
-      site["credential"]["principal"], "manta-cache-test",
-      "{site}"
+      dump["service_account"]["client_id"],
+      test_support::CLIENT_ID
     );
-
-    // The credential block is derived from a real token read off disk,
-    // so this is the load-bearing leak check: no part of that token may
-    // appear in the body.
-    let token = shared_token_value();
-    let body = dump.to_string();
-    assert!(!body.contains(token), "the dump leaked the whole token");
-    // The payload is the segment that carries the claims and is the one
-    // a leak would actually expose; the header is a constant shared by
-    // every RS256 JWT, so checking it proves little on its own.
-    let payload = token.split('.').nth(1).expect("a three-segment JWT");
-    assert!(!body.contains(payload), "the dump leaked the token payload");
   }
 
   #[tokio::test]
@@ -1210,9 +1101,10 @@ mod tests {
     use wiremock::matchers::{method, path};
     use wiremock::{Mock, ResponseTemplate};
 
+    let keycloak = test_support::mock_keycloak().await;
     let server = mock_site_with_no_groups().await;
     // Start from a good snapshot, then let the site go empty — the
-    // sequence a credential losing its roles actually produces.
+    // sequence an account losing its roles actually produces.
     let mut cache = CacheState::default();
     let snapshot = SiteSnapshot {
       site: "live".to_owned(),
@@ -1232,7 +1124,11 @@ mod tests {
         ..Default::default()
       },
     );
-    let router = build_router(state_from(cache, config_for(&server.uri())));
+    let router = build_router(state_with_tokens(
+      cache,
+      config_for(&server.uri()),
+      test_support::tokens_from(&keycloak),
+    ));
 
     let (status, body) = send(
       router.clone(),
@@ -1304,116 +1200,51 @@ mod tests {
   }
 
   #[tokio::test]
-  async fn a_blank_token_file_is_reported_as_such_not_as_a_site_failure() {
-    // A truncated or not-yet-populated secret mount. Without this check
-    // the cache sends `Authorization: Bearer ` and the operator debugs a
-    // 401 from the site instead of an empty file on their own disk.
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("token");
-    std::fs::write(&path, "   \n").unwrap();
-    let config: CacheServerConfiguration = toml::from_str(&format!(
-      "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"http://127.0.0.1:9\"\n\
-       token_file = \"{}\"\n",
-      path.display()
-    ))
-    .unwrap();
-    let router =
-      build_router(state_from(CacheState::default(), Arc::new(config)));
+  async fn a_refused_service_account_fails_each_site_without_calling_it() {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
 
-    let (status, body) =
-      send(router, "POST", "/api/v1/refresh", Some("sekrit")).await;
-    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-    let error = body["error"].as_str().unwrap();
-    assert!(error.contains("is empty"), "{error}");
-    assert!(error.contains("[sites.live]"), "{error}");
-  }
+    // A Keycloak that rejects the credentials (wrong secret, disabled
+    // client).
+    let keycloak = MockServer::start().await;
+    Mock::given(method("GET"))
+      .and(path("/.well-known/openid-configuration"))
+      .respond_with(ResponseTemplate::new(200).set_body_json(
+        serde_json::json!({ "token_endpoint": format!("{}/token", keycloak.uri()) }),
+      ))
+      .mount(&keycloak)
+      .await;
+    Mock::given(method("POST"))
+      .and(path("/token"))
+      .respond_with(ResponseTemplate::new(401).set_body_json(
+        serde_json::json!({
+          "error": "unauthorized_client",
+          "error_description": "Invalid client or Invalid client credentials",
+        }),
+      ))
+      .mount(&keycloak)
+      .await;
+    let server = MockServer::start().await;
+    let router = build_router(state_with_tokens(
+      CacheState::default(),
+      config_for(&server.uri()),
+      test_support::tokens_from(&keycloak),
+    ));
 
-  #[tokio::test]
-  async fn a_healthy_sites_credential_is_stored_even_when_a_sibling_fails() {
-    // The dedup that keeps a month-long expiry warning out of every log
-    // tick rests on one invariant: anything logged has been stored. The
-    // refresh loop visits every site before deciding to bail, so a
-    // healthy site is logged even when a *sibling's* token_file is
-    // unreadable — and if that bail discarded the stored warnings, the
-    // next tick would recompute the identical delta and log it again,
-    // every interval, at ERROR once the credential lapsed.
-    //
-    // Deliberately a *near-expiry* token: it makes the stored warnings
-    // non-empty, so the assertion below distinguishes "what was logged
-    // was stored" from `SiteStatus::default()`, whose warnings are also
-    // empty. A healthy token here would make the check inert.
-    //
-    // A local tempdir suffices (unlike `shared_token_file`'s static)
-    // because the config and the refresh both live inside this scope.
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("token");
-    std::fs::write(
-      &path,
-      crate::credential::test_support::service_account_token_valid_for(5),
-    )
-    .unwrap();
-
-    let config: CacheServerConfiguration = toml::from_str(&format!(
-      "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.good]\nmanta_server_url = \"http://127.0.0.1:9\"\n\
-       token_file = \"{}\"\n\n\
-       [sites.broken]\nmanta_server_url = \"http://127.0.0.1:9\"\n\
-       token_file = \"/nonexistent/manta-cache/broken\"\n",
-      path.display()
-    ))
-    .unwrap();
-    let state = state_from(CacheState::default(), Arc::new(config));
-
-    let error = refresh::refresh_all(&state)
-      .await
-      .expect_err("an unreadable token_file fails the refresh");
-    assert!(error.contains("/nonexistent/manta-cache/broken"), "{error}");
-
-    let cache = state.cache.read().await;
-    let good = &cache.status["good"];
-    assert!(
-      good.credential.is_some(),
-      "the healthy site's credential was logged, so it must be stored"
-    );
-    // The exact text that was logged must be the exact text that was
-    // stored — that equality is what the next tick compares against.
-    // Minted 5 days out and read moments later, so it floors to 4.
-    assert_eq!(good.credential_warnings.len(), 1, "{good:?}");
-    assert!(
-      good.credential_warnings[0].contains("expires in 4 day(s)"),
-      "{good:?}"
-    );
-    // The sibling still explains itself, which is why the bail exists.
-    assert!(
-      cache.status["broken"]
-        .last_error
-        .as_deref()
-        .is_some_and(|e| e.contains("could not be read")),
-      "{:?}",
-      cache.status["broken"]
-    );
-  }
-
-  #[tokio::test]
-  async fn an_unreadable_token_file_names_the_site_and_the_path() {
-    let config: CacheServerConfiguration = toml::from_str(
-      "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"http://127.0.0.1:9\"\n\
-       token_file = \"/nonexistent/manta-cache/live\"\n",
-    )
-    .unwrap();
-    let router =
-      build_router(state_from(CacheState::default(), Arc::new(config)));
-
-    // A missing credential is an operator error no retry fixes, so it
-    // fails the whole refresh rather than being reported per site.
     let (status, body) =
       send(router.clone(), "POST", "/api/v1/refresh", Some("sekrit")).await;
-    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
-    let error = body["error"].as_str().unwrap();
-    assert!(error.contains("[sites.live]"), "{error}");
-    assert!(error.contains("/nonexistent/manta-cache/live"), "{error}");
+    assert_eq!(status, StatusCode::OK);
+    let failures = body["failures"].as_array().unwrap();
+    assert_eq!(failures.len(), 1);
+    let failure = failures[0].as_str().unwrap();
+    assert!(failure.contains("no token for site 'live'"), "{failure}");
+    assert!(failure.contains("Invalid client"), "{failure}");
+    // Nothing goes to manta-server without a token.
+    assert!(server.received_requests().await.unwrap().is_empty());
+
+    let (_, dump) = send(router, "GET", "/api/v1/dump", Some("sekrit")).await;
+    let error = dump["sites"]["live"]["last_error"].as_str().unwrap();
+    assert!(error.contains("no token"), "{error}");
   }
 
   #[tokio::test]
@@ -1470,12 +1301,7 @@ mod tests {
   }
 
   #[tokio::test]
-  // Named for what it asserts: the token *path* is what the dump
-  // carries. The leak check proper — that no byte of a real on-disk
-  // token reaches the body — lives in
-  // `a_site_that_returns_no_groups_is_a_failure_not_a_healthy_site`,
-  // which builds its credential from a token actually read off disk.
-  async fn dump_lists_configured_sites_with_freshness_and_token_paths() {
+  async fn dump_lists_configured_sites_and_the_service_account() {
     let router = build_router(dump_state());
     let (_, dump) = send(router, "GET", "/api/v1/dump", Some("sekrit")).await;
     let sites = &dump["sites"];
@@ -1498,51 +1324,22 @@ mod tests {
       "https://alps.example.ch:8443"
     );
 
-    // Token provenance, never the token itself.
-    assert_eq!(sites["alps"]["token_file"], "/run/secrets/alps");
-    assert_eq!(sites["daint"]["token_file"], "/run/secrets/daint");
+    // Who the cache refreshes as, never the secret.
+    assert_eq!(
+      dump["service_account"]["client_id"],
+      test_support::CLIENT_ID
+    );
+    assert_eq!(dump["service_account"]["issuer_url"], "http://127.0.0.1:9");
+    assert!(
+      !dump.to_string().contains(test_support::CLIENT_SECRET),
+      "the dump leaked the client secret"
+    );
 
     // A configured site that never refreshed is present and explains
     // itself — the whole reason `sites` is keyed by configured site.
     assert_eq!(sites["prealps"]["in_index"], false);
     assert_eq!(sites["prealps"]["refreshed_at"], serde_json::Value::Null);
     assert_eq!(sites["prealps"]["last_error"], "connection refused");
-  }
-
-  #[tokio::test]
-  async fn dump_describes_each_sites_credential() {
-    let router = build_router(dump_state());
-    let (status, dump) =
-      send(router, "GET", "/api/v1/dump", Some("sekrit")).await;
-    assert_eq!(status, StatusCode::OK);
-    let sites = &dump["sites"];
-
-    // A healthy service account: named, dated, and quiet.
-    let alps = &sites["alps"]["credential"];
-    assert_eq!(alps["principal"], "manta-cache-alps");
-    assert_eq!(alps["kind"], "service_account");
-    assert_eq!(alps["is_admin"], false);
-    assert_eq!(alps["expires_in_days"], 299);
-    assert!(alps["expires_at"].as_str().unwrap().ends_with('Z'));
-    assert_eq!(alps["warnings"], serde_json::json!([]));
-
-    // The field an operator is meant to alert on, and the warning that
-    // accompanies it once the year is nearly up.
-    let daint = &sites["daint"]["credential"];
-    assert_eq!(daint["expires_in_days"], 4);
-    let warnings = daint["warnings"].as_array().unwrap();
-    assert_eq!(warnings.len(), 1);
-    assert!(
-      warnings[0]
-        .as_str()
-        .unwrap()
-        .contains("expires in 4 day(s)"),
-      "{daint}"
-    );
-
-    // A site whose refresh never got as far as reading a token has no
-    // credential to describe, rather than a misleading placeholder.
-    assert_eq!(sites["prealps"]["credential"], serde_json::Value::Null);
   }
 
   #[tokio::test]
@@ -1750,16 +1547,12 @@ mod tests {
       .mount(&server)
       .await;
 
-    let raw = format!(
-      "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"{}\"\ntoken_file = \"{}\"\n",
-      server.uri(),
-      shared_token_file()
-    );
-    let config: CacheServerConfiguration = toml::from_str(&raw).unwrap();
-    config.validate().unwrap();
-    let router =
-      build_router(state_from(CacheState::default(), Arc::new(config)));
+    let keycloak = test_support::mock_keycloak().await;
+    let router = build_router(state_with_tokens(
+      CacheState::default(),
+      config_for(&server.uri()),
+      test_support::tokens_from(&keycloak),
+    ));
 
     let (status, _) =
       send(router.clone(), "POST", "/api/v1/refresh", Some("sekrit")).await;
@@ -1802,7 +1595,12 @@ mod tests {
 
   #[tokio::test]
   async fn refresh_site_404s_on_unknown_and_502s_on_unreachable() {
-    let router = build_router(sample_state(Some("sekrit")));
+    let keycloak = test_support::mock_keycloak().await;
+    let router = build_router(state_with_tokens(
+      snapshots_to_state(sample_snapshots()),
+      test_config(Some("sekrit")),
+      test_support::tokens_from(&keycloak),
+    ));
 
     let (status, body) = send(
       router.clone(),
@@ -1816,7 +1614,7 @@ mod tests {
 
     // Configured but unreachable → 502, and the previous index keeps
     // serving.
-    let (status, _) = send(
+    let (status, body) = send(
       router.clone(),
       "POST",
       "/api/v1/refresh/unreachable",
@@ -1824,6 +1622,8 @@ mod tests {
     )
     .await;
     assert_eq!(status, StatusCode::BAD_GATEWAY);
+    let error = body["error"].as_str().unwrap();
+    assert!(error.contains("request to site 'unreachable'"), "{error}");
     let (status, body) =
       send(router, "GET", "/api/v1/sites", Some("sekrit")).await;
     assert_eq!(status, StatusCode::OK);

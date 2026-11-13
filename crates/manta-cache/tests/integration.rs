@@ -1,41 +1,64 @@
 //! Live `refresh` smoke test against one real manta-server.
 //!
-//! Dormant by default: it needs a reachable manta-server, so it only
-//! runs when all three env vars are set. Without them it returns early
-//! (a pass), so CI and contributors without a backend are unaffected.
+//! Dormant by default: it needs a reachable manta-server and a CSCS
+//! service account, so it only runs when the server URL, the site and
+//! the service account's two variables are set. Without them it returns
+//! early (a pass), so CI and contributors without a backend are
+//! unaffected.
 //!
 //! To run it:
 //!
 //! ```bash
 //! MANTA_CACHE_IT_SERVER_URL="https://manta-server.example.ch:8443" \
 //! MANTA_CACHE_IT_SITE="alps" \
-//! MANTA_CACHE_IT_TOKEN="ey…" \
+//! MANTA_SA_CLIENT_ID="…" MANTA_SA_CLIENT_SECRET="…" \
 //!   cargo test -p manta-cache --test integration -- --nocapture
 //! ```
+//!
+//! `MANTA_CACHE_IT_ISSUER_URL` overrides the CSCS Keycloak issuer
+//! (default: the production realm).
 
-use manta_cache::{SiteDescriptor, refresh};
+use manta_cache::{SiteDescriptor, TokenError, TokenSource, refresh};
+use manta_shared::common::oidc::{DEFAULT_OIDC_ISSUER_URL, ServiceAccount};
+
+/// A new token per request from the service account.
+struct Account {
+  account: ServiceAccount,
+  issuer_url: String,
+}
+
+impl TokenSource for Account {
+  async fn token(&self) -> Result<String, TokenError> {
+    Ok(self.account.token(&self.issuer_url).await?)
+  }
+}
 
 #[tokio::test]
 async fn refresh_against_live_server() {
-  let (Ok(url), Ok(site), Ok(token)) = (
+  let (Ok(url), Ok(site), Ok(Some(account))) = (
     std::env::var("MANTA_CACHE_IT_SERVER_URL"),
     std::env::var("MANTA_CACHE_IT_SITE"),
-    std::env::var("MANTA_CACHE_IT_TOKEN"),
+    ServiceAccount::from_env(),
   ) else {
     eprintln!(
       "skipping integration test: set MANTA_CACHE_IT_SERVER_URL, \
-       MANTA_CACHE_IT_SITE and MANTA_CACHE_IT_TOKEN to run it"
+       MANTA_CACHE_IT_SITE, MANTA_SA_CLIENT_ID and MANTA_SA_CLIENT_SECRET \
+       to run it"
     );
     return;
+  };
+  let tokens = Account {
+    account,
+    issuer_url: std::env::var("MANTA_CACHE_IT_ISSUER_URL")
+      .unwrap_or_else(|_| DEFAULT_OIDC_ISSUER_URL.to_owned()),
   };
 
   let sites = [SiteDescriptor {
     name: site.clone(),
     manta_server_url: url,
-    token,
   }];
 
-  let outcome = refresh(&sites).await.expect("refresh failed");
+  let outcome = refresh(&sites, &tokens).await.expect("refresh failed");
   assert!(
     outcome.is_complete(),
     "site refresh failures: {:?}",

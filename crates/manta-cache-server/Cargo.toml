@@ -16,7 +16,8 @@ path = "src/main.rs"
 
 [dependencies]
 # The cache core: Index, refresh(), SiteDescriptor.
-manta-cache = { workspace = true }
+manta-cache  = { workspace = true }
+manta-shared = { workspace = true }
 
 # HTTP server framework — same versions/features as manta-server.
 axum        = { version = "0.8", default-features = false, features = ["json", "query", "tokio", "http1", "http2"] }
@@ -42,12 +43,6 @@ serde_json         = { workspace = true }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 
-# Decoding the (unverified) claims of a site's service-account token for
-# the credential advisory — see `src/credential.rs`. The workspace entry
-# is `default-features = false`; `std` is enabled explicitly because this
-# crate's dependency graph has nothing else that would unify it back in,
-# the same reason `chrono` re-enables `clock` above.
-base64 = { workspace = true, features = ["std"] }
 
 [dev-dependencies]
 # `ServiceExt::oneshot` drives the router in-process for route tests.
