@@ -221,11 +221,12 @@ struct GroupConflict {
   /// Every site that listed the label **or** has a node claiming it,
   /// sorted.
   claimed_by: Vec<String>,
-  /// The subset of `claimed_by` that listed the label in
-  /// `/groups/available`, sorted. Separate from `claimed_by` because
-  /// the tie-break runs over *listings*, not contributions — applying
-  /// `reason` to `claimed_by` would name the wrong site whenever a
-  /// third site merely mentions the label through a node's `hsm`.
+  /// The subset of `claimed_by` that listed the label among its
+  /// groups, sorted. Separate from `claimed_by` because the tie-break
+  /// runs over *listings*, not contributions — applying `reason` to
+  /// `claimed_by` would name the wrong site whenever a third site
+  /// merely mentions the label through a node's groups (possible only
+  /// in a hand-built snapshot; a refresh lists every group it names).
   listed_by: Vec<String>,
   /// The site that owns it in the index — what lookups answer.
   owner: String,
@@ -551,7 +552,7 @@ fn conflicts(cache: &CacheState) -> ConflictsDump {
   // list with no members is still seen as contested.
   let mut membership: BTreeMap<&str, BTreeMap<&str, BTreeSet<&str>>> =
     BTreeMap::new();
-  // label → the sites that listed it in `/groups/available`, which is
+  // label → the sites that listed it among their groups, which is
   // what distinguishes a claim from a bare node mention. A set of
   // *sites*, not a count of listings: one site repeating a label in its
   // own response must not read as two sites claiming it.
@@ -976,19 +977,12 @@ mod tests {
     // Only a request carrying a token from the service account's
     // Keycloak is answered.
     Mock::given(method("GET"))
-      .and(path("/v2/groups/available"))
-      .and(header_regex("Authorization", r"^Bearer sa-token-\d+$"))
-      .respond_with(
-        ResponseTemplate::new(200)
-          .set_body_json(serde_json::json!(["compute"])),
-      )
-      .mount(&server)
-      .await;
-    Mock::given(method("GET"))
-      .and(path("/v2/groups/nodes"))
+      .and(path("/v2/groups"))
       .and(header_regex("Authorization", r"^Bearer sa-token-\d+$"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
-        serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
+        serde_json::json!([
+          {"label": "compute", "members": {"ids": ["x1000c0s0b0n0"]}}
+        ]),
       ))
       .mount(&server)
       .await;
@@ -1028,7 +1022,7 @@ mod tests {
     assert_eq!(body["site"], "live");
   }
 
-  /// A manta-server that answers both group endpoints with `200 []` —
+  /// A manta-server that answers `GET /groups` with `200 []` —
   /// what a site looks like when the service account has no HSM roles
   /// there at all.
   async fn mock_site_with_no_groups() -> wiremock::MockServer {
@@ -1036,15 +1030,13 @@ mod tests {
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     let server = MockServer::start().await;
-    for endpoint in ["/v2/groups/available", "/v2/groups/nodes"] {
-      Mock::given(method("GET"))
-        .and(path(endpoint))
-        .respond_with(
-          ResponseTemplate::new(200).set_body_json(serde_json::json!([])),
-        )
-        .mount(&server)
-        .await;
-    }
+    Mock::given(method("GET"))
+      .and(path("/v2/groups"))
+      .respond_with(
+        ResponseTemplate::new(200).set_body_json(serde_json::json!([])),
+      )
+      .mount(&server)
+      .await;
     server
   }
 
@@ -1172,17 +1164,12 @@ mod tests {
     // the error rather than leaving the site flagged forever.
     server.reset().await;
     Mock::given(method("GET"))
-      .and(path("/v2/groups/available"))
-      .respond_with(
-        ResponseTemplate::new(200)
-          .set_body_json(serde_json::json!(["compute", "gpu"])),
-      )
-      .mount(&server)
-      .await;
-    Mock::given(method("GET"))
-      .and(path("/v2/groups/nodes"))
+      .and(path("/v2/groups"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
-        serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute,gpu"}]),
+        serde_json::json!([
+          {"label": "compute", "members": {"ids": ["x1000c0s0b0n0"]}},
+          {"label": "gpu", "members": {"ids": ["x1000c0s0b0n0"]}},
+        ]),
       ))
       .mount(&server)
       .await;
@@ -1424,7 +1411,7 @@ mod tests {
 
   #[tokio::test]
   async fn dump_distinguishes_a_listing_from_a_bare_node_mention() {
-    // The subtlest Index rule: a listing outranks a bare hsm mention
+    // The subtlest Index rule: a listing outranks a bare node mention
     // *whatever the fold order*. One label is not enough to pin that —
     // it takes both directions, since each rules out a different naive
     // implementation:
@@ -1532,17 +1519,11 @@ mod tests {
 
     let server = MockServer::start().await;
     Mock::given(method("GET"))
-      .and(path("/v2/groups/available"))
-      .respond_with(
-        ResponseTemplate::new(200)
-          .set_body_json(serde_json::json!(["compute"])),
-      )
-      .mount(&server)
-      .await;
-    Mock::given(method("GET"))
-      .and(path("/v2/groups/nodes"))
+      .and(path("/v2/groups"))
       .respond_with(ResponseTemplate::new(200).set_body_json(
-        serde_json::json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
+        serde_json::json!([
+          {"label": "compute", "members": {"ids": ["x1000c0s0b0n0"]}}
+        ]),
       ))
       .mount(&server)
       .await;

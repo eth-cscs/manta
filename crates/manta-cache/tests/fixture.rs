@@ -1,61 +1,51 @@
-//! Offline test driving [`Index::from_snapshots`] with the checked-in
-//! prealps capture (`testdata/groups-prealps.json`, the verbatim
-//! payload of `GET /v2/groups` against the CSCS prealps test site).
+//! Offline test of the real refresh path with the checked-in prealps
+//! capture (`testdata/groups-prealps.json`, the verbatim payload of
+//! `GET /v2/groups` against the CSCS prealps test site), served by a
+//! mock manta-server: the response parsing and the fold into the
+//! [`Index`](manta_cache::Index) are the library's own.
 //!
 //! The assertions mirror the fixture's "notable properties" documented
 //! in ROADMAP.md: the site-umbrella group, empty groups, and a node
 //! with overlapping group membership.
 
-use std::collections::BTreeMap;
+use manta_cache::{SiteDescriptor, TokenError, TokenSource, refresh};
+use wiremock::matchers::{header, method, path};
+use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use manta_cache::{Index, NodeMembership, SiteSnapshot};
-use serde::Deserialize;
+struct Fixed;
 
-/// Subset of the `GET /v2/groups` group object the test consumes;
-/// serde ignores `description`, `exclusiveGroup`, and `tags`.
-#[derive(Deserialize)]
-struct Group {
-  label: String,
-  members: Members,
-}
-
-#[derive(Deserialize)]
-struct Members {
-  ids: Vec<String>,
-}
-
-/// Parse the fixture and fold its per-group member lists into the
-/// per-node shape `SiteSnapshot` wants (xname → groups).
-fn prealps_snapshot() -> SiteSnapshot {
-  let groups: Vec<Group> =
-    serde_json::from_str(include_str!("../testdata/groups-prealps.json"))
-      .expect("fixture must parse as GET /groups output");
-
-  let labels: Vec<String> = groups.iter().map(|g| g.label.clone()).collect();
-
-  let mut memberships: BTreeMap<String, Vec<String>> = BTreeMap::new();
-  for group in &groups {
-    for xname in &group.members.ids {
-      memberships
-        .entry(xname.clone())
-        .or_default()
-        .push(group.label.clone());
-    }
-  }
-
-  SiteSnapshot {
-    site: "prealps".to_owned(),
-    labels,
-    nodes: memberships
-      .into_iter()
-      .map(|(xname, groups)| NodeMembership { xname, groups })
-      .collect(),
+impl TokenSource for Fixed {
+  async fn token(&self) -> Result<String, TokenError> {
+    Ok("tok".to_owned())
   }
 }
 
-#[test]
-fn prealps_fixture_builds_a_consistent_index() {
-  let idx = Index::from_snapshots(vec![prealps_snapshot()]);
+#[tokio::test]
+async fn prealps_fixture_builds_a_consistent_index() {
+  let server = MockServer::start().await;
+  Mock::given(method("GET"))
+    .and(path("/v2/groups"))
+    .and(header("X-Manta-Site", "prealps"))
+    .respond_with(
+      ResponseTemplate::new(200)
+        .insert_header("content-type", "application/json")
+        .set_body_string(include_str!("../testdata/groups-prealps.json")),
+    )
+    .expect(1)
+    .mount(&server)
+    .await;
+
+  let outcome = refresh(
+    &[SiteDescriptor {
+      name: "prealps".to_owned(),
+      manta_server_url: server.uri(),
+    }],
+    &Fixed,
+  )
+  .await
+  .expect("client build");
+  assert!(outcome.is_complete(), "failures: {:?}", outcome.failures);
+  let idx = outcome.index;
 
   // Single-site fixture: exactly one site, and all 17 groups known.
   assert_eq!(idx.sites().collect::<Vec<_>>(), vec!["prealps"]);

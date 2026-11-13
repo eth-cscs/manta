@@ -55,7 +55,7 @@ Conceptually a list of `(site_name, group_label, member_xnames…)` triples, plu
 - **`group_label → site_name`** — for commands that target a group directly.
 - **`xname → site_name`** (via the group-membership join) — for commands that target a list of nodes.
 
-Both indexes are populated by walking the existing per-site `GET /v2/groups/available` and `GET /v2/groups/nodes` endpoints on each manta-server.
+Both indexes are populated from one existing endpoint per site: `GET /v2/groups` on the manta-server, which lists every group the cache's service account can access, with its members. The cache holds exactly those groups; a group the account cannot access is not indexed, even when one of its nodes is.
 
 The cache holds **routing information only**. It does not duplicate per-node state (power status, boot parameters, CFS components, IMS images), and it is not a replacement for HSM — the canonical group membership lives in CSM / OpenCHAMI.
 

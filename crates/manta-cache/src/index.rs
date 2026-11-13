@@ -17,11 +17,11 @@ use std::collections::{BTreeMap, BTreeSet, HashMap};
 pub struct SiteSnapshot {
   /// Site name (`X-Manta-Site`).
   pub site: String,
-  /// Every group label accessible at this site
-  /// (from `GET /groups/available`). Includes empty groups.
+  /// Every group label accessible at this site (the groups of
+  /// `GET /groups`). Includes empty groups.
   pub labels: Vec<String>,
-  /// Every accessible node at this site, with its group membership
-  /// (from `GET /groups/nodes`).
+  /// Every node at this site that is a member of an accessible group,
+  /// with those groups (the member lists of `GET /groups`, inverted).
   pub nodes: Vec<NodeMembership>,
 }
 
@@ -30,8 +30,7 @@ pub struct SiteSnapshot {
 pub struct NodeMembership {
   /// Physical location ID, e.g. `x3000c0s1b0n0`.
   pub xname: String,
-  /// Group labels this node is a member of (parsed from the node's
-  /// comma-separated `hsm` field).
+  /// Group labels this node is a member of.
   pub groups: Vec<String>,
 }
 
@@ -50,10 +49,12 @@ pub struct NodeMembership {
 /// order) are:
 ///
 /// - An **xname** resolves to the last site that reported it.
-/// - A **group label** listed by a site's `/groups/available` claims
+/// - A **group label** in a site's [`SiteSnapshot::labels`] claims
 ///   the label, replacing any earlier owner. A label known only from
-///   nodes' `hsm` fields stays with the first site that mentioned it —
-///   a listing outranks a mention.
+///   nodes' [`NodeMembership::groups`] stays with the first site that
+///   mentioned it — a listing outranks a mention. ([`crate::refresh`]
+///   never produces a bare mention: its node groups all come from the
+///   listed groups. A hand-built snapshot can.)
 /// - [`Index::group_members`] reflects the owning site only: when
 ///   ownership moves, the previous site's members are discarded, and a
 ///   non-owning site's nodes are never added. Member lists never mix
@@ -101,9 +102,9 @@ impl Index {
           .xname_to_site
           .insert(node.xname.clone(), snap.site.clone());
         for label in node.groups {
-          // A node may list a group in `hsm` even if that group wasn't
-          // in `/groups/available` (e.g. not directly accessible); such
-          // a mention claims the label only while it is unowned, and
+          // A node may name a group that is not in the snapshot's
+          // labels (only in a hand-built snapshot); such a mention
+          // claims the label only while it is unowned, and
           // membership is recorded only when this site owns the label.
           let owner = index
             .group_to_site
@@ -296,8 +297,8 @@ mod tests {
 
   #[test]
   fn listed_label_outranks_cross_site_hsm_mention() {
-    // Site "a" lists "shared" in /groups/available; site "b" only
-    // mentions it via a node's hsm field. The listing keeps ownership
+    // Site "a" lists "shared" in its labels; site "b" only mentions
+    // it via a node's groups. The listing keeps ownership
     // and the mentioning site's node is not recorded as a member.
     let idx = Index::from_snapshots(vec![
       snapshot("a", &["shared"], vec![node("x1", &["shared"])]),

@@ -130,18 +130,11 @@ pub async fn refresh_all(state: &AppState) -> Result<Vec<String>, String> {
 
 /// Does this snapshot carry no group labels?
 ///
-/// Keyed on the labels alone, because they come from
-/// `/groups/available`, which the site derives from the roles of the
-/// exchanged token — so an empty list is precisely the shape a service
-/// account with no HSM roles at that site produces, which is the
-/// condition worth catching.
-///
-/// Note this can be true of a snapshot that still holds nodes, and
-/// [`refresh_all`] discards those too. In practice `/groups/nodes` is
-/// scoped by the same roles and empties alongside the labels; the
-/// deliberate choice is that a label-less site is reported as broken
-/// rather than half-served, since resolving xnames for a site whose
-/// groups have all vanished would mask the role problem.
+/// The labels are the groups of `GET /groups`, which the site scopes
+/// by the roles of the exchanged token — so an empty list is precisely
+/// the shape a service account with no HSM roles at that site produces,
+/// which is the condition worth catching. A snapshot without labels
+/// has no nodes either: they come from the groups' member lists.
 fn is_empty(snapshot: &SiteSnapshot) -> bool {
   snapshot.labels.is_empty()
 }

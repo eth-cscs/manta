@@ -3,8 +3,8 @@
 //!
 //! These cover what the unit tests cannot — the wire behaviour: request
 //! headers (`X-Manta-Site`, a new bearer token per request), the
-//! two-call fan-out, tolerance of unknown JSON fields, and the mapping
-//! of token and HTTP failures into [`RefreshOutcome::failures`].
+//! one-call-per-site fan-out, tolerance of unknown JSON fields, and the
+//! mapping of token and HTTP failures into [`RefreshOutcome::failures`].
 
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -43,25 +43,22 @@ fn descriptor(server: &MockServer, site: &str) -> SiteDescriptor {
   }
 }
 
-/// Mount the two group endpoints for one site, matching on its
-/// `X-Manta-Site` header and a [`Counter`] bearer token so a request
-/// with the wrong headers falls through to wiremock's 404.
+/// Mount `GET /v2/groups` for one site, answering `groups`, matching
+/// on its `X-Manta-Site` header and a [`Counter`] bearer token so a
+/// request with the wrong headers falls through to wiremock's 404.
 async fn mount_site(
   server: &MockServer,
   site: &str,
-  labels: serde_json::Value,
-  nodes: serde_json::Value,
+  groups: serde_json::Value,
 ) {
-  for (endpoint, body) in [("available", labels), ("nodes", nodes)] {
-    Mock::given(method("GET"))
-      .and(path(format!("/v2/groups/{endpoint}")))
-      .and(header("X-Manta-Site", site))
-      .and(header_regex("Authorization", r"^Bearer tok-\d+$"))
-      .respond_with(ResponseTemplate::new(200).set_body_json(body))
-      .expect(1)
-      .mount(server)
-      .await;
-  }
+  Mock::given(method("GET"))
+    .and(path("/v2/groups"))
+    .and(header("X-Manta-Site", site))
+    .and(header_regex("Authorization", r"^Bearer tok-\d+$"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(groups))
+    .expect(1)
+    .mount(server)
+    .await;
 }
 
 #[tokio::test]
@@ -69,20 +66,25 @@ async fn refresh_fans_out_with_per_site_headers() {
   let server = MockServer::start().await;
 
   // Two sites behind one manta-server URL, exactly as SiteDescriptor
-  // documents; only the headers tell them apart. The node objects carry
-  // extra fields to prove the deserialiser ignores them.
+  // documents; only the headers tell them apart. The group objects
+  // carry extra fields to prove the deserialiser ignores them.
   mount_site(
     &server,
     "alps",
-    json!(["compute"]),
-    json!([{"xname": "x1000c0s0b0n0", "hsm": "compute", "power_status": "ON"}]),
+    json!([{
+      "label": "compute",
+      "description": "Compute nodes",
+      "members": {"ids": ["x1000c0s0b0n0"]},
+    }]),
   )
   .await;
   mount_site(
     &server,
     "daint",
-    json!(["compute_d"]),
-    json!([{"xname": "x2000c0s0b0n0", "hsm": "compute_d, extra"}]),
+    json!([
+      {"label": "compute_d", "members": {"ids": ["x2000c0s0b0n0"]}},
+      {"label": "extra", "tags": ["t"], "members": {"ids": ["x2000c0s0b0n0"]}},
+    ]),
   )
   .await;
 
@@ -98,12 +100,15 @@ async fn refresh_fans_out_with_per_site_headers() {
   assert_eq!(index.sites().collect::<Vec<_>>(), vec!["alps", "daint"]);
   assert_eq!(index.group_to_site("compute"), Some("alps"));
   assert_eq!(index.group_to_site("compute_d"), Some("daint"));
-  // "extra" exists only as an hsm mention, split and trimmed.
   assert_eq!(index.group_to_site("extra"), Some("daint"));
+  assert_eq!(
+    index.group_members("extra"),
+    Some(&["x2000c0s0b0n0".to_owned()][..])
+  );
   assert_eq!(index.xname_to_site("x1000c0s0b0n0"), Some("alps"));
   assert_eq!(index.xname_to_site("x2000c0s0b0n0"), Some("daint"));
-  // MockServer verifies each `.expect(1)` on drop: two calls per site,
-  // each carrying that site's own headers.
+  // MockServer verifies each `.expect(1)` on drop: one call per site,
+  // carrying that site's own headers.
 }
 
 /// No token is sent twice: OpenCHAMI's Hydra would reject the reuse.
@@ -111,7 +116,7 @@ async fn refresh_fans_out_with_per_site_headers() {
 async fn every_request_carries_a_new_token() {
   let server = MockServer::start().await;
   for site in ["alps", "daint"] {
-    mount_site(&server, site, json!([]), json!([])).await;
+    mount_site(&server, site, json!([])).await;
   }
   let tokens = Counter::default();
 
@@ -130,9 +135,9 @@ async fn every_request_carries_a_new_token() {
     .iter()
     .map(|r| r.headers["authorization"].to_str().unwrap().to_owned())
     .collect();
-  assert_eq!(sent.len(), 4, "{sent:?}");
-  assert_eq!(sent.iter().collect::<HashSet<_>>().len(), 4, "{sent:?}");
-  assert_eq!(tokens.0.load(Ordering::SeqCst), 4);
+  assert_eq!(sent.len(), 2, "{sent:?}");
+  assert_eq!(sent.iter().collect::<HashSet<_>>().len(), 2, "{sent:?}");
+  assert_eq!(tokens.0.load(Ordering::SeqCst), 2);
 }
 
 /// A token the source cannot supply fails each site with
@@ -168,12 +173,11 @@ async fn refresh_collects_failures_and_keeps_healthy_sites() {
   mount_site(
     &server,
     "good",
-    json!(["compute"]),
-    json!([{"xname": "x1000c0s0b0n0", "hsm": "compute"}]),
+    json!([{"label": "compute", "members": {"ids": ["x1000c0s0b0n0"]}}]),
   )
   .await;
   Mock::given(method("GET"))
-    .and(path("/v2/groups/available"))
+    .and(path("/v2/groups"))
     .and(header("X-Manta-Site", "bad"))
     .respond_with(ResponseTemplate::new(500).set_body_json(json!({
       "error": "backend exploded"
@@ -209,7 +213,7 @@ async fn refresh_maps_undecodable_bodies_to_request_errors() {
   let server = MockServer::start().await;
 
   Mock::given(method("GET"))
-    .and(path("/v2/groups/available"))
+    .and(path("/v2/groups"))
     .respond_with(ResponseTemplate::new(200).set_body_string("not json"))
     .mount(&server)
     .await;
@@ -234,7 +238,7 @@ async fn refresh_marks_empty_error_bodies() {
   let server = MockServer::start().await;
 
   Mock::given(method("GET"))
-    .and(path("/v2/groups/available"))
+    .and(path("/v2/groups"))
     .respond_with(ResponseTemplate::new(401))
     .mount(&server)
     .await;

@@ -18,9 +18,9 @@
 //!
 //! The cache is an HTTP client of `manta-server`; it has no
 //! compile-time dependency on the server's internals. [`refresh`] fans
-//! out **two calls per site** — `GET /v2/groups/available` and
-//! `GET /v2/groups/nodes` — and folds the results into an [`Index`].
-//! Each call carries a new bearer token from the caller's
+//! out **one call per site** — `GET /v2/groups`, every group the token
+//! can access with its members — and folds the results into an
+//! [`Index`]. Each call carries a new bearer token from the caller's
 //! [`TokenSource`].
 //!
 //! A process that already holds the group data (an embedding

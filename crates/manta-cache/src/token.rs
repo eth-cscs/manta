@@ -6,10 +6,10 @@ pub type TokenError = Box<dyn std::error::Error + Send + Sync>;
 /// Supplies the bearer token for each request to manta-server.
 ///
 /// [`crate::refresh`] and [`crate::fetch_snapshots`] call
-/// [`token`](Self::token) right before **every** request — two per
-/// site — and never reuse a token. manta-server exchanges the token on
-/// every request, and an OpenCHAMI site's Hydra accepts each token
-/// (its `jti`) only once, so a reused token fails there.
+/// [`token`](Self::token) right before **every** request — one per
+/// site per refresh — and never reuse a token. manta-server exchanges
+/// the token on every request, and an OpenCHAMI site's Hydra accepts
+/// each token (its `jti`) only once, so a reused token fails there.
 ///
 /// One source serves every site: a CSCS Keycloak token is valid for
 /// all of them. Where the token comes from (a service account's client
