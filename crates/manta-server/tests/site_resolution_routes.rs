@@ -58,6 +58,7 @@ fn router(cache: Option<&MockServer>, sink: Arc<Capture>) -> axum::Router {
   let site_resolver = cache.map(|server| {
     SiteResolver::new(&SiteResolutionConfig {
       url: server.uri(),
+      api_token: None,
       api_token_file: None,
       root_ca_cert_file: None,
     })

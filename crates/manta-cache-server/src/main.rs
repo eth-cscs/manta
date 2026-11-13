@@ -11,8 +11,8 @@
 //! 2. Parse command-line flags via [`parse_cli_args`] (hand-rolled —
 //!    like `manta-server`, deliberately no `clap` dependency).
 //! 3. Read `cache-server.toml` (`MANTA_CACHE_SERVER_CONFIG` or the
-//!    shared manta config directory) and the service account from
-//!    `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`.
+//!    shared manta config directory) and the service account from its
+//!    `[auth]` (or `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`).
 //! 4. Build a Tokio runtime and hand off to [`run_server`]: enforce the
 //!    TLS-or-`allow_http` invariant, check that the service account
 //!    gets a token, run the initial refresh, spawn the optional
@@ -29,9 +29,6 @@ use std::time::Duration;
 
 use axum_server::tls_rustls::RustlsConfig;
 use manta_cache::TokenSource as _;
-use manta_shared::common::oidc::{
-  SA_CLIENT_ID_ENV_VAR, SA_CLIENT_SECRET_ENV_VAR, ServiceAccount,
-};
 
 use auth::ServiceAccountTokens;
 use config::{CacheServerConfiguration, ServerSettings};
@@ -44,7 +41,8 @@ manta-cache-server — standalone site-resolution lookup service.
 Serves the manta-cache index over HTTP: which site owns a given HSM
 group or node xname. Refreshes from every configured manta-server at
 startup (and optionally on an interval), as the CSCS Keycloak service
-account in MANTA_SA_CLIENT_ID and MANTA_SA_CLIENT_SECRET (both required).
+account in [auth] of cache-server.toml (MANTA_SA_CLIENT_ID and
+MANTA_SA_CLIENT_SECRET, when set, take precedence).
 
 Usage: manta-cache-server [OPTIONS]
 
@@ -136,6 +134,7 @@ fn parse_cli_args() -> Result<CliArgs, String> {
 fn print_startup_summary(
   configuration: &CacheServerConfiguration,
   tokens: &ServiceAccountTokens,
+  account_source: &str,
   config_path: &std::path::Path,
   listen_addr: &str,
   port: u16,
@@ -182,7 +181,7 @@ fn print_startup_summary(
   println!("[auth]");
   println!("  issuer_url:                  {}", tokens.issuer_url());
   println!(
-    "  service_account:             {} (from {SA_CLIENT_ID_ENV_VAR})",
+    "  service_account:             {} (from {account_source})",
     tokens.client_id()
   );
   println!();
@@ -217,13 +216,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
   let cli =
     parse_cli_args().map_err(|e| format!("{e}\nRun with --help for usage."))?;
   let (configuration, config_path) = config::load()?;
-  let account = ServiceAccount::from_env()?.ok_or_else(|| {
-    format!(
-      "No service account: set {SA_CLIENT_ID_ENV_VAR} and \
-       {SA_CLIENT_SECRET_ENV_VAR} to the credentials of the CSCS Keycloak \
-       service account the cache refreshes as."
-    )
-  })?;
+  let (account, account_source) = configuration.auth.service_account()?;
   let tokens =
     ServiceAccountTokens::new(account, configuration.auth.issuer_url());
 
@@ -237,7 +230,13 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
   let rt = tokio::runtime::Builder::new_multi_thread()
     .enable_all()
     .build()?;
-  rt.block_on(run_server(configuration, tokens, config_path, cli))
+  rt.block_on(run_server(
+    configuration,
+    tokens,
+    account_source,
+    config_path,
+    cli,
+  ))
 }
 
 /// Async bootstrap: resolve settings, enforce fail-closed TLS, run the
@@ -245,6 +244,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
 async fn run_server(
   configuration: CacheServerConfiguration,
   tokens: ServiceAccountTokens,
+  account_source: &str,
   config_path: std::path::PathBuf,
   cli: CliArgs,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -277,6 +277,7 @@ async fn run_server(
   print_startup_summary(
     &configuration,
     &tokens,
+    account_source,
     &config_path,
     &listen_addr,
     port,

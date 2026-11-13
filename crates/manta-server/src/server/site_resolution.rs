@@ -160,8 +160,9 @@ impl std::fmt::Display for ResolveError {
       Self::Rejected(status) => write!(
         f,
         "The site-resolution cache rejected manta-server's token (HTTP \
-         {status}); check [site_resolution] api_token_file against the \
-         cache's [server] api_token. Pass --site <name> meanwhile."
+         {status}); check [site_resolution] api_token (or api_token_file) \
+         against the cache's [server] api_token. Pass --site <name> \
+         meanwhile."
       ),
       Self::Unavailable(reason) => write!(
         f,
@@ -227,8 +228,8 @@ pub struct SiteResolver {
 }
 
 impl SiteResolver {
-  /// Build the resolver: normalise the URL, read the token file and
-  /// the optional CA certificate.
+  /// Build the resolver: normalise the URL, take the token (inline or
+  /// from its file) and read the optional CA certificate.
   ///
   /// # Errors
   ///
@@ -238,7 +239,25 @@ impl SiteResolver {
     let base = normalize_base(&config.url).map_err(|e| {
       format!("[site_resolution] url '{}' is not a URL: {e}", config.url)
     })?;
-    let api_token = config
+    if config.api_token.is_some() && config.api_token_file.is_some() {
+      return Err(
+        "[site_resolution] sets both `api_token` and `api_token_file`; \
+         set at most one."
+          .to_owned(),
+      );
+    }
+    let inline = config
+      .api_token
+      .as_deref()
+      .map(|token| {
+        let token = token.trim();
+        if token.is_empty() {
+          return Err("[site_resolution] api_token is empty".to_owned());
+        }
+        Ok(token.to_owned())
+      })
+      .transpose()?;
+    let from_file = config
       .api_token_file
       .as_deref()
       .map(|path| {
@@ -257,6 +276,7 @@ impl SiteResolver {
         Ok(token)
       })
       .transpose()?;
+    let api_token = inline.or(from_file);
     let mut builder = reqwest::Client::builder()
       .connect_timeout(CONNECT_TIMEOUT)
       .timeout(REQUEST_TIMEOUT);
@@ -522,6 +542,7 @@ mod tests {
   fn resolver_for(server: &wiremock::MockServer) -> SiteResolver {
     SiteResolver::new(&SiteResolutionConfig {
       url: server.uri(),
+      api_token: None,
       api_token_file: None,
       root_ca_cert_file: None,
     })
@@ -587,6 +608,7 @@ mod tests {
     std::fs::write(&token_path, "s3cret\n").unwrap();
     let resolver = SiteResolver::new(&SiteResolutionConfig {
       url: server.uri(),
+      api_token: None,
       api_token_file: Some(token_path.display().to_string()),
       root_ca_cert_file: None,
     })
@@ -602,6 +624,7 @@ mod tests {
   fn new_rejects_a_missing_or_empty_token_file() {
     let config = |path: String| SiteResolutionConfig {
       url: "http://localhost:8081".to_owned(),
+      api_token: None,
       api_token_file: Some(path),
       root_ca_cert_file: None,
     };
@@ -618,10 +641,54 @@ mod tests {
   }
 
   #[tokio::test]
+  async fn resolve_sends_the_inline_token_as_bearer() {
+    use wiremock::matchers::{header, method};
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(method("GET"))
+      .and(header("Authorization", "Bearer s3cret"))
+      .respond_with(
+        wiremock::ResponseTemplate::new(200)
+          .set_body_json(serde_json::json!({ "site": "alps" })),
+      )
+      .expect(1)
+      .mount(&server)
+      .await;
+    let resolver = SiteResolver::new(&SiteResolutionConfig {
+      url: server.uri(),
+      api_token: Some("s3cret".to_owned()),
+      api_token_file: None,
+      root_ca_cert_file: None,
+    })
+    .unwrap();
+    let site = resolver
+      .resolve(&Target::Group("g".to_owned()))
+      .await
+      .unwrap();
+    assert_eq!(site, "alps");
+  }
+
+  #[test]
+  fn new_rejects_both_token_forms_and_an_empty_inline_token() {
+    let config =
+      |api_token: &str, api_token_file: Option<&str>| SiteResolutionConfig {
+        url: "http://localhost:8081".to_owned(),
+        api_token: Some(api_token.to_owned()),
+        api_token_file: api_token_file.map(str::to_owned),
+        root_ca_cert_file: None,
+      };
+    let err =
+      SiteResolver::new(&config("s3cret", Some("/run/secrets/t"))).unwrap_err();
+    assert!(err.contains("at most one"), "{err}");
+    let err = SiteResolver::new(&config("  ", None)).unwrap_err();
+    assert!(err.contains("api_token is empty"), "{err}");
+  }
+
+  #[tokio::test]
   async fn resolve_reports_an_unreachable_cache_as_unavailable() {
     let resolver = SiteResolver::new(&SiteResolutionConfig {
       // Port 9 (discard) on loopback: nothing listens there.
       url: "http://127.0.0.1:9".to_owned(),
+      api_token: None,
       api_token_file: None,
       root_ca_cert_file: None,
     })

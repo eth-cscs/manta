@@ -61,7 +61,7 @@ Only plain comma-separated xnames are looked up; a hostlist expression or a NID 
 | `400` | No `X-Manta-Site`, and the request names no resolvable target, or the server has no `[site_resolution]` |
 | `404` | The cache knows no such group (or the resolved site is not configured on this server) |
 | `409` | The xnames belong to more than one site; the message lists each xname's site |
-| `500` | The cache rejected the server's `api_token_file` |
+| `500` | The cache rejected the server's `api_token` (`[site_resolution]`) |
 | `503` | The cache is unreachable or answered unexpectedly |
 
 Every other endpoint still requires `X-Manta-Site`.

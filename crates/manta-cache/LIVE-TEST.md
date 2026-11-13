@@ -39,31 +39,30 @@ log = "info"
 listen_address = "127.0.0.1"
 allow_http = true          # local test; port defaults to 8081 without TLS
 api_token = "local-test"   # enables POST /api/v1/refresh; drop this line
-                           # (and api_token_file below) for the minimal
-                           # variant — lookups then need no bearer, but
-                           # the management endpoints answer 403
+                           # (and api_token in server.toml below) for the
+                           # minimal variant — lookups then need no
+                           # bearer, but the management endpoints answer 403
+
+[auth]
+client_id     = "<service account client id>"
+client_secret = "<its secret>"
 
 [manta_server]
 url   = "http://localhost:8080"   # same value as cli.toml's manta_server_url
 sites = ["<site>"]                # sites of that server to index
 ```
 
-No credential goes in this file: the cache takes the service account
-from `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET` (see "Startup
-order") and gets a new token from the production CSCS realm for every
-request. To test against another realm, add `[auth] issuer_url = "…"`.
-See [Production credentials](README.md#production-credentials).
+The cache gets a new token from the production CSCS realm for every
+request. To test against another realm, add `issuer_url = "…"` to
+`[auth]`. `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`, when set,
+override `[auth]`. See [Production credentials](README.md#production-credentials).
 
 ### 2. `server.toml` addition
 
 ```toml
 [site_resolution]
-url            = "http://localhost:8081"
-api_token_file = "/tmp/manta-cache-api-token"   # holds "local-test"; only when the cache sets api_token
-```
-
-```bash
-printf local-test > /tmp/manta-cache-api-token
+url       = "http://localhost:8081"
+api_token = "local-test"   # the cache's [server] api_token; only when the cache sets one
 ```
 
 **Important:** make sure `site` is *not* set in `cli.toml` (comment it
@@ -81,13 +80,13 @@ contact the cache until the first site-less request.)
 # Terminal 1 — manta-server, as usual (needs VPN)
 cd crates/manta-server && cargo run -- --allow-http
 
-# Terminal 2 — the cache, as the service account
-MANTA_SA_CLIENT_ID=<client id> MANTA_SA_CLIENT_SECRET=<secret> \
-  cargo run -p manta-cache-server
+# Terminal 2 — the cache
+cargo run -p manta-cache-server
 ```
 
 Expect in terminal 2: the startup summary (the `[auth]` block shows the
-service account's client id and the issuer, never the secret), then
+service account's client id, the issuer and where the account came
+from, never the secret), then
 `cross-site refresh finished sites=1 failures=0`, then
 `server ready, accepting requests on http://127.0.0.1:8081`.
 

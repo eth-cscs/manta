@@ -327,7 +327,7 @@ topic   = "manta-server-audit"
 
 [site_resolution]                                # optional; resolve the site of requests without X-Manta-Site
 url               = "https://manta-cache.cscs.ch:8444"            # manta-cache-server; no scheme = http://
-api_token_file    = "/run/secrets/manta/cache-api-token"         # optional: the cache's [server] api_token
+api_token         = "..."                                         # optional: the cache's [server] api_token (or api_token_file = "<path>")
 root_ca_cert_file = "/etc/manta/certs/cache_root_cert.pem"       # optional: extra CA for the cache's TLS
 
 [sites.alps]
@@ -364,7 +364,7 @@ scope         = "smd.read bss.read smd.write bss.write"
 
 Errors: a CSCS token the identity provider rejects (e.g. the site does not trust the CSCS Keycloak) → `401`; an exchange refused for the user → `403`; a wrong `client_secret` or other misconfiguration → `500`; an error status of the identity provider itself (e.g. `503`) is passed through.
 
-`[site_resolution]` lets clients omit the site. A request without `X-Manta-Site` to an endpoint whose request names a group or a plain xname list (`get nodes`, `get group-nodes`, `get sessions --group/--xnames`, `power … group/nodes`, `apply boot group/nodes`, `apply boot-parameters`, `apply kernel-parameters`, `console node`) has its site looked up in `manta-cache-server`, and the answer is returned in the `X-Manta-Site` response header (the CLI keeps it for the rest of the command and prints `site '<name>' resolved by manta-server`). An explicit site always wins and is never looked up. Anything short of one named site fails the request rather than guessing: unknown group → `404`, xnames on several sites → `409`, hostlist expressions / NIDs / no target → `400`, cache unreachable → `503`, cache rejecting `api_token_file` → `500`. Without `[site_resolution]`, a missing header is `400`, as before. Every other endpoint still requires the header.
+`[site_resolution]` lets clients omit the site. A request without `X-Manta-Site` to an endpoint whose request names a group or a plain xname list (`get nodes`, `get group-nodes`, `get sessions --group/--xnames`, `power … group/nodes`, `apply boot group/nodes`, `apply boot-parameters`, `apply kernel-parameters`, `console node`) has its site looked up in `manta-cache-server`, and the answer is returned in the `X-Manta-Site` response header (the CLI keeps it for the rest of the command and prints `site '<name>' resolved by manta-server`). An explicit site always wins and is never looked up. Anything short of one named site fails the request rather than guessing: unknown group → `404`, xnames on several sites → `409`, hostlist expressions / NIDs / no target → `400`, cache unreachable → `503`, cache rejecting `[site_resolution] api_token` → `500`. Without `[site_resolution]`, a missing header is `400`, as before. Every other endpoint still requires the header.
 
 The runtime Vault URL is derived from `[sites.X.k8s.authentication.vault].base_url` at startup; the vault secret path is computed from a hard-coded prefix and the site name. No standalone `vault_base_url` / `vault_secret_path` keys.
 

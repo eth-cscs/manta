@@ -6,15 +6,17 @@
 //! uses the same `ProjectDirs` triple as `manta_shared::common::config`,
 //! so all manta configs share one directory.
 //!
-//! The service account the cache refreshes as is **not** configured
-//! here: its credentials come from `MANTA_SA_CLIENT_ID` and
-//! `MANTA_SA_CLIENT_SECRET` (see [`crate::auth`]). Only the Keycloak
-//! issuer can be overridden, in `[auth]`.
+//! The service account the cache refreshes as is configured in
+//! `[auth]`, or in `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET`,
+//! which take precedence (see [`AuthSettings::service_account`]).
 
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
-use manta_shared::common::oidc::DEFAULT_OIDC_ISSUER_URL;
+use manta_shared::common::oidc::{
+  DEFAULT_OIDC_ISSUER_URL, SA_CLIENT_ID_ENV_VAR, SA_CLIENT_SECRET_ENV_VAR,
+  ServiceAccount,
+};
 use serde::Deserialize;
 
 /// Sample config embedded in the "config file not found" error so an
@@ -32,11 +34,12 @@ const CONFIG_SAMPLE: &str = r#"log = "info"
 # refresh_interval_secs = 300    # omit = refresh at startup only
 # shutdown_grace_period_secs = 30
 
-# The cache refreshes as a CSCS Keycloak service account whose
-# credentials come from the environment (MANTA_SA_CLIENT_ID,
-# MANTA_SA_CLIENT_SECRET), never from this file.
-# [auth]
-# issuer_url = "https://auth.cscs.ch/auth/realms/cscs"   # the default
+# The CSCS Keycloak service account the cache refreshes as.
+# MANTA_SA_CLIENT_ID / MANTA_SA_CLIENT_SECRET, when set, take precedence.
+[auth]
+client_id     = "manta-cache"
+client_secret = "change-me"
+# issuer_url  = "https://auth.cscs.ch/auth/realms/cscs"   # the default
 
 # The one manta-server the cache indexes and answers for, and which of
 # its sites to index.
@@ -168,15 +171,36 @@ impl ServerSettings {
   }
 }
 
-/// `[auth]` block: the Keycloak the service account belongs to. The
-/// credentials themselves come from the environment (see
-/// [`crate::auth`]).
-#[derive(Debug, Default, Deserialize)]
+/// `[auth]` block: the CSCS Keycloak service account the cache
+/// refreshes as (see [`crate::auth`]).
+///
+/// The credentials sit inline, like the other secrets of the manta
+/// configs (`server.toml`'s `token_exchange.client_secret`):
+/// the file is the operator's, not a user's. `Debug` is hand-written to
+/// redact `client_secret`.
+#[derive(Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AuthSettings {
   /// Issuer URL of the CSCS Keycloak realm; defaults to the production
   /// realm ([`DEFAULT_OIDC_ISSUER_URL`]), the same default as the CLI.
   pub issuer_url: Option<String>,
+  /// The service account's client id.
+  pub client_id: Option<String>,
+  /// The service account's client secret.
+  pub client_secret: Option<String>,
+}
+
+impl std::fmt::Debug for AuthSettings {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("AuthSettings")
+      .field("issuer_url", &self.issuer_url)
+      .field("client_id", &self.client_id)
+      .field(
+        "client_secret",
+        &self.client_secret.as_ref().map(|_| "<redacted>"),
+      )
+      .finish()
+  }
 }
 
 impl AuthSettings {
@@ -186,6 +210,53 @@ impl AuthSettings {
       .issuer_url
       .as_deref()
       .unwrap_or(DEFAULT_OIDC_ISSUER_URL)
+  }
+
+  /// The service account, with where it came from (for the startup
+  /// summary): [`SA_CLIENT_ID_ENV_VAR`] and [`SA_CLIENT_SECRET_ENV_VAR`]
+  /// when set — handy for testing, and for a Kubernetes `Secret` passed
+  /// as environment variables — else `client_id` and `client_secret`.
+  ///
+  /// # Errors
+  ///
+  /// Only one of the two variables, or only one of the two keys, is
+  /// set, or there is no service account at all.
+  pub fn service_account(
+    &self,
+  ) -> Result<(ServiceAccount, &'static str), String> {
+    let from_env = ServiceAccount::from_env().map_err(|e| e.to_string())?;
+    self.service_account_given(from_env)
+  }
+
+  /// [`Self::service_account`] with the environment's account injected.
+  fn service_account_given(
+    &self,
+    from_env: Option<ServiceAccount>,
+  ) -> Result<(ServiceAccount, &'static str), String> {
+    if let Some(account) = from_env {
+      return Ok((account, "the environment"));
+    }
+    let set = |v: &Option<String>| {
+      v.as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .map(str::to_owned)
+    };
+    match (set(&self.client_id), set(&self.client_secret)) {
+      (Some(id), Some(secret)) => {
+        Ok((ServiceAccount::new(&id, &secret), "[auth]"))
+      }
+      (None, None) => Err(format!(
+        "No service account: set `client_id` and `client_secret` in \
+         [auth] (or {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR}) \
+         to the credentials of the CSCS Keycloak service account the \
+         cache refreshes as."
+      )),
+      _ => Err(
+        "[auth] sets only one of `client_id` and `client_secret`; set both."
+          .to_owned(),
+      ),
+    }
   }
 }
 
@@ -458,23 +529,54 @@ mod tests {
     );
   }
 
-  #[test]
-  fn auth_rejects_credentials_in_the_file() {
-    // The secret belongs in the environment; a `client_secret` here
-    // must not be silently ignored.
-    let err = toml::from_str::<CacheServerConfiguration>(
-      r#"
-      [auth]
-      client_secret = "s3cret"
+  fn auth(
+    client_id: Option<&str>,
+    client_secret: Option<&str>,
+  ) -> AuthSettings {
+    AuthSettings {
+      issuer_url: None,
+      client_id: client_id.map(str::to_owned),
+      client_secret: client_secret.map(str::to_owned),
+    }
+  }
 
-      [manta_server]
-      url = "https://manta:8443"
-      sites = ["alps"]
-      "#,
-    )
-    .unwrap_err()
-    .to_string();
-    assert!(err.contains("client_secret"), "{err}");
+  #[test]
+  fn the_service_account_comes_from_auth() {
+    let (account, source) = auth(Some("manta-cache"), Some("s3cret"))
+      .service_account_given(None)
+      .unwrap();
+    assert_eq!(account.client_id(), "manta-cache");
+    assert_eq!(source, "[auth]");
+  }
+
+  #[test]
+  fn the_environment_takes_precedence_over_auth() {
+    let (account, source) = auth(Some("manta-cache"), Some("s3cret"))
+      .service_account_given(Some(ServiceAccount::new("from-env", "e")))
+      .unwrap();
+    assert_eq!(account.client_id(), "from-env");
+    assert_eq!(source, "the environment");
+  }
+
+  #[test]
+  fn a_missing_or_half_service_account_is_rejected() {
+    let err = auth(None, None).service_account_given(None).unwrap_err();
+    assert!(err.contains("No service account"), "{err}");
+    for half in [
+      auth(Some("id"), None),
+      auth(None, Some("s")),
+      auth(Some("id"), Some(" ")),
+    ] {
+      let err = half.service_account_given(None).unwrap_err();
+      assert!(err.contains("only one of"), "{err}");
+    }
+  }
+
+  #[test]
+  fn the_debug_impl_redacts_the_client_secret() {
+    let rendered = format!("{:?}", auth(Some("id"), Some("s3cret")));
+    assert!(!rendered.contains("s3cret"), "{rendered}");
+    assert!(rendered.contains("<redacted>"), "{rendered}");
   }
 
   #[test]

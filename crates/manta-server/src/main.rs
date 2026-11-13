@@ -216,8 +216,12 @@ fn print_startup_summary(
     Some(r) => {
       println!("  url:               {}", r.url);
       println!(
-        "  api_token_file:    {}",
-        r.api_token_file.as_deref().unwrap_or("<none>")
+        "  api_token:         {}",
+        match (&r.api_token, &r.api_token_file) {
+          (Some(_), _) => "<set>".to_owned(),
+          (None, Some(path)) => format!("<set from {path}>"),
+          (None, None) => "<none>".to_owned(),
+        }
       );
       println!(
         "  root_ca_cert_file: {}",

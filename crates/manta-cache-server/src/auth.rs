@@ -8,8 +8,10 @@
 //! token would not do. Nothing is cached. One token is valid for every
 //! site, so one account serves the whole cache.
 //!
-//! The credentials come from `MANTA_SA_CLIENT_ID` and
-//! `MANTA_SA_CLIENT_SECRET`, the same variables the CLI reads.
+//! The credentials come from `[auth]` in `cache-server.toml`, or from
+//! `MANTA_SA_CLIENT_ID` and `MANTA_SA_CLIENT_SECRET` (the variables the
+//! CLI reads), which take precedence
+//! ([`crate::config::AuthSettings::service_account`]).
 
 use manta_cache::{TokenError, TokenSource};
 use manta_shared::common::oidc::ServiceAccount;

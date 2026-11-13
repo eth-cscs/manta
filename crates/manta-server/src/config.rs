@@ -293,24 +293,54 @@ pub struct ServerConfiguration {
 
 /// `[site_resolution]`: where to ask which site owns a group or an
 /// xname list when a request names no site.
-#[derive(Serialize, Deserialize, Debug, Clone)]
+///
+/// `Debug` is hand-written to redact `api_token`.
+#[derive(Serialize, Deserialize, Clone)]
 pub struct SiteResolutionConfig {
   /// Base URL of `manta-cache-server` (e.g.
   /// `https://manta-cache.example.com:8444`). A missing scheme
   /// defaults to `http://`; `/api/v1` is appended.
   pub url: String,
-  /// Path of a file holding the cache's `[server] api_token`, sent as
-  /// `Authorization: Bearer …` on every lookup. Omit when the cache
-  /// serves lookups without a token. Read once at startup.
+  /// The cache's `[server] api_token`, sent as `Authorization: Bearer
+  /// …` on every lookup. Omit when the cache serves lookups without a
+  /// token. Inline like the other secrets in this file; at most one of
+  /// this and [`Self::api_token_file`].
+  pub api_token: Option<String>,
+  /// Path of a file holding the cache's `[server] api_token`, for a
+  /// deployment that keeps it out of this file. Read once at startup.
   pub api_token_file: Option<String>,
   /// PEM CA certificate to trust for the cache's TLS, in addition to
   /// the system roots (absolute, or relative to the config dir).
   pub root_ca_cert_file: Option<String>,
 }
 
+impl std::fmt::Debug for SiteResolutionConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("SiteResolutionConfig")
+      .field("url", &self.url)
+      .field("api_token", &self.api_token.as_ref().map(|_| "<redacted>"))
+      .field("api_token_file", &self.api_token_file)
+      .field("root_ca_cert_file", &self.root_ca_cert_file)
+      .finish()
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn site_resolution_debug_redacts_the_inline_token() {
+    let config = SiteResolutionConfig {
+      url: "http://localhost:8081".to_owned(),
+      api_token: Some("s3cret".to_owned()),
+      api_token_file: None,
+      root_ca_cert_file: None,
+    };
+    let rendered = format!("{config:?}");
+    assert!(!rendered.contains("s3cret"), "{rendered}");
+    assert!(rendered.contains("<redacted>"), "{rendered}");
+  }
 
   #[test]
   fn site_deserialize_missing_backend_fails() {
