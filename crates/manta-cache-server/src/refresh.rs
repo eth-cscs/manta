@@ -1,4 +1,5 @@
-//! Refresh plumbing: turn `[sites.*]` config into `SiteDescriptor`s
+//! Refresh plumbing: turn the `[manta_server]` config into
+//! `SiteDescriptor`s
 //! and run the full and per-site refreshes against the shared
 //! [`AppState`], with a new service-account token for every request
 //! ([`crate::auth`]).
@@ -13,14 +14,14 @@ use std::time::Duration;
 
 use manta_cache::{Index, SiteDescriptor, SiteSnapshot};
 
-use crate::config::SiteConfig;
 use crate::routes::{AppState, SiteStatus};
 
-/// The [`SiteDescriptor`] for one configured site.
-fn descriptor_for(name: &str, site: &SiteConfig) -> SiteDescriptor {
+/// The [`SiteDescriptor`] for one configured site at the configured
+/// manta-server.
+fn descriptor_for(state: &AppState, name: &str) -> SiteDescriptor {
   SiteDescriptor {
     name: name.to_owned(),
-    manta_server_url: site.manta_server_url.clone(),
+    manta_server_url: state.config.manta_server.url.clone(),
   }
 }
 
@@ -42,14 +43,13 @@ fn rebuild(snapshots: &BTreeMap<String, SiteSnapshot>) -> Index {
 /// Errs only when the refresh cannot start at all: the HTTP client
 /// cannot be built. The previous state then keeps serving.
 pub async fn refresh_all(state: &AppState) -> Result<Vec<String>, String> {
-  // Deterministic fetch order (HashMap iteration is not).
-  let mut descriptors: Vec<SiteDescriptor> = state
+  let descriptors: Vec<SiteDescriptor> = state
     .config
+    .manta_server
     .sites
     .iter()
-    .map(|(name, site)| descriptor_for(name, site))
+    .map(|name| descriptor_for(state, name))
     .collect();
-  descriptors.sort_by(|a, b| a.name.cmp(&b.name));
 
   let outcome = manta_cache::fetch_snapshots(&descriptors, &state.tokens)
     .await
@@ -161,7 +161,7 @@ fn empty_snapshot_error(snapshot: &SiteSnapshot) -> String {
 
 /// Why a [`refresh_site`] call failed.
 pub enum SiteRefreshError {
-  /// The name does not match any `[sites.<name>]` entry.
+  /// The name is not in `[manta_server] sites`.
   UnknownSite,
   /// The site is configured but its snapshot could not be fetched; the
   /// message names the cause. The **index and snapshots** are left
@@ -177,17 +177,15 @@ pub async fn refresh_site(
   state: &AppState,
   name: &str,
 ) -> Result<(), SiteRefreshError> {
-  let site = state
-    .config
-    .sites
-    .get(name)
-    .ok_or(SiteRefreshError::UnknownSite)?;
+  if !state.config.manta_server.sites.iter().any(|s| s == name) {
+    return Err(SiteRefreshError::UnknownSite);
+  }
 
   // Read before the fetch so the failure path can tell whether the
   // status it is about to stamp is still the one it observed.
   let previous_refreshed_at = refreshed_at_of(state, name).await;
 
-  let snapshot = match fetch_one(state, name, site).await {
+  let snapshot = match fetch_one(state, name).await {
     Ok(snapshot) => snapshot,
     Err(message) => {
       // Record why, keeping the previous snapshot and its timestamp:
@@ -218,9 +216,8 @@ pub async fn refresh_site(
 async fn fetch_one(
   state: &AppState,
   name: &str,
-  site: &SiteConfig,
 ) -> Result<SiteSnapshot, String> {
-  let descriptor = descriptor_for(name, site);
+  let descriptor = descriptor_for(state, name);
   let outcome = manta_cache::fetch_snapshots(
     std::slice::from_ref(&descriptor),
     &state.tokens,
@@ -318,7 +315,7 @@ mod tests {
   /// An `AppState` holding just the given per-site status.
   fn state_with(status: BTreeMap<String, SiteStatus>) -> AppState {
     let config: CacheServerConfiguration = toml::from_str(
-      "[sites.alps]\nmanta_server_url = \"http://127.0.0.1:9\"\n",
+      "[manta_server]\nurl = \"http://127.0.0.1:9\"\nsites = [\"alps\"]\n",
     )
     .unwrap();
     AppState {

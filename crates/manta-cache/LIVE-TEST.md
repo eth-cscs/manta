@@ -43,8 +43,9 @@ api_token = "local-test"   # enables POST /api/v1/refresh; drop this line
                            # variant — lookups then need no bearer, but
                            # the management endpoints answer 403
 
-[sites.<site>]
-manta_server_url = "http://localhost:8080"   # same value as cli.toml's manta_server_url
+[manta_server]
+url   = "http://localhost:8080"   # same value as cli.toml's manta_server_url
+sites = ["<site>"]                # sites of that server to index
 ```
 
 No credential goes in this file: the cache takes the service account

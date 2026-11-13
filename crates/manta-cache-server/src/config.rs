@@ -11,7 +11,7 @@
 //! `MANTA_SA_CLIENT_SECRET` (see [`crate::auth`]). Only the Keycloak
 //! issuer can be overridden, in `[auth]`.
 
-use std::collections::HashMap;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use manta_shared::common::oidc::DEFAULT_OIDC_ISSUER_URL;
@@ -38,8 +38,11 @@ const CONFIG_SAMPLE: &str = r#"log = "info"
 # [auth]
 # issuer_url = "https://auth.cscs.ch/auth/realms/cscs"   # the default
 
-[sites.alps]
-manta_server_url = "https://manta-server.example.com:8443"
+# The one manta-server the cache indexes and answers for, and which of
+# its sites to index.
+[manta_server]
+url   = "https://manta-server.example.com:8443"
+sites = ["alps"]
 "#;
 
 /// Top-level `cache-server.toml` schema.
@@ -47,9 +50,7 @@ manta_server_url = "https://manta-server.example.com:8443"
 /// `deny_unknown_fields` throughout the schema: a config file is
 /// hand-edited and its keys are security-relevant, so a typo must be an
 /// error rather than a silently ignored setting. Without it a mistyped
-/// `api_token_fil` would start an unauthenticated server, and a
-/// leftover `[sites.*] token_file` would point at a credential the
-/// service no longer reads.
+/// `api_token_fil` would start an unauthenticated server.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CacheServerConfiguration {
@@ -62,10 +63,8 @@ pub struct CacheServerConfiguration {
   /// Where the service account gets its tokens.
   #[serde(default)]
   pub auth: AuthSettings,
-  /// One entry per site the cache indexes, keyed by the site name sent
-  /// as `X-Manta-Site`.
-  #[serde(default)]
-  pub sites: HashMap<String, SiteConfig>,
+  /// The manta-server the cache indexes, and its sites to index.
+  pub manta_server: MantaServerSettings,
 }
 
 /// `[server]` block.
@@ -190,14 +189,21 @@ impl AuthSettings {
   }
 }
 
-/// One `[sites.<name>]` block: where that site's manta-server lives.
-/// The token is not per site: one service account serves every site.
+/// `[manta_server]` block: the one manta-server the cache indexes and
+/// answers for.
+///
+/// One server, not one per site: the cache answers that server's
+/// site-resolution queries (`[site_resolution]` in its `server.toml`),
+/// so a site it does not host would be a useless, confusing answer.
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct SiteConfig {
-  /// Base URL of the manta-server hosting the site (scheme + host +
-  /// port; `/v2` is appended by the cache).
-  pub manta_server_url: String,
+pub struct MantaServerSettings {
+  /// Base URL of the manta-server (scheme + host + port; `/v2` is
+  /// appended by the cache).
+  pub url: String,
+  /// The sites to index, each sent as `X-Manta-Site`. They must be
+  /// sites the server hosts (`[sites.<name>]` in its `server.toml`).
+  pub sites: Vec<String>,
 }
 
 fn default_log() -> String {
@@ -243,11 +249,7 @@ pub fn load() -> Result<(CacheServerConfiguration, PathBuf), String> {
   })?;
   let mut config: CacheServerConfiguration =
     toml::from_str(&raw).map_err(|e| {
-      format!(
-        "Config file '{}' is not valid: {e}{}",
-        path.display(),
-        migration_hint(&e.to_string())
-      )
+      format!("Config file '{}' is not valid: {e}", path.display())
     })?;
   config.validate()?;
   config.resolve_secrets()?;
@@ -255,37 +257,28 @@ pub fn load() -> Result<(CacheServerConfiguration, PathBuf), String> {
   Ok((config, path))
 }
 
-/// Extra explanation appended to a parse failure that looks like the
-/// removal of per-site credentials, empty otherwise.
-///
-/// A config written for an earlier version still carries
-/// `[sites.<name>] token_file` (or the even older inline `token`), and
-/// `deny_unknown_fields` rejects it with a bare "unknown field" that
-/// does not say what replaced it — so the error carries the migration.
-fn migration_hint(error: &str) -> &'static str {
-  // Matched against the exact serde phrasing, not the bare field names,
-  // so a mistyped unrelated key gets no paragraph about credentials.
-  if error.contains("unknown field `token_file`")
-    || error.contains("unknown field `token`")
-  {
-    "\n\nNote: per-site tokens were removed. The cache now gets a new \
-     token for every request as a CSCS Keycloak service account: set \
-     MANTA_SA_CLIENT_ID and MANTA_SA_CLIENT_SECRET in its environment \
-     and delete the `token_file` / `token` lines."
-  } else {
-    ""
-  }
-}
-
 impl CacheServerConfiguration {
   /// Structural checks that TOML typing cannot express.
   pub fn validate(&self) -> Result<(), String> {
-    if self.sites.is_empty() {
+    let manta_server = &self.manta_server;
+    if manta_server.url.trim().is_empty() {
+      return Err("[manta_server] `url` is empty.".to_string());
+    }
+    if manta_server.sites.is_empty() {
       return Err(
-        "No [sites.<name>] entries configured — the cache would have \
-         nothing to index. Add at least one site."
+        "[manta_server] `sites` is empty — the cache would have nothing \
+         to index. List at least one site."
           .to_string(),
       );
+    }
+    let mut seen = BTreeSet::new();
+    for site in &manta_server.sites {
+      if site.trim().is_empty() {
+        return Err("[manta_server] `sites` has an empty name.".to_string());
+      }
+      if !seen.insert(site.as_str()) {
+        return Err(format!("[manta_server] `sites` lists '{site}' twice."));
+      }
     }
     if self.server.api_token.is_some() && self.server.api_token_file.is_some() {
       return Err(
@@ -293,11 +286,6 @@ impl CacheServerConfiguration {
          at most one."
           .to_string(),
       );
-    }
-    for (name, site) in &self.sites {
-      if site.manta_server_url.trim().is_empty() {
-        return Err(format!("[sites.{name}] `manta_server_url` is empty."));
-      }
     }
     Ok(())
   }
@@ -391,8 +379,9 @@ mod tests {
   fn minimal_config_parses_and_validates() {
     let config = parse(
       r#"
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     );
     config.validate().expect("valid");
@@ -402,43 +391,53 @@ mod tests {
   }
 
   #[test]
-  fn a_leftover_token_file_is_rejected_with_the_migration() {
-    // A config from before the service account still names a token
-    // file. Ignoring it would leave the operator believing the cache
-    // refreshes with that credential.
-    for key in ["token_file = \"/run/secrets/alps\"", "token = \"ey\""] {
-      let err = toml::from_str::<CacheServerConfiguration>(&format!(
-        "[sites.alps]\nmanta_server_url = \"https://manta:8443\"\n{key}\n"
-      ))
-      .unwrap_err()
-      .to_string();
+  fn an_unknown_key_is_rejected_rather_than_ignored() {
+    // Including the per-site tables of earlier versions of this PR.
+    for raw in [
+      "[manta_server]\nurl = \"https://manta:8443\"\nsites = [\"alps\"]\n\
+       token_file = \"/run/secrets/alps\"\n",
+      "[manta_server]\nurl = \"https://manta:8443\"\nsites = [\"alps\"]\n\
+       [sites.alps]\nmanta_server_url = \"https://manta:8443\"\n",
+    ] {
+      let err = toml::from_str::<CacheServerConfiguration>(raw)
+        .unwrap_err()
+        .to_string();
       assert!(err.contains("unknown field"), "{err}");
-      let hint = migration_hint(&err);
-      assert!(hint.contains("MANTA_SA_CLIENT_ID"), "{key}: {err}");
     }
   }
 
   #[test]
-  fn an_unrelated_unknown_site_key_gets_no_migration_paragraph() {
-    let err = toml::from_str::<CacheServerConfiguration>(
-      r#"
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
-      timeout_secs = 30
-      "#,
-    )
-    .unwrap_err()
-    .to_string();
-    assert!(err.contains("timeout_secs"), "{err}");
-    assert!(migration_hint(&err).is_empty(), "{err}");
+  fn manta_server_is_required() {
+    let err = toml::from_str::<CacheServerConfiguration>("log = \"info\"")
+      .unwrap_err()
+      .to_string();
+    assert!(err.contains("manta_server"), "{err}");
+  }
+
+  #[test]
+  fn the_site_list_is_validated() {
+    for (sites, expected) in [
+      ("[]", "is empty"),
+      ("[\"alps\", \" \"]", "empty name"),
+      ("[\"alps\", \"prealps\", \"alps\"]", "'alps' twice"),
+    ] {
+      let config = parse(&format!(
+        "[manta_server]\nurl = \"https://manta:8443\"\nsites = {sites}\n"
+      ));
+      let err = config.validate().unwrap_err();
+      assert!(err.contains(expected), "{sites}: {err}");
+    }
+    let config = parse("[manta_server]\nurl = \" \"\nsites = [\"alps\"]\n");
+    assert!(config.validate().unwrap_err().contains("`url` is empty"));
   }
 
   #[test]
   fn the_issuer_defaults_to_the_production_realm_and_can_be_overridden() {
     let config = parse(
       r#"
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     );
     assert_eq!(config.auth.issuer_url(), DEFAULT_OIDC_ISSUER_URL);
@@ -448,8 +447,9 @@ mod tests {
       [auth]
       issuer_url = "https://auth-tds.cscs.ch/auth/realms/cscs"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     );
     assert_eq!(
@@ -467,8 +467,9 @@ mod tests {
       [auth]
       client_secret = "s3cret"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     )
     .unwrap_err()
@@ -486,15 +487,14 @@ mod tests {
       [server]
       api_token_fil = "/run/secrets/api"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     )
     .unwrap_err()
     .to_string();
     assert!(err.contains("api_token_fil"), "{err}");
-    // Unrelated to the credential migration, so no hint is appended.
-    assert!(migration_hint(&err).is_empty(), "{err}");
   }
 
   #[test]
@@ -504,8 +504,9 @@ mod tests {
       [server]
       api_token = "sekrit-inbound-bearer"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     );
     config.resolve_secrets().expect("nothing to resolve");
@@ -522,8 +523,9 @@ mod tests {
       api_token = "sekrit"
       api_token_file = "/run/secrets/api"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
     );
     let err = config.validate().unwrap_err();
@@ -542,8 +544,9 @@ mod tests {
       [server]
       api_token_file = "{}"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
       path.display()
     ));
@@ -560,8 +563,9 @@ mod tests {
       [server]
       api_token_file = "{}"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
       missing.display()
     ));
@@ -575,8 +579,9 @@ mod tests {
       [server]
       api_token_file = "{}"
 
-      [sites.alps]
-      manta_server_url = "https://manta:8443"
+      [manta_server]
+      url = "https://manta:8443"
+      sites = ["alps"]
       "#,
       empty.display()
     ));
@@ -606,13 +611,6 @@ mod tests {
 
     // A path that does not exist is the refresh's problem to report.
     assert_eq!(group_or_world_readable_mode(&dir.path().join("nope")), None);
-  }
-
-  #[test]
-  fn no_sites_is_rejected() {
-    let config = parse("log = \"info\"");
-    let err = config.validate().unwrap_err();
-    assert!(err.contains("No [sites"), "{err}");
   }
 
   #[test]

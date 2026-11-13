@@ -75,7 +75,7 @@ export MANTA_SA_CLIENT_SECRET=…   # its client secret
 manta-cache-server
 ```
 
-Both are required; the server refuses to start without them. It gets a **new token for every request** to manta-server (two per site per refresh) with the client credentials grant and caches nothing. A stored token would not do: an OpenCHAMI site's Hydra accepts each token only once, and CSCS access tokens last minutes. At startup the server makes one grant before anything else, so wrong credentials stop it with the Keycloak's reason instead of showing up as every site failing.
+Both are required; the server refuses to start without them. It gets a **new token for every request** to manta-server (one per site per refresh) with the client credentials grant and caches nothing. A stored token would not do: an OpenCHAMI site's Hydra accepts each token only once, and CSCS access tokens last minutes. At startup the server makes one grant before anything else, so wrong credentials stop it with the Keycloak's reason instead of showing up as every site failing.
 
 The secret lives only in the environment, never in `cache-server.toml`. The config sets at most the issuer, which defaults to the production CSCS realm, as for the CLI:
 
@@ -83,13 +83,14 @@ The secret lives only in the environment, never in `cache-server.toml`. The conf
 [auth]
 issuer_url = "https://auth.cscs.ch/auth/realms/cscs"   # the default; override only for testing
 
-[sites.alps]
-manta_server_url = "https://manta-server.example.ch:8443"
+[manta_server]
+url   = "https://manta-server.example.ch:8443"
+sites = ["alps", "prealps"]
 ```
 
-The startup summary and `GET /api/v1/dump` (`service_account`) show the client id and issuer, never the secret. A shared service should not refresh as a named human: it would inherit that person's group roles and attribute every backend call to them. Since the credentials are a client id and secret, that cannot happen by accident.
+`[manta_server]` names the **one** manta-server the cache indexes and answers for — the one whose `[site_resolution]` points at the cache — and which of its sites to index. One server rather than one per site: a site that server does not host would be an answer it cannot use.
 
-Older configs carried a per-site `token_file`; it is rejected with an error that names the replacement.
+The startup summary and `GET /api/v1/dump` (`service_account`) show the client id and issuer, never the secret. A shared service should not refresh as a named human: it would inherit that person's group roles and attribute every backend call to them. Since the credentials are a client id and secret, that cannot happen by accident.
 
 ### How much of a site the cache can see
 
@@ -116,7 +117,7 @@ The cache's own inbound bearer (`[server] api_token`) can be kept out of the con
 ## Not in scope
 
 - Caching per-node state — power, boot params, CFS components, IMS metadata. The cache resolves **routing**, not cluster state.
-- Replacing `[sites.*]` in `server.toml`. The cache reads from a sibling config that lists *which manta-servers exist*; per-site backend connection details (CSM/OCHAMI URLs, Vault, k8s) stay where they are.
+- Replacing `[sites.*]` in `server.toml`. The cache's own config names the manta-server and the sites to index; per-site backend connection details (CSM/OCHAMI URLs, Vault, k8s) stay where they are.
 - Per-user authorisation. The cache is a routing layer; the existing per-user authorisation continues to run in the `manta-server` handler that receives the resolved request.
 
 ---

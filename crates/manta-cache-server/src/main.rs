@@ -186,15 +186,15 @@ fn print_startup_summary(
     tokens.client_id()
   );
   println!();
-  let mut names: Vec<&String> = configuration.sites.keys().collect();
-  names.sort();
-  for name in names {
-    println!("[site: {name}]");
-    println!(
-      "  manta_server_url: {}",
-      configuration.sites[name].manta_server_url
-    );
-  }
+  println!("[manta_server]");
+  println!(
+    "  url:                         {}",
+    configuration.manta_server.url
+  );
+  println!(
+    "  sites:                       {}",
+    configuration.manta_server.sites.join(", ")
+  );
   println!();
 }
 

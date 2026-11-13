@@ -151,6 +151,8 @@ struct RefreshResponse {
 struct DumpResponse {
   /// When this dump was rendered (RFC3339, UTC).
   generated_at: String,
+  /// The manta-server every site is refreshed from.
+  manta_server_url: String,
   /// Who the cache refreshes as. The secret is never included.
   service_account: ServiceAccountDump,
   /// Every **configured** site — including ones absent from the index,
@@ -164,12 +166,10 @@ struct DumpResponse {
   conflicts: ConflictsDump,
 }
 
-/// One configured site: where it points, how fresh it is, and whether
-/// it made it into the index.
+/// One configured site: how fresh it is, and whether it made it into
+/// the index.
 #[derive(Debug, Serialize)]
 struct SiteDump {
-  /// Base URL the refresh fetches from.
-  manta_server_url: String,
   /// Whether the index currently holds data for this site.
   in_index: bool,
   /// When the held snapshot was fetched (RFC3339, UTC).
@@ -508,15 +508,15 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
   let indexed: BTreeSet<&str> = cache.index.sites().collect();
   let sites = state
     .config
+    .manta_server
     .sites
     .iter()
-    .map(|(name, site)| {
+    .map(|name| {
       let status = cache.status.get(name);
       let refreshed_at = status.and_then(|s| s.refreshed_at);
       (
         name.clone(),
         SiteDump {
-          manta_server_url: site.manta_server_url.clone(),
           in_index: indexed.contains(name.as_str()),
           refreshed_at: refreshed_at
             .map(|t| t.to_rfc3339_opts(SecondsFormat::Secs, true)),
@@ -529,6 +529,7 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
 
   Json(DumpResponse {
     generated_at: now.to_rfc3339_opts(SecondsFormat::Secs, true),
+    manta_server_url: state.config.manta_server.url.clone(),
     service_account: ServiceAccountDump {
       client_id: state.tokens.client_id().to_owned(),
       issuer_url: state.tokens.issuer_url().to_owned(),
@@ -671,7 +672,8 @@ mod tests {
       raw.push_str(&format!("[server]\napi_token = \"{token}\"\n\n"));
     }
     raw.push_str(
-      "[sites.unreachable]\nmanta_server_url = \"http://127.0.0.1:9\"\n",
+      "[manta_server]\nurl = \"http://127.0.0.1:9\"\n\
+       sites = [\"unreachable\"]\n",
     );
     let config: CacheServerConfiguration = toml::from_str(&raw).unwrap();
     config.validate().unwrap();
@@ -762,14 +764,9 @@ mod tests {
         [server]
         api_token = "sekrit"
 
-        [sites.alps]
-        manta_server_url = "https://alps.example.ch:8443"
-
-        [sites.daint]
-        manta_server_url = "https://daint.example.ch:8443"
-
-        [sites.prealps]
-        manta_server_url = "https://prealps.example.ch:8443"
+        [manta_server]
+        url = "https://manta-server.example.ch:8443"
+        sites = ["alps", "daint", "prealps"]
       "#,
     )
     .unwrap();
@@ -1043,7 +1040,7 @@ mod tests {
   fn config_for(uri: &str) -> Arc<CacheServerConfiguration> {
     let config: CacheServerConfiguration = toml::from_str(&format!(
       "[server]\napi_token = \"sekrit\"\n\n\
-       [sites.live]\nmanta_server_url = \"{uri}\"\n"
+       [manta_server]\nurl = \"{uri}\"\nsites = [\"live\"]\n"
     ))
     .unwrap();
     config.validate().unwrap();
@@ -1307,8 +1304,8 @@ mod tests {
     );
     assert_eq!(sites["alps"]["last_error"], serde_json::Value::Null);
     assert_eq!(
-      sites["alps"]["manta_server_url"],
-      "https://alps.example.ch:8443"
+      dump["manta_server_url"],
+      "https://manta-server.example.ch:8443"
     );
 
     // Who the cache refreshes as, never the secret.
