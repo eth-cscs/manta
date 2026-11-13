@@ -63,56 +63,53 @@ The cache holds **routing information only**. It does not duplicate per-node sta
 
 ## Production credentials
 
-The cache refreshes each site by calling that site's `manta-server` with a bearer token, configured per site in `cache-server.toml`:
+The cache refreshes each site by calling that site's `manta-server` with a bearer token, exactly like a `manta` client. manta-server exchanges the token on every request for one the site accepts (`[sites.X.token_exchange]` in its `server.toml`), so it must be a **CSCS Keycloak** token, and one token is valid for every site.
+
+### A CSCS Keycloak service account, a new token per request
+
+The cache refreshes as a **CSCS Keycloak service account** (a confidential client of the CSCS realm), with the same variables the CLI reads in CI:
+
+```bash
+export MANTA_SA_CLIENT_ID=…       # the service account's client id
+export MANTA_SA_CLIENT_SECRET=…   # its client secret
+manta-cache-server
+```
+
+Both are required; the server refuses to start without them. It gets a **new token for every request** to manta-server (two per site per refresh) with the client credentials grant and caches nothing. A stored token would not do: an OpenCHAMI site's Hydra accepts each token only once, and CSCS access tokens last minutes. At startup the server makes one grant before anything else, so wrong credentials stop it with the Keycloak's reason instead of showing up as every site failing.
+
+The secret lives only in the environment, never in `cache-server.toml`. The config sets at most the issuer, which defaults to the production CSCS realm, as for the CLI:
 
 ```toml
+[auth]
+issuer_url = "https://auth.cscs.ch/auth/realms/cscs"   # the default; override only for testing
+
 [sites.alps]
 manta_server_url = "https://manta-server.example.ch:8443"
-token_file = "/run/secrets/manta-cache/alps-token"
 ```
 
-`token_file` is the **only** form — there is deliberately no inline `token`. A Keycloak credential does not belong in a config file that gets templated, backed up, or committed, and a path is the one thing every deployment target can produce: a Kubernetes projected `Secret`, a systemd `LoadCredential=` (read it from `$CREDENTIALS_DIRECTORY`), or a plain bind mount.
+The startup summary and `GET /api/v1/dump` (`service_account`) show the client id and issuer, never the secret. A shared service should not refresh as a named human: it would inherit that person's group roles and attribute every backend call to them. Since the credentials are a client id and secret, that cannot happen by accident.
 
-### Use a CSCS Keycloak service account
-
-The token must be a **CSCS Keycloak service account**, not a person's login. manta-server exchanges it on every request for a token the site accepts (`[sites.X.token_exchange]` in its `server.toml`), exactly as it does for a user's token, so one account serves every site. A shared service refreshing as a named human inherits that person's group roles, stops working when their token expires or their account changes, and attributes every backend call to them.
-
-Write its token into a file and point each site's `token_file` at it (one file for all sites is fine; separate accounts per site remain possible). Nothing enforces this — pointing `token_file` at a personal token still works, which is what keeps the [LIVE-TEST.md](LIVE-TEST.md) demo flow usable — but the server says so loudly, in the startup summary and under `credential.warnings` in `GET /api/v1/dump`:
-
-```
-[site: alps]
-  manta_server_url: https://manta-server.example.ch:8443
-  token_file:       /run/secrets/manta-cache/alps-token
-  credential:       service account 'manta-cache-alps', scoped to its own roles, expires 2027-08-05 (364 days)
-```
+Older configs carried a per-site `token_file`; it is rejected with an error that names the replacement.
 
 ### How much of a site the cache can see
 
-csm-rs derives the available groups from the realm roles of the token it is handed — the one manta-server obtains by exchanging the service account's CSCS token at the site — so **the service account's roles, as the site maps them, bound what the cache can index**:
+The site derives the available groups from the roles of the token manta-server obtains by exchanging the service account's CSCS token there, so **the service account's roles, as each site maps them, bound what the cache can index**:
 
 | Account holds | Cache indexes | Effect on users |
 |---|---|---|
-| `pa_admin` | every HSM group at the site | any group resolves without `--site` |
+| admin at the site | every HSM group at the site | any group resolves without `--site` |
 | specific group roles | only those groups | other groups need an explicit `--site` |
 | no group roles | nothing | the site is reported as failed (see below) |
 
-Both of the first two are legitimate; which you want is a deployment decision. Scoped is the safer default: a group the cache does not know fails with "pass --site" rather than resolving to a guess. `credential.is_admin` on `GET /api/v1/dump` reports whether the CSCS token carries `pa_admin`; the site decides on the exchanged token, which the cache never sees, so treat it as a hint and confirm with the indexed group count.
+Both of the first two are legitimate; which you want is a deployment decision. Scoped is the safer default: a group the cache does not know fails with "pass --site" rather than resolving to a guess. Check the result in the indexed group count on `GET /api/v1/dump`.
 
-A site that returns **no** groups is treated as a failed refresh, not a healthy empty one: it drops out of the index with an explanatory `last_error` rather than appearing fresh and resolving nothing.
+A site that returns **no** groups is treated as a failed refresh, not a healthy empty one: it drops out of the index with an explanatory `last_error` rather than appearing fresh and resolving nothing. A token the Keycloak refuses fails every site the same way, with `no token for site '<name>': …` as the error, and nothing is sent to manta-server.
 
-### Rotation and expiry
+### Rotation
 
-The token file is re-read on **every** refresh, so rotation is a file write — no restart, no request drop. CSCS service-account tokens are minted for a year, which is exactly long enough to forget, so the cache surfaces the deadline in three places:
+Rotating the secret means restarting with the new value in the environment. Nothing else holds it.
 
-- the startup summary line above,
-- `credential.expires_at` and `credential.expires_in_days` on `GET /api/v1/dump` — the field to point monitoring at. It counts down in whole days and goes **negative** once the credential has lapsed, so `expires_in_days < 0` is a correct alert from the first hour of an outage,
-- a `WARN` log line once fewer than 30 days remain, escalating to `ERROR` once it has lapsed. These are logged when the state first changes rather than on every refresh, so a month-long warning does not bury the log.
-
-### File permissions
-
-Secret files readable beyond their owner draw a startup warning naming the file and its mode. It is only ever a warning: Kubernetes projected `Secret` volumes default to `0644`, so refusing to start would break the likeliest deployment target over a mode the operator often cannot change. Where you do control it, `0600` is right.
-
-The cache's own inbound bearer (`[server] api_token`) can be kept out of the config file the same way, with `api_token_file`. Unlike the per-site tokens it is read once at startup, so rotating it needs a restart.
+The cache's own inbound bearer (`[server] api_token`) can be kept out of the config file with `api_token_file`. It is read once at startup, so rotating it needs a restart; a file readable beyond its owner draws a startup warning (never a refusal: Kubernetes projected `Secret` volumes default to `0644`).
 
 ---
 

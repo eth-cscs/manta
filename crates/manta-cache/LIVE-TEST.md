@@ -18,6 +18,9 @@ been run live yet.
   `server.toml`, and a `cli.toml` whose `manta_server_url` reaches it.
 - A CSCS Keycloak account with roles on at least one HSM group at the
   site (and `[sites.<site>.token_exchange]` working in `server.toml`).
+- A CSCS Keycloak **service account** (client id + secret) that the
+  site's Keycloak accepts in the token exchange and maps to roles on
+  at least one HSM group there. The cache refreshes as it.
 
 Throughout, `<site>` is the site name (e.g. `prealps`) and the config
 directory is `~/.config/manta/` on Linux,
@@ -42,24 +45,13 @@ api_token = "local-test"   # enables POST /api/v1/refresh; drop this line
 
 [sites.<site>]
 manta_server_url = "http://localhost:8080"   # same value as cli.toml's manta_server_url
-# Your own CSCS access token, extracted from the CLI's token cache (see
-# "Startup order"). The cache re-reads it on every refresh.
-token_file = "/tmp/manta-cache-token"
 ```
 
-> ⚠️ **The `token_file` above is a demo shortcut, not a deployment.**
-> Pointing it at your own token cache makes this walkthrough a one-liner,
-> but it refreshes the cache as *you*: the index inherits your Keycloak
-> roles, and it stops working when your token expires or your account
-> changes, and CSCS access tokens are short-lived, so re-extract it
-> before each refresh. Production uses a CSCS Keycloak **service
-> account** — see [Production credentials](README.md#production-credentials).
->
-> The server does not forbid this (that is what keeps this demo usable),
-> but it will say so: expect a `⚠ WARNING: refreshing as personal
-> account '<you>'` line in the startup summary, and the same text under
-> `credential.warnings` in `GET /api/v1/dump`. Seeing that warning here
-> is correct; seeing it in production is a bug report.
+No credential goes in this file: the cache takes the service account
+from `MANTA_SA_CLIENT_ID` / `MANTA_SA_CLIENT_SECRET` (see "Startup
+order") and gets a new token from the production CSCS realm for every
+request. To test against another realm, add `[auth] issuer_url = "…"`.
+See [Production credentials](README.md#production-credentials).
 
 ### 2. `server.toml` addition
 
@@ -81,23 +73,20 @@ scenario 4 below.
 ## Startup order (three terminals)
 
 The order matters: the cache refreshes from `manta-server` at boot, so
-`manta-server` must be up first — and the extracted token must be
-fresh. (`manta-server` itself does not contact the cache until the
-first site-less request.)
+`manta-server` must be up first. (`manta-server` itself does not
+contact the cache until the first site-less request.)
 
 ```bash
 # Terminal 1 — manta-server, as usual (needs VPN)
 cd crates/manta-server && cargo run -- --allow-http
 
-# Terminal 2 — refresh your token (any command does), extract the access
-# token for the cache, then start the cache
-cargo run -p manta-cli -- get groups --site <site>
-jq -r .access_token "<CLI token cache dir>/token.json" > /tmp/manta-cache-token
-cargo run -p manta-cache-server
+# Terminal 2 — the cache, as the service account
+MANTA_SA_CLIENT_ID=<client id> MANTA_SA_CLIENT_SECRET=<secret> \
+  cargo run -p manta-cache-server
 ```
 
-Expect in terminal 2: the startup summary (the credential is shown as
-`token_file …`, never the value), then
+Expect in terminal 2: the startup summary (the `[auth]` block shows the
+service account's client id and the issuer, never the secret), then
 `cross-site refresh finished sites=1 failures=0`, then
 `server ready, accepting requests on http://127.0.0.1:8081`.
 
@@ -184,10 +173,15 @@ the ROADMAP's second-fixture note.)
   are listed in the root API.md § Site resolution. Hostlist bracket
   expressions and NIDs fail with 400 and need `--site` (the cache
   indexes plain xnames only).
-- **Token expiry.** When the extracted access token expires, the
-  cache's next refresh logs a 401 for the site and it drops from the
-  index. Fix without a restart: re-run the two token commands from
-  terminal 2, then the `POST /refresh` curl from step 6.
+- **A site fails with `no token for site …`.** The Keycloak refused
+  the service account after startup (secret rotated, client disabled);
+  nothing was sent to manta-server. Restart with the new credentials.
+- **A site fails with `returned no groups`.** The token exchange worked
+  but the site's Keycloak maps the service account to no HSM roles.
+  Fix the role mapping at the site, then `POST /refresh`.
+- **A site fails with HTTP 401 `token exchange … failed`.** manta-server
+  could not exchange the service account's token at the site: the
+  site's Keycloak does not accept that client in the exchange.
 - **Cache started too early?** If `manta-server` wasn't up yet, the
   cache comes up with an empty index and a startup warning. Same fix:
   `POST /refresh` once `manta-server` is ready.
