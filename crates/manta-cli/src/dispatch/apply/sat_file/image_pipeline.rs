@@ -116,7 +116,7 @@ pub async fn run_image_pipeline(
   let session_value = client
     .openapi
     .post_sat_image_cfs_session(
-      client.site_name(),
+      client.site_name()?,
       &CreateImageCfsSessionRequest {
         image: image.clone(),
         ref_lookup: ref_lookup.clone(),
@@ -181,7 +181,7 @@ pub async fn run_image_pipeline(
   let stamped = client
     .openapi
     .post_sat_image_stamp(
-      client.site_name(),
+      client.site_name()?,
       &StampImageFromSessionRequest {
         cfs_session_name: session_name.clone(),
       },
@@ -326,7 +326,7 @@ async fn fetch_session_opt(
       None,
       None,
       None,
-      client.site_name(),
+      Some(client.site_name()?),
     )
     .await
     .into_anyhow()

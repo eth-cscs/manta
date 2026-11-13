@@ -207,16 +207,201 @@ fn read_only_gate_refuses_mutating_verb_locally() {
     .stderr(predicate::str::contains("manta config unset read-only"));
 }
 
-/// A command that reaches the backend must fail fast with a clear
-/// message when no site is selected — before any HTTP request.
+/// A command whose endpoint cannot resolve the site must fail fast
+/// with a clear message when no site is selected — before any request
+/// to manta-server. (The service account logs in at a mock issuer;
+/// the login needs no site.)
 #[test]
 fn backend_command_without_a_site_errors_clearly() {
-  let (_dir, path) = site_less_config();
+  let (_dir, path) = site_less_config_for(
+    "https://manta-server.example.com:8443",
+    &spawn_oidc_mock(),
+  );
   Command::cargo_bin("manta")
     .unwrap()
     .env("MANTA_CLI_CONFIG", &path)
+    .env("MANTA_SA_CLIENT_ID", "test-client")
+    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
     .args(["get", "groups"])
     .assert()
     .failure()
     .stderr(predicate::str::contains("No site selected"));
+}
+
+// ---------------------------------------------------------------------------
+// Server-side site resolution: commands that send no X-Manta-Site
+// ---------------------------------------------------------------------------
+
+/// Minimal sequential HTTP mock of manta-server: answers the `i`-th
+/// connection with `responses[i]` (`(status line, extra header lines,
+/// JSON body)`) and reports each request's head (request line +
+/// headers, lower-cased names as reqwest sends them) on the channel.
+fn spawn_manta_mock(
+  responses: Vec<(&'static str, &'static str, &'static str)>,
+) -> (String, std::sync::mpsc::Receiver<String>) {
+  use std::io::{BufRead, BufReader, Read, Write};
+  let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+  let addr = listener.local_addr().unwrap();
+  let (tx, rx) = std::sync::mpsc::channel();
+  std::thread::spawn(move || {
+    for (status, headers, body) in responses {
+      let Ok((stream, _)) = listener.accept() else {
+        return;
+      };
+      let mut reader = BufReader::new(stream);
+      let mut head = String::new();
+      let mut content_length = 0usize;
+      loop {
+        let mut line = String::new();
+        if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+          break;
+        }
+        if let Some(v) =
+          line.to_ascii_lowercase().strip_prefix("content-length:")
+        {
+          content_length = v.trim().parse().unwrap_or(0);
+        }
+        head.push_str(&line);
+      }
+      let mut req_body = vec![0u8; content_length];
+      let _ = reader.read_exact(&mut req_body);
+      let _ = tx.send(head);
+      let mut stream = reader.into_inner();
+      let _ = write!(
+        stream,
+        "HTTP/1.1 {status}\r\nContent-Type: application/json\r\n{headers}\
+         Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+      );
+    }
+  });
+  (format!("http://{addr}"), rx)
+}
+
+/// Mock OIDC issuer for the service-account login: serves the
+/// discovery document and grants a token to any client-credentials
+/// request, for as long as the test runs (the CLI fetches a new token
+/// for every request). Returns the issuer URL.
+fn spawn_oidc_mock() -> String {
+  use std::io::{BufRead, BufReader, Read, Write};
+  let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+  let issuer = format!("http://{}", listener.local_addr().unwrap());
+  let discovery = format!(r#"{{"token_endpoint":"{issuer}/token"}}"#);
+  std::thread::spawn(move || {
+    for stream in listener.incoming() {
+      let Ok(stream) = stream else { return };
+      let mut reader = BufReader::new(stream);
+      let mut request_line = String::new();
+      let _ = reader.read_line(&mut request_line);
+      let mut content_length = 0usize;
+      loop {
+        let mut line = String::new();
+        if reader.read_line(&mut line).unwrap_or(0) == 0 || line == "\r\n" {
+          break;
+        }
+        if let Some(v) =
+          line.to_ascii_lowercase().strip_prefix("content-length:")
+        {
+          content_length = v.trim().parse().unwrap_or(0);
+        }
+      }
+      let mut req_body = vec![0u8; content_length];
+      let _ = reader.read_exact(&mut req_body);
+      let body = if request_line.starts_with("GET ") {
+        discovery.clone()
+      } else {
+        r#"{"access_token":"test-token","expires_in":300}"#.to_string()
+      };
+      let _ = write!(
+        reader.into_inner(),
+        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\
+         Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
+        body.len()
+      );
+    }
+  });
+  issuer
+}
+
+/// `cli.toml` with no `site`, pointing at `server_url`, logging in at
+/// `issuer_url`.
+fn site_less_config_for(
+  server_url: &str,
+  issuer_url: &str,
+) -> (tempfile::TempDir, std::path::PathBuf) {
+  let dir = tempfile::tempdir().unwrap();
+  let path = dir.path().join("cli.toml");
+  fs::write(
+    &path,
+    format!(
+      "log = \"error\"\nmanta_server_url = \"{server_url}\"\n\
+       oidc_issuer_url = \"{issuer_url}\"\n"
+    ),
+  )
+  .unwrap();
+  (dir, path)
+}
+
+/// `power` without a site: the POST goes out without `X-Manta-Site`
+/// but with a token, the CLI adopts the site the server echoes, and the
+/// transition poll (whose endpoint cannot resolve anything) carries it.
+#[test]
+fn power_without_a_site_pins_the_site_the_server_resolved() {
+  let (url, requests) = spawn_manta_mock(vec![
+    (
+      "200 OK",
+      "X-Manta-Site: alps\r\n",
+      r#"{"transitionID":"t-1","operation":"off"}"#,
+    ),
+    (
+      "200 OK",
+      "",
+      r#"{"transitionStatus":"completed","taskCounts":{"failed":0}}"#,
+    ),
+  ]);
+  let (_dir, path) = site_less_config_for(&url, &spawn_oidc_mock());
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .env("MANTA_SA_CLIENT_ID", "test-client")
+    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
+    .args(["power", "off", "group", "compute", "--assume-yes"])
+    .assert()
+    .success()
+    .stderr(predicate::str::contains(
+      "site 'alps' resolved by manta-server",
+    ));
+
+  let post = requests.recv().unwrap();
+  assert!(post.starts_with("POST /v2/power "), "{post}");
+  assert!(!post.contains("x-manta-site"), "{post}");
+  // No site is no reason to go unauthenticated: manta-server needs the
+  // token to resolve the site and to exchange it there.
+  assert!(post.contains("authorization: Bearer test-token"), "{post}");
+  let poll = requests.recv().unwrap();
+  assert!(poll.starts_with("GET /v2/power/transitions/t-1 "), "{poll}");
+  assert!(poll.contains("x-manta-site: alps"), "{poll}");
+  assert!(poll.contains("authorization: Bearer test-token"), "{poll}");
+}
+
+/// A resolution failure is the server's to explain; the CLI shows its
+/// message.
+#[test]
+fn server_resolution_error_is_shown_verbatim() {
+  let (url, _requests) = spawn_manta_mock(vec![(
+    "409 Conflict",
+    "",
+    r#"{"error":"The xnames do not resolve to a single site (x1000c0s0b0n0 → alps; x2000c0s0b0n0 → daint). Split the command per site or pass --site <name> explicitly."}"#,
+  )]);
+  let (_dir, path) = site_less_config_for(&url, &spawn_oidc_mock());
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .env("MANTA_SA_CLIENT_ID", "test-client")
+    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
+    .args(["get", "nodes", "x1000c0s0b0n0,x2000c0s0b0n0"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("HTTP 409"))
+    .stderr(predicate::str::contains("x2000c0s0b0n0 → daint"));
 }

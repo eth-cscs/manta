@@ -37,7 +37,7 @@ pub async fn exec(
   let result = client
     .openapi
     .delete_kernel_parameters(
-      client.site_name(),
+      client.site_name()?,
       &DeleteKernelParametersRequest {
         params: p.kernel_params.to_string(),
         xnames_expression: xnames_expression.map(str::to_string),

@@ -43,7 +43,8 @@ pub async fn handle_console(
       let xname = m.req_str("XNAME")?;
 
       let (cols, rows) = crossterm::terminal::size()?;
-      let (a_input, a_output) = MantaClient::from_app_ctx(ctx)?
+      // The server resolves the site from the xname when none is set.
+      let (a_input, a_output) = MantaClient::from_app_ctx_resolving(ctx)?
         .console_node(xname, cols, rows)
         .await?;
       let result = run_console_loop(a_input, a_output).await;

@@ -77,11 +77,9 @@ use crate::common::oidc::{self, OidcSettings, TokenStore};
 /// name for a shell variable.)
 const REMOVED_TOKEN_ENV_VAR: &str = "MANTA_CSM_TOKEN";
 
-/// Environment variable holding a service account's client id.
-pub const SA_CLIENT_ID_ENV_VAR: &str = "MANTA_SA_CLIENT_ID";
-
-/// Environment variable holding a service account's client secret.
-pub const SA_CLIENT_SECRET_ENV_VAR: &str = "MANTA_SA_CLIENT_SECRET";
+pub use manta_shared::common::oidc::{
+  SA_CLIENT_ID_ENV_VAR, SA_CLIENT_SECRET_ENV_VAR, ServiceAccount,
+};
 
 /// How long to wait for the token cache lock before saying so. A refresh
 /// holds it well under this; a login another command started holds it
@@ -177,13 +175,10 @@ impl TokenProvider {
       TokenSource::Cache(cache_path) => {
         self.token_from_cache(cache_path).await?
       }
-      TokenSource::ServiceAccount(account) => oidc::client_credentials(
-        &self.issuer_url,
-        &account.client_id,
-        &account.client_secret,
-      )
-      .await
-      .context("could not get a token for the service account")?,
+      TokenSource::ServiceAccount(account) => account
+        .token(&self.issuer_url)
+        .await
+        .context("could not get a token for the service account")?,
     };
     *self
       .last_issued
@@ -248,61 +243,13 @@ impl TokenProvider {
   }
 }
 
-/// A service account's client credentials, from [`SA_CLIENT_ID_ENV_VAR`]
-/// and [`SA_CLIENT_SECRET_ENV_VAR`].
-pub struct ServiceAccount {
-  client_id: String,
-  client_secret: String,
-}
-
-impl std::fmt::Debug for ServiceAccount {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ServiceAccount")
-      .field("client_id", &self.client_id)
-      .field("client_secret", &"<REDACTED>")
-      .finish()
-  }
-}
-
-#[cfg(test)]
-impl ServiceAccount {
-  pub(crate) fn new(client_id: &str, client_secret: &str) -> Self {
-    Self {
-      client_id: client_id.to_string(),
-      client_secret: client_secret.to_string(),
-    }
-  }
-}
-
 /// The service account in the environment, if any.
 ///
 /// # Errors
 ///
 /// Only one of the two variables is set.
 pub fn service_account_from_env() -> Result<Option<ServiceAccount>> {
-  service_account_from(
-    std::env::var(SA_CLIENT_ID_ENV_VAR).ok(),
-    std::env::var(SA_CLIENT_SECRET_ENV_VAR).ok(),
-  )
-}
-
-fn service_account_from(
-  client_id: Option<String>,
-  client_secret: Option<String>,
-) -> Result<Option<ServiceAccount>> {
-  let client_id = client_id.filter(|v| is_set(Some(v)));
-  let client_secret = client_secret.filter(|v| is_set(Some(v)));
-  match (client_id, client_secret) {
-    (Some(client_id), Some(client_secret)) => Ok(Some(ServiceAccount {
-      client_id,
-      client_secret,
-    })),
-    (None, None) => Ok(None),
-    _ => bail!(
-      "set both {SA_CLIENT_ID_ENV_VAR} and {SA_CLIENT_SECRET_ENV_VAR} for a \
-       service account, or neither"
-    ),
-  }
+  Ok(ServiceAccount::from_env()?)
 }
 
 /// The token provider for a command: the service account's when one is
@@ -322,7 +269,7 @@ pub fn token_provider(ctx: &AppContext<'_>) -> Result<Arc<TokenProvider>> {
   }
 
   if let Some(account) = service_account_from_env()? {
-    tracing::info!(client_id = %account.client_id, "Using service account");
+    tracing::info!(client_id = %account.client_id(), "Using service account");
     return Ok(Arc::new(TokenProvider::for_service_account(
       &ctx.oidc, account,
     )));
@@ -430,28 +377,6 @@ async fn lock_cache(path: &Path) -> Option<std::fs::File> {
 #[cfg(test)]
 mod tests {
   use super::*;
-
-  #[test]
-  fn a_service_account_needs_both_variables() {
-    let s = |v: &str| Some(v.to_string());
-    assert!(
-      service_account_from(s("id"), s("secret"))
-        .unwrap()
-        .is_some()
-    );
-    assert!(service_account_from(None, None).unwrap().is_none());
-    assert!(service_account_from(s(" "), s(" ")).unwrap().is_none());
-    assert!(service_account_from(s("id"), None).is_err());
-    assert!(service_account_from(None, s("secret")).is_err());
-  }
-
-  #[test]
-  fn service_account_debug_redacts_the_secret() {
-    let account = ServiceAccount::new("ci-bot", "hunter2");
-    let rendered = format!("{account:?}");
-    assert!(rendered.contains("ci-bot"), "{rendered}");
-    assert!(!rendered.contains("hunter2"), "{rendered}");
-  }
 
   #[test]
   fn only_a_non_blank_value_counts_as_set() {

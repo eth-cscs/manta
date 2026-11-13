@@ -47,7 +47,7 @@ pub async fn exec(
     .openapi
     .delete_hw_component(
       target,
-      client.site_name(),
+      client.site_name()?,
       &DeleteHwComponentRequest {
         parent_cluster: parent.to_string(),
         pattern: p.pattern.to_string(),

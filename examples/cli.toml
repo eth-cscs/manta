@@ -9,8 +9,10 @@
 
 log = "info"
 # Optional: the active site, sent as the `X-Manta-Site` header. Omit it
-# and pass `--site <name>` per invocation instead. The server validates
-# the name against its configured sites.
+# and pass `--site <name>` per invocation instead, or — for commands
+# that name a group or xname list — let manta-server resolve it (needs
+# `[site_resolution]` in server.toml). The server validates the name
+# against its configured sites.
 site = "alps"
 manta_server_url = "https://manta-server.example.com:8443"
 

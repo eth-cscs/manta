@@ -44,7 +44,7 @@ pub async fn exec(
       p.configuration_name_pattern,
       since_str.as_deref(),
       until_str.as_deref(),
-      client.site_name(),
+      client.site_name()?,
     )
     .await
     .into_anyhow()

@@ -8,7 +8,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 
 - **Base URL:** `https://<host>:8443/v2`
 - **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
-- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`.
+- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`. A few endpoints may omit `X-Manta-Site` when the server has `[site_resolution]` — see [Site resolution](#site-resolution).
 - **Getting a token:** the token is issued by the CSCS Keycloak, not by the server — one token for every site. The easiest way is to log in once with the `manta` CLI and reuse its cached token (see [Get a token](#get-a-token)); an OpenCHAMI site accepts each token only once.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
@@ -39,6 +39,33 @@ X-Manta-Site: cscs_prod
 Authorization: Bearer <token>
 ```
 
+### Site resolution
+
+When `server.toml` configures `[site_resolution]` (see [README.md](README.md#configuration-files)), these endpoints accept a request **without** `X-Manta-Site` and look the site up in `manta-cache-server` from the group or xname list the request names:
+
+| Endpoint | Resolved from |
+|----------|---------------|
+| `GET /nodes` | `xname` |
+| `GET /groups`, `GET /groups/nodes` (and the deprecated `GET /clusters`) | `name` / `hsm_group` |
+| `GET /sessions` | `hsm_group`, else `xnames` |
+| `POST /power` | `host_expression` (a group for `target_type = cluster`, else xnames) |
+| `POST /boot-config` | `hosts_expression` |
+| `PUT /boot-parameters` | `hosts` |
+| `POST /kernel-parameters/apply` | `hsm_group`, else `xnames_expression` |
+| `GET /nodes/{xname}/console` (WebSocket) | `{xname}` |
+
+Only plain comma-separated xnames are looked up; a hostlist expression or a NID needs an explicit site. The resolved site comes back in the `X-Manta-Site` **response** header, so a client can send it on follow-up calls (e.g. polling `GET /power/transitions/{id}`, which cannot resolve anything). A request that names its site is never looked up and gets no such header. When resolution cannot name exactly one site the request fails, with a message that says to pass the site explicitly:
+
+| Status | Cause |
+|--------|-------|
+| `400` | No `X-Manta-Site`, and the request names no resolvable target, or the server has no `[site_resolution]` |
+| `404` | The cache knows no such group (or the resolved site is not configured on this server) |
+| `409` | The xnames belong to more than one site; the message lists each xname's site |
+| `500` | The cache rejected the server's `api_token` (`[site_resolution]`) |
+| `503` | The cache is unreachable or answered unexpectedly |
+
+Every other endpoint still requires `X-Manta-Site`.
+
 ## Base URL
 
 ```
@@ -61,10 +88,11 @@ All errors return JSON with an `error` field:
 | `401` | Missing or malformed `Authorization` header, or the site's identity provider rejected the token (see [Authentication](#authentication)) |
 | `403` | The site's identity provider refused the token exchange for this user, or the user lacks the role or group the operation needs |
 | `404` | Resource not found |
-| `409` | Conflict — resource already exists |
+| `409` | Conflict — resource already exists, or (site resolution) the xnames span several sites |
 | `422` | Unprocessable entity — required field missing or wrong type |
 | `500` | Backend call failed |
 | `501` | Feature requires per-site Vault / Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)) |
+| `503` | Site resolution: the site-resolution cache is unavailable |
 
 ---
 

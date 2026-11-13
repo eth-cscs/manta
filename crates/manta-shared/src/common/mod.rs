@@ -60,3 +60,4 @@ pub mod config;
 pub mod error;
 pub mod jwt_ops;
 pub mod log_ops;
+pub mod oidc;

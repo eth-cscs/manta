@@ -137,31 +137,78 @@ mod tests {
 
   #[test]
   fn new_with_timeout_none_pins_url_and_site() {
-    let c =
-      MantaClient::new_with_timeout("http://stub.invalid", "alps", None, None)
-        .expect("construction with timeout=None must succeed");
+    let c = MantaClient::new_with_timeout(
+      "http://stub.invalid",
+      Some("alps"),
+      None,
+      None,
+    )
+    .expect("construction with timeout=None must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid/v2");
-    assert_eq!(c.site_name(), "alps");
+    assert_eq!(c.site_name().unwrap(), "alps");
   }
 
   #[test]
   fn new_with_timeout_some_pins_url_and_site() {
     let c = MantaClient::new_with_timeout(
       "http://stub.invalid",
-      "alps",
+      Some("alps"),
       Some(5),
       None,
     )
     .expect("construction with timeout=Some(5) must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid/v2");
-    assert_eq!(c.site_name(), "alps");
+    assert_eq!(c.site_name().unwrap(), "alps");
   }
 
   #[test]
   fn new_with_timeout_prepends_http_scheme_when_missing() {
-    let c =
-      MantaClient::new_with_timeout("stub.invalid:8080", "alps", None, None)
-        .expect("scheme-less host must succeed");
+    let c = MantaClient::new_with_timeout(
+      "stub.invalid:8080",
+      Some("alps"),
+      None,
+      None,
+    )
+    .expect("scheme-less host must succeed");
     assert_eq!(c.base_url(), "http://stub.invalid:8080/v2");
+  }
+
+  fn site_header(site: &str) -> reqwest::header::HeaderMap {
+    let mut headers = reqwest::header::HeaderMap::new();
+    headers.insert("X-Manta-Site", site.parse().unwrap());
+    headers
+  }
+
+  #[test]
+  fn siteless_client_pins_the_site_the_server_echoes() {
+    let c =
+      MantaClient::new_with_timeout("http://stub.invalid", None, None, None)
+        .unwrap();
+    assert_eq!(c.site_hint(), None);
+    let err = c.site_name().unwrap_err().to_string();
+    assert!(err.contains("No site selected"), "{err}");
+
+    // No header: nothing to adopt.
+    c.pin_site(&reqwest::header::HeaderMap::new());
+    assert_eq!(c.site_hint(), None);
+
+    c.pin_site(&site_header("alps"));
+    assert_eq!(c.site_name().unwrap(), "alps");
+    // First resolution wins for the rest of the command.
+    c.pin_site(&site_header("daint"));
+    assert_eq!(c.site_name().unwrap(), "alps");
+  }
+
+  #[test]
+  fn configured_site_is_never_replaced_by_an_echo() {
+    let c = MantaClient::new_with_timeout(
+      "http://stub.invalid",
+      Some("alps"),
+      None,
+      None,
+    )
+    .unwrap();
+    c.pin_site(&site_header("daint"));
+    assert_eq!(c.site_name().unwrap(), "alps");
   }
 }

@@ -41,7 +41,7 @@ pub async fn exec(
     .openapi
     .add_hw_component(
       p.target_group,
-      client.site_name(),
+      client.site_name()?,
       &AddHwComponentRequest {
         parent_cluster: p.parent_group.to_string(),
         pattern: p.pattern.to_string(),

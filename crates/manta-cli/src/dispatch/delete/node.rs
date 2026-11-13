@@ -30,7 +30,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .delete_node(id, client.site_name())
+    .delete_node(id, client.site_name()?)
     .await
     .into_anyhow()
     .await?;

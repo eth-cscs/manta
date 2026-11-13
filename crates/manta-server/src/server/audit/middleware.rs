@@ -244,7 +244,9 @@ pub async fn audit_requests(
   let mut event = state.audit.event(kind, action);
   event.actor = actor;
   event.client = client;
-  event.site = site;
+  // A request without `X-Manta-Site` had its site resolved by the
+  // handler, which echoes it on the response.
+  event.site = site.or_else(|| header_str(response.headers(), "X-Manta-Site"));
   event.request = req;
   event.outcome = event::Outcome {
     result: Verdict::from_status(status),

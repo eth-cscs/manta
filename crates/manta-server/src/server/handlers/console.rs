@@ -25,10 +25,11 @@ use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use tokio::io::AsyncWriteExt;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
-  to_handler_error,
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  require_k8s_url, require_vault, to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -39,7 +40,7 @@ pub use manta_shared::types::api::queries::ConsoleQuery;
 
 /// `WS /v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",
-  params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, SiteHeader),
+  params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 101, description = "WebSocket upgrade"),
@@ -50,13 +51,15 @@ pub use manta_shared::types::api::queries::ConsoleQuery;
 )]
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(xname): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   note.action("console.node").target("node", &xname);
+
+  let ctx = ctx.resolve(Target::nodes(&[&xname])).await?;
 
   // Read what we need from the borrowed infra, authorize the xname, and
   // clone the backend before the borrow ends.  The clone is cheap

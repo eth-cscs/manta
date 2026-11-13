@@ -57,7 +57,7 @@ pub async fn exec(
     .get_kernel_parameters(
       group_name,
       params.nodes.as_deref(),
-      client.site_name(),
+      client.site_name()?,
     )
     .await
     .into_anyhow()

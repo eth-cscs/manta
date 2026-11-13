@@ -25,11 +25,19 @@
 //!
 //! The resulting [`TokenStore`] is cached as JSON by
 //! [`crate::common::authentication`].
+//!
+//! The token-endpoint calls that need no person present (discovery, the
+//! service account's client credentials grant) and the token-response
+//! parsing live in [`manta_shared::common::oidc`], shared with
+//! `manta-cache-server`.
 
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{Context, Result, anyhow, bail};
+use manta_shared::common::oidc::{
+  OAuthError, TokenResponse, discover, oauth_error_message,
+};
 use openidconnect::core::{CoreClient, CoreProviderMetadata, CoreResponseType};
 use openidconnect::{
   AccessTokenHash, AuthenticationFlow, AuthorizationCode, ClientId, CsrfToken,
@@ -42,8 +50,7 @@ use tokio::net::TcpListener;
 
 /// Default issuer URL of the CSCS Keycloak realm. Overridable with
 /// `oidc_issuer_url` in `cli.toml`.
-pub const DEFAULT_OIDC_ISSUER_URL: &str =
-  "https://auth.cscs.ch/auth/realms/cscs";
+pub use manta_shared::common::oidc::DEFAULT_OIDC_ISSUER_URL;
 
 /// Default OIDC client id. Overridable with `oidc_client_id` in
 /// `cli.toml`.
@@ -192,7 +199,7 @@ impl TokenStore {
   }
 
   fn from_token_response(
-    resp: RawTokenResponse,
+    resp: TokenResponse,
     settings: &OidcSettings<'_>,
   ) -> Self {
     Self {
@@ -242,7 +249,7 @@ pub async fn refresh(
   refresh_token: &str,
 ) -> Result<TokenStore> {
   let http = http_client()?;
-  let discovery = discover(&http, settings.issuer_url).await?;
+  let discovery = discover(settings.issuer_url).await?;
   let resp = http
     .post(&discovery.token_endpoint)
     .form(&[
@@ -261,7 +268,7 @@ pub async fn refresh(
     }
     bail!("token refresh failed: {}", oauth_error_message(&body));
   }
-  let token: RawTokenResponse = serde_json::from_slice(&body)
+  let token: TokenResponse = serde_json::from_slice(&body)
     .context("failed to parse refresh-token response")?;
   let mut store = TokenStore::from_token_response(token, settings);
   // Keycloak may omit the refresh token when it is not rotated; keep
@@ -270,40 +277,6 @@ pub async fn refresh(
     store.refresh_token = Some(refresh_token.to_string());
   }
   Ok(store)
-}
-
-/// A new access token for a service account, with the client credentials
-/// grant at the realm's token endpoint. Nothing is cached: there is no
-/// refresh token, so every token comes from the credentials.
-///
-/// # Errors
-///
-/// Discovery fails, or the Keycloak rejects the credentials.
-pub async fn client_credentials(
-  issuer_url: &str,
-  client_id: &str,
-  client_secret: &str,
-) -> Result<String> {
-  let http = http_client()?;
-  let discovery = discover(&http, issuer_url).await?;
-  let resp = http
-    .post(&discovery.token_endpoint)
-    .basic_auth(client_id, Some(client_secret))
-    .form(&[("grant_type", "client_credentials")])
-    .send()
-    .await
-    .context("failed to send client-credentials request")?;
-  let status = resp.status();
-  let body = resp.bytes().await?;
-  if !status.is_success() {
-    bail!(
-      "service-account login rejected: {}",
-      oauth_error_message(&body)
-    );
-  }
-  let token: RawTokenResponse = serde_json::from_slice(&body)
-    .context("failed to parse client-credentials response")?;
-  Ok(token.access_token)
 }
 
 /// The Keycloak refused a refresh token (`invalid_grant`), so a new
@@ -518,7 +491,7 @@ async fn login_via_device_code(
   settings: &OidcSettings<'_>,
 ) -> Result<TokenStore> {
   let http = http_client()?;
-  let discovery = discover(&http, settings.issuer_url).await?;
+  let discovery = discover(settings.issuer_url).await?;
   let device_endpoint =
     discovery.device_authorization_endpoint.ok_or_else(|| {
       anyhow!(
@@ -586,7 +559,7 @@ async fn login_via_device_code(
     let body = resp.bytes().await?;
 
     if status.is_success() {
-      let token: RawTokenResponse = serde_json::from_slice(&body)
+      let token: TokenResponse = serde_json::from_slice(&body)
         .context("failed to parse the token response")?;
       eprintln!("Authentication successful.");
       return Ok(TokenStore::from_token_response(token, settings));
@@ -682,43 +655,6 @@ fn http_client() -> Result<reqwest::Client> {
     .context("failed to build the Keycloak HTTP client")
 }
 
-/// The endpoints manta needs from the realm's discovery document.
-#[derive(Deserialize, Debug)]
-struct Discovery {
-  token_endpoint: String,
-  device_authorization_endpoint: Option<String>,
-}
-
-async fn discover(
-  http: &reqwest::Client,
-  issuer_url: &str,
-) -> Result<Discovery> {
-  let url = format!(
-    "{}/.well-known/openid-configuration",
-    issuer_url.trim_end_matches('/')
-  );
-  http
-    .get(&url)
-    .send()
-    .await
-    .and_then(reqwest::Response::error_for_status)
-    .with_context(|| {
-      format!("failed to fetch OIDC discovery document '{url}'")
-    })?
-    .json()
-    .await
-    .context("failed to parse the OIDC discovery document")
-}
-
-// No `Debug`: it would print the tokens in clear.
-#[derive(Deserialize)]
-struct RawTokenResponse {
-  access_token: String,
-  refresh_token: Option<String>,
-  id_token: Option<String>,
-  expires_in: Option<u64>,
-}
-
 // No `Debug`: it would print the device code in clear.
 #[derive(Deserialize)]
 struct DeviceAuthResponse {
@@ -728,20 +664,6 @@ struct DeviceAuthResponse {
   verification_uri_complete: Option<String>,
   expires_in: u64,
   interval: Option<u64>,
-}
-
-#[derive(Deserialize, Debug)]
-struct OAuthError {
-  error: String,
-  error_description: Option<String>,
-}
-
-/// Best-effort human message out of an OAuth error body.
-fn oauth_error_message(body: &[u8]) -> String {
-  serde_json::from_slice::<OAuthError>(body).map_or_else(
-    |_| String::from_utf8_lossy(body).into_owned(),
-    |e| e.error_description.unwrap_or(e.error),
-  )
 }
 
 /// Adapter letting `openidconnect` issue requests through the CLI's
@@ -824,7 +746,7 @@ mod tests {
 
   #[test]
   fn huge_expires_in_from_token_endpoint_saturates() {
-    let token: RawTokenResponse = serde_json::from_str(
+    let token: TokenResponse = serde_json::from_str(
       r#"{"access_token":"a","expires_in":18446744073709551615}"#,
     )
     .unwrap();
@@ -835,16 +757,6 @@ mod tests {
     };
     let store = TokenStore::from_token_response(token, &settings);
     assert_eq!(store.expires_at, Some(i64::MAX));
-  }
-
-  #[test]
-  fn negative_expires_in_from_token_endpoint_is_rejected() {
-    assert!(
-      serde_json::from_str::<RawTokenResponse>(
-        r#"{"access_token":"a","expires_in":-5}"#
-      )
-      .is_err()
-    );
   }
 
   #[test]

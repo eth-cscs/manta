@@ -89,7 +89,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .create_group(client.site_name(), &grp)
+    .create_group(client.site_name()?, &grp)
     .await
     .into_anyhow()
     .await?;
@@ -97,7 +97,7 @@ pub async fn exec(
   if let Some(req) = add_nodes_req {
     client
       .openapi
-      .add_nodes_to_group(p.label, client.site_name(), &req)
+      .add_nodes_to_group(p.label, client.site_name()?, &req)
       .await
       .into_anyhow()
       .await?;

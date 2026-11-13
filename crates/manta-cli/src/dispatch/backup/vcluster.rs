@@ -62,7 +62,7 @@ pub async fn exec(
   client
     .openapi
     .migrate_backup(
-      client.site_name(),
+      client.site_name()?,
       &MigrateBackupRequest {
         bos: bos.map(str::to_string),
         destination: destination.map(str::to_string),

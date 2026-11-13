@@ -61,7 +61,7 @@ pub async fn exec(
       group_name,
       params.limit.map(i32::from),
       params.name.as_deref(),
-      client.site_name(),
+      client.site_name()?,
     )
     .await
     .into_anyhow()

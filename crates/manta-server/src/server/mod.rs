@@ -25,6 +25,7 @@ pub mod audit;
 pub mod common;
 pub mod handlers;
 pub mod routes;
+pub mod site_resolution;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -99,6 +100,11 @@ pub struct ServerState {
   /// migrate_backup_root`. The path is stored already-canonicalised
   /// so per-request validation is a single `starts_with` against this.
   pub migrate_backup_root: Option<std::path::PathBuf>,
+  /// `manta-cache-server` client that picks the site for requests
+  /// without an `X-Manta-Site` header (see
+  /// [`handlers::SiteResolvingCtx`]). `None` when `server.toml` has no
+  /// `[site_resolution]`; such requests then fail with 400.
+  pub site_resolver: Option<site_resolution::SiteResolver>,
 }
 
 impl ServerState {

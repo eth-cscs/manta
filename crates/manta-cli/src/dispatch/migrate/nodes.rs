@@ -36,7 +36,7 @@ pub async fn exec(
   let result = client
     .openapi
     .migrate_nodes(
-      client.site_name(),
+      client.site_name()?,
       &MigrateNodesRequest {
         target_hsm_names: p.target_groups.to_vec(),
         parent_hsm_names: p.parent_groups.to_vec(),

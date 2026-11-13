@@ -56,7 +56,7 @@ pub async fn exec(
     .openapi
     .add_nodes_to_group(
       target_hsm_name,
-      client.site_name(),
+      client.site_name()?,
       &AddNodesToGroupRequest {
         hosts_expression: hosts_expression.to_string(),
       },

@@ -27,10 +27,12 @@ use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
-  serialize_or_500, to_handler_error, validate_repo_list_lengths,
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  require_k8s_url, require_vault, serialize_or_500, to_handler_error,
+  validate_repo_list_lengths,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -41,7 +43,7 @@ pub use manta_shared::types::api::queries::{DeleteSessionQuery, SessionQuery};
 
 /// GET /sessions — list CFS sessions with optional filters.
 #[utoipa::path(get, path = "/sessions", tag = "sessions",
-  params(SessionQuery, SiteHeader),
+  params(SessionQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     // CfsSessionGetResponse lives in manta-backend-dispatcher (third-party,
@@ -54,9 +56,15 @@ pub use manta_shared::types::api::queries::{DeleteSessionQuery, SessionQuery};
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_sessions(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<SessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(
+      Target::group(q.hsm_group.as_deref())
+        .or_else(|| q.xnames.as_deref().and_then(|x| Target::nodes(&[x]))),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let xnames: Vec<String> = q

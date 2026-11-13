@@ -64,6 +64,16 @@ pub trait OpenApiResultExt<T> {
   /// trait-level doc.
   #[allow(async_fn_in_trait)]
   async fn into_anyhow(self) -> anyhow::Result<T>;
+
+  /// [`Self::into_anyhow`] for a call sent with
+  /// [`MantaClient::site_hint`]: on success, also adopt the site the
+  /// server resolved (its `X-Manta-Site` response header) into
+  /// `client`, so the command's follow-up calls target the same site.
+  #[allow(async_fn_in_trait)]
+  async fn into_anyhow_pinning_site(
+    self,
+    client: &MantaClient,
+  ) -> anyhow::Result<T>;
 }
 
 impl<T, E> OpenApiResultExt<T>
@@ -71,6 +81,16 @@ impl<T, E> OpenApiResultExt<T>
 where
   E: std::fmt::Debug + serde::Serialize,
 {
+  async fn into_anyhow_pinning_site(
+    self,
+    client: &MantaClient,
+  ) -> anyhow::Result<T> {
+    if let Ok(rv) = &self {
+      client.pin_site(rv.headers());
+    }
+    self.into_anyhow().await
+  }
+
   async fn into_anyhow(self) -> anyhow::Result<T> {
     match self {
       Ok(rv) => Ok(rv.into_inner()),
@@ -127,7 +147,7 @@ fn token_rejected(body: &str, service_account: bool) -> String {
 /// Recognises the `{"error":"..."}` shape produced by
 /// `manta-server`'s `ErrorResponse`; otherwise returns the body
 /// verbatim (or a placeholder for empty bodies).
-fn extract_error_body(body: &str, status: u16) -> String {
+pub(super) fn extract_error_body(body: &str, status: u16) -> String {
   serde_json::from_str::<serde_json::Value>(body)
     .ok()
     .and_then(|v| v.get("error").and_then(|e| e.as_str()).map(String::from))
@@ -345,7 +365,7 @@ fn bearer_header(token: &str) -> anyhow::Result<HeaderValue> {
 /// let client = MantaClient::from_app_ctx(ctx)?;
 /// let groups = client
 ///   .openapi
-///   .get_groups(None, client.site_name())
+///   .get_groups(None, client.site_name()?)
 ///   .await
 ///   .into_anyhow()
 ///   .await?;
@@ -356,8 +376,12 @@ pub struct MantaClient {
   /// `client.openapi.<method>(...).await.into_anyhow().await?`.
   pub openapi: crate::openapi_client::Client,
   /// `X-Manta-Site` header value the server uses to pick the backend
-  /// config. Threaded explicitly to every `openapi.*` call.
-  pub site_name: String,
+  /// config. Threaded explicitly to every `openapi.*` call. Set from
+  /// `--site` / `cli.toml` at construction, or — for a client built
+  /// by [`Self::from_app_ctx_resolving`] without one — from the first
+  /// response whose `X-Manta-Site` header names the site the server
+  /// resolved ([`OpenApiResultExt::into_anyhow_pinning_site`]).
+  site: std::sync::OnceLock<String>,
   /// Plain `reqwest::Client` for the WS / SSE paths, which add the
   /// token themselves ([`Self::bearer_token`]).
   pub raw: reqwest::Client,
@@ -385,7 +409,28 @@ impl MantaClient {
   ) -> anyhow::Result<Self> {
     Self::new_with_timeout(
       ctx.manta_server_url,
-      ctx.require_site()?,
+      Some(ctx.require_site()?),
+      ctx.request_timeout_secs,
+      ctx.token_provider.clone(),
+    )
+  }
+
+  /// Like [`Self::from_app_ctx`], but without requiring a site: for
+  /// commands whose first request names a group or xname list the
+  /// server can resolve the site from. Send that request with
+  /// [`Self::site_hint`] and finish it with
+  /// [`OpenApiResultExt::into_anyhow_pinning_site`]; later calls can
+  /// then use [`Self::site_name`].
+  ///
+  /// # Errors
+  ///
+  /// As [`Self::from_app_ctx`], minus the missing-site case.
+  pub fn from_app_ctx_resolving(
+    ctx: &crate::common::app_context::AppContext<'_>,
+  ) -> anyhow::Result<Self> {
+    Self::new_with_timeout(
+      ctx.manta_server_url,
+      ctx.site_name,
       ctx.request_timeout_secs,
       ctx.token_provider.clone(),
     )
@@ -422,7 +467,7 @@ impl MantaClient {
   ///   resolver init, etc.).
   pub fn new_with_timeout(
     server_url: &str,
-    site_name: &str,
+    site_name: Option<&str>,
     timeout_secs: Option<u64>,
     token_provider: Option<Arc<TokenProvider>>,
   ) -> anyhow::Result<Self> {
@@ -456,9 +501,13 @@ impl MantaClient {
       token_provider.clone(),
     );
 
+    let site = std::sync::OnceLock::new();
+    if let Some(name) = site_name {
+      let _ = site.set(name.to_owned());
+    }
     Ok(Self {
       openapi,
-      site_name: site_name.to_owned(),
+      site,
       raw,
       token_provider,
       base_url,
@@ -484,9 +533,40 @@ impl MantaClient {
     self.token_provider.as_ref()?.last_issued()
   }
 
-  /// Site name accessor used at every `openapi.<method>(args, client.site_name())` call site.
-  pub fn site_name(&self) -> &str {
-    &self.site_name
+  /// Site name for the `openapi.<method>(args, client.site_name()?)`
+  /// calls whose endpoint requires `X-Manta-Site`.
+  ///
+  /// # Errors
+  ///
+  /// No site was configured and none has been resolved by the server
+  /// yet.
+  pub fn site_name(&self) -> anyhow::Result<&str> {
+    self.site_hint().ok_or_else(|| {
+      anyhow::anyhow!(
+        "No site selected. Pass --site <name> or set `site` in cli.toml"
+      )
+    })
+  }
+
+  /// Site name if known, for the calls whose endpoint can resolve the
+  /// site itself when `X-Manta-Site` is omitted.
+  pub fn site_hint(&self) -> Option<&str> {
+    self.site.get().map(String::as_str)
+  }
+
+  /// Adopt the site the server resolved, as named by a response's
+  /// `X-Manta-Site` header, and tell the user once. A no-op when the
+  /// site is already known (the server only echoes resolved sites, so
+  /// this is the first resolution).
+  pub fn pin_site(&self, headers: &reqwest::header::HeaderMap) {
+    let Some(site) = headers.get("X-Manta-Site").and_then(|v| v.to_str().ok())
+    else {
+      return;
+    };
+    if self.site.set(site.to_owned()).is_ok() {
+      eprintln!("site '{site}' resolved by manta-server");
+      tracing::info!(site, "site resolved by manta-server");
+    }
   }
 
   /// Base URL `<scheme>://<host>/v2` — used by the WebSocket /

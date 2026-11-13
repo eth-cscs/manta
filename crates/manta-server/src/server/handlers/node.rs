@@ -16,8 +16,12 @@ use axum::{
   response::IntoResponse,
 };
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
+  to_handler_error,
+};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -28,7 +32,7 @@ pub use manta_shared::types::api::queries::NodesQuery;
 
 /// GET /nodes — fetch node details for a given xname expression.
 #[utoipa::path(get, path = "/nodes", tag = "nodes",
-  params(NodesQuery, SiteHeader),
+  params(NodesQuery, OptionalSiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "Node details",  body = Vec<manta_shared::types::dto::NodeDetails>),
@@ -39,9 +43,10 @@ pub use manta_shared::types::api::queries::NodesQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_nodes(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx.resolve(Target::nodes(&[&q.xname])).await?;
   let infra = ctx.infra();
 
   let params = service::node::GetNodesParams {

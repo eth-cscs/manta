@@ -49,7 +49,7 @@ impl MantaClient {
     let mut builder = self
       .raw
       .get(&url)
-      .header("X-Manta-Site", self.site_name())
+      .header("X-Manta-Site", self.site_name()?)
       .query(&[("timestamps", timestamps.to_string())]);
     if let Some(token) = self.bearer_token().await? {
       builder = builder.bearer_auth(token);

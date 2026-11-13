@@ -48,7 +48,7 @@ pub async fn exec(
     .openapi
     .post_template_session(
       p.template_name,
-      client.site_name(),
+      client.site_name()?,
       &PostTemplateSessionRequest {
         operation,
         limit: p.limit.to_string(),

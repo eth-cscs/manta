@@ -41,7 +41,7 @@ pub async fn exec(
 
   let groups = client
     .openapi
-    .get_groups(Some(p.group_name), client.site_name())
+    .get_groups(Some(p.group_name), Some(client.site_name()?))
     .await
     .into_anyhow()
     .await?;
@@ -57,7 +57,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_runtime_configuration(
-      client.site_name(),
+      client.site_name()?,
       &ApplyRuntimeConfigurationRequest {
         cfs_configuration_name: p.configuration_name.to_string(),
         hosts_expression: xnames.join(","),

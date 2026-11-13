@@ -81,7 +81,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .add_boot_parameters(client.site_name(), &bp_wire)
+    .add_boot_parameters(client.site_name()?, &bp_wire)
     .await
     .into_anyhow()
     .await?;
