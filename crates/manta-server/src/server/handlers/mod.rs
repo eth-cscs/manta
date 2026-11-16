@@ -2,7 +2,7 @@
 //!
 //! `mod.rs` keeps:
 //! - request extractors (`BearerToken`, `SiteName`, `RequestCtx`,
-//!   `SiteResolvingCtx`, `SiteHeader`, `OptionalSiteHeader`)
+//!   `SiteResolvingCtx`, `SiteHeader`)
 //! - the `ErrorResponse` body type + error mappers (`to_handler_error`,
 //!   `serialize_or_500`)
 //! - guard helpers (`require_vault`, `require_k8s_url`,
@@ -128,10 +128,11 @@ impl<S: Send + Sync> FromRequestParts<S> for BearerToken {
   }
 }
 
-/// Axum extractor that reads the target site name from `X-Manta-Site`.
-///
-/// Every handler that touches backend APIs requires this header so the server
-/// knows which site's CA certificate, base URL, and credentials to use.
+/// Axum extractor that reads the target site name from `X-Manta-Site`,
+/// for the endpoints whose request names no group or xname to resolve
+/// the site from (see [`SiteResolvingCtx`] for the others). Without
+/// the header such a request fails with the same 400 a site-less
+/// request with nothing to resolve gets from `SiteResolvingCtx`.
 pub struct SiteName(pub String);
 
 impl<S: Send + Sync> FromRequestParts<S> for SiteName {
@@ -145,31 +146,35 @@ impl<S: Send + Sync> FromRequestParts<S> for SiteName {
       .headers
       .get("X-Manta-Site")
       .and_then(|v| v.to_str().ok())
-      .ok_or_else(|| {
-        (
-          StatusCode::BAD_REQUEST,
-          Json(ErrorResponse {
-            error: "Missing X-Manta-Site header".to_string(),
-          }),
-        )
-      })?;
+      .ok_or_else(|| ResolveError::NoTarget.into_handler_error())?;
     Ok(SiteName(site.to_string()))
   }
 }
 
-/// Required header parameter present on every authenticated endpoint.
+/// Optional header parameter present on every authenticated endpoint.
 ///
-/// Tells the server which cluster to route the request to.
+/// Tells the server which cluster to route the request to. When it is
+/// omitted, the server resolves the site from the groups and xnames
+/// the request names ([`SiteResolvingCtx`]) and returns it in the
+/// `X-Manta-Site` response header; a request with nothing to resolve
+/// from fails with 400.
 /// **Not** an authentication mechanism — documented as a plain header parameter.
 ///
 /// The field is consumed by the `utoipa::IntoParams` derive macro at compile
-/// time to generate the OpenAPI spec; the runtime extractor is [`SiteName`].
+/// time to generate the OpenAPI spec; the runtime extractors are
+/// [`SiteName`] (via [`RequestCtx`]) and [`SiteResolvingCtx`].
 #[derive(IntoParams)]
 #[into_params(parameter_in = Header)]
 #[allow(dead_code)]
 pub struct SiteHeader {
-  /// Name of the target cluster (matches a site configured in the server).
-  #[param(required = true, rename = "X-Manta-Site")]
+  /// Name of the target cluster (matches a site configured in the
+  /// server). When omitted, the server resolves it from the request's
+  /// groups and plain xnames via its site-resolution cache and returns
+  /// it in the `X-Manta-Site` response header.
+  // `String`, not `Option<String>`: `required = false` already makes
+  // the header optional, and `Option` would also mark it nullable,
+  // which progenitor turns into `Option<Option<&str>>`.
+  #[param(required = false, rename = "X-Manta-Site")]
   pub x_manta_site: String,
 }
 
@@ -280,32 +285,13 @@ impl RequestCtx {
 // resolved from the request's target instead of `X-Manta-Site`.
 // ---------------------------------------------------------------------------
 
-/// Optional-header twin of [`SiteHeader`], for the endpoints that
-/// extract [`SiteResolvingCtx`]: without the header the server asks
-/// `manta-cache-server` which site owns the request's group or xname
-/// list, and echoes the answer in the `X-Manta-Site` response header.
-#[derive(IntoParams)]
-#[into_params(parameter_in = Header)]
-#[allow(dead_code)]
-pub struct OptionalSiteHeader {
-  /// Name of the target cluster. When omitted, the server resolves it
-  /// from the request's group or plain xname list via its
-  /// site-resolution cache and returns it in the `X-Manta-Site`
-  /// response header.
-  // `String`, not `Option<String>`: `required = false` already makes
-  // the header optional, and `Option` would also mark it nullable,
-  // which progenitor turns into `Option<Option<&str>>`.
-  #[param(required = false, rename = "X-Manta-Site")]
-  pub x_manta_site: String,
-}
-
 /// [`RequestCtx`] before the site is known. Extracted like
 /// `RequestCtx` but with an optional `X-Manta-Site` header and no
 /// token exchange; the handler parses its query/body, then calls
 /// [`Self::resolve`] with the request's target to get the real
-/// `RequestCtx`. Only the endpoints whose target identifies a site
-/// (a group or a plain xname list) use it; everything else keeps the
-/// mandatory header via `RequestCtx`.
+/// `RequestCtx`. Every endpoint whose request names a group or xname
+/// uses it; the others use `RequestCtx`, which answers a missing
+/// header with the same 400 as an empty [`Target`].
 pub struct SiteResolvingCtx {
   state: Arc<ServerState>,
   subject_token: String,

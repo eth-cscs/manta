@@ -7,8 +7,9 @@
 
 use axum::{Json, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{ErrorResponse, SiteHeader, SiteResolvingCtx, to_handler_error};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 pub use manta_shared::types::api::runtime_configuration::ApplyRuntimeConfigurationRequest;
@@ -30,7 +31,7 @@ pub use manta_shared::types::api::runtime_configuration::ApplyRuntimeConfigurati
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_runtime_configuration(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<ApplyRuntimeConfigurationRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -48,6 +49,9 @@ pub async fn apply_runtime_configuration(
     body.enabled,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(Target::new().nodes(&[&body.hosts_expression]))
+    .await?;
   let infra = ctx.infra();
 
   let xnames = service::runtime_configuration::apply_runtime_configuration(

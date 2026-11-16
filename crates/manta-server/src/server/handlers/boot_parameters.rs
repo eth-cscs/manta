@@ -15,8 +15,8 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use super::{
-  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
-  serialize_or_500, to_handler_error,
+  ErrorResponse, SiteHeader, SiteResolvingCtx, serialize_or_500,
+  to_handler_error,
 };
 use crate::server::audit::AuditNote;
 use crate::server::site_resolution::Target;
@@ -40,9 +40,16 @@ pub use manta_shared::types::api::queries::BootParametersQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<BootParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(q.hsm_group.as_deref())
+        .nodes(q.nodes.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
@@ -84,7 +91,7 @@ pub struct DeleteBootParametersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<DeleteBootParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -101,6 +108,7 @@ pub async fn delete_boot_parameters(
     ));
   }
   tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);
+  let ctx = ctx.resolve(Target::new().nodes(&body.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::delete_boot_parameters(
@@ -129,7 +137,7 @@ pub async fn delete_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(boot_params): Json<
     ::manta_backend_dispatcher::types::bss::BootParameters,
@@ -142,6 +150,7 @@ pub async fn add_boot_parameters(
     .detail("params", &boot_params.params);
 
   tracing::info!("add_boot_parameters");
+  let ctx = ctx.resolve(Target::new().nodes(&boot_params.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::add_boot_parameters(
@@ -164,7 +173,7 @@ pub async fn add_boot_parameters(
 
 /// PUT /boot-parameters — update boot image, kernel params, or runtime config for nodes.
 #[utoipa::path(put, path = "/boot-parameters", tag = "boot-parameters",
-  params(OptionalSiteHeader),
+  params(SiteHeader),
   request_body = crate::service::boot_parameters::UpdateBootParametersParams,
   security(("bearerAuth" = [])),
   responses(
@@ -206,7 +215,7 @@ pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
 
 /// `POST /v2/boot-config` — apply BSS boot configuration to a set of nodes.
 #[utoipa::path(post, path = "/boot-config", tag = "boot-parameters",
-  params(OptionalSiteHeader),
+  params(SiteHeader),
   request_body = ApplyBootConfigRequest,
   security(("bearerAuth" = [])),
   responses(

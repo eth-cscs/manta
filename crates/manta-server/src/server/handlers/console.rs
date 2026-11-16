@@ -25,8 +25,8 @@ use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use tokio::io::AsyncWriteExt;
 
 use super::{
-  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
-  require_k8s_url, require_vault, to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, require_k8s_url,
+  require_vault, to_handler_error,
 };
 use crate::server::audit::AuditNote;
 use crate::server::site_resolution::Target;
@@ -40,7 +40,7 @@ pub use manta_shared::types::api::queries::ConsoleQuery;
 
 /// `WS /v2/nodes/{xname}/console` — attach an interactive PTY console to a node via WebSocket.
 #[utoipa::path(get, path = "/nodes/{xname}/console", tag = "console",
-  params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, OptionalSiteHeader),
+  params(("xname" = String, Path, description = "Node xname"), ConsoleQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 101, description = "WebSocket upgrade"),

@@ -87,7 +87,7 @@ pub async fn exec(
           params.pattern.as_deref(),
           since.as_deref(),
           until.as_deref(),
-          site,
+          Some(site),
         )
         .await
         .into_anyhow()
@@ -96,7 +96,7 @@ pub async fn exec(
     async {
       client
         .openapi
-        .get_image_analysis(site)
+        .get_image_analysis(Some(site))
         .await
         .into_anyhow()
         .await

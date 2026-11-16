@@ -57,7 +57,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_runtime_configuration(
-      client.site_name()?,
+      Some(client.site_name()?),
       &ApplyRuntimeConfigurationRequest {
         cfs_configuration_name: p.configuration_name.to_string(),
         hosts_expression: xnames.join(","),

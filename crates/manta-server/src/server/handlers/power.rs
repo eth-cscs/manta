@@ -16,8 +16,7 @@
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
 use super::{
-  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
-  to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, to_handler_error,
 };
 use crate::server::audit::AuditNote;
 use crate::server::site_resolution::Target;
@@ -42,7 +41,7 @@ pub use manta_shared::types::api::power::{
 /// as JSON. Callers can hand the `transitionID` to
 /// [`get_power_transition`].
 #[utoipa::path(post, path = "/power", tag = "power",
-  params(OptionalSiteHeader),
+  params(SiteHeader),
   request_body = PowerRequest,
   security(("bearerAuth" = [])),
   responses(

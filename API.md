@@ -8,7 +8,7 @@ The manta HTTP server (`manta-server` binary) exposes a REST + WebSocket API. Th
 
 - **Base URL:** `https://<host>:8443/v2`
 - **Test-environment shortcut:** `manta-server --allow-http --port 8080` starts the server on plain HTTP without needing any cert/key material. Use only against `localhost` or behind an upstream TLS terminator — bearer tokens travel in cleartext otherwise. The flag also has a config-file equivalent, `[server] allow_http = true`.
-- **Auth:** every request needs `X-Manta-Site: <site>` + `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`. A few endpoints may omit `X-Manta-Site` when the server has `[site_resolution]` — see [Site resolution](#site-resolution).
+- **Auth:** every request needs `Authorization: Bearer <token>`, except for `/health`, `/openapi.json`, and `/docs`. `X-Manta-Site: <site>` picks the cluster; without it, a server with `[site_resolution]` resolves the site from the groups and xnames the request names — see [Site resolution](#site-resolution).
 - **Getting a token:** the token is issued by the CSCS Keycloak, not by the server — one token for every site. The easiest way is to log in once with the `manta` CLI and reuse its cached token (see [Get a token](#get-a-token)); an OpenCHAMI site accepts each token only once.
 - **Reads / writes:** standard `GET` / `POST` / `PUT` / `DELETE` per resource (sessions, configurations, nodes, groups, images, templates, boot/kernel parameters, redfish endpoints, hardware, group inventory, migrations, SAT files, power, ephemeral envs).
 - **Streaming:** SSE for CFS session logs (`GET /sessions/{name}/logs`); WebSocket upgrades for interactive consoles (`/nodes/{xname}/console`, `/sessions/{name}/console`).
@@ -27,11 +27,11 @@ Each flag overrides the corresponding `[server]` field in `server.toml` for that
 
 ## Required headers
 
-Every endpoint requires two headers:
+Every endpoint takes two headers:
 
 | Header | Description |
 |--------|-------------|
-| `X-Manta-Site` | Site name as configured in `server.toml` `[sites.X]` (e.g. `cscs_prod`) |
+| `X-Manta-Site` | Site name as configured in `server.toml` `[sites.X]` (e.g. `cscs_prod`). Optional: without it the server resolves the site from the request's groups and xnames — see [Site resolution](#site-resolution) |
 | `Authorization` | `Bearer <token>` (issued by the CSCS Keycloak) — **not** required for `/health`, `/openapi.json`, or `/docs` |
 
 ```
@@ -41,18 +41,34 @@ Authorization: Bearer <token>
 
 ### Site resolution
 
-When `server.toml` configures `[site_resolution]` (see [README.md](README.md#configuration-files)), these endpoints accept a request **without** `X-Manta-Site` and look the site up in `manta-cache-server` from the group or xname list the request names:
+When `server.toml` configures `[site_resolution]` (see [README.md](README.md#configuration-files)), a request **without** `X-Manta-Site` has its site looked up in `manta-cache-server` from the groups and xnames it names:
 
 | Endpoint | Resolved from |
 |----------|---------------|
 | `GET /nodes` | `xname` |
-| `GET /groups`, `GET /groups/nodes` (and the deprecated `GET /clusters`) | `name` / `hsm_group` |
-| `GET /sessions` | `hsm_group`, else `xnames` |
-| `POST /power` | `host_expression` (a group for `target_type = cluster`, else xnames) |
-| `POST /boot-config` | `hosts_expression` |
-| `PUT /boot-parameters` | `hosts` |
-| `POST /kernel-parameters/apply` | `hsm_group`, else `xnames_expression` |
+| `DELETE /nodes/{id}` | `{id}` |
+| `POST /nodes` | `group` (the node itself is new) |
 | `GET /nodes/{xname}/console` (WebSocket) | `{xname}` |
+| `GET /groups`, `GET /groups/nodes` (and the deprecated `GET /clusters`) | `name` / `hsm_group` |
+| `DELETE /groups/{label}` | `{label}` |
+| `POST`, `DELETE /groups/{name}/members` | `{name}` and the body's host expression |
+| `GET /groups/hardware` (and the deprecated `GET /hardware-clusters`) | `hsm_group` |
+| `GET /hardware-nodes-list` | `xnames` |
+| `POST`, `DELETE /hardware-clusters/{target}/members`, `POST /hardware-clusters/{target}/configuration` | `parent_cluster` and `{target}` (not `{target}` when the request may create it) |
+| `GET /sessions` | `hsm_group` and `xnames` |
+| `POST /sessions` | `hsm_group` and `ansible_limit` |
+| `POST /power` | `host_expression` (a group for `target_type = cluster`, else xnames) |
+| `GET /boot-parameters` | `hsm_group` and `nodes` |
+| `POST`, `PUT`, `DELETE /boot-parameters` | `hosts` |
+| `POST /boot-config` | `hosts_expression` |
+| `GET /kernel-parameters` | `hsm_group` and `nodes` |
+| `POST /kernel-parameters/apply`, `POST /kernel-parameters/add`, `DELETE /kernel-parameters` | `hsm_group` and `xnames_expression` |
+| `GET /configurations`, `GET /templates` | `hsm_group` |
+| `POST /templates/{name}/sessions` | `limit` |
+| `PUT /runtime-configuration` | `hosts_expression` |
+| `POST /migrate/nodes` | `parent_hsm_names`, `target_hsm_names` (not when `create_hsm_group`) and `hosts_expression` |
+
+Every other endpoint (session names, image ids, SAT-file elements, plain listings like `GET /groups/available`) names nothing to resolve from, so without the header it answers `400`, asking for the site.
 
 Every group and xname the request names is looked up, and all must agree on one site. Only plain comma-separated xnames are looked up; a hostlist expression or a NID needs an explicit site (`400`), even next to a group. The resolved site comes back in the `X-Manta-Site` **response** header, so a client can send it on follow-up calls (e.g. polling `GET /power/transitions/{id}`, which cannot resolve anything). A request that names its site is never looked up and gets no such header. When resolution cannot name exactly one site the request fails, with a message that says to pass the site explicitly:
 
@@ -63,8 +79,6 @@ Every group and xname the request names is looked up, and all must agree on one 
 | `409` | The group exists at several sites, the xnames do not resolve to one site (split across sites, known at several sites, or partly not resolved), or the request's groups and xnames resolve to different sites; the message lists the sites |
 | `500` | The cache rejected the server's `api_token` (`[site_resolution]`) |
 | `503` | The cache is unreachable or answered unexpectedly |
-
-Every other endpoint still requires `X-Manta-Site`.
 
 ## Base URL
 

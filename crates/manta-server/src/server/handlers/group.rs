@@ -17,8 +17,7 @@ use axum::{
 };
 
 use super::{
-  ErrorResponse, OptionalSiteHeader, RequestCtx, SiteHeader, SiteResolvingCtx,
-  to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, to_handler_error,
 };
 use crate::server::audit::AuditNote;
 use crate::server::site_resolution::Target;
@@ -53,7 +52,7 @@ pub async fn get_available_groups(
 
 /// GET /groups — list HSM groups, optionally filtered by name.
 #[utoipa::path(get, path = "/groups", tag = "groups",
-  params(GroupQuery, OptionalSiteHeader),
+  params(GroupQuery, SiteHeader),
   security(("bearerAuth" = [])),
   responses(
     (status = 200, description = "List of groups", body = Vec<manta_backend_dispatcher::types::Group>),
@@ -98,7 +97,7 @@ pub async fn get_groups(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(label): Path<String>,
   Query(q): Query<DeleteGroupQuery>,
@@ -109,6 +108,7 @@ pub async fn delete_group(
     .detail("force", q.force);
 
   tracing::info!("delete_group label={} force={}", label, q.force);
+  let ctx = ctx.resolve(Target::new().group(Some(&label))).await?;
   let infra = ctx.infra();
 
   // Authorization: caller must have access to the target group.
@@ -191,7 +191,7 @@ pub use manta_shared::types::api::group::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_nodes_to_group(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<AddNodesToGroupRequest>,
@@ -206,6 +206,13 @@ pub async fn add_nodes_to_group(
     name,
     body.hosts_expression
   );
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(Some(&name))
+        .nodes(&[&body.hosts_expression]),
+    )
+    .await?;
   let infra = ctx.infra();
 
   // Authorization: caller must have access to the target group.
@@ -250,7 +257,7 @@ pub async fn add_nodes_to_group(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_group_members(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<DeleteGroupMembersRequest>,
@@ -267,6 +274,13 @@ pub async fn delete_group_members(
     body.xnames_expression,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(Some(&name))
+        .nodes(&[&body.xnames_expression]),
+    )
+    .await?;
   let infra = ctx.infra();
 
   // Authorization: caller must have access to the target group.

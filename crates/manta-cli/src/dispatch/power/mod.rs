@@ -321,7 +321,7 @@ async fn poll_until_done(
   let max_attempts_usize = max_attempts as usize;
   let mut snapshot = client
     .openapi
-    .get_power_transition(transition_id, client.site_name()?)
+    .get_power_transition(transition_id, Some(client.site_name()?))
     .await
     .into_anyhow()
     .await?;
@@ -339,7 +339,7 @@ async fn poll_until_done(
     tokio::time::sleep(poll_interval).await;
     snapshot = client
       .openapi
-      .get_power_transition(transition_id, client.site_name()?)
+      .get_power_transition(transition_id, Some(client.site_name()?))
       .await
       .into_anyhow()
       .await?;

@@ -30,8 +30,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -90,7 +90,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -199,8 +199,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -257,7 +257,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -325,8 +325,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -390,8 +390,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -484,7 +484,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -594,8 +594,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -697,8 +697,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -762,8 +762,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -841,7 +841,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -899,8 +899,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -976,8 +976,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1048,8 +1048,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1127,7 +1127,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -1205,8 +1205,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1274,8 +1274,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1358,8 +1358,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1440,8 +1440,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1504,8 +1504,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1578,8 +1578,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1650,8 +1650,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1724,8 +1724,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1865,8 +1865,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -1949,8 +1949,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2038,8 +2038,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2096,8 +2096,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2171,8 +2171,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2246,7 +2246,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2321,8 +2321,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2388,8 +2388,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2465,8 +2465,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2565,7 +2565,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2633,8 +2633,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2719,8 +2719,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -2810,7 +2810,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2871,7 +2871,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -2946,8 +2946,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3079,8 +3079,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3132,8 +3132,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3190,8 +3190,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3266,8 +3266,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3326,8 +3326,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3421,8 +3421,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3496,8 +3496,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3572,8 +3572,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3647,8 +3647,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3812,7 +3812,7 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster. When omitted, the server resolves it\nfrom the request's group or plain xname list via its\nsite-resolution cache and returns it in the `X-Manta-Site`\nresponse header.",
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
             "required": false,
             "schema": {
               "type": "string"
@@ -3875,8 +3875,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -3980,8 +3980,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -4076,8 +4076,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -4154,8 +4154,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -4252,8 +4252,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }
@@ -4316,8 +4316,8 @@
           {
             "name": "X-Manta-Site",
             "in": "header",
-            "description": "Name of the target cluster (matches a site configured in the server).",
-            "required": true,
+            "description": "Name of the target cluster (matches a site configured in the\nserver). When omitted, the server resolves it from the request's\ngroups and plain xnames via its site-resolution cache and returns\nit in the `X-Manta-Site` response header.",
+            "required": false,
             "schema": {
               "type": "string"
             }

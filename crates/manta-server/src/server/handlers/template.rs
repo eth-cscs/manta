@@ -14,9 +14,11 @@ use axum::{
 };
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
+  ErrorResponse, SiteHeader, SiteResolvingCtx, serialize_or_500,
+  to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -39,9 +41,12 @@ pub use manta_shared::types::api::queries::TemplateQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_templates(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<TemplateQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(Target::new().group(q.hsm_group.as_deref()))
+    .await?;
   let infra = ctx.infra();
 
   let params = service::template::GetTemplateParams {
@@ -84,7 +89,7 @@ pub use manta_shared::types::api::template::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_template_session(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(name): Path<String>,
   Json(body): Json<PostTemplateSessionRequest>,
@@ -104,6 +109,7 @@ pub async fn post_template_session(
     body.operation,
     body.dry_run
   );
+  let ctx = ctx.resolve(Target::new().nodes(&[&body.limit])).await?;
   let infra = ctx.infra();
 
   let params = service::template::ApplyTemplateParams {

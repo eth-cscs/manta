@@ -12,10 +12,11 @@
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, parse_iso_datetime, serialize_or_500,
-  to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, parse_iso_datetime,
+  serialize_or_500, to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 use manta_shared::types::api::configuration_analysis::ConfigurationAnalysis;
 
@@ -44,9 +45,12 @@ pub use manta_shared::types::api::queries::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_configurations(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<ConfigurationQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(Target::new().group(q.hsm_group.as_deref()))
+    .await?;
   let infra = ctx.infra();
 
   let params = service::configuration::GetConfigurationParams {

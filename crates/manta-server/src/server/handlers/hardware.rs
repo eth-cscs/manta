@@ -9,7 +9,8 @@
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{ErrorResponse, SiteHeader, SiteResolvingCtx, to_handler_error};
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -34,9 +35,12 @@ pub use manta_shared::types::api::queries::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups_hardware(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(Target::new().group(q.hsm_group.as_deref()))
+    .await?;
   let infra = ctx.infra();
 
   let params = service::hardware::GetHardwareClusterParams {
@@ -71,7 +75,7 @@ pub async fn get_groups_hardware(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_clusters_deprecated(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   q: Query<HardwareClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::warn!(
@@ -99,9 +103,10 @@ pub async fn get_hardware_clusters_deprecated(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_hardware_nodes_list(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<HardwareNodesListQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx.resolve(Target::new().nodes(&[&q.xnames])).await?;
   let infra = ctx.infra();
 
   let params = service::hardware::GetHardwareNodesListParams {

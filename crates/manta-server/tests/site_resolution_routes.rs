@@ -1,6 +1,5 @@
 //! Router-level tests for server-side site resolution: requests
-//! without `X-Manta-Site` on the endpoints that extract
-//! `SiteResolvingCtx`, against a wiremock `manta-cache-server`.
+//! without `X-Manta-Site`, against a wiremock `manta-cache-server`.
 //!
 //! The stub backend is the OpenCHAMI dispatcher (pass-through token
 //! exchange) with unreachable URLs, so a request that gets past
@@ -312,16 +311,51 @@ async fn missing_site_without_resolver_is_400() {
 }
 
 #[tokio::test]
-async fn endpoints_without_resolution_still_require_the_header() {
+async fn endpoints_with_nothing_to_resolve_ask_for_the_site() {
+  // `GET /images` names no group or xname: without a header it gets
+  // the same 400 as a resolving endpoint with an empty target.
   let cache = MockServer::start().await;
   let response = router(Some(&cache), Arc::default())
     .oneshot(get("/v2/images"))
     .await
     .unwrap();
   assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-  assert!(
-    body_string(response)
-      .await
-      .contains("Missing X-Manta-Site header")
-  );
+  let body = body_string(response).await;
+  assert!(body.contains("names no group or xname"), "{body}");
+  assert!(body.contains("--site"), "{body}");
+}
+
+#[tokio::test]
+async fn every_endpoint_naming_groups_or_xnames_resolves() {
+  // Two endpoints that required the header before every endpoint
+  // resolved: one by xnames, one by group (a path parameter).
+  let cache = MockServer::start().await;
+  Mock::given(method("GET"))
+    .and(path("/api/v1/lookup/nodes"))
+    .and(query_param("xnames", "x1000c0s0b0n0"))
+    .respond_with(ResponseTemplate::new(200).set_body_json(
+      serde_json::json!({ "site": "alps", "resolutions": {}, "unknown": [] }),
+    ))
+    .expect(1)
+    .mount(&cache)
+    .await;
+  mount_group(&cache, "zinal", 200, serde_json::json!({ "site": "alps" }))
+    .await;
+  let app = router(Some(&cache), Arc::default());
+
+  let response = app
+    .clone()
+    .oneshot(get("/v2/hardware-nodes-list?xnames=x1000c0s0b0n0"))
+    .await
+    .unwrap();
+  assert_eq!(echoed_site(&response), Some("alps"));
+
+  let request = Request::builder()
+    .method(Method::DELETE)
+    .uri("/v2/groups/zinal")
+    .header(header::AUTHORIZATION, "Bearer test-token")
+    .body(Body::empty())
+    .unwrap();
+  let response = app.oneshot(request).await.unwrap();
+  assert_eq!(echoed_site(&response), Some("alps"));
 }
