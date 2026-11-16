@@ -96,12 +96,11 @@ pub async fn apply_kernel_parameters(
     .dry_run(body.dry_run);
 
   let ctx = ctx
-    .resolve(Target::group(body.hsm_group.as_deref()).or_else(|| {
-      body
-        .xnames_expression
-        .as_deref()
-        .and_then(|x| Target::nodes(&[x]))
-    }))
+    .resolve(
+      Target::new()
+        .group(body.hsm_group.as_deref())
+        .nodes(body.xnames_expression.as_slice()),
+    )
     .await?;
   let infra = ctx.infra();
 

@@ -353,18 +353,19 @@ impl SiteResolvingCtx {
   ///
   /// # Errors
   ///
-  /// [`ResolveError`]'s statuses (400 no target / not configured, 404
-  /// unknown group, 409 split xname list, 503 cache unusable), then
-  /// whatever `RequestCtx` extraction would return.
+  /// [`ResolveError`]'s statuses (400 no or unresolvable target / not
+  /// configured, 404 unresolved group, 409 several sites, 503 cache
+  /// unusable), then whatever `RequestCtx` extraction would return.
   pub async fn resolve(
     self,
-    target: Option<Target>,
+    target: Target,
   ) -> Result<RequestCtx, (StatusCode, Json<ErrorResponse>)> {
     let site_name = match self.site_name {
       Some(site) => site,
       None => {
-        let target =
-          target.ok_or_else(|| ResolveError::NoTarget.into_handler_error())?;
+        if target.is_empty() {
+          return Err(ResolveError::NoTarget.into_handler_error());
+        }
         let resolver = self
           .state
           .site_resolver

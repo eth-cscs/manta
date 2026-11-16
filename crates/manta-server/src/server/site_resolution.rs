@@ -1,24 +1,24 @@
 //! Server-side site resolution through `manta-cache-server`.
 //!
-//! A request that names a group or a plain xname list but carries no
-//! `X-Manta-Site` header has its site looked up here (see
-//! [`super::handlers::SiteResolvingCtx`]). The cache is an
+//! A request that carries no `X-Manta-Site` header has its site looked
+//! up here from the groups and xnames it names (see
+//! [`super::handlers::SiteResolvingCtx`]). **Every** group and xname
+//! must resolve, and all must agree on one site. The cache is an
 //! accelerator, but a wrong guess could aim a destructive command at
-//! the wrong cluster, so every answer short of a single named site
-//! fails the request with a message that tells the caller to pass
-//! `--site`:
+//! the wrong cluster, so every answer short of a single site fails the
+//! request with a message that tells the caller to pass `--site`:
 //!
+//! - nothing to resolve from, or nodes the cache cannot resolve
+//!   (hostlist bracket expressions, NIDs) → 400;
 //! - group the cache does not resolve → 404;
-//! - group at several sites, or xname list that is split across sites,
-//!   ambiguous or partly unresolved → 409, naming the sites;
+//! - group at several sites, xname list that is split across sites,
+//!   ambiguous or partly unresolved, or groups and nodes that resolve
+//!   to different sites → 409, naming the sites;
 //! - cache down, slow or garbled → 503;
 //! - cache rejects this server's token → 500 (an operator problem, not
 //!   the caller's).
-//!
-//! Targets the cache cannot know — hostlist bracket expressions, NIDs
-//! — are not looked up at all ([`Target::nodes`] returns `None`).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
@@ -42,47 +42,93 @@ const CONNECT_TIMEOUT: Duration = Duration::from_secs(3);
 /// anything slow means the cache is unhealthy.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
-/// What a request targets, as far as the cache can resolve it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Target {
-  /// A single HSM group label.
-  Group(String),
-  /// A plain xname list (no hostlist brackets, no NIDs).
-  Nodes(Vec<String>),
+/// What a request targets: every group and node it names. Built with
+/// [`Target::new`] and the chained [`Target::group`] / [`Target::groups`]
+/// / [`Target::nodes`]; blank values are ignored.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Target {
+  /// Group labels, de-duplicated.
+  groups: BTreeSet<String>,
+  /// Plain xnames, de-duplicated.
+  xnames: BTreeSet<String>,
+  /// Node expressions the cache cannot resolve (hostlist expressions,
+  /// NIDs), as given.
+  unresolvable: Vec<String>,
 }
 
 impl Target {
-  /// A group target, or `None` for an absent/blank label.
-  pub fn group(label: Option<&str>) -> Option<Self> {
-    label
-      .map(str::trim)
-      .filter(|l| !l.is_empty())
-      .map(|l| Self::Group(l.to_owned()))
+  /// An empty target — names nothing.
+  pub fn new() -> Self {
+    Self::default()
   }
 
-  /// Split a comma-separated node expression into xnames, or `None`
-  /// when any token is not a plain xname (hostlist brackets, NIDs, …)
-  /// — the cache indexes xnames only.
-  pub fn nodes<S: AsRef<str>>(tokens: &[S]) -> Option<Self> {
-    let xnames: Vec<String> = tokens
-      .iter()
-      .flat_map(|t| t.as_ref().split(','))
-      .map(str::trim)
-      .filter(|t| !t.is_empty())
-      .map(str::to_owned)
-      .collect();
-    if xnames.is_empty() || !xnames.iter().all(|t| looks_like_xname(t)) {
-      return None;
+  /// Add a group label; an absent or blank label adds nothing.
+  #[must_use]
+  pub fn group(self, label: Option<&str>) -> Self {
+    self.groups(label)
+  }
+
+  /// Add several group labels; blank ones are skipped.
+  #[must_use]
+  pub fn groups<I, S>(mut self, labels: I) -> Self
+  where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+  {
+    self.groups.extend(
+      labels
+        .into_iter()
+        .map(|l| l.as_ref().trim().to_owned())
+        .filter(|l| !l.is_empty()),
+    );
+    self
+  }
+
+  /// Add node expressions, each a comma-separated list. An expression
+  /// of plain xnames is looked up; any other (hostlist brackets, NIDs)
+  /// makes the target unresolvable, since the cache indexes xnames
+  /// only.
+  #[must_use]
+  pub fn nodes<S: AsRef<str>>(mut self, expressions: &[S]) -> Self {
+    for expression in expressions.iter().map(|e| e.as_ref().trim()) {
+      let tokens: Vec<&str> = expression
+        .split(',')
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+        .collect();
+      if tokens.iter().all(|t| looks_like_xname(t)) {
+        self.xnames.extend(tokens.into_iter().map(str::to_owned));
+      } else {
+        self.unresolvable.push(expression.to_owned());
+      }
     }
-    Some(Self::Nodes(xnames))
+    self
+  }
+
+  /// Does it name nothing at all?
+  pub fn is_empty(&self) -> bool {
+    self.groups.is_empty()
+      && self.xnames.is_empty()
+      && self.unresolvable.is_empty()
   }
 
   /// One-line description for log lines and audit details.
   pub fn describe(&self) -> String {
-    match self {
-      Self::Group(label) => format!("group '{label}'"),
-      Self::Nodes(xnames) => format!("nodes {}", xnames.join(",")),
+    let mut parts: Vec<String> = self
+      .groups
+      .iter()
+      .map(|label| format!("group '{label}'"))
+      .collect();
+    let nodes: Vec<&str> = self
+      .xnames
+      .iter()
+      .map(String::as_str)
+      .chain(self.unresolvable.iter().map(String::as_str))
+      .collect();
+    if !nodes.is_empty() {
+      parts.push(format!("nodes {}", nodes.join(",")));
     }
+    parts.join(", ")
   }
 }
 
@@ -100,9 +146,11 @@ fn looks_like_xname(token: &str) -> bool {
 /// status via [`ResolveError::into_handler_error`].
 #[derive(Debug)]
 pub enum ResolveError {
-  /// No site header and nothing in the request the cache could
-  /// resolve.
+  /// No site header and the request names no group or node.
   NoTarget,
+  /// No site header and the request names nodes the cache cannot
+  /// resolve (hostlist expressions, NIDs).
+  Unresolvable(Vec<String>),
   /// No site header and this server has no `[site_resolution]`.
   NotConfigured,
   /// The cache does not resolve the group (it may not exist, or the
@@ -125,6 +173,9 @@ pub enum ResolveError {
     /// Xnames the cache does not resolve.
     unknown: Vec<String>,
   },
+  /// Each part of the request resolved, but not to the same site;
+  /// carries what resolved where.
+  SitesDisagree(BTreeMap<String, String>),
   /// The cache rejected this server's bearer token.
   Rejected(u16),
   /// The cache is unusable (unreachable, slow, unexpected reply).
@@ -137,7 +188,14 @@ impl std::fmt::Display for ResolveError {
       Self::NoTarget => write!(
         f,
         "Missing X-Manta-Site header, and this request names no group \
-         or plain xname list to resolve the site from. Pass --site <name>."
+         or xname to resolve the site from. Pass --site <name>."
+      ),
+      Self::Unresolvable(tokens) => write!(
+        f,
+        "Missing X-Manta-Site header, and the site cannot be resolved \
+         from {} (only group names and plain xnames are looked up, not \
+         hostlist expressions or NIDs). Pass --site <name>.",
+        tokens.join(", ")
       ),
       Self::NotConfigured => write!(
         f,
@@ -179,6 +237,18 @@ impl std::fmt::Display for ResolveError {
           detail.join("; ")
         )
       }
+      Self::SitesDisagree(found) => {
+        let detail: Vec<String> = found
+          .iter()
+          .map(|(what, site)| format!("{what} → {site}"))
+          .collect();
+        write!(
+          f,
+          "The request's groups and nodes resolve to different sites \
+           ({}). Pass --site <name>.",
+          detail.join("; ")
+        )
+      }
       Self::Rejected(status) => write!(
         f,
         "The site-resolution cache rejected manta-server's token (HTTP \
@@ -198,11 +268,13 @@ impl ResolveError {
   /// The HTTP status this failure is reported with.
   pub fn status(&self) -> StatusCode {
     match self {
-      Self::NoTarget | Self::NotConfigured => StatusCode::BAD_REQUEST,
-      Self::UnknownGroup(_) => StatusCode::NOT_FOUND,
-      Self::AmbiguousGroup { .. } | Self::NotSingleSite { .. } => {
-        StatusCode::CONFLICT
+      Self::NoTarget | Self::Unresolvable(_) | Self::NotConfigured => {
+        StatusCode::BAD_REQUEST
       }
+      Self::UnknownGroup(_) => StatusCode::NOT_FOUND,
+      Self::AmbiguousGroup { .. }
+      | Self::NotSingleSite { .. }
+      | Self::SitesDisagree(_) => StatusCode::CONFLICT,
       Self::Rejected(_) => StatusCode::INTERNAL_SERVER_ERROR,
       Self::Unavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
     }
@@ -339,34 +411,75 @@ impl SiteResolver {
     })
   }
 
-  /// Ask the cache which single site owns `target`.
+  /// Ask the cache for the one site of `target`: every group and the
+  /// xname list are looked up, and all must name the same site.
   ///
   /// # Errors
   ///
-  /// Every [`ResolveError`] variant except `NoTarget` /
-  /// `NotConfigured`, which the caller decides before getting here.
+  /// Every [`ResolveError`] variant except `NotConfigured`, which the
+  /// caller decides before getting here.
   pub async fn resolve(&self, target: &Target) -> Result<String, ResolveError> {
-    let mut url = self.base.clone();
-    {
-      let mut segments = url
-        .path_segments_mut()
-        .expect("base URL normalised to http(s), so it has a path");
-      match target {
-        Target::Group(label) => {
-          segments.extend(["lookup", "group", label]);
-        }
-        Target::Nodes(_) => {
-          segments.extend(["lookup", "nodes"]);
-        }
-      }
+    if !target.unresolvable.is_empty() {
+      return Err(ResolveError::Unresolvable(target.unresolvable.clone()));
     }
-    if let Target::Nodes(xnames) = target {
-      url
-        .query_pairs_mut()
-        .append_pair("xnames", &xnames.join(","));
+    if target.is_empty() {
+      return Err(ResolveError::NoTarget);
     }
+    // What resolved where, keyed by a description of the part.
+    let mut found = BTreeMap::new();
+    for label in &target.groups {
+      let site = self.lookup_group(label).await?;
+      found.insert(format!("group '{label}'"), site);
+    }
+    if !target.xnames.is_empty() {
+      let xnames: Vec<&str> =
+        target.xnames.iter().map(String::as_str).collect();
+      let site = self.lookup_nodes(&xnames).await?;
+      found.insert(format!("nodes {}", xnames.join(",")), site);
+    }
+    let sites: BTreeSet<&String> = found.values().collect();
+    let site = match sites.into_iter().collect::<Vec<_>>().as_slice() {
+      [site] => (*site).clone(),
+      _ => return Err(ResolveError::SitesDisagree(found)),
+    };
+    tracing::info!(site, target = %target.describe(), "site resolved via manta-cache");
+    Ok(site)
+  }
 
-    let mut request = self.client.get(url.clone());
+  /// `GET /lookup/group/{label}`.
+  async fn lookup_group(&self, label: &str) -> Result<String, ResolveError> {
+    let mut url = self.base.clone();
+    url
+      .path_segments_mut()
+      .expect("base URL normalised to http(s), so it has a path")
+      .extend(["lookup", "group", label]);
+    let (status, body) = self.get(url).await?;
+    interpret_group_reply(status, &body, label)
+  }
+
+  /// `GET /lookup/nodes?xnames=…`.
+  async fn lookup_nodes(
+    &self,
+    xnames: &[&str],
+  ) -> Result<String, ResolveError> {
+    let mut url = self.base.clone();
+    url
+      .path_segments_mut()
+      .expect("base URL normalised to http(s), so it has a path")
+      .extend(["lookup", "nodes"]);
+    url
+      .query_pairs_mut()
+      .append_pair("xnames", &xnames.join(","));
+    let (status, body) = self.get(url).await?;
+    interpret_nodes_reply(status, &body)
+  }
+
+  /// Send one lookup; the status and body, or `Unavailable`.
+  async fn get(
+    &self,
+    url: reqwest::Url,
+  ) -> Result<(u16, String), ResolveError> {
+    let mut request = self.client.get(url);
     if let Some(token) = &self.api_token {
       request = request.bearer_auth(token);
     }
@@ -377,13 +490,7 @@ impl SiteResolver {
     let body = response.text().await.map_err(|e| {
       ResolveError::Unavailable(format!("the cache reply was cut off ({e})"))
     })?;
-
-    let site = match target {
-      Target::Group(label) => interpret_group_reply(status, &body, label)?,
-      Target::Nodes(_) => interpret_nodes_reply(status, &body)?,
-    };
-    tracing::info!(site, target = %target.describe(), "site resolved via manta-cache");
-    Ok(site)
+    Ok((status, body))
   }
 }
 
@@ -491,37 +598,41 @@ mod tests {
   use super::*;
 
   #[test]
-  fn group_target_ignores_blank_labels() {
+  fn target_collects_groups_and_xnames_and_skips_blanks() {
+    let target = Target::new()
+      .group(Some("zinal"))
+      .group(Some("  "))
+      .group(None)
+      .groups(["zinal", "", "fora"])
+      .nodes(&["x1000c0s0b0n0, x1000c0s0b0n1", ""])
+      .nodes::<&str>(&[]);
+    assert_eq!(target.groups.iter().collect::<Vec<_>>(), ["fora", "zinal"]);
     assert_eq!(
-      Target::group(Some("zinal")),
-      Some(Target::Group("zinal".to_owned()))
+      target.xnames.iter().collect::<Vec<_>>(),
+      ["x1000c0s0b0n0", "x1000c0s0b0n1"]
     );
-    assert_eq!(Target::group(Some("  ")), None);
-    assert_eq!(Target::group(None), None);
+    assert!(target.unresolvable.is_empty());
+    assert_eq!(
+      target.describe(),
+      "group 'fora', group 'zinal', nodes x1000c0s0b0n0,x1000c0s0b0n1"
+    );
+    assert!(Target::new().group(Some(" ")).nodes(&[""]).is_empty());
   }
 
   #[test]
-  fn nodes_target_accepts_plain_xnames_only() {
-    assert_eq!(
-      Target::nodes(&["x1000c0s0b0n0, x1000c0s0b0n1"]),
-      Some(Target::Nodes(vec![
-        "x1000c0s0b0n0".to_owned(),
-        "x1000c0s0b0n1".to_owned()
-      ]))
-    );
-    assert_eq!(
-      Target::nodes(&["x1000c0s0b0n0".to_owned(), "x1000c0s0b0n1".to_owned()]),
-      Some(Target::Nodes(vec![
-        "x1000c0s0b0n0".to_owned(),
-        "x1000c0s0b0n1".to_owned()
-      ]))
-    );
+  fn hostlists_and_nids_make_the_target_unresolvable() {
     // Hostlist expressions need a site to expand; NIDs are not indexed.
-    assert_eq!(Target::nodes(&["x1000c0s[0-3]b0n0"]), None);
-    assert_eq!(Target::nodes(&["nid001234"]), None);
-    assert_eq!(Target::nodes(&["x1000c0s0b0n0,nid001234"]), None);
-    assert_eq!(Target::nodes::<&str>(&[]), None);
-    assert_eq!(Target::nodes(&[""]), None);
+    // The whole expression is kept, so the error shows what was typed.
+    let target = Target::new().nodes(&[
+      "x1000c0s[0,1]b0n0",
+      "nid001234",
+      "x1000c0s0b0n0,nid000001",
+    ]);
+    assert_eq!(
+      target.unresolvable,
+      ["x1000c0s[0,1]b0n0", "nid001234", "x1000c0s0b0n0,nid000001"]
+    );
+    assert!(target.xnames.is_empty());
   }
 
   #[test]
@@ -622,7 +733,7 @@ mod tests {
       .mount(&server)
       .await;
     let site = resolver_for(&server)
-      .resolve(&Target::Group("a/b".to_owned()))
+      .resolve(&Target::new().group(Some("a/b")))
       .await
       .unwrap();
     assert_eq!(site, "alps");
@@ -641,11 +752,75 @@ mod tests {
       .expect(1)
       .mount(&server)
       .await;
-    let target = Target::nodes(&["x1000c0s0b0n0,x1000c0s0b0n1"]).unwrap();
+    let target = Target::new().nodes(&["x1000c0s0b0n0,x1000c0s0b0n1"]);
     assert_eq!(
       resolver_for(&server).resolve(&target).await.unwrap(),
       "daint"
     );
+  }
+
+  /// Mock cache: `zinal` and `fora` at alps, `pilatus` at daint, and
+  /// any xname list at alps.
+  async fn two_site_cache() -> wiremock::MockServer {
+    use wiremock::matchers::{method, path};
+    let server = wiremock::MockServer::start().await;
+    for (label, site) in
+      [("zinal", "alps"), ("fora", "alps"), ("pilatus", "daint")]
+    {
+      wiremock::Mock::given(method("GET"))
+        .and(path(format!("/api/v1/lookup/group/{label}")))
+        .respond_with(
+          wiremock::ResponseTemplate::new(200)
+            .set_body_json(serde_json::json!({ "site": site })),
+        )
+        .mount(&server)
+        .await;
+    }
+    wiremock::Mock::given(method("GET"))
+      .and(path("/api/v1/lookup/nodes"))
+      .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(
+        serde_json::json!({ "site": "alps", "resolutions": {}, "unknown": [] }),
+      ))
+      .mount(&server)
+      .await;
+    server
+  }
+
+  #[tokio::test]
+  async fn resolve_accepts_groups_and_nodes_that_agree() {
+    let server = two_site_cache().await;
+    let target = Target::new()
+      .groups(["zinal", "fora"])
+      .nodes(&["x1000c0s0b0n0"]);
+    assert_eq!(
+      resolver_for(&server).resolve(&target).await.unwrap(),
+      "alps"
+    );
+  }
+
+  #[tokio::test]
+  async fn resolve_rejects_parts_that_resolve_to_different_sites() {
+    let server = two_site_cache().await;
+    let target = Target::new()
+      .groups(["zinal", "pilatus"])
+      .nodes(&["x1000c0s0b0n0"]);
+    let err = resolver_for(&server).resolve(&target).await.unwrap_err();
+    assert_eq!(err.status(), StatusCode::CONFLICT);
+    let msg = err.to_string();
+    assert!(msg.contains("group 'pilatus' → daint"), "{msg}");
+    assert!(msg.contains("group 'zinal' → alps"), "{msg}");
+    assert!(msg.contains("nodes x1000c0s0b0n0 → alps"), "{msg}");
+  }
+
+  #[tokio::test]
+  async fn resolve_refuses_unresolvable_nodes_without_asking_the_cache() {
+    // No mocks mounted: any request would 404 and fail differently.
+    let server = wiremock::MockServer::start().await;
+    let target = Target::new().group(Some("zinal")).nodes(&["nid001289"]);
+    let err = resolver_for(&server).resolve(&target).await.unwrap_err();
+    assert_eq!(err.status(), StatusCode::BAD_REQUEST);
+    assert!(err.to_string().contains("nid001289"), "{err}");
+    assert!(server.received_requests().await.unwrap().is_empty());
   }
 
   #[tokio::test]
@@ -673,7 +848,7 @@ mod tests {
     })
     .unwrap();
     let site = resolver
-      .resolve(&Target::Group("g".to_owned()))
+      .resolve(&Target::new().group(Some("g")))
       .await
       .unwrap();
     assert_eq!(site, "alps");
@@ -720,7 +895,7 @@ mod tests {
     })
     .unwrap();
     let site = resolver
-      .resolve(&Target::Group("g".to_owned()))
+      .resolve(&Target::new().group(Some("g")))
       .await
       .unwrap();
     assert_eq!(site, "alps");
@@ -753,7 +928,7 @@ mod tests {
     })
     .unwrap();
     let err = resolver
-      .resolve(&Target::Group("g".to_owned()))
+      .resolve(&Target::new().group(Some("g")))
       .await
       .unwrap_err();
     assert_eq!(err.status(), StatusCode::SERVICE_UNAVAILABLE);

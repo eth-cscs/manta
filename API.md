@@ -54,13 +54,13 @@ When `server.toml` configures `[site_resolution]` (see [README.md](README.md#con
 | `POST /kernel-parameters/apply` | `hsm_group`, else `xnames_expression` |
 | `GET /nodes/{xname}/console` (WebSocket) | `{xname}` |
 
-Only plain comma-separated xnames are looked up; a hostlist expression or a NID needs an explicit site. The resolved site comes back in the `X-Manta-Site` **response** header, so a client can send it on follow-up calls (e.g. polling `GET /power/transitions/{id}`, which cannot resolve anything). A request that names its site is never looked up and gets no such header. When resolution cannot name exactly one site the request fails, with a message that says to pass the site explicitly:
+Every group and xname the request names is looked up, and all must agree on one site. Only plain comma-separated xnames are looked up; a hostlist expression or a NID needs an explicit site (`400`), even next to a group. The resolved site comes back in the `X-Manta-Site` **response** header, so a client can send it on follow-up calls (e.g. polling `GET /power/transitions/{id}`, which cannot resolve anything). A request that names its site is never looked up and gets no such header. When resolution cannot name exactly one site the request fails, with a message that says to pass the site explicitly:
 
 | Status | Cause |
 |--------|-------|
 | `400` | No `X-Manta-Site`, and the request names no resolvable target, or the server has no `[site_resolution]` |
 | `404` | The cache does not resolve the group: it may not exist, or the cache's service account may not see it (also: the resolved site is not configured on this server) |
-| `409` | The group exists at several sites, or the xnames do not resolve to one site (split across sites, known at several sites, or partly not resolved); the message lists the sites |
+| `409` | The group exists at several sites, the xnames do not resolve to one site (split across sites, known at several sites, or partly not resolved), or the request's groups and xnames resolve to different sites; the message lists the sites |
 | `500` | The cache rejected the server's `api_token` (`[site_resolution]`) |
 | `503` | The cache is unreachable or answered unexpectedly |
 

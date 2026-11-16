@@ -34,7 +34,9 @@ pub async fn get_groups_nodes(
   ctx: SiteResolvingCtx,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let ctx = ctx.resolve(Target::group(q.hsm_group.as_deref())).await?;
+  let ctx = ctx
+    .resolve(Target::new().group(q.hsm_group.as_deref()))
+    .await?;
   let infra = ctx.infra();
 
   let params = service::cluster::GetClusterParams {

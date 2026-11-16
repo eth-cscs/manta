@@ -46,7 +46,7 @@ pub async fn get_nodes(
   ctx: SiteResolvingCtx,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let ctx = ctx.resolve(Target::nodes(&[&q.xname])).await?;
+  let ctx = ctx.resolve(Target::new().nodes(&[&q.xname])).await?;
   let infra = ctx.infra();
 
   let params = service::node::GetNodesParams {

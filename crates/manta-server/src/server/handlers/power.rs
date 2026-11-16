@@ -82,8 +82,10 @@ pub async fn post_power(
   );
   let ctx = ctx
     .resolve(match body.target_type {
-      PowerTargetType::Nodes => Target::nodes(&[&body.host_expression]),
-      PowerTargetType::Cluster => Target::group(Some(&body.host_expression)),
+      PowerTargetType::Nodes => Target::new().nodes(&[&body.host_expression]),
+      PowerTargetType::Cluster => {
+        Target::new().group(Some(&body.host_expression))
+      }
     })
     .await?;
   let infra = ctx.infra();

@@ -188,7 +188,7 @@ pub async fn update_boot_parameters(
     .detail("params", &params.params);
 
   tracing::info!("update_boot_parameters");
-  let ctx = ctx.resolve(Target::nodes(&params.hosts)).await?;
+  let ctx = ctx.resolve(Target::new().nodes(&params.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::update_boot_parameters(&infra, &ctx.token, params)
@@ -240,7 +240,7 @@ pub async fn apply_boot_config(
     body.dry_run
   );
   let ctx = ctx
-    .resolve(Target::nodes(&[&body.hosts_expression]))
+    .resolve(Target::new().nodes(&[&body.hosts_expression]))
     .await?;
   let infra = ctx.infra();
 

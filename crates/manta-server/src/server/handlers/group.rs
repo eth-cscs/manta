@@ -66,7 +66,7 @@ pub async fn get_groups(
   ctx: SiteResolvingCtx,
   Query(q): Query<GroupQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
-  let ctx = ctx.resolve(Target::group(q.name.as_deref())).await?;
+  let ctx = ctx.resolve(Target::new().group(q.name.as_deref())).await?;
   let infra = ctx.infra();
 
   let params = service::group::GetGroupParams {

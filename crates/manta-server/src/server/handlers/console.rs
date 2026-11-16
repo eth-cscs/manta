@@ -59,7 +59,7 @@ pub async fn console_node_ws(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   note.action("console.node").target("node", &xname);
 
-  let ctx = ctx.resolve(Target::nodes(&[&xname])).await?;
+  let ctx = ctx.resolve(Target::new().nodes(&[&xname])).await?;
 
   // Read what we need from the borrowed infra, authorize the xname, and
   // clone the backend before the borrow ends.  The clone is cheap

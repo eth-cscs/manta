@@ -61,8 +61,9 @@ pub async fn get_sessions(
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   let ctx = ctx
     .resolve(
-      Target::group(q.hsm_group.as_deref())
-        .or_else(|| q.xnames.as_deref().and_then(|x| Target::nodes(&[x]))),
+      Target::new()
+        .group(q.hsm_group.as_deref())
+        .nodes(q.xnames.as_slice()),
     )
     .await?;
   let infra = ctx.infra();
