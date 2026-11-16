@@ -7,8 +7,11 @@
 //! learns which site each group and node lives at and answers the two
 //! routing lookups
 //!
-//! - [`Index::group_to_site`] — `group label → site`
-//! - [`Index::xname_to_site`] — `xname → site`
+//! - [`Index::group_sites`] — `group label → sites`
+//! - [`Index::xname_sites`] — `xname → sites`
+//!
+//! A key seen at more than one site maps to all of them; the index
+//! never picks one.
 //!
 //! It caches **routing only** — never per-node state (power, boot
 //! params, CFS, IMS). The canonical group membership stays in CSM /
@@ -50,7 +53,7 @@
 //!
 //! let outcome = refresh(&sites, &ServiceAccount).await?;
 //! assert!(outcome.is_complete(), "some sites failed: {:?}", outcome.failures);
-//! assert_eq!(outcome.index.group_to_site("gpu-cluster"), Some("alps"));
+//! assert_eq!(outcome.index.group_sites("gpu-cluster"), ["alps"]);
 //! # Ok(())
 //! # }
 //! ```

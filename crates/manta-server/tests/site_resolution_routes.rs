@@ -200,8 +200,29 @@ async fn unknown_group_is_404() {
   assert!(
     body_string(response)
       .await
-      .contains("knows no group 'nope'")
+      .contains("'nope' could not be resolved")
   );
+}
+
+#[tokio::test]
+async fn group_at_several_sites_is_409() {
+  let cache = MockServer::start().await;
+  mount_group(
+    &cache,
+    "nodes_free",
+    409,
+    serde_json::json!({ "error": "x", "sites": ["alps", "daint"] }),
+  )
+  .await;
+
+  let response = router(Some(&cache), Arc::default())
+    .oneshot(get("/v2/groups/nodes?hsm_group=nodes_free"))
+    .await
+    .unwrap();
+  assert_eq!(response.status(), StatusCode::CONFLICT);
+  let body = body_string(response).await;
+  assert!(body.contains("several sites (alps, daint)"), "{body}");
+  assert!(body.contains("--site"), "{body}");
 }
 
 #[tokio::test]

@@ -112,8 +112,8 @@ cargo run -p manta-cli -- get group-nodes <a-real-group>
 # 2. Xname resolution (take an xname from step 1's output)
 cargo run -p manta-cli -- get nodes <xname>
 
-# 3. Unknown group — HTTP 404 from manta-server: "The site-resolution
-#    cache knows no group 'doesnotexist'"; no backend call
+# 3. Unresolved group — HTTP 404 from manta-server: "Group
+#    'doesnotexist' could not be resolved to a site"; no backend call
 cargo run -p manta-cli -- get group-nodes doesnotexist
 
 # 4. Explicit site wins — no resolution notice appears, and the cache
@@ -150,8 +150,9 @@ eval $DUMP | jq '.sites'          # age_seconds, last_error, in_index
 # Why did this group resolve to that site?
 eval $DUMP | jq '.groups["<a-real-group>"]'
 
-# Anything contested across sites? (empty on a single-site setup)
-eval $DUMP | jq '.conflicts'
+# Anything at several sites? (empty on a single-site setup)
+eval $DUMP | jq '[.groups | to_entries[] | select(.value | length > 1) | .key],
+                 [.xnames | to_entries[] | select(.value | length > 1) | .key]'
 
 # Diff two dumps: drop the fields that change on every call, or the
 # diff is pure noise.

@@ -53,27 +53,33 @@ async fn prealps_fixture_builds_a_consistent_index() {
 
   // Every label resolves to the site.
   for label in idx.groups().map(str::to_owned).collect::<Vec<_>>() {
-    assert_eq!(idx.group_to_site(&label), Some("prealps"), "label {label}");
+    assert_eq!(idx.group_sites(&label), ["prealps"], "label {label}");
   }
 
   // Site-umbrella group: full node list of the site.
-  let umbrella = idx.group_members("prealps").expect("umbrella group known");
+  let umbrella = idx
+    .group_members("prealps", "prealps")
+    .expect("umbrella group known");
   assert_eq!(umbrella.len(), 39);
 
   // Empty groups still resolve, with no members.
   for empty in ["cavel_arm", "k3s_agent"] {
-    assert_eq!(idx.group_to_site(empty), Some("prealps"), "group {empty}");
-    assert_eq!(idx.group_members(empty), Some(&[][..]), "group {empty}");
+    assert_eq!(idx.group_sites(empty), ["prealps"], "group {empty}");
+    assert_eq!(
+      idx.group_members(empty, "prealps"),
+      Some(&[][..]),
+      "group {empty}"
+    );
   }
 
   // Overlapping membership: one xname in several groups collapses onto
   // the same site, and appears in each group's member list.
   let xname = "x8000c1s5b1n0".to_owned();
-  assert_eq!(idx.xname_to_site(&xname), Some("prealps"));
+  assert_eq!(idx.xname_sites(&xname), ["prealps"]);
   for group in ["prealps", "rotondo", "cavel", "cavel_gh"] {
     assert!(
       idx
-        .group_members(group)
+        .group_members(group, "prealps")
         .expect("group known")
         .contains(&xname),
       "expected {xname} in {group}"

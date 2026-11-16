@@ -4,8 +4,12 @@
 //!
 //! - `GET /health` — liveness probe, always open.
 //! - `GET /api/v1/sites` — cached site names.
-//! - `GET /api/v1/lookup/group/{label}` — resolve `group → site`.
+//! - `GET /api/v1/lookup/group/{label}` — resolve `group → site`
+//!   (409 with every site when the label exists at several).
 //! - `GET /api/v1/lookup/nodes?xnames=…` — resolve an xname list.
+//!
+//! A group or xname known at several sites is **ambiguous**: the
+//! lookups name every site and never pick one.
 //!
 //! Management (**requires** a configured `api_token` — the endpoints
 //! answer 403 when none is set):
@@ -105,17 +109,29 @@ struct GroupLookupResponse {
   site: String,
 }
 
+/// `409` body of `GET /lookup/group/{label}` for a label that exists
+/// at several sites: the usual `error`, plus every site.
+#[derive(Debug, Serialize)]
+struct AmbiguousGroupResponse {
+  /// Human-readable message.
+  error: String,
+  /// Every site that has the label, sorted.
+  sites: Vec<String>,
+}
+
 /// `GET /lookup/nodes` body. The lookup itself always succeeds; the
-/// payload states how far resolution got so the caller (manta-server's
-/// Stage-4 integration) can decide what an incomplete or split answer
-/// means for its request.
+/// payload states how far resolution got so the caller (manta-server)
+/// can decide what an incomplete, split or ambiguous answer means for
+/// its request.
 #[derive(Debug, Serialize)]
 struct NodesLookupResponse {
   /// The single site every xname resolved to; `null` when the list is
-  /// split across sites or any xname is unknown.
+  /// split across sites, or any xname is unknown or ambiguous.
   site: Option<String>,
-  /// Per-xname resolution for every known xname, sorted.
+  /// Xnames known at exactly one site, with that site, sorted.
   resolutions: BTreeMap<String, String>,
+  /// Xnames known at several sites, with every site, sorted.
+  ambiguous: BTreeMap<String, Vec<String>>,
   /// Xnames the cache knows nothing about, sorted.
   unknown: Vec<String>,
 }
@@ -141,12 +157,9 @@ struct RefreshResponse {
 /// `GET /dump` body — everything the cache holds, for debugging.
 ///
 /// `groups` and `xnames` are a **bulk mirror of the lookup endpoints**:
-/// same owners, same member lists, no extra resolution. Whatever
-/// `GET /lookup/group/{label}` would answer is what appears here.
-///
-/// `conflicts` is the one deliberate exception — it is derived from the
-/// stored snapshots, not the index, and reports collisions the index
-/// cannot express (see [`ConflictsDump`]).
+/// every site per key, collisions included, no extra resolution. A
+/// group or xname with more than one site is exactly what the lookups
+/// report as ambiguous.
 #[derive(Debug, Serialize)]
 struct DumpResponse {
   /// When this dump was rendered (RFC3339, UTC).
@@ -158,12 +171,11 @@ struct DumpResponse {
   /// Every **configured** site — including ones absent from the index,
   /// which is the only way a failed site is visible at all.
   sites: BTreeMap<String, SiteDump>,
-  /// `group label → owning site + members`, mirroring the lookups.
-  groups: BTreeMap<String, GroupDump>,
-  /// `xname → owning site`, mirroring the lookups.
-  xnames: BTreeMap<String, String>,
-  /// Cross-site collisions behind the entries above.
-  conflicts: ConflictsDump,
+  /// `group label → site → members` (sorted). More than one site is a
+  /// collision.
+  groups: BTreeMap<String, BTreeMap<String, Vec<String>>>,
+  /// `xname → sites` (sorted). More than one site is a collision.
+  xnames: BTreeMap<String, Vec<String>>,
 }
 
 /// One configured site: how fresh it is, and whether it made it into
@@ -187,78 +199,6 @@ struct ServiceAccountDump {
   client_id: String,
   /// The Keycloak issuer it gets its tokens from.
   issuer_url: String,
-}
-
-/// One group as the lookups resolve it.
-#[derive(Debug, Serialize)]
-struct GroupDump {
-  /// Site owning the label.
-  site: String,
-  /// Members, sorted — the owning site's nodes only.
-  members: Vec<String>,
-}
-
-/// Collisions found in the snapshots, which the index cannot express.
-///
-/// [`manta_cache::Index`] resolves conflicts at build time and stores
-/// only the winner, so a group whose members were discarded when
-/// another site claimed the label is indistinguishable from a genuinely
-/// small group. This section recovers that context by re-scanning the
-/// stored snapshots at dump time. Empty in the common case.
-#[derive(Debug, Default, Serialize)]
-struct ConflictsDump {
-  /// Labels more than one site contributed data for.
-  groups: Vec<GroupConflict>,
-  /// Xnames reported by more than one site.
-  xnames: Vec<XnameConflict>,
-}
-
-/// A group label contested by several sites.
-#[derive(Debug, Serialize)]
-struct GroupConflict {
-  /// The contested label.
-  label: String,
-  /// Every site that listed the label **or** has a node claiming it,
-  /// sorted.
-  claimed_by: Vec<String>,
-  /// The subset of `claimed_by` that listed the label among its
-  /// groups, sorted. Separate from `claimed_by` because the tie-break
-  /// runs over *listings*, not contributions — applying `reason` to
-  /// `claimed_by` would name the wrong site whenever a third site
-  /// merely mentions the label through a node's groups (possible only
-  /// in a hand-built snapshot; a refresh lists every group it names).
-  listed_by: Vec<String>,
-  /// The site that owns it in the index — what lookups answer.
-  owner: String,
-  /// Which of the documented tie-break rules applied.
-  reason: &'static str,
-  /// The xnames non-owning sites claim for this label that are missing
-  /// from the served member list, sorted.
-  ///
-  /// Exactly "the nodes absent from `groups[label].members` because of
-  /// this collision" — empty when the sites disagree about ownership but
-  /// not about membership, since an xname the owner contributes anyway
-  /// was never lost. Listed rather than counted because the dump is
-  /// otherwise index-only: these xnames appear nowhere else in the
-  /// payload, so a count would say a node went missing without saying
-  /// which, leaving the reader to go ask the losing site's
-  /// manta-server — the round trip this endpoint exists to save.
-  discarded_members: Vec<String>,
-}
-
-/// An xname reported by several sites.
-#[derive(Debug, Serialize)]
-struct XnameConflict {
-  /// The contested xname.
-  xname: String,
-  /// Every site whose snapshot contains it, sorted.
-  reported_by: Vec<String>,
-  /// The site that owns it in the index — what lookups answer.
-  owner: String,
-  /// Which tie-break applied. Constant: unlike group labels, xnames
-  /// have no listing/mention distinction, so the last writer always
-  /// wins. Stated per entry so the payload explains itself.
-  reason: &'static str,
 }
 
 /// Build the full application router over the shared state.
@@ -354,21 +294,30 @@ async fn get_sites(State(state): State<Arc<AppState>>) -> Json<Vec<String>> {
 }
 
 /// GET /api/v1/lookup/group/{label} — resolve a group label to its
-/// site, or 404 when the label is unknown.
+/// site; 404 when the label is unknown, 409 naming every site when it
+/// exists at several.
 async fn lookup_group(
   State(state): State<Arc<AppState>>,
   Path(label): Path<String>,
 ) -> Response {
   let cache = state.cache.read().await;
-  match cache.index.group_to_site(&label) {
-    Some(site) => Json(GroupLookupResponse {
-      site: site.to_owned(),
-    })
-    .into_response(),
-    None => error_response(
+  match cache.index.group_sites(&label) {
+    [] => error_response(
       StatusCode::NOT_FOUND,
       format!("no site found for group '{label}'"),
     ),
+    [site] => Json(GroupLookupResponse { site: site.clone() }).into_response(),
+    sites => (
+      StatusCode::CONFLICT,
+      Json(AmbiguousGroupResponse {
+        error: format!(
+          "group '{label}' exists at several sites: {}",
+          sites.join(", ")
+        ),
+        sites: sites.to_vec(),
+      }),
+    )
+      .into_response(),
   }
 }
 
@@ -396,22 +345,31 @@ async fn lookup_nodes(
 
   let cache = state.cache.read().await;
   let mut resolutions = BTreeMap::new();
+  let mut ambiguous = BTreeMap::new();
   let mut unknown = Vec::new();
   for xname in xnames {
-    match cache.index.xname_to_site(xname) {
-      Some(site) => {
-        resolutions.insert(xname.to_owned(), site.to_owned());
+    match cache.index.xname_sites(xname) {
+      [] => unknown.push(xname.to_owned()),
+      [site] => {
+        resolutions.insert(xname.to_owned(), site.clone());
       }
-      None => unknown.push(xname.to_owned()),
+      sites => {
+        ambiguous.insert(xname.to_owned(), sites.to_vec());
+      }
     }
   }
   unknown.sort();
   unknown.dedup();
 
-  // Unanimous iff nothing is unknown and all resolutions agree.
+  // Unanimous iff nothing is unknown or ambiguous and all resolutions
+  // agree.
   let mut sites = resolutions.values();
   let site = match sites.next() {
-    Some(first) if unknown.is_empty() && sites.all(|s| s == first) => {
+    Some(first)
+      if unknown.is_empty()
+        && ambiguous.is_empty()
+        && sites.all(|s| s == first) =>
+    {
       Some(first.clone())
     }
     _ => None,
@@ -420,6 +378,7 @@ async fn lookup_nodes(
   Json(NodesLookupResponse {
     site,
     resolutions,
+    ambiguous,
     unknown,
   })
   .into_response()
@@ -470,27 +429,24 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
   let now = chrono::Utc::now();
   let cache = state.cache.read().await;
 
-  // Both index lookups are total over `groups()` — every label in the
-  // membership map also has an owner — so the defaults never apply.
   let groups = cache
     .index
     .groups()
     .map(|label| {
-      (
-        label.to_owned(),
-        GroupDump {
-          site: cache
+      let by_site = cache
+        .index
+        .group_sites(label)
+        .iter()
+        .map(|site| {
+          let members = cache
             .index
-            .group_to_site(label)
+            .group_members(label, site)
             .unwrap_or_default()
-            .to_owned(),
-          members: cache
-            .index
-            .group_members(label)
-            .unwrap_or_default()
-            .to_vec(),
-        },
-      )
+            .to_vec();
+          (site.clone(), members)
+        })
+        .collect();
+      (label.to_owned(), by_site)
     })
     .collect();
 
@@ -499,7 +455,7 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
   let xnames = cache
     .index
     .xnames()
-    .map(|(xname, site)| (xname.to_owned(), site.to_owned()))
+    .map(|(xname, sites)| (xname.to_owned(), sites.to_vec()))
     .collect();
 
   // Keyed by *configured* site, not indexed site: a site that failed
@@ -537,121 +493,7 @@ async fn dump(State(state): State<Arc<AppState>>) -> Json<DumpResponse> {
     sites,
     groups,
     xnames,
-    conflicts: conflicts(&cache),
   })
-}
-
-/// Re-scan the stored snapshots for cross-site collisions.
-///
-/// Runs per request rather than being maintained incrementally: this is
-/// a hand-called debugging endpoint, and one pass over the snapshots is
-/// cheaper than keeping a parallel structure correct across every
-/// refresh path.
-fn conflicts(cache: &CacheState) -> ConflictsDump {
-  // label → site → the xnames that site claims for the label. A listed
-  // label always gets an entry (possibly empty), so a label two sites
-  // list with no members is still seen as contested.
-  let mut membership: BTreeMap<&str, BTreeMap<&str, BTreeSet<&str>>> =
-    BTreeMap::new();
-  // label → the sites that listed it among their groups, which is
-  // what distinguishes a claim from a bare node mention. A set of
-  // *sites*, not a count of listings: one site repeating a label in its
-  // own response must not read as two sites claiming it.
-  let mut listed: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
-  // xname → sites that reported it.
-  let mut reported: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
-
-  for snapshot in cache.snapshots.values() {
-    let site = snapshot.site.as_str();
-    for label in &snapshot.labels {
-      listed.entry(label).or_default().insert(site);
-      membership
-        .entry(label)
-        .or_default()
-        .entry(site)
-        .or_default();
-    }
-    for node in &snapshot.nodes {
-      reported.entry(&node.xname).or_default().insert(site);
-      for label in &node.groups {
-        membership
-          .entry(label)
-          .or_default()
-          .entry(site)
-          .or_default()
-          .insert(&node.xname);
-      }
-    }
-  }
-
-  let groups = membership
-    .iter()
-    .filter(|(_, by_site)| by_site.len() > 1)
-    .filter_map(|(label, by_site)| {
-      let owner = cache.index.group_to_site(label)?;
-      // What the index actually serves for this label. An xname a
-      // non-owning site claims but that still appears here was not lost
-      // to the collision, so it must not count as discarded.
-      let served: BTreeSet<&str> = cache
-        .index
-        .group_members(label)
-        .unwrap_or_default()
-        .iter()
-        .map(String::as_str)
-        .collect();
-      let discarded: BTreeSet<&str> = by_site
-        .iter()
-        .filter(|(site, _)| **site != owner)
-        .flat_map(|(_, xnames)| xnames.iter().copied())
-        .filter(|xname| !served.contains(xname))
-        .collect();
-      static NO_SITES: BTreeSet<&str> = BTreeSet::new();
-      let listed_by = listed.get(label).unwrap_or(&NO_SITES);
-      Some(GroupConflict {
-        label: (*label).to_owned(),
-        claimed_by: by_site.keys().map(|s| (*s).to_owned()).collect(),
-        listed_by: listed_by.iter().map(|s| (*s).to_owned()).collect(),
-        owner: owner.to_owned(),
-        // Mirrors the tie-breaks documented on `manta_cache::Index`.
-        // Snapshots are folded in site-name order (see refresh::rebuild),
-        // so "last write wins" is "last in site-name order" — over the
-        // sites in `listed_by`, which is not always all of `claimed_by`.
-        reason: match listed_by.len() {
-          0 => {
-            "no site listed this label — it is known only from node \
-             membership, so the first of claimed_by in site-name order \
-             owns it"
-          }
-          1 => {
-            "one site listed this label; a listing outranks another \
-             site's node membership, whatever the order"
-          }
-          _ => {
-            "several sites listed this label; the last of listed_by in \
-             site-name order owns it"
-          }
-        },
-        // Already sorted and de-duplicated: it is a BTreeSet.
-        discarded_members: discarded.iter().map(|x| (*x).to_owned()).collect(),
-      })
-    })
-    .collect();
-
-  let xnames = reported
-    .iter()
-    .filter(|(_, sites)| sites.len() > 1)
-    .filter_map(|(xname, sites)| {
-      Some(XnameConflict {
-        xname: (*xname).to_owned(),
-        reported_by: sites.iter().map(|s| (*s).to_owned()).collect(),
-        owner: cache.index.xname_to_site(xname)?.to_owned(),
-        reason: "reported by several sites; the last in site-name order \
-                 owns it",
-      })
-    })
-    .collect();
-
-  ConflictsDump { groups, xnames }
 }
 
 #[cfg(test)]
@@ -863,6 +705,7 @@ mod tests {
     assert_eq!(status, StatusCode::OK);
     assert_eq!(body["site"], "alps");
     assert_eq!(body["resolutions"]["x1000c0s0b0n0"], "alps");
+    assert_eq!(body["ambiguous"], serde_json::json!({}));
     assert_eq!(body["unknown"], serde_json::json!([]));
   }
 
@@ -1257,7 +1100,8 @@ mod tests {
 
     // Every group in the dump resolves identically through the lookup
     // endpoint — the dump is a bulk mirror, not a second resolution.
-    for (label, entry) in dump["groups"].as_object().unwrap() {
+    // Nothing collides in this fixture, so each has exactly one site.
+    for (label, by_site) in dump["groups"].as_object().unwrap() {
       let (status, looked_up) = send(
         router.clone(),
         "GET",
@@ -1266,22 +1110,22 @@ mod tests {
       )
       .await;
       assert_eq!(status, StatusCode::OK, "{label}");
-      assert_eq!(looked_up["site"], entry["site"], "{label}");
+      let sites: Vec<&String> = by_site.as_object().unwrap().keys().collect();
+      assert_eq!(sites, [looked_up["site"].as_str().unwrap()], "{label}");
     }
 
-    assert_eq!(dump["groups"]["compute"]["site"], "alps");
     assert_eq!(
-      dump["groups"]["compute"]["members"],
+      dump["groups"]["compute"]["alps"],
       serde_json::json!(["x1000c0s0b0n0", "x1000c0s0b0n1"])
     );
     // A known-but-empty group is present with an empty member list, not
     // absent — same as `group_members` returning `Some(&[])`.
-    assert_eq!(dump["groups"]["empty"]["members"], serde_json::json!([]));
-    assert_eq!(dump["xnames"]["x2000c0s0b0n0"], "daint");
+    assert_eq!(dump["groups"]["empty"]["alps"], serde_json::json!([]));
+    assert_eq!(
+      dump["xnames"]["x2000c0s0b0n0"],
+      serde_json::json!(["daint"])
+    );
     assert!(dump["generated_at"].as_str().unwrap().ends_with('Z'));
-    // Nothing collides in this fixture.
-    assert_eq!(dump["conflicts"]["groups"], serde_json::json!([]));
-    assert_eq!(dump["conflicts"]["xnames"], serde_json::json!([]));
   }
 
   #[tokio::test]
@@ -1326,166 +1170,82 @@ mod tests {
     assert_eq!(sites["prealps"]["last_error"], "connection refused");
   }
 
-  #[tokio::test]
-  async fn dump_reports_cross_site_collisions() {
-    // `nodes_free` is a conventional pool name, so the same label really
-    // does show up at several sites. The index keeps only one owner and
-    // silently drops the other site's members; `conflicts` says so.
+  /// `nodes_free` is a conventional pool name, so the same label really
+  /// does show up at several sites; `x9000c0s0b0n0` is reported by both.
+  fn colliding_state() -> Arc<AppState> {
+    let node = |xname: &str| NodeMembership {
+      xname: xname.to_owned(),
+      groups: vec!["nodes_free".to_owned()],
+    };
     let snapshots = vec![
       SiteSnapshot {
         site: "alps".to_owned(),
         labels: vec!["nodes_free".to_owned()],
-        nodes: vec![
-          NodeMembership {
-            xname: "x1000c0s0b0n0".to_owned(),
-            groups: vec!["nodes_free".to_owned()],
-          },
-          NodeMembership {
-            xname: "x9000c0s0b0n0".to_owned(),
-            groups: vec!["nodes_free".to_owned()],
-          },
-        ],
+        nodes: vec![node("x1000c0s0b0n0"), node("x9000c0s0b0n0")],
       },
       SiteSnapshot {
         site: "daint".to_owned(),
         labels: vec!["nodes_free".to_owned()],
-        nodes: vec![
-          NodeMembership {
-            xname: "x2000c0s0b0n0".to_owned(),
-            groups: vec!["nodes_free".to_owned()],
-          },
-          // Also reported by alps above.
-          NodeMembership {
-            xname: "x9000c0s0b0n0".to_owned(),
-            groups: vec!["nodes_free".to_owned()],
-          },
-        ],
+        nodes: vec![node("x2000c0s0b0n0"), node("x9000c0s0b0n0")],
       },
     ];
-    let router =
-      build_router(state_from(snapshots_to_state(snapshots), dump_config()));
-    let (_, dump) = send(router, "GET", "/api/v1/dump", Some("sekrit")).await;
-
-    // The mirror shows only the winner, with no hint of alps' nodes.
-    assert_eq!(dump["groups"]["nodes_free"]["site"], "daint");
-    assert_eq!(
-      dump["groups"]["nodes_free"]["members"],
-      serde_json::json!(["x2000c0s0b0n0", "x9000c0s0b0n0"])
-    );
-
-    let conflict = &dump["conflicts"]["groups"][0];
-    assert_eq!(conflict["label"], "nodes_free");
-    assert_eq!(conflict["claimed_by"], serde_json::json!(["alps", "daint"]));
-    assert_eq!(conflict["listed_by"], serde_json::json!(["alps", "daint"]));
-    assert_eq!(conflict["owner"], "daint");
-    // Only x1000c0s0b0n0 actually went missing: x9000c0s0b0n0 is claimed
-    // by alps too but the winner contributes it anyway, so it is still
-    // in the served member list and is not a loss.
-    assert_eq!(
-      conflict["discarded_members"],
-      serde_json::json!(["x1000c0s0b0n0"])
-    );
-    // Full string, not a substring: two of the three arms mention
-    // "site-name order", so a `contains` check passes on the wrong one.
-    assert_eq!(
-      conflict["reason"],
-      "several sites listed this label; the last of listed_by in \
-       site-name order owns it"
-    );
-
-    let xname_conflict = &dump["conflicts"]["xnames"][0];
-    assert_eq!(xname_conflict["xname"], "x9000c0s0b0n0");
-    assert_eq!(
-      xname_conflict["reported_by"],
-      serde_json::json!(["alps", "daint"])
-    );
-    assert_eq!(xname_conflict["owner"], "daint");
-    assert_eq!(
-      xname_conflict["reason"],
-      "reported by several sites; the last in site-name order owns it"
-    );
+    state_from(snapshots_to_state(snapshots), dump_config())
   }
 
   #[tokio::test]
-  async fn dump_distinguishes_a_listing_from_a_bare_node_mention() {
-    // The subtlest Index rule: a listing outranks a bare node mention
-    // *whatever the fold order*. One label is not enough to pin that —
-    // it takes both directions, since each rules out a different naive
-    // implementation:
-    //
-    //   `shared` — the listing site (alps) sorts FIRST and still wins,
-    //              which a plain last-write-wins would get wrong.
-    //   `pool`   — the listing site (santis) sorts LAST and takes the
-    //              label off an earlier mention-owner, which a plain
-    //              first-claimer-wins would get wrong.
-    let snapshots = vec![
-      SiteSnapshot {
-        site: "alps".to_owned(),
-        labels: vec!["shared".to_owned()],
-        nodes: vec![
-          NodeMembership {
-            xname: "x1000c0s0b0n0".to_owned(),
-            groups: vec!["shared".to_owned()],
-          },
-          // Mention only: alps never lists `pool`.
-          NodeMembership {
-            xname: "x1001c0s0b0n0".to_owned(),
-            groups: vec!["pool".to_owned()],
-          },
-        ],
-      },
-      SiteSnapshot {
-        site: "santis".to_owned(),
-        labels: vec!["pool".to_owned()],
-        nodes: vec![
-          // Mention only: santis never lists `shared`.
-          NodeMembership {
-            xname: "x3000c0s0b0n0".to_owned(),
-            groups: vec!["shared".to_owned()],
-          },
-          NodeMembership {
-            xname: "x3001c0s0b0n0".to_owned(),
-            groups: vec!["pool".to_owned()],
-          },
-        ],
-      },
-    ];
-    let router =
-      build_router(state_from(snapshots_to_state(snapshots), dump_config()));
+  async fn group_lookup_of_a_colliding_label_is_a_409_naming_every_site() {
+    let router = build_router(colliding_state());
+    let (status, body) = send(
+      router,
+      "GET",
+      "/api/v1/lookup/group/nodes_free",
+      Some("sekrit"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::CONFLICT);
+    assert_eq!(body["sites"], serde_json::json!(["alps", "daint"]));
+    let error = body["error"].as_str().unwrap();
+    assert!(error.contains("alps, daint"), "{error}");
+  }
+
+  #[tokio::test]
+  async fn nodes_lookup_lists_colliding_xnames_as_ambiguous() {
+    let router = build_router(colliding_state());
+    let (status, body) = send(
+      router,
+      "GET",
+      "/api/v1/lookup/nodes?xnames=x1000c0s0b0n0,x9000c0s0b0n0",
+      Some("sekrit"),
+    )
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    // x1000… alone would resolve to alps, but x9000… could be either.
+    assert_eq!(body["site"], serde_json::Value::Null);
+    assert_eq!(body["resolutions"]["x1000c0s0b0n0"], "alps");
+    assert_eq!(
+      body["ambiguous"]["x9000c0s0b0n0"],
+      serde_json::json!(["alps", "daint"])
+    );
+    assert_eq!(body["unknown"], serde_json::json!([]));
+  }
+
+  #[tokio::test]
+  async fn dump_shows_every_site_of_a_collision_with_its_own_members() {
+    let router = build_router(colliding_state());
     let (_, dump) = send(router, "GET", "/api/v1/dump", Some("sekrit")).await;
 
-    assert_eq!(dump["groups"]["shared"]["site"], "alps");
-    assert_eq!(dump["groups"]["pool"]["site"], "santis");
-
-    // conflicts.groups is label-sorted: "pool" before "shared".
-    let pool = &dump["conflicts"]["groups"][0];
-    assert_eq!(pool["label"], "pool");
-    assert_eq!(pool["owner"], "santis");
-    assert_eq!(pool["claimed_by"], serde_json::json!(["alps", "santis"]));
-    assert_eq!(pool["listed_by"], serde_json::json!(["santis"]));
-    // alps' node lost the label when santis' listing cleared the list.
     assert_eq!(
-      pool["discarded_members"],
-      serde_json::json!(["x1001c0s0b0n0"])
-    );
-
-    let conflict = &dump["conflicts"]["groups"][1];
-    assert_eq!(conflict["label"], "shared");
-    assert_eq!(conflict["owner"], "alps");
-    assert_eq!(
-      conflict["claimed_by"],
-      serde_json::json!(["alps", "santis"])
-    );
-    assert_eq!(conflict["listed_by"], serde_json::json!(["alps"]));
-    assert_eq!(
-      conflict["discarded_members"],
-      serde_json::json!(["x3000c0s0b0n0"])
+      dump["groups"]["nodes_free"],
+      serde_json::json!({
+        "alps": ["x1000c0s0b0n0", "x9000c0s0b0n0"],
+        "daint": ["x2000c0s0b0n0", "x9000c0s0b0n0"],
+      })
     );
     assert_eq!(
-      conflict["reason"],
-      "one site listed this label; a listing outranks another site's \
-       node membership, whatever the order"
+      dump["xnames"]["x9000c0s0b0n0"],
+      serde_json::json!(["alps", "daint"])
     );
+    assert_eq!(dump["xnames"]["x1000c0s0b0n0"], serde_json::json!(["alps"]));
   }
 
   #[tokio::test]
@@ -1568,7 +1328,7 @@ mod tests {
       site["last_error"].as_str().unwrap().contains("live"),
       "{site}"
     );
-    assert_eq!(dump["groups"]["compute"]["site"], "live");
+    assert!(dump["groups"]["compute"]["live"].is_array(), "{dump}");
   }
 
   #[tokio::test]

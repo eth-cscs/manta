@@ -98,15 +98,15 @@ async fn refresh_fans_out_with_per_site_headers() {
   assert!(outcome.is_complete(), "failures: {:?}", outcome.failures);
   let index = outcome.index;
   assert_eq!(index.sites().collect::<Vec<_>>(), vec!["alps", "daint"]);
-  assert_eq!(index.group_to_site("compute"), Some("alps"));
-  assert_eq!(index.group_to_site("compute_d"), Some("daint"));
-  assert_eq!(index.group_to_site("extra"), Some("daint"));
+  assert_eq!(index.group_sites("compute"), ["alps"]);
+  assert_eq!(index.group_sites("compute_d"), ["daint"]);
+  assert_eq!(index.group_sites("extra"), ["daint"]);
   assert_eq!(
-    index.group_members("extra"),
+    index.group_members("extra", "daint"),
     Some(&["x2000c0s0b0n0".to_owned()][..])
   );
-  assert_eq!(index.xname_to_site("x1000c0s0b0n0"), Some("alps"));
-  assert_eq!(index.xname_to_site("x2000c0s0b0n0"), Some("daint"));
+  assert_eq!(index.xname_sites("x1000c0s0b0n0"), ["alps"]);
+  assert_eq!(index.xname_sites("x2000c0s0b0n0"), ["daint"]);
   // MockServer verifies each `.expect(1)` on drop: one call per site,
   // carrying that site's own headers.
 }
@@ -194,7 +194,7 @@ async fn refresh_collects_failures_and_keeps_healthy_sites() {
 
   // The healthy site is fully indexed; the failed one is absent.
   assert_eq!(outcome.index.sites().collect::<Vec<_>>(), vec!["good"]);
-  assert_eq!(outcome.index.group_to_site("compute"), Some("good"));
+  assert_eq!(outcome.index.group_sites("compute"), ["good"]);
 
   // The failure names the site and carries the body snippet.
   assert_eq!(outcome.failures.len(), 1);

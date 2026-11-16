@@ -59,8 +59,8 @@ Only plain comma-separated xnames are looked up; a hostlist expression or a NID 
 | Status | Cause |
 |--------|-------|
 | `400` | No `X-Manta-Site`, and the request names no resolvable target, or the server has no `[site_resolution]` |
-| `404` | The cache knows no such group (or the resolved site is not configured on this server) |
-| `409` | The xnames belong to more than one site; the message lists each xname's site |
+| `404` | The cache does not resolve the group: it may not exist, or the cache's service account may not see it (also: the resolved site is not configured on this server) |
+| `409` | The group exists at several sites, or the xnames do not resolve to one site (split across sites, known at several sites, or partly not resolved); the message lists the sites |
 | `500` | The cache rejected the server's `api_token` (`[site_resolution]`) |
 | `503` | The cache is unreachable or answered unexpectedly |
 
@@ -88,7 +88,7 @@ All errors return JSON with an `error` field:
 | `401` | Missing or malformed `Authorization` header, or the site's identity provider rejected the token (see [Authentication](#authentication)) |
 | `403` | The site's identity provider refused the token exchange for this user, or the user lacks the role or group the operation needs |
 | `404` | Resource not found |
-| `409` | Conflict — resource already exists, or (site resolution) the xnames span several sites |
+| `409` | Conflict — resource already exists, or (site resolution) the group or xnames resolve to several sites |
 | `422` | Unprocessable entity — required field missing or wrong type |
 | `500` | Backend call failed |
 | `501` | Feature requires per-site Vault / Kubernetes config not set (see [Server configuration requirements](#server-configuration-requirements)) |

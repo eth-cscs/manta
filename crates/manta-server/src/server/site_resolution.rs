@@ -8,8 +8,9 @@
 //! fails the request with a message that tells the caller to pass
 //! `--site`:
 //!
-//! - unknown group / xname → 404;
-//! - xname list split across sites → 409, naming the per-xname sites;
+//! - group the cache does not resolve → 404;
+//! - group at several sites, or xname list that is split across sites,
+//!   ambiguous or partly unresolved → 409, naming the sites;
 //! - cache down, slow or garbled → 503;
 //! - cache rejects this server's token → 500 (an operator problem, not
 //!   the caller's).
@@ -104,14 +105,24 @@ pub enum ResolveError {
   NoTarget,
   /// No site header and this server has no `[site_resolution]`.
   NotConfigured,
-  /// The cache knows no such group.
+  /// The cache does not resolve the group (it may not exist, or the
+  /// cache's service account may not see it).
   UnknownGroup(String),
+  /// The group exists at several sites.
+  AmbiguousGroup {
+    /// The group label.
+    label: String,
+    /// Every site that has it, sorted.
+    sites: Vec<String>,
+  },
   /// The xnames do not resolve to one site; carries the per-xname
-  /// resolutions and the unknown xnames.
+  /// resolutions, the ambiguous xnames and the unresolved ones.
   NotSingleSite {
-    /// Known xnames and their sites.
+    /// Xnames known at one site, and that site.
     resolutions: BTreeMap<String, String>,
-    /// Xnames the cache knows nothing about.
+    /// Xnames known at several sites, and every site.
+    ambiguous: BTreeMap<String, Vec<String>>,
+    /// Xnames the cache does not resolve.
     unknown: Vec<String>,
   },
   /// The cache rejected this server's bearer token.
@@ -135,20 +146,31 @@ impl std::fmt::Display for ResolveError {
       ),
       Self::UnknownGroup(label) => write!(
         f,
-        "The site-resolution cache knows no group '{label}'. Pass \
-         --site <name> explicitly (or refresh the cache if the group \
-         is new)."
+        "Group '{label}' could not be resolved to a site. Pass \
+         --site <name>."
+      ),
+      Self::AmbiguousGroup { label, sites } => write!(
+        f,
+        "Group '{label}' exists at several sites ({}). Pass \
+         --site <name>.",
+        sites.join(", ")
       ),
       Self::NotSingleSite {
         resolutions,
+        ambiguous,
         unknown,
       } => {
         let mut detail: Vec<String> = resolutions
           .iter()
           .map(|(xname, site)| format!("{xname} → {site}"))
+          .chain(
+            ambiguous
+              .iter()
+              .map(|(xname, sites)| format!("{xname} → {}", sites.join(" | "))),
+          )
           .collect();
         if !unknown.is_empty() {
-          detail.push(format!("unknown: {}", unknown.join(", ")));
+          detail.push(format!("not resolved: {}", unknown.join(", ")));
         }
         write!(
           f,
@@ -178,7 +200,9 @@ impl ResolveError {
     match self {
       Self::NoTarget | Self::NotConfigured => StatusCode::BAD_REQUEST,
       Self::UnknownGroup(_) => StatusCode::NOT_FOUND,
-      Self::NotSingleSite { .. } => StatusCode::CONFLICT,
+      Self::AmbiguousGroup { .. } | Self::NotSingleSite { .. } => {
+        StatusCode::CONFLICT
+      }
       Self::Rejected(_) => StatusCode::INTERNAL_SERVER_ERROR,
       Self::Unavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
     }
@@ -207,12 +231,21 @@ struct GroupReply {
   site: String,
 }
 
+/// `409` reply body of `GET /lookup/group/{label}`: the label exists
+/// at several sites.
+#[derive(Deserialize)]
+struct AmbiguousGroupReply {
+  sites: Vec<String>,
+}
+
 /// `GET /lookup/nodes` reply body.
 #[derive(Deserialize)]
 struct NodesReply {
   site: Option<String>,
   #[serde(default)]
   resolutions: BTreeMap<String, String>,
+  #[serde(default)]
+  ambiguous: BTreeMap<String, Vec<String>>,
   #[serde(default)]
   unknown: Vec<String>,
 }
@@ -396,6 +429,14 @@ fn interpret_group_reply(
       .map(|reply| reply.site)
       .map_err(|e| undecodable(&e)),
     404 => Err(ResolveError::UnknownGroup(label.to_owned())),
+    409 => serde_json::from_str::<AmbiguousGroupReply>(body)
+      .map_err(|e| undecodable(&e))
+      .and_then(|reply| {
+        Err(ResolveError::AmbiguousGroup {
+          label: label.to_owned(),
+          sites: reply.sites,
+        })
+      }),
     401 | 403 => Err(ResolveError::Rejected(status)),
     other => Err(unexpected_status(other)),
   }
@@ -414,6 +455,7 @@ fn interpret_nodes_reply(
       }) => Ok(site),
       Ok(reply) => Err(ResolveError::NotSingleSite {
         resolutions: reply.resolutions,
+        ambiguous: reply.ambiguous,
         unknown: reply.unknown,
       }),
       Err(e) => Err(undecodable(&e)),
@@ -490,7 +532,22 @@ mod tests {
     );
     let err = interpret_group_reply(404, "{}", "g").unwrap_err();
     assert_eq!(err.status(), StatusCode::NOT_FOUND);
-    assert!(err.to_string().contains("knows no group 'g'"), "{err}");
+    assert!(
+      err.to_string().contains("'g' could not be resolved"),
+      "{err}"
+    );
+
+    let err = interpret_group_reply(
+      409,
+      r#"{"error":"…","sites":["alps","daint"]}"#,
+      "g",
+    )
+    .unwrap_err();
+    assert_eq!(err.status(), StatusCode::CONFLICT);
+    assert!(
+      err.to_string().contains("several sites (alps, daint)"),
+      "{err}"
+    );
 
     let err = interpret_group_reply(401, "", "g").unwrap_err();
     assert_eq!(err.status(), StatusCode::INTERNAL_SERVER_ERROR);
@@ -507,13 +564,15 @@ mod tests {
   #[test]
   fn nodes_reply_split_is_a_conflict_naming_resolutions() {
     let body = r#"{"site":null,
-      "resolutions":{"x1":"alps","x2":"daint"},"unknown":["x9"]}"#;
+      "resolutions":{"x1":"alps","x2":"daint"},
+      "ambiguous":{"x3":["alps","daint"]},"unknown":["x9"]}"#;
     let err = interpret_nodes_reply(200, body).unwrap_err();
     assert_eq!(err.status(), StatusCode::CONFLICT);
     let msg = err.to_string();
     assert!(msg.contains("x1 → alps"), "{msg}");
     assert!(msg.contains("x2 → daint"), "{msg}");
-    assert!(msg.contains("unknown: x9"), "{msg}");
+    assert!(msg.contains("x3 → alps | daint"), "{msg}");
+    assert!(msg.contains("not resolved: x9"), "{msg}");
 
     assert_eq!(
       interpret_nodes_reply(

@@ -25,9 +25,7 @@ fn descriptor_for(state: &AppState, name: &str) -> SiteDescriptor {
   }
 }
 
-/// Rebuild the index from a snapshot store. `BTreeMap` iteration is
-/// name-sorted, so the Index's documented "snapshot order" collision
-/// rules are deterministic across runs.
+/// Rebuild the index from a snapshot store.
 fn rebuild(snapshots: &BTreeMap<String, SiteSnapshot>) -> Index {
   Index::from_snapshots(snapshots.values().cloned().collect())
 }

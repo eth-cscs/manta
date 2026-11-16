@@ -73,19 +73,19 @@ async fn refresh_against_live_server() {
     index.sites().collect::<Vec<_>>()
   );
 
-  // Self-consistency: every group resolves to a site, and every member
-  // xname resolves back to the same site as its group.
+  // Self-consistency: every group has a site, and every member xname
+  // is known at the site its group was listed at.
   for group in index.groups().map(str::to_owned).collect::<Vec<_>>() {
-    let group_site = index
-      .group_to_site(&group)
-      .unwrap_or_else(|| panic!("group '{group}' has no site"));
+    let group_sites = index.group_sites(&group);
+    assert!(!group_sites.is_empty(), "group '{group}' has no site");
 
-    for xname in index.group_members(&group).unwrap_or(&[]) {
-      assert_eq!(
-        index.xname_to_site(xname),
-        Some(group_site),
-        "xname '{xname}' (group '{group}') resolved to a different site"
-      );
+    for group_site in group_sites {
+      for xname in index.group_members(&group, group_site).unwrap_or(&[]) {
+        assert!(
+          index.xname_sites(xname).contains(group_site),
+          "xname '{xname}' (group '{group}') not known at '{group_site}'"
+        );
+      }
     }
   }
 }

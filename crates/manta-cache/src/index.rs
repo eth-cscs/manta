@@ -1,7 +1,7 @@
 //! The resolved index and its synchronous lookup surface.
 //!
 //! The canonical data is the set of `(site, group, members)` triples;
-//! the two lookup maps (`group → site`, `xname → site`) are derived
+//! the two lookup maps (`group → sites`, `xname → sites`) are derived
 //! from it at [`Index::from_snapshots`] time so reads are O(1).
 
 use std::collections::{BTreeMap, BTreeSet, HashMap};
@@ -34,52 +34,45 @@ pub struct NodeMembership {
   pub groups: Vec<String>,
 }
 
-/// A resolved `(group, xname) → site` routing index.
+/// A `(group, xname) → sites` routing index.
 ///
 /// Build it with [`crate::refresh`] (live, over HTTP) or
 /// [`Index::from_snapshots`] (from data already in hand). All lookups
-/// are synchronous and infallible — they return `None` when nothing is
-/// known about the key.
+/// are synchronous and infallible.
 ///
-/// # Conflict handling
+/// # Collisions
 ///
-/// A principled conflict policy is deferred to ROADMAP Stage 4; Stage 1
-/// only needs deterministic, non-panicking behaviour. The deterministic
-/// rules when the same key is seen at more than one site (in snapshot
-/// order) are:
+/// The index never picks a winner. A group label or xname seen at
+/// several sites maps to **all** of them, and the lookups return every
+/// site, sorted: empty means unknown, one means resolved, more means
+/// ambiguous. Deciding what an ambiguous answer means is the caller's
+/// job (manta-server asks the user to name the site). Member lists are
+/// kept per `(group, site)`, so they never mix xnames from two sites.
 ///
-/// - An **xname** resolves to the last site that reported it.
-/// - A **group label** in a site's [`SiteSnapshot::labels`] claims
-///   the label, replacing any earlier owner. A label known only from
-///   nodes' [`NodeMembership::groups`] stays with the first site that
-///   mentioned it — a listing outranks a mention. ([`crate::refresh`]
-///   never produces a bare mention: its node groups all come from the
-///   listed groups. A hand-built snapshot can.)
-/// - [`Index::group_members`] reflects the owning site only: when
-///   ownership moves, the previous site's members are discarded, and a
-///   non-owning site's nodes are never added. Member lists never mix
-///   xnames from two sites.
+/// A site has a group when it lists the label in
+/// [`SiteSnapshot::labels`] **or** one of its nodes names it in
+/// [`NodeMembership::groups`] ([`crate::refresh`] only produces the
+/// latter for listed labels; a hand-built snapshot may not).
 #[derive(Debug, Default, Clone)]
 pub struct Index {
-  /// `group label → site`.
-  group_to_site: HashMap<String, String>,
-  /// `xname → site`.
-  xname_to_site: HashMap<String, String>,
-  /// `group label → sorted member xnames`. `BTreeMap` so
+  /// `group label → sites`, sorted and de-duplicated.
+  group_sites: HashMap<String, Vec<String>>,
+  /// `xname → sites`, sorted and de-duplicated.
+  xname_sites: HashMap<String, Vec<String>>,
+  /// `group label → site → sorted member xnames`. `BTreeMap` so
   /// [`Index::groups`] yields labels in a deterministic, sorted order.
-  group_members: BTreeMap<String, Vec<String>>,
+  group_members: BTreeMap<String, BTreeMap<String, Vec<String>>>,
   /// All site names seen, sorted and de-duplicated.
   sites: BTreeSet<String>,
 }
 
 impl Index {
-  /// Fold per-site snapshots into the derived lookup maps.
+  /// Fold per-site snapshots into the derived lookup maps. Snapshot
+  /// order does not matter.
   ///
   /// This is the HTTP-free construction path: [`crate::refresh`] calls
   /// it after fetching, and callers that already hold the group data
   /// (an embedding process, a fixture-driven test) call it directly.
-  /// Snapshot order matters for cross-site collisions — see "Conflict
-  /// handling" above.
   pub fn from_snapshots(snapshots: Vec<SiteSnapshot>) -> Self {
     let mut index = Index::default();
 
@@ -87,64 +80,83 @@ impl Index {
       index.sites.insert(snap.site.clone());
 
       for label in snap.labels {
-        // A listed label claims ownership outright. If another site
-        // owned it, drop that site's members so the list only ever
-        // reflects the owner (see "Conflict handling" above).
-        let prev = index.group_to_site.insert(label.clone(), snap.site.clone());
-        let members = index.group_members.entry(label).or_default();
-        if prev.is_some_and(|p| p != snap.site) {
-          members.clear();
-        }
+        index
+          .group_sites
+          .entry(label.clone())
+          .or_default()
+          .push(snap.site.clone());
+        index
+          .group_members
+          .entry(label)
+          .or_default()
+          .entry(snap.site.clone())
+          .or_default();
       }
 
       for node in snap.nodes {
         index
-          .xname_to_site
-          .insert(node.xname.clone(), snap.site.clone());
+          .xname_sites
+          .entry(node.xname.clone())
+          .or_default()
+          .push(snap.site.clone());
         for label in node.groups {
-          // A node may name a group that is not in the snapshot's
-          // labels (only in a hand-built snapshot); such a mention
-          // claims the label only while it is unowned, and
-          // membership is recorded only when this site owns the label.
-          let owner = index
-            .group_to_site
+          index
+            .group_sites
             .entry(label.clone())
-            .or_insert_with(|| snap.site.clone());
-          if *owner == snap.site {
-            index
-              .group_members
-              .entry(label)
-              .or_default()
-              .push(node.xname.clone());
-          }
+            .or_default()
+            .push(snap.site.clone());
+          index
+            .group_members
+            .entry(label)
+            .or_default()
+            .entry(snap.site.clone())
+            .or_default()
+            .push(node.xname.clone());
         }
       }
     }
 
-    // Sort + de-duplicate each membership list for stable output.
-    for members in index.group_members.values_mut() {
-      members.sort();
-      members.dedup();
+    // Sort + de-duplicate every list for stable output.
+    for list in index
+      .group_sites
+      .values_mut()
+      .chain(index.xname_sites.values_mut())
+      .chain(
+        index
+          .group_members
+          .values_mut()
+          .flat_map(|m| m.values_mut()),
+      )
+    {
+      list.sort();
+      list.dedup();
     }
 
     index
   }
 
-  /// Resolve a group label to the site it lives at.
-  pub fn group_to_site(&self, label: &str) -> Option<&str> {
-    self.group_to_site.get(label).map(String::as_str)
+  /// Every site that has a group with this label, sorted. Empty when
+  /// the label is unknown; more than one entry is a collision.
+  pub fn group_sites(&self, label: &str) -> &[String] {
+    self.group_sites.get(label).map_or(&[], Vec::as_slice)
   }
 
-  /// Resolve a node xname to the site it lives at.
-  pub fn xname_to_site(&self, xname: &str) -> Option<&str> {
-    self.xname_to_site.get(xname).map(String::as_str)
+  /// Every site that reported this xname, sorted. Empty when the
+  /// xname is unknown; more than one entry is a collision.
+  pub fn xname_sites(&self, xname: &str) -> &[String] {
+    self.xname_sites.get(xname).map_or(&[], Vec::as_slice)
   }
 
-  /// The members of a group, sorted, or `None` if the label is unknown.
+  /// The members of a group at one site, sorted, or `None` when that
+  /// site has no such group.
   ///
   /// A known but empty group returns `Some(&[])`.
-  pub fn group_members(&self, label: &str) -> Option<&[String]> {
-    self.group_members.get(label).map(Vec::as_slice)
+  pub fn group_members(&self, label: &str, site: &str) -> Option<&[String]> {
+    self
+      .group_members
+      .get(label)
+      .and_then(|by_site| by_site.get(site))
+      .map(Vec::as_slice)
   }
 
   /// Iterate over every site name in the index, sorted.
@@ -157,17 +169,17 @@ impl Index {
     self.group_members.keys().map(String::as_str)
   }
 
-  /// Iterate over every known `(xname, site)` pair.
+  /// Iterate over every known xname with its sites.
   ///
   /// Unlike [`Index::groups`] and [`Index::sites`], the order is
   /// **unspecified** — the backing map is a `HashMap`, chosen for O(1)
-  /// [`Index::xname_to_site`]. Collect into an ordered container when
+  /// [`Index::xname_sites`]. Collect into an ordered container when
   /// the output has to be stable (a dump that gets diffed, say).
-  pub fn xnames(&self) -> impl Iterator<Item = (&str, &str)> {
+  pub fn xnames(&self) -> impl Iterator<Item = (&str, &[String])> {
     self
-      .xname_to_site
+      .xname_sites
       .iter()
-      .map(|(xname, site)| (xname.as_str(), site.as_str()))
+      .map(|(xname, sites)| (xname.as_str(), sites.as_slice()))
   }
 }
 
@@ -215,29 +227,29 @@ mod tests {
   #[test]
   fn group_resolves_to_its_site() {
     let idx = sample();
-    assert_eq!(idx.group_to_site("gpu"), Some("alps"));
-    assert_eq!(idx.group_to_site("compute_d"), Some("daint"));
-    assert_eq!(idx.group_to_site("nope"), None);
+    assert_eq!(idx.group_sites("gpu"), ["alps"]);
+    assert_eq!(idx.group_sites("compute_d"), ["daint"]);
+    assert!(idx.group_sites("nope").is_empty());
   }
 
   #[test]
   fn xname_resolves_to_its_site() {
     let idx = sample();
-    assert_eq!(idx.xname_to_site("x1000c0s0b0n0"), Some("alps"));
-    assert_eq!(idx.xname_to_site("x2000c0s0b0n0"), Some("daint"));
-    assert_eq!(idx.xname_to_site("x9999c0s0b0n0"), None);
+    assert_eq!(idx.xname_sites("x1000c0s0b0n0"), ["alps"]);
+    assert_eq!(idx.xname_sites("x2000c0s0b0n0"), ["daint"]);
+    assert!(idx.xname_sites("x9999c0s0b0n0").is_empty());
   }
 
   #[test]
   fn members_are_joined_sorted_and_dedup() {
     let idx = sample();
     assert_eq!(
-      idx.group_members("compute"),
+      idx.group_members("compute", "alps"),
       Some(&["x1000c0s0b0n0".to_owned(), "x1000c0s0b0n1".to_owned()][..]),
     );
     // Node belongs to multiple groups.
     assert_eq!(
-      idx.group_members("gpu"),
+      idx.group_members("gpu", "alps"),
       Some(&["x1000c0s0b0n1".to_owned()][..]),
     );
   }
@@ -245,8 +257,10 @@ mod tests {
   #[test]
   fn empty_group_is_known_with_no_members() {
     let idx = sample();
-    assert_eq!(idx.group_members("empty"), Some(&[][..]));
-    assert_eq!(idx.group_to_site("empty"), Some("alps"));
+    assert_eq!(idx.group_members("empty", "alps"), Some(&[][..]));
+    assert_eq!(idx.group_sites("empty"), ["alps"]);
+    // Known group, but not at that site.
+    assert_eq!(idx.group_members("empty", "daint"), None);
   }
 
   #[test]
@@ -267,46 +281,71 @@ mod tests {
   #[test]
   fn xnames_enumerates_every_pair() {
     let idx = sample();
-    let mut pairs: Vec<_> = idx.xnames().collect();
+    let mut pairs: Vec<_> = idx
+      .xnames()
+      .map(|(xname, sites)| (xname, sites.join(",")))
+      .collect();
     pairs.sort(); // iteration order is unspecified by contract
     assert_eq!(
       pairs,
       vec![
-        ("x1000c0s0b0n0", "alps"),
-        ("x1000c0s0b0n1", "alps"),
-        ("x2000c0s0b0n0", "daint"),
+        ("x1000c0s0b0n0", "alps".to_owned()),
+        ("x1000c0s0b0n1", "alps".to_owned()),
+        ("x2000c0s0b0n0", "daint".to_owned()),
       ]
     );
   }
 
   #[test]
-  fn cross_site_collision_is_last_write_wins() {
-    // Same label "compute" listed at two sites; the later snapshot wins.
-    let idx = Index::from_snapshots(vec![
-      snapshot("a", &["compute"], vec![node("x1", &["compute"])]),
-      snapshot("b", &["compute"], vec![node("x2", &["compute"])]),
-    ]);
-    assert_eq!(idx.group_to_site("compute"), Some("b"));
-    // Members follow the owning site — site a's node is discarded, so
-    // the group never mixes xnames from two sites.
-    assert_eq!(idx.group_members("compute"), Some(&["x2".to_owned()][..]));
-    // Each xname still resolves to its own site.
-    assert_eq!(idx.xname_to_site("x1"), Some("a"));
-    assert_eq!(idx.xname_to_site("x2"), Some("b"));
+  fn cross_site_group_collision_keeps_every_site() {
+    // Same label "compute" listed at two sites, in either order.
+    for order in [["a", "b"], ["b", "a"]] {
+      let idx = Index::from_snapshots(
+        order
+          .iter()
+          .map(|site| {
+            let xname = format!("x-{site}");
+            snapshot(site, &["compute"], vec![node(&xname, &["compute"])])
+          })
+          .collect(),
+      );
+      assert_eq!(idx.group_sites("compute"), ["a", "b"]);
+      // Members stay per site, never mixed.
+      assert_eq!(
+        idx.group_members("compute", "a"),
+        Some(&["x-a".to_owned()][..])
+      );
+      assert_eq!(
+        idx.group_members("compute", "b"),
+        Some(&["x-b".to_owned()][..])
+      );
+    }
   }
 
   #[test]
-  fn listed_label_outranks_cross_site_hsm_mention() {
-    // Site "a" lists "shared" in its labels; site "b" only mentions
-    // it via a node's groups. The listing keeps ownership
-    // and the mentioning site's node is not recorded as a member.
+  fn cross_site_xname_collision_keeps_every_site() {
+    let idx = Index::from_snapshots(vec![
+      snapshot("b", &["g"], vec![node("x1", &["g"])]),
+      snapshot("a", &["h"], vec![node("x1", &["h"])]),
+    ]);
+    assert_eq!(idx.xname_sites("x1"), ["a", "b"]);
+    // Distinct labels: each group still resolves to its one site.
+    assert_eq!(idx.group_sites("g"), ["b"]);
+    assert_eq!(idx.group_sites("h"), ["a"]);
+  }
+
+  #[test]
+  fn a_bare_node_mention_counts_as_having_the_group() {
+    // Site "b" only mentions "shared" via a node's groups (possible in
+    // a hand-built snapshot only); that still puts the group at "b".
     let idx = Index::from_snapshots(vec![
       snapshot("a", &["shared"], vec![node("x1", &["shared"])]),
       snapshot("b", &[], vec![node("x2", &["shared"])]),
     ]);
-    assert_eq!(idx.group_to_site("shared"), Some("a"));
-    assert_eq!(idx.group_members("shared"), Some(&["x1".to_owned()][..]));
-    // The mentioning site's node itself still routes to its own site.
-    assert_eq!(idx.xname_to_site("x2"), Some("b"));
+    assert_eq!(idx.group_sites("shared"), ["a", "b"]);
+    assert_eq!(
+      idx.group_members("shared", "b"),
+      Some(&["x2".to_owned()][..])
+    );
   }
 }
