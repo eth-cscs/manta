@@ -32,7 +32,7 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   p: ExecParams<'_>,
 ) -> Result<(), Error> {
-  let client = MantaClient::from_app_ctx_resolving(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .apply_boot_config(
@@ -50,7 +50,7 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow_pinning_site(&client)
+    .into_anyhow()
     .await?;
   if p.dry_run {
     action_result::print_with_data(

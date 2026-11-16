@@ -52,12 +52,12 @@ pub async fn exec(
 
   let hsm = params.effective_group();
 
-  let client = MantaClient::from_app_ctx_resolving(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let node_details_list = client
     .openapi
     .get_groups_nodes(hsm, params.status_filter.as_deref(), client.site_hint())
     .await
-    .into_anyhow_pinning_site(&client)
+    .into_anyhow()
     .await?;
 
   output::node::render_node_details(

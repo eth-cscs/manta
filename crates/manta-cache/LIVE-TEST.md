@@ -166,14 +166,14 @@ the ROADMAP's second-fixture note.)
 
 ## Things to know while testing
 
-- **`get groups` still needs `--site`.** A list-everything command has
-  no group/xname target to resolve from. Only these commands resolve
-  (`power … group|nodes`, `get nodes`, `get group-nodes`,
-  `get sessions`, `apply boot group|nodes`, `apply boot-parameters`,
-  `apply kernel-parameters`, `console node`); the endpoints behind them
-  are listed in the root API.md § Site resolution. Hostlist bracket
-  expressions and NIDs fail with 400 and need `--site` (the cache
-  indexes plain xnames only).
+- **A command with nothing to resolve from still needs `--site`.**
+  Every command that names a group or xname resolves (the endpoints
+  are listed in the root API.md § Site resolution); a bare
+  `get groups`, `get images`, a session name, a SAT file, … name
+  nothing to look up, and manta-server answers 400 asking for
+  `--site`. Hostlist bracket expressions and NIDs also fail with 400
+  (the cache indexes plain xnames only), and a group or xname at
+  several sites fails with 409.
 - **A site fails with `no token for site …`.** The Keycloak refused
   the service account after startup (secret rotated, client disabled);
   nothing was sent to manta-server. Restart with the new credentials.

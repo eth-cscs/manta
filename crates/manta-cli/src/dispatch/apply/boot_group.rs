@@ -32,13 +32,13 @@ pub async fn exec(
   ctx: &AppContext<'_>,
   p: ExecParams<'_>,
 ) -> Result<(), anyhow::Error> {
-  let client = MantaClient::from_app_ctx_resolving(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
 
   let groups = client
     .openapi
     .get_groups(Some(p.hsm_group_name), client.site_hint())
     .await
-    .into_anyhow_pinning_site(&client)
+    .into_anyhow()
     .await?;
   let group = groups
     .into_iter()

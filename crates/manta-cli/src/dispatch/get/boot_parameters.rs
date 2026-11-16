@@ -55,7 +55,7 @@ pub async fn exec(
     .get_boot_parameters(
       group_name,
       params.host_expression.as_deref(),
-      Some(client.site_name()?),
+      client.site_hint(),
     )
     .await
     .into_anyhow()

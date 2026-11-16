@@ -41,7 +41,7 @@ pub async fn exec(
   } else {
     None
   };
-  let client = MantaClient::from_app_ctx_resolving(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let result = client
     .openapi
     .apply_kernel_parameters(
@@ -57,7 +57,7 @@ pub async fn exec(
       },
     )
     .await
-    .into_anyhow_pinning_site(&client)
+    .into_anyhow()
     .await?;
   if p.dry_run {
     action_result::print_with_data(

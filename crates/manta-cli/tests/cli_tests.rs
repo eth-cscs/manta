@@ -207,27 +207,6 @@ fn read_only_gate_refuses_mutating_verb_locally() {
     .stderr(predicate::str::contains("manta config unset read-only"));
 }
 
-/// A command whose endpoint cannot resolve the site must fail fast
-/// with a clear message when no site is selected — before any request
-/// to manta-server. (The service account logs in at a mock issuer;
-/// the login needs no site.)
-#[test]
-fn backend_command_without_a_site_errors_clearly() {
-  let (_dir, path) = site_less_config_for(
-    "https://manta-server.example.com:8443",
-    &spawn_oidc_mock(),
-  );
-  Command::cargo_bin("manta")
-    .unwrap()
-    .env("MANTA_CLI_CONFIG", &path)
-    .env("MANTA_SA_CLIENT_ID", "test-client")
-    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
-    .args(["get", "groups"])
-    .assert()
-    .failure()
-    .stderr(predicate::str::contains("No site selected"));
-}
-
 // ---------------------------------------------------------------------------
 // Server-side site resolution: commands that send no X-Manta-Site
 // ---------------------------------------------------------------------------
@@ -382,6 +361,56 @@ fn power_without_a_site_pins_the_site_the_server_resolved() {
   assert!(poll.starts_with("GET /v2/power/transitions/t-1 "), "{poll}");
   assert!(poll.contains("x-manta-site: alps"), "{poll}");
   assert!(poll.contains("authorization: Bearer test-token"), "{poll}");
+}
+
+/// `get groups <name>` without a site: the request goes out without
+/// `X-Manta-Site`, and the CLI tells the user which site the server
+/// resolved.
+#[test]
+fn get_groups_by_name_without_a_site_lets_the_server_resolve_it() {
+  let (url, requests) =
+    spawn_manta_mock(vec![("200 OK", "X-Manta-Site: alps\r\n", "[]")]);
+  let (_dir, path) = site_less_config_for(&url, &spawn_oidc_mock());
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .env("MANTA_SA_CLIENT_ID", "test-client")
+    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
+    .args(["get", "groups", "fora"])
+    .assert()
+    .success()
+    .stderr(predicate::str::contains(
+      "site 'alps' resolved by manta-server",
+    ));
+
+  let get = requests.recv().unwrap();
+  assert!(get.starts_with("GET /v2/groups?name=fora "), "{get}");
+  assert!(!get.contains("x-manta-site"), "{get}");
+}
+
+/// A command with nothing to resolve the site from still sends its
+/// request without a site — manta-server decides — and shows the
+/// server's "pass --site" answer.
+#[test]
+fn backend_command_without_a_site_shows_the_servers_answer() {
+  let (url, requests) = spawn_manta_mock(vec![(
+    "400 Bad Request",
+    "",
+    r#"{"error":"Missing X-Manta-Site header, and this request names no group or xname to resolve the site from. Pass --site <name>."}"#,
+  )]);
+  let (_dir, path) = site_less_config_for(&url, &spawn_oidc_mock());
+  Command::cargo_bin("manta")
+    .unwrap()
+    .env("MANTA_CLI_CONFIG", &path)
+    .env("MANTA_SA_CLIENT_ID", "test-client")
+    .env("MANTA_SA_CLIENT_SECRET", "test-secret")
+    .args(["get", "templates"])
+    .assert()
+    .failure()
+    .stderr(predicate::str::contains("Pass --site <name>"));
+
+  let get = requests.recv().unwrap();
+  assert!(!get.contains("x-manta-site"), "{get}");
 }
 
 /// A resolution failure is the server's to explain; the CLI shows its

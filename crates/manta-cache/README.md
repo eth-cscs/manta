@@ -26,7 +26,7 @@ The cluster being managed runs one of two control planes:
 
 A **site**, in manta's vocabulary, is one CSM or OpenCHAMI deployment. An organisation that operates several clusters has several sites: `alps`, `prod-b`, `lab-test`, and so on. Each site has its own URL, its own credentials, and (usually) its own physical machines.
 
-`manta-server` knows about every site that its operator configured in `server.toml`. The CLI, on the other hand, must say *which* site each command targets — either via `site = "<name>"` in `cli.toml`, or `--site <name>` on the command line.
+`manta-server` knows about every site that its operator configured in `server.toml`. The CLI, on the other hand, must say *which* site each command targets — either via `site = "<name>"` in `cli.toml`, or `--site <name>` on the command line — unless manta-server can resolve it through this cache from the groups and xnames the command names.
 
 ## What HSM groups are
 

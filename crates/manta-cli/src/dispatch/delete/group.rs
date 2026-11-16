@@ -34,12 +34,12 @@ pub async fn exec(
     // target: the selected one, or the one manta-server resolves from
     // the label. A group that doesn't resolve fails here, as the
     // delete would.
-    let client = MantaClient::from_app_ctx_resolving(ctx)?;
+    let client = MantaClient::from_app_ctx(ctx)?;
     client
       .openapi
       .get_groups(Some(label), client.site_hint())
       .await
-      .into_anyhow_pinning_site(&client)
+      .into_anyhow()
       .await?;
     let site = client.site_name()?;
     // DELETE has no JSON body — describe the request that would go to the
@@ -53,7 +53,7 @@ pub async fn exec(
   let client = MantaClient::from_app_ctx(ctx)?;
   client
     .openapi
-    .delete_group(label, Some(force), Some(client.site_name()?))
+    .delete_group(label, Some(force), client.site_hint())
     .await
     .into_anyhow()
     .await?;

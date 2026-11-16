@@ -204,7 +204,7 @@ pub async fn handle_apply(
       let client = MantaClient::from_app_ctx(ctx)?;
       let response = client
         .openapi
-        .create_ephemeral_env(Some(client.site_name()?), &req)
+        .create_ephemeral_env(client.site_hint(), &req)
         .await
         .into_anyhow()
         .await?;

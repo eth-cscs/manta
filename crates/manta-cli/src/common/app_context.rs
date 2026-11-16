@@ -32,7 +32,7 @@ use config::Config;
 ///   let client = MantaClient::from_app_ctx(ctx)?;
 ///   let groups = client
 ///     .openapi
-///     .get_groups(None, client.site_name()?)
+///     .get_groups(None, client.site_hint())
 ///     .await
 ///     .into_anyhow().await?;
 ///   println!("{groups:#?}");
@@ -43,13 +43,11 @@ use config::Config;
 pub struct AppContext<'a> {
   /// Resolved site (`--site` override, else `cli.toml`'s `site`), or
   /// `None` when neither was supplied. It's just the `X-Manta-Site`
-  /// header on outbound `MantaClient` requests. Most commands that
-  /// reach the server obtain it via [`AppContext::require_site`]; the
-  /// few whose request names a group or xname list let the server
-  /// resolve it when `None`
-  /// ([`crate::http_client::MantaClient::from_app_ctx_resolving`]).
-  /// The purely-local `config set`/`config unset` commands need none,
-  /// so they work with no site configured.
+  /// header on outbound `MantaClient` requests. When `None`,
+  /// manta-server resolves the site from the groups and xnames each
+  /// request names, or answers that it needs one; the client adopts a
+  /// resolved site for the command's later calls. The purely-local
+  /// `config set`/`config unset` commands need none.
   pub site_name: Option<&'a str>,
   /// URL of the manta HTTP server this CLI talks to. Required.
   pub manta_server_url: &'a str,
@@ -101,9 +99,11 @@ pub struct AppContext<'a> {
 
 impl<'a> AppContext<'a> {
   /// The site this invocation targets, or a user-facing error when
-  /// neither `--site` nor `cli.toml`'s `site` was supplied. Call this
-  /// at every point that needs to issue a request to `manta-server`;
-  /// commands that touch only the local config file must not.
+  /// neither `--site` nor `cli.toml`'s `site` was supplied. Only for
+  /// the few commands that need a site the server cannot resolve and
+  /// want to say so before sending anything (`config set hsm`, whose
+  /// group list is per site); everything else leaves a missing site to
+  /// manta-server.
   ///
   /// # Errors
   ///

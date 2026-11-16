@@ -88,7 +88,7 @@ pub async fn fetch_accessible_groups(
 ) -> anyhow::Result<Vec<String>> {
   client
     .openapi
-    .get_available_groups(Some(client.site_name()?))
+    .get_available_groups(client.site_hint())
     .await
     .into_anyhow()
     .await

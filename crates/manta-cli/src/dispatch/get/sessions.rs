@@ -67,7 +67,7 @@ pub async fn exec(
     Some(params.xnames.join(","))
   };
 
-  let client = MantaClient::from_app_ctx_resolving(ctx)?;
+  let client = MantaClient::from_app_ctx(ctx)?;
   let raw = client
     .openapi
     .get_sessions(
@@ -82,7 +82,7 @@ pub async fn exec(
       client.site_hint(),
     )
     .await
-    .into_anyhow_pinning_site(&client)
+    .into_anyhow()
     .await?;
 
   let sessions: Vec<CfsSessionGetResponse> = serde_json::from_value(raw)

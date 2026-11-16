@@ -13,7 +13,7 @@
 //! let client = MantaClient::from_app_ctx(ctx)?;
 //! let groups = client
 //!   .openapi
-//!   .get_groups(params.group_name.as_deref(), client.site_name())
+//!   .get_groups(params.group_name.as_deref(), client.site_hint())
 //!   .await
 //!   .into_anyhow().await?;
 //! ```
@@ -41,8 +41,9 @@ mod streaming;
 mod token_provider_tests;
 mod wire;
 
-pub(crate) use client::set_current_token;
+pub use client::HookContext;
 pub use client::{MantaClient, OpenApiResultExt};
+pub(crate) use client::{pin_resolved_site, set_current_token};
 pub(super) use wire::ws_base_url;
 
 #[cfg(test)]
