@@ -19,6 +19,8 @@ pub mod unset_read_only;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
+use crate::common::session::fetch_accessible_groups;
+use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -40,24 +42,15 @@ pub async fn handle_config(
   match cli_config.subcommand() {
     Some(("show", m)) => {
       let output_opt = m.opt_str("output");
-      // SessionContext (built at the top of process_cli) carries
-      // everything the renderer needs — no per-call auth or client
-      // construction here.
       show::exec(ctx, output_opt).await?;
     }
     Some(("set", m)) => match m.subcommand() {
       Some(("hsm", m)) => {
         // The accessible groups come from the site.
         ctx.require_site()?;
-        // SessionContext is guaranteed Some here: this arm only runs
-        // for verbs that don't skip the session build in process_cli
-        // (set_hsm requires a site, so a session was built).
-        let accessible_groups = ctx
-          .session
-          .as_ref()
-          .map(|s| s.accessible_groups.as_slice())
-          .unwrap_or_default();
-        set_hsm::exec(m, accessible_groups).await?;
+        let client = MantaClient::from_app_ctx(ctx)?;
+        let accessible_groups = fetch_accessible_groups(&client).await?;
+        set_hsm::exec(m, &accessible_groups).await?;
       }
       Some(("site", m)) => set_site::exec(m)?,
       Some(("log", m)) => set_log::exec(m)?,

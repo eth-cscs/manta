@@ -4,6 +4,7 @@ pub mod nodes;
 
 use crate::common::app_context::AppContext;
 use crate::common::clap_ext::ArgMatchesExt;
+use crate::common::session::fetch_accessible_groups;
 use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
@@ -41,14 +42,20 @@ pub async fn handle_migrate(
       // then re-checks each name in the resulting list.
       let from: Vec<String> = match from_opt.or(ctx.settings_group_name_opt) {
         Some(name) => vec![name.to_string()],
-        // Fall back to the accessible-group list cached on the
-        // session. SessionContext is guaranteed Some here: migrate
-        // requires a site, so process_cli built a session.
-        None => ctx
-          .session
-          .as_ref()
-          .map(|s| s.accessible_groups.clone())
-          .unwrap_or_default(),
+        // Fall back to every group the caller can access on the site.
+        // That list is per site, so it needs one: without it, fail
+        // here rather than send an empty source list.
+        None => {
+          if ctx.site_name.is_none() {
+            bail!(
+              "migrate nodes without --from (and without a default \
+               hsm_group in cli.toml) takes its source groups from the \
+               groups you can access on the site, so it needs a site. \
+               Pass --from <group> or --site <name>."
+            );
+          }
+          fetch_accessible_groups(&client).await?
+        }
       };
       let to = vec![to.to_string()];
 

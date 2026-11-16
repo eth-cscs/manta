@@ -2,11 +2,10 @@
 //! token, plus the one server round-trip that lists the groups the
 //! token can reach.
 //!
-//! Built once at the top of `crate::dispatch::process::process_cli`
-//! for every command that authenticates, then attached to
-//! [`crate::common::app_context::AppContext::session`] so handlers
-//! and the read-only gate can read JWT-derived state without
-//! re-decoding the token or re-fetching the groups list.
+//! Built on demand by the commands that need it (`config show`);
+//! [`fetch_accessible_groups`] is the groups round-trip alone, for
+//! the commands that need only the list (`config set hsm`, the
+//! `migrate nodes` fallback). There is no pre-flight request.
 
 use anyhow::Context;
 use manta_shared::common::jwt_ops;
@@ -14,8 +13,7 @@ use manta_shared::common::jwt_ops;
 use crate::http_client::{MantaClient, OpenApiResultExt};
 
 /// Facts derived from the bearer token (and one `GET
-/// /groups/available` round-trip) that aren't in `cli.toml`. Built
-/// once per CLI invocation, by the command's first request.
+/// /groups/available` round-trip) that aren't in `cli.toml`.
 #[derive(Debug, Clone)]
 pub struct SessionContext {
   /// `preferred_username` claim — usually the operator's login name.
@@ -70,18 +68,31 @@ impl SessionContext {
   /// - JWT decode failure (malformed token, missing claim), or the
   ///   client has no token provider.
   pub async fn build(client: &MantaClient) -> anyhow::Result<Self> {
-    let accessible_groups = client
-      .openapi
-      .get_available_groups(client.site_name()?)
-      .await
-      .into_anyhow()
-      .await
-      .context("fetch accessible groups")?;
+    let accessible_groups = fetch_accessible_groups(client).await?;
     let token = client
       .last_token()
       .context("the group listing was sent without a token")?;
     Self::from_parts(&token, accessible_groups)
   }
+}
+
+/// `GET /groups/available`: the groups the caller can access on the
+/// client's site (every group for an admin).
+///
+/// # Errors
+///
+/// No site selected, or the HTTP call fails (network, 401/403, server
+/// error).
+pub async fn fetch_accessible_groups(
+  client: &MantaClient,
+) -> anyhow::Result<Vec<String>> {
+  client
+    .openapi
+    .get_available_groups(client.site_name()?)
+    .await
+    .into_anyhow()
+    .await
+    .context("fetch accessible groups")
 }
 
 #[cfg(test)]

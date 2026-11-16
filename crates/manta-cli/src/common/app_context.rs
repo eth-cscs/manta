@@ -17,8 +17,6 @@
 
 use config::Config;
 
-use crate::common::session::SessionContext;
-
 /// Top-level CLI context, passed as `&AppContext` through CLI
 /// handlers and commands.
 ///
@@ -99,14 +97,6 @@ pub struct AppContext<'a> {
   /// talks to the server. `None` for purely-local verbs.
   pub token_provider:
     Option<std::sync::Arc<crate::common::authentication::TokenProvider>>,
-  /// JWT-derived per-invocation facts, populated at the top of
-  /// [`crate::dispatch::process::process_cli`] for every command that
-  /// authenticates AND passes the read-only gate. `None` for
-  /// purely-local verbs (`gen-autocomplete`, `gen-man`, `upgrade`,
-  /// `config set site/log`, `config unset hsm/auth`) and for any
-  /// command that was refused by the gate before the session's HTTP
-  /// fetch ran.
-  pub session: Option<SessionContext>,
 }
 
 impl<'a> AppContext<'a> {
@@ -155,7 +145,6 @@ mod tests {
       },
       settings,
       token_provider: None,
-      session: None,
     }
   }
 

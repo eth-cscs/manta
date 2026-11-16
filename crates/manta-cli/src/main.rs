@@ -165,7 +165,6 @@ async fn run_cli(
     },
     settings: &settings,
     token_provider: None,
-    session: None,
   };
 
   let cli_result =

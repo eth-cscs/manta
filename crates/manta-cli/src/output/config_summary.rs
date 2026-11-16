@@ -6,7 +6,8 @@
 //!
 //! The struct is built by [`crate::dispatch::config::show`] from a
 //! mix of the parsed CLI config file and the per-invocation
-//! [`crate::common::session::SessionContext`] attached to `AppContext`.
+//! [`crate::common::session::SessionContext`] it fetches when a site
+//! is selected.
 
 use anyhow::{Context, Result};
 use serde::Serialize;

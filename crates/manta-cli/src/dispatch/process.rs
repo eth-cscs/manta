@@ -10,20 +10,18 @@
 //!    ([`token_provider`]), which gives every request of the command a
 //!    new token. Makes no request itself. Set whether or not a site is
 //!    selected: a command without one lets manta-server resolve the
-//!    site, and that request needs a token like any other.
-//! 3. (Authenticated verbs with a site only) [`SessionContext::build`] —
-//!    one `GET /groups/available` round-trip plus the JWT claims; cached
-//!    on `AppContext` for the duration of the command. As the first
-//!    request, it is where an interactive login happens when needed.
-//!    Without a site there is no session, and the command's own first
-//!    request is where a login happens.
+//!    site, and that request needs a token like any other. The
+//!    command's own first request is where an interactive login
+//!    happens when needed.
+//!
+//! There is no pre-flight request: the few commands that need the
+//! caller's accessible groups (`config show`, `config set hsm`, the
+//! `migrate nodes` fallback) fetch them themselves.
 //!
 //! This local gate is the only read-only enforcement in the system.
 
 use crate::common::app_context::AppContext;
 use crate::common::authentication::token_provider;
-use crate::common::session::SessionContext;
-use crate::http_client::MantaClient;
 use anyhow::{Error, bail};
 use clap::ArgMatches;
 
@@ -39,9 +37,8 @@ use crate::dispatch::{
 /// `config set site`, `config set log`, `config set read-only`,
 /// `config unset hsm`, `config unset auth`,
 /// `config unset read-only`. Every other verb (including `config show`
-/// and `config set hsm`) gets a token provider, and a `SessionContext`
-/// when a site is selected.
-fn verb_skips_session(cli_root: &ArgMatches) -> bool {
+/// and `config set hsm`) gets a token provider.
+fn verb_skips_auth(cli_root: &ArgMatches) -> bool {
   match cli_root.subcommand() {
     Some(("gen-autocomplete", _)) | Some(("gen-man", _)) => true,
     Some(("upgrade", _)) => true,
@@ -65,8 +62,8 @@ fn verb_skips_session(cli_root: &ArgMatches) -> bool {
 ///
 /// # Errors
 ///
-/// Returns an error when no token can be obtained, the SessionContext
-/// build fails, the read-only gate refuses a mutating verb, no
+/// Returns an error when no token can be obtained, the read-only gate
+/// refuses a mutating verb, no
 /// subcommand is provided, the subcommand name is unknown, or the
 /// chosen verb's handler returns an error.
 pub async fn process_cli(
@@ -78,18 +75,12 @@ pub async fn process_cli(
   // is refused before any token is fetched.
   crate::common::read_only::read_only_gate(cli_root, ctx.read_only)?;
 
-  let authenticated = !verb_skips_session(cli_root);
+  let authenticated = !verb_skips_auth(cli_root);
 
   // Step 2: the token provider, for every request of an authenticated
   // verb — including the site-less ones manta-server resolves.
   if authenticated {
     ctx.token_provider = Some(token_provider(&ctx)?);
-  }
-  // Step 3: the session (groups fetch + JWT claims), whose request gets
-  // the command's first token. `GET /groups/available` needs a site.
-  if authenticated && ctx.site_name.is_some() {
-    let client = MantaClient::from_app_ctx(&ctx)?;
-    ctx.session = Some(SessionContext::build(&client).await?);
   }
 
   match cli_root.subcommand() {

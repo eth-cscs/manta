@@ -42,8 +42,8 @@ async fn set_hsm_config_value(
 ) -> Result<(), Error> {
   let (path, mut doc) = read_config_toml()?;
 
-  // Accessible groups are already filtered server-side and cached
-  // on ctx.session; the function takes them as a parameter so it
+  // Accessible groups are already filtered server-side (fetched by
+  // the caller); the function takes them as a parameter so it
   // doesn't need an AppContext reference.
   let settings_group_available_vec: Vec<String> = accessible_groups.to_vec();
 
