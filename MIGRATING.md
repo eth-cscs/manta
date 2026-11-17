@@ -397,8 +397,7 @@ Before the pre-release rewrite, `manta config show` was best-effort on
 the groups-fetch step: if the server was unreachable or the token was
 expired, the renderer logged a warning and printed the local config
 without the per-site fields. Today `config show` builds a
-`SessionContext` at the top of the dispatcher for authenticated
-commands, and a failure there (server down, expired token, network
+`SessionContext` when a site is selected, and a failure there (server down, expired token, network
 unreachable) aborts the command with an error. Operators who used
 `config show` to verify their local config offline can invoke it with
 no `site` set — the JWT and server sections render as

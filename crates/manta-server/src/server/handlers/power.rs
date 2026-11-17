@@ -15,8 +15,11 @@
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, to_handler_error,
+};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -52,7 +55,7 @@ pub use manta_shared::types::api::power::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn post_power(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<PowerRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -76,6 +79,14 @@ pub async fn post_power(
     body.action,
     body.target_type
   );
+  let ctx = ctx
+    .resolve(match body.target_type {
+      PowerTargetType::Nodes => Target::new().nodes(&[&body.host_expression]),
+      PowerTargetType::Cluster => {
+        Target::new().group(Some(&body.host_expression))
+      }
+    })
+    .await?;
   let infra = ctx.infra();
 
   let xnames = service::power::resolve_target_xnames(

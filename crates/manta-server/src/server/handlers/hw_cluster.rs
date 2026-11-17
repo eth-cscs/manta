@@ -11,8 +11,9 @@
 
 use axum::{Json, extract::Path, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{ErrorResponse, SiteHeader, SiteResolvingCtx, to_handler_error};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 pub use manta_shared::types::api::hw_cluster::{
@@ -34,7 +35,7 @@ pub use manta_shared::types::api::hw_cluster::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_hw_component(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<AddHwComponentRequest>,
@@ -54,6 +55,14 @@ pub async fn add_hw_component(
     body.parent_cluster,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(
+      // A target the request may create cannot be in the cache.
+      Target::new()
+        .group(Some(&body.parent_cluster))
+        .group((!body.create_hsm_group).then_some(target.as_str())),
+    )
+    .await?;
   let infra = ctx.infra();
 
   service::authorization::validate_user_group_access(
@@ -109,7 +118,7 @@ pub async fn add_hw_component(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_hw_component(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<DeleteHwComponentRequest>,
@@ -129,6 +138,13 @@ pub async fn delete_hw_component(
     body.parent_cluster,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(Some(&target))
+        .group(Some(&body.parent_cluster)),
+    )
+    .await?;
   let infra = ctx.infra();
 
   service::authorization::validate_user_group_access(
@@ -184,7 +200,7 @@ pub async fn delete_hw_component(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_hw_configuration(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(target): Path<String>,
   Json(body): Json<ApplyHwConfigurationRequest>,
@@ -209,6 +225,14 @@ pub async fn apply_hw_configuration(
     body.parent_cluster,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(
+      // A target the request may create cannot be in the cache.
+      Target::new()
+        .group(Some(&body.parent_cluster))
+        .group((!body.create_target_hsm_group).then_some(target.as_str())),
+    )
+    .await?;
   let infra = ctx.infra();
 
   service::authorization::validate_user_group_access(

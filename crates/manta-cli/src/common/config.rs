@@ -27,7 +27,9 @@ pub struct CliConfiguration {
   /// Active site name, sent as the `X-Manta-Site` header on every
   /// request to manta-server. Overridable per-invocation with `--site`.
   /// The server validates that the name matches one of its configured
-  /// sites; the CLI does no local validation.
+  /// sites; the CLI does no local validation. When unset, commands
+  /// that target a group or plain xname list let manta-server resolve
+  /// the site; every other command requires one.
   pub site: Option<String>,
   /// URL of the manta HTTP server this CLI talks to. Required — the CLI
   /// no longer calls CSM/OCHAMI backends directly; every operation

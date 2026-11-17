@@ -35,6 +35,12 @@
 //! client_id = "…"
 //! client_secret = "…"
 //! scope = "smd.read bss.read smd.write bss.write"
+//!
+//! # Optional: resolve the site through manta-cache-server when a
+//! # request carries no X-Manta-Site header.
+//! [site_resolution]
+//! url = "https://manta-cache.example.com:8444"
+//! api_token_file = "/run/secrets/manta/cache-api-token"
 //! ```
 //!
 //! [`ServerConfiguration`] is the top-level type; [`ServerSettings`]
@@ -279,11 +285,62 @@ pub struct ServerConfiguration {
   /// Optional Kafka destination for the audit trail. When `None`,
   /// audit events go to the log (`manta::audit` target) only.
   pub auditor: Option<Auditor>,
+  /// Optional `manta-cache-server` used to pick the site for requests
+  /// that carry no `X-Manta-Site` header. When `None`, such requests
+  /// are rejected with 400 exactly as before.
+  pub site_resolution: Option<SiteResolutionConfig>,
+}
+
+/// `[site_resolution]`: where to ask which site owns a group or an
+/// xname list when a request names no site.
+///
+/// `Debug` is hand-written to redact `api_token`.
+#[derive(Serialize, Deserialize, Clone)]
+pub struct SiteResolutionConfig {
+  /// Base URL of `manta-cache-server` (e.g.
+  /// `https://manta-cache.example.com:8444`). A missing scheme
+  /// defaults to `http://`; `/api/v1` is appended.
+  pub url: String,
+  /// The cache's `[server] api_token`, sent as `Authorization: Bearer
+  /// …` on every lookup. Omit when the cache serves lookups without a
+  /// token. Inline like the other secrets in this file; at most one of
+  /// this and [`Self::api_token_file`].
+  pub api_token: Option<String>,
+  /// Path of a file holding the cache's `[server] api_token`, for a
+  /// deployment that keeps it out of this file. Read once at startup.
+  pub api_token_file: Option<String>,
+  /// PEM CA certificate to trust for the cache's TLS, in addition to
+  /// the system roots (absolute, or relative to the config dir).
+  pub root_ca_cert_file: Option<String>,
+}
+
+impl std::fmt::Debug for SiteResolutionConfig {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("SiteResolutionConfig")
+      .field("url", &self.url)
+      .field("api_token", &self.api_token.as_ref().map(|_| "<redacted>"))
+      .field("api_token_file", &self.api_token_file)
+      .field("root_ca_cert_file", &self.root_ca_cert_file)
+      .finish()
+  }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn site_resolution_debug_redacts_the_inline_token() {
+    let config = SiteResolutionConfig {
+      url: "http://localhost:8081".to_owned(),
+      api_token: Some("s3cret".to_owned()),
+      api_token_file: None,
+      root_ca_cert_file: None,
+    };
+    let rendered = format!("{config:?}");
+    assert!(!rendered.contains("s3cret"), "{rendered}");
+    assert!(rendered.contains("<redacted>"), "{rendered}");
+  }
 
   #[test]
   fn site_deserialize_missing_backend_fails() {
@@ -389,6 +446,40 @@ mod tests {
   }
 
   #[test]
+  fn site_resolution_parses_and_is_optional() {
+    let cfg: ServerConfiguration = toml::from_str(
+      r#"
+      log = "info"
+      [server]
+      console_inactivity_timeout_secs = 1800
+      [sites]
+      [site_resolution]
+      url = "https://manta-cache.example.com:8444"
+      api_token_file = "/run/secrets/cache-token"
+    "#,
+    )
+    .unwrap();
+    let r = cfg.site_resolution.expect("[site_resolution] parsed");
+    assert_eq!(r.url, "https://manta-cache.example.com:8444");
+    assert_eq!(
+      r.api_token_file.as_deref(),
+      Some("/run/secrets/cache-token")
+    );
+    assert!(r.root_ca_cert_file.is_none());
+
+    let cfg: ServerConfiguration = toml::from_str(
+      r#"
+      log = "info"
+      [server]
+      console_inactivity_timeout_secs = 1800
+      [sites]
+    "#,
+    )
+    .unwrap();
+    assert!(cfg.site_resolution.is_none());
+  }
+
+  #[test]
   fn token_exchange_may_be_absent_in_toml() {
     let site: Site = toml::from_str(
       r#"
@@ -480,6 +571,7 @@ mod tests {
       },
       sites,
       auditor: None,
+      site_resolution: None,
     };
     let toml_str = toml::to_string(&cfg).unwrap();
     let parsed: ServerConfiguration = toml::from_str(&toml_str).unwrap();

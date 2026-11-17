@@ -76,6 +76,7 @@ fn router_with(
     request_timeout,
     shutdown_grace_period: std::time::Duration::from_secs(30),
     migrate_backup_root: None,
+    site_resolver: None,
   }))
 }
 

@@ -36,7 +36,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_boot_config(
-      client.site_name(),
+      client.site_hint(),
       &ApplyBootConfigRequest {
         hosts_expression: p.hosts_expression.to_string(),
         boot_image_id: p.boot_image.map(str::to_string),

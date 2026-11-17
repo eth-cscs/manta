@@ -25,10 +25,11 @@ use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 use tokio::io::AsyncWriteExt;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
-  to_handler_error,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, require_k8s_url,
+  require_vault, to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -50,13 +51,15 @@ pub use manta_shared::types::api::queries::ConsoleQuery;
 )]
 #[tracing::instrument(skip_all, fields(xname = %xname))]
 pub async fn console_node_ws(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(xname): Path<String>,
   Query(q): Query<ConsoleQuery>,
   ws: WebSocketUpgrade,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   note.action("console.node").target("node", &xname);
+
+  let ctx = ctx.resolve(Target::new().nodes(&[&xname])).await?;
 
   // Read what we need from the borrowed infra, authorize the xname, and
   // clone the backend before the borrow ends.  The clone is cheap

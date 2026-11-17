@@ -67,7 +67,9 @@ pub async fn exec(
   let params = parse_images_params(cli_args);
 
   let client = MantaClient::from_app_ctx(ctx)?;
-  let site = client.site_name();
+  // Images name no group or xname, so without a site the server
+  // answers 400 asking for one.
+  let site = client.site_hint();
 
   let since = wire_datetime(params.since);
   let until = wire_datetime(params.until);

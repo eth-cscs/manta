@@ -1,30 +1,31 @@
 //! Implements the `manta config show` command.
 //!
 //! Builds a [`ConfigSummary`] from the merged local settings and,
-//! when a session is available, the per-invocation JWT-derived facts
-//! (`username`, `name`, `is_admin`, `accessible_groups`) attached to
-//! [`crate::common::app_context::AppContext::session`]. The
-//! `read_only` flag is sourced from `AppContext::read_only`, not the
+//! when a site is selected, the per-invocation JWT-derived facts
+//! (`username`, `name`, `is_admin`, `accessible_groups`) of a
+//! [`SessionContext`] built here. The `read_only` flag is sourced from `AppContext::read_only`, not the
 //! JWT. Rendering is delegated to [`crate::output::config_summary`].
 
 use anyhow::Error;
 
 use crate::common::app_context::AppContext;
+use crate::common::session::SessionContext;
+use crate::http_client::MantaClient;
 use crate::output::config_summary::{self, ConfigSummary, SessionSummary};
 use manta_shared::common::config::get_cli_config_file_path;
 
 /// Display the current manta configuration.
 ///
-/// The per-site, server-derived fields (current site, accessible
-/// groups, admin/read-only flags) come from `ctx.session` — populated
-/// for every authenticated command at the top of
-/// [`crate::dispatch::process::process_cli`]. When no site is selected
-/// (and therefore no session was built), the renderer prints the
-/// local config alone.
+/// The per-site, server-derived fields (accessible groups, admin flag,
+/// user names) come from a [`SessionContext`] — one
+/// `GET /groups/available` plus the claims of the token it carried.
+/// `GET /groups/available` names no group, so the server can't
+/// resolve a site for it: when no site is selected the session is
+/// skipped and the renderer prints the local config alone.
 ///
 /// # Errors
 ///
-/// Returns an error only if the renderer fails. The config file path
+/// Returns an error if the session fetch or the renderer fails. The config file path
 /// lookup falls back to `"<unknown>"`, individual `Config` lookups use
 /// defaults.
 pub async fn exec(
@@ -49,12 +50,19 @@ pub async fn exec(
     .ok()
     .filter(|s| !s.is_empty());
 
-  let session = ctx.session.as_ref().map(|s| SessionSummary {
-    username: s.username.clone(),
-    name: s.name.clone(),
-    is_admin: s.is_admin,
-    accessible_groups: s.accessible_groups.clone(),
-  });
+  let session = match ctx.site_name {
+    Some(_) => {
+      let client = MantaClient::from_app_ctx(ctx)?;
+      let s = SessionContext::build(&client).await?;
+      Some(SessionSummary {
+        username: s.username,
+        name: s.name,
+        is_admin: s.is_admin,
+        accessible_groups: s.accessible_groups,
+      })
+    }
+    None => None,
+  };
 
   let summary = ConfigSummary {
     config_file: get_cli_config_file_path().map_or_else(

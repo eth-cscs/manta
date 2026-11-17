@@ -7,7 +7,8 @@
 
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{ErrorResponse, SiteHeader, SiteResolvingCtx, to_handler_error};
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -28,9 +29,12 @@ pub use manta_shared::types::api::queries::ClusterQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_groups_nodes(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(Target::new().group(q.hsm_group.as_deref()))
+    .await?;
   let infra = ctx.infra();
 
   let params = service::cluster::GetClusterParams {
@@ -60,7 +64,7 @@ pub async fn get_groups_nodes(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_clusters_deprecated(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   q: Query<ClusterQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   tracing::warn!(

@@ -19,6 +19,7 @@ use super::ServerState;
 use super::api_doc::ApiDoc;
 use super::audit::audit_requests;
 use super::handlers;
+use super::site_resolution;
 
 /// Build the axum router with all API endpoints and OpenAPI doc routes.
 ///
@@ -191,6 +192,9 @@ fn with_api_layers(
   state: &Arc<ServerState>,
 ) -> Router<Arc<ServerState>> {
   api
+    // Innermost, so the resolved site is on the response before the
+    // audit layer below reads it.
+    .layer(middleware::from_fn(site_resolution::echo_resolved_site))
     // Apply the global request timeout to every route in the api
     // sub-router.
     .layer(TimeoutLayer::with_status_code(
@@ -257,6 +261,7 @@ mod tests {
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(1),
       migrate_backup_root: None,
+      site_resolver: None,
     });
     let api = Router::new().route(
       "/boom",

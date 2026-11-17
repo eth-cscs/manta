@@ -195,6 +195,7 @@ impl TestFixture {
       request_timeout: Duration::from_secs(60),
       shutdown_grace_period: Duration::from_secs(30),
       migrate_backup_root: None,
+      site_resolver: None,
     });
 
     let router = build_router(state);

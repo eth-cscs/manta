@@ -91,9 +91,8 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
 
   // Resolve the active site name (just a header value — the server
   // validates it). Left `None` when neither `--site` nor `cli.toml`'s
-  // `site` is set; commands that reach the server raise the error
-  // lazily via `AppContext::require_site`, so purely-local config
-  // commands (e.g. `config set site`) still work with no site set.
+  // `site` is set: manta-server then resolves the site from the groups
+  // and xnames a request names, or answers that it needs one.
   // Set the SOCKS5 proxy env var while we are still single-threaded;
   // the proxy is used to reach manta-server, not the backends —
   // per-site backend proxying is the server's concern.
@@ -115,8 +114,8 @@ fn run() -> core::result::Result<(), Box<dyn std::error::Error>> {
 }
 
 /// CLI startup — takes the resolved site name (`None` when unset) and
-/// forwards it on every server request via the `X-Manta-Site` header.
-/// Commands that need it but find `None` fail via `require_site`.
+/// forwards it on every server request via the `X-Manta-Site` header;
+/// without one, manta-server resolves the site per request.
 async fn run_cli(
   settings: config::Config,
   configuration: CliConfiguration,
@@ -164,7 +163,6 @@ async fn run_cli(
     },
     settings: &settings,
     token_provider: None,
-    session: None,
   };
 
   let cli_result =

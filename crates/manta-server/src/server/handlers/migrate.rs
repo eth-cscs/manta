@@ -18,8 +18,11 @@ use std::path::{Path, PathBuf};
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use manta_backend_dispatcher::error::Error as BackendError;
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, to_handler_error,
+};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 pub use manta_shared::types::api::migrate::{
@@ -131,7 +134,7 @@ fn require_backup_root(ctx: &RequestCtx) -> Result<&Path, BackendError> {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn migrate_nodes(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<MigrateNodesRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -146,6 +149,19 @@ pub async fn migrate_nodes(
     .dry_run(body.dry_run);
 
   tracing::info!("migrate_nodes dry_run={}", body.dry_run);
+  let ctx = ctx
+    .resolve(
+      // Target groups the request may create cannot be in the cache.
+      Target::new()
+        .groups(&body.parent_hsm_names)
+        .groups(if body.create_hsm_group {
+          &[][..]
+        } else {
+          &body.target_hsm_names[..]
+        })
+        .nodes(&[&body.hosts_expression]),
+    )
+    .await?;
   let infra = ctx.infra();
 
   // Authorization: every named group on both sides must be accessible.

@@ -15,9 +15,11 @@ use serde::Deserialize;
 use utoipa::ToSchema;
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, serialize_or_500, to_handler_error,
+  ErrorResponse, SiteHeader, SiteResolvingCtx, serialize_or_500,
+  to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -38,9 +40,16 @@ pub use manta_shared::types::api::queries::BootParametersQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<BootParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(q.hsm_group.as_deref())
+        .nodes(q.nodes.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let params = service::boot_parameters::GetBootParametersParams {
@@ -82,7 +91,7 @@ pub struct DeleteBootParametersRequest {
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<DeleteBootParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -99,6 +108,7 @@ pub async fn delete_boot_parameters(
     ));
   }
   tracing::info!("delete_boot_parameters hosts={:?}", body.hosts);
+  let ctx = ctx.resolve(Target::new().nodes(&body.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::delete_boot_parameters(
@@ -127,7 +137,7 @@ pub async fn delete_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(boot_params): Json<
     ::manta_backend_dispatcher::types::bss::BootParameters,
@@ -140,6 +150,7 @@ pub async fn add_boot_parameters(
     .detail("params", &boot_params.params);
 
   tracing::info!("add_boot_parameters");
+  let ctx = ctx.resolve(Target::new().nodes(&boot_params.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::add_boot_parameters(
@@ -174,7 +185,7 @@ pub async fn add_boot_parameters(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn update_boot_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(params): Json<service::boot_parameters::UpdateBootParametersParams>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -186,6 +197,7 @@ pub async fn update_boot_parameters(
     .detail("params", &params.params);
 
   tracing::info!("update_boot_parameters");
+  let ctx = ctx.resolve(Target::new().nodes(&params.hosts)).await?;
   let infra = ctx.infra();
 
   service::boot_parameters::update_boot_parameters(&infra, &ctx.token, params)
@@ -217,7 +229,7 @@ pub use manta_shared::types::api::boot_parameters::ApplyBootConfigRequest;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_boot_config(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<ApplyBootConfigRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -236,6 +248,9 @@ pub async fn apply_boot_config(
     body.hosts_expression,
     body.dry_run
   );
+  let ctx = ctx
+    .resolve(Target::new().nodes(&[&body.hosts_expression]))
+    .await?;
   let infra = ctx.infra();
 
   let changeset = service::boot_parameters::prepare_boot_config(

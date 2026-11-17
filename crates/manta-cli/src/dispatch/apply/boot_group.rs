@@ -36,7 +36,7 @@ pub async fn exec(
 
   let groups = client
     .openapi
-    .get_groups(Some(p.hsm_group_name), client.site_name())
+    .get_groups(Some(p.hsm_group_name), client.site_hint())
     .await
     .into_anyhow()
     .await?;
@@ -52,7 +52,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_boot_config(
-      client.site_name(),
+      client.site_hint(),
       &ApplyBootConfigRequest {
         hosts_expression: xnames.join(","),
         boot_image_id: p.boot_image.map(str::to_string),

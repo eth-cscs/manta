@@ -16,8 +16,9 @@ use axum::{
   response::IntoResponse,
 };
 
-use super::{ErrorResponse, RequestCtx, SiteHeader, to_handler_error};
+use super::{ErrorResponse, SiteHeader, SiteResolvingCtx, to_handler_error};
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -39,9 +40,10 @@ pub use manta_shared::types::api::queries::NodesQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_nodes(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<NodesQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx.resolve(Target::new().nodes(&[&q.xname])).await?;
   let infra = ctx.infra();
 
   let params = service::node::GetNodesParams {
@@ -74,13 +76,14 @@ pub async fn get_nodes(
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_node(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Path(id): Path<String>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
   note.action("node.delete").target("node", &id);
 
   tracing::info!("delete_node id={}", id);
+  let ctx = ctx.resolve(Target::new().nodes(&[&id])).await?;
   let infra = ctx.infra();
 
   service::node::delete_node(&infra, &ctx.token, &id)
@@ -110,7 +113,7 @@ pub use manta_shared::types::api::node::AddNodeRequest;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_node(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<AddNodeRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -121,6 +124,12 @@ pub async fn add_node(
     .detail("enabled", body.enabled);
 
   tracing::info!("add_node id={} group={}", body.id, body.group);
+  let ctx = ctx
+    .resolve(
+      // The node is new, so only its group can resolve the site.
+      Target::new().group(Some(&body.group)),
+    )
+    .await?;
   let infra = ctx.infra();
 
   service::node::add_node(

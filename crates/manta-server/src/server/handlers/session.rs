@@ -27,10 +27,12 @@ use futures::{AsyncBufReadExt, StreamExt};
 use manta_backend_dispatcher::types::{K8sAuth, K8sDetails};
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, require_k8s_url, require_vault,
-  serialize_or_500, to_handler_error, validate_repo_list_lengths,
+  ErrorResponse, RequestCtx, SiteHeader, SiteResolvingCtx, require_k8s_url,
+  require_vault, serialize_or_500, to_handler_error,
+  validate_repo_list_lengths,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -54,9 +56,16 @@ pub use manta_shared::types::api::queries::{DeleteSessionQuery, SessionQuery};
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_sessions(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<SessionQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(q.hsm_group.as_deref())
+        .nodes(q.xnames.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let xnames: Vec<String> = q
@@ -161,7 +170,7 @@ pub use manta_shared::types::api::session::CreateSessionRequest;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn create_session(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<CreateSessionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -175,6 +184,13 @@ pub async fn create_session(
 
   validate_repo_list_lengths(&body.repo_names, &body.repo_last_commit_ids)?;
   tracing::info!("create_session repos={:?}", body.repo_names);
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(body.hsm_group.as_deref())
+        .nodes(body.ansible_limit.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   // Authorization: requested HSM group must be accessible to the token.

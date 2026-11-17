@@ -13,10 +13,11 @@
 use axum::{Json, extract::Query, http::StatusCode, response::IntoResponse};
 
 use super::{
-  ErrorResponse, RequestCtx, SiteHeader, resolve_xnames_from_request,
+  ErrorResponse, SiteHeader, SiteResolvingCtx, resolve_xnames_from_request,
   serialize_or_500, to_handler_error,
 };
 use crate::server::audit::AuditNote;
+use crate::server::site_resolution::Target;
 use crate::service;
 
 // ---------------------------------------------------------------------------
@@ -37,9 +38,16 @@ pub use manta_shared::types::api::queries::KernelParametersQuery;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn get_kernel_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   Query(q): Query<KernelParametersQuery>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(q.hsm_group.as_deref())
+        .nodes(q.nodes.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let params = service::kernel_parameters::GetKernelParametersParams {
@@ -80,7 +88,7 @@ pub use manta_shared::types::api::kernel_parameters::{
 )]
 #[tracing::instrument(skip_all)]
 pub async fn apply_kernel_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<ApplyKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -94,6 +102,13 @@ pub async fn apply_kernel_parameters(
     .detail("project_sbps", body.project_sbps)
     .dry_run(body.dry_run);
 
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(body.hsm_group.as_deref())
+        .nodes(body.xnames_expression.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
 
   let xnames = resolve_xnames_from_request(
@@ -186,7 +201,7 @@ pub use manta_shared::types::api::kernel_parameters::AddKernelParametersRequest;
 )]
 #[tracing::instrument(skip_all)]
 pub async fn add_kernel_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<AddKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -199,6 +214,13 @@ pub async fn add_kernel_parameters(
     .detail("project_sbps", body.project_sbps)
     .dry_run(body.dry_run);
 
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(body.hsm_group.as_deref())
+        .nodes(body.xnames_expression.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     &infra,
@@ -275,7 +297,7 @@ pub use manta_shared::types::api::kernel_parameters::DeleteKernelParametersReque
 )]
 #[tracing::instrument(skip_all)]
 pub async fn delete_kernel_parameters(
-  ctx: RequestCtx,
+  ctx: SiteResolvingCtx,
   note: AuditNote,
   Json(body): Json<DeleteKernelParametersRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<ErrorResponse>)> {
@@ -286,6 +308,13 @@ pub async fn delete_kernel_parameters(
     .detail("params", &body.params)
     .dry_run(body.dry_run);
 
+  let ctx = ctx
+    .resolve(
+      Target::new()
+        .group(body.hsm_group.as_deref())
+        .nodes(body.xnames_expression.as_slice()),
+    )
+    .await?;
   let infra = ctx.infra();
   let xnames = resolve_xnames_from_request(
     &infra,

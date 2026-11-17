@@ -79,7 +79,7 @@ pub async fn exec(
       params.session_type.as_deref(),
       params.status.as_deref(),
       xnames_csv.as_deref(),
-      client.site_name(),
+      client.site_hint(),
     )
     .await
     .into_anyhow()

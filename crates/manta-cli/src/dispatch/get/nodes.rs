@@ -61,7 +61,7 @@ pub async fn exec(
       Some(params.include_siblings),
       params.status_filter.as_deref(),
       &params.host_expression,
-      client.site_name(),
+      client.site_hint(),
     )
     .await
     .into_anyhow()

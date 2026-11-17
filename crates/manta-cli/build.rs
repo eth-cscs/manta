@@ -62,15 +62,20 @@ fn generate_openapi_client() -> Result<(), Error> {
       Error::other(format!("openapi.json is not valid OpenAPI: {e}"))
     })?;
 
-  // Every generated call runs this hook first: it gives each request a
-  // new token (see `http_client::set_current_token`).
+  // Every generated call runs the pre-hook first, which gives each
+  // request a new token (see `http_client::set_current_token`), and the
+  // post-hook last, which adopts the site manta-server resolved (see
+  // `http_client::pin_resolved_site`).
   let mut settings = progenitor::GenerationSettings::default();
   settings
     .with_inner_type(quote::quote! {
-      Option<std::sync::Arc<crate::common::authentication::TokenProvider>>
+      crate::http_client::HookContext
     })
     .with_pre_hook_async(quote::quote! {
       crate::http_client::set_current_token
+    })
+    .with_post_hook(quote::quote! {
+      crate::http_client::pin_resolved_site
     });
   let mut generator = progenitor::Generator::new(&settings);
   let tokens = generator

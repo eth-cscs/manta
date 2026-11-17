@@ -49,8 +49,12 @@ impl MantaClient {
     let mut builder = self
       .raw
       .get(&url)
-      .header("X-Manta-Site", self.site_name())
       .query(&[("timestamps", timestamps.to_string())]);
+    // Without a site the server answers 400: a session name names no
+    // group or xname to resolve the site from.
+    if let Some(site) = self.site_hint() {
+      builder = builder.header("X-Manta-Site", site);
+    }
     if let Some(token) = self.bearer_token().await? {
       builder = builder.bearer_auth(token);
     }

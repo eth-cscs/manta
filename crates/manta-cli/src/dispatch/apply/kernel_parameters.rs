@@ -45,7 +45,7 @@ pub async fn exec(
   let result = client
     .openapi
     .apply_kernel_parameters(
-      client.site_name(),
+      client.site_hint(),
       &ApplyKernelParametersRequest {
         xnames_expression: xnames_expression.map(str::to_string),
         hsm_group: p.hsm_group.map(str::to_string),
